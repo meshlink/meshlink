@@ -9,6 +9,7 @@ endif
 DEFAULT_INCLUDES =
 
 tincd_SOURCES = \
+	libmeshlink.c libmeshlink.h \
 	buffer.c buffer.h \
 	cipher.h \
 	conf.c conf.h \
@@ -96,6 +97,7 @@ sptps_speed_SOURCES = \
 	sptps.c sptps.h \
 	sptps_speed.c \
 	utils.c utils.h
+
 
 ## Conditionally compile device drivers
 	
