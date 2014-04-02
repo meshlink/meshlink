@@ -20,12 +20,50 @@
 #include "libmeshlink.h"
 
 //tinc_setup() should basically do what cmd_init() from src/tincctl.c does, except it doesn't have to generate a tinc-up script.
-bool tinc_setup(const char* path) {
+bool tinc_setup(const char* tinc_conf, const char* name) {
+	if(!access(tinc_conf, F_OK)) {
+		fprintf(stderr, "Configuration file %s already exists!\n", tinc_conf);
+		return false;
+	}
 
-init_configuration(&config_tree);
+	if(!check_id(name)) {
+		fprintf(stderr, "Invalid Name! Only a-z, A-Z, 0-9 and _ are allowed characters.\n");
+		return false;
+	}
 
-return true;
-};
+	if(!confbase_given && mkdir(confdir, 0755) && errno != EEXIST) {
+		fprintf(stderr, "Could not create directory %s: %s\n", confdir, strerror(errno));
+		return false;
+	}
+
+	if(mkdir(confbase, 0777) && errno != EEXIST) {
+		fprintf(stderr, "Could not create directory %s: %s\n", confbase, strerror(errno));
+		return false;
+	}
+
+	if(mkdir(hosts_dir, 0777) && errno != EEXIST) {
+		fprintf(stderr, "Could not create directory %s: %s\n", hosts_dir, strerror(errno));
+		return false;
+	}
+
+	FILE *f = fopen(tinc_conf, "w");
+	if(!f) {
+		fprintf(stderr, "Could not create file %s: %s\n", tinc_conf, strerror(errno));
+		return 1;
+	}
+
+	fprintf(f, "Name = %s\n", name);
+	fclose(f);
+
+	if(!rsa_keygen(2048, false) || !ecdsa_keygen(false))
+		return false;
+
+	check_port(name);
+
+	return true;
+
+}
+
 
 bool tinc_start(const char* path);
 

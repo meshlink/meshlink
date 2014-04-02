@@ -19,11 +19,13 @@
 
 #include "system.h"
 #include "node.h"
+#include "names.h"
+#include "tincctl.h"
 
 /* OLD: tinc_configuration_t provides all information required to setup "/etc/tinc"
 I think tinc_setup() should basically do what cmd_init() from src/tincctl.c does, except it doesn't have to generate a tinc-up script.
 */
-bool tinc_setup(const char* path);
+bool tinc_setup(const char* tinc_conf, const char* name);
 
 bool tinc_start(const char* path);
 
