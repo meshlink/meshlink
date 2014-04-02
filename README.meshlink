@@ -1,0 +1,6 @@
+
+To have a preliminar meshlink library to be compiled statically in your
+application go in the ./src folder after compiling tinc, and group together in
+the library all the object files using the following command:
+
+ar rcs libmeshlink.a *.o
