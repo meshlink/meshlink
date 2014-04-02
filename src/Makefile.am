@@ -9,7 +9,6 @@ endif
 DEFAULT_INCLUDES =
 
 tincd_SOURCES = \
-	libmeshlink.c libmeshlink.h \
 	buffer.c buffer.h \
 	cipher.h \
 	conf.c conf.h \
@@ -71,6 +70,7 @@ tincd_SOURCES = \
 	xalloc.h
 
 tinc_SOURCES = \
+	libmeshlink.c libmeshlink.h \
 	dropin.c dropin.h \
 	getopt.c getopt.h \
 	getopt1.c \
