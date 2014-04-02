@@ -70,7 +70,6 @@ tincd_SOURCES = \
 	xalloc.h
 
 tinc_SOURCES = \
-	libmeshlink.c libmeshlink.h \
 	dropin.c dropin.h \
 	getopt.c getopt.h \
 	getopt1.c \
@@ -98,6 +97,10 @@ sptps_speed_SOURCES = \
 	sptps_speed.c \
 	utils.c utils.h
 
+lib_LTLIBRARIES = libmeshlink.la
+
+libmeshlink_la_SOURCES = \
+	libmeshlink.c libmeshlink.h
 
 ## Conditionally compile device drivers
 	
