@@ -203,4 +203,7 @@
 #define SLASH "/"
 #endif
 
+#define CONFDIR "/etc/"
+#define LOCALSTATEDIR "/var/"
+
 #endif /* __TINC_SYSTEM_H__ */

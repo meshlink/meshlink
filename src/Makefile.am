@@ -109,7 +109,7 @@ libmeshlink_la_SOURCES = \
 libmeshlink_la_CFLAGS = -fPIC
 
 libmeshlink_la_LIBADD = \
-	protocol.o 
+	protocol.o protocol_auth.o
 
 ## Conditionally compile device drivers
 	
