@@ -1,7 +1,7 @@
 # Simple Makefile
 
 CC=gcc
-LIBS= -lcrypto  -lz -llzo2 -ldl -lpthread -L../src/ -lmeshlink
+LIBS= -lcrypto  -lz -llzo2 -ldl -lpthread -L../src/.libs/ -lmeshlink
 INCLUDE= -I../src/
 LOADLIBES= $(LIBS)
 OBJS= meshlinkapp.o
