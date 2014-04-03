@@ -69,6 +69,8 @@ tincd_SOURCES = \
 	utils.c utils.h \
 	xalloc.h
 
+tincd_CFLAGS = -fPIC
+
 tinc_SOURCES = \
 	dropin.c dropin.h \
 	getopt.c getopt.h \
@@ -84,6 +86,8 @@ tinc_SOURCES = \
 	tincctl.c tincctl.h \
 	top.c top.h \
 	utils.c utils.h
+
+tinc_CFLAGS = -fPIC
 
 sptps_test_SOURCES = \
 	logger.c logger.h \
@@ -101,6 +105,11 @@ lib_LTLIBRARIES = libmeshlink.la
 
 libmeshlink_la_SOURCES = \
 	libmeshlink.c libmeshlink.h
+
+libmeshlink_la_CFLAGS = -fPIC
+
+libmeshlink_la_LIBADD = \
+	protocol.o 
 
 ## Conditionally compile device drivers
 	
