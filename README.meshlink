@@ -1,6 +1,6 @@
 
-To have a preliminar meshlink library to be compiled statically in your
-application go in the ./src folder after compiling tinc, and group together in
-the library all the object files using the following command:
+The libmeshlink.so library is compiled and you will find it in ./src/.libs/
 
-ar rcs libmeshlink.a *.o
+You can make your tests using this command
+
+export LD_LIBRARY_PATH='/home/saverio/SORGENTI/meshlink/src/.libs/'
