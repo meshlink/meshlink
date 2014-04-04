@@ -194,6 +194,7 @@ int check_port(char *name) {
 }
 //tinc_setup() should basically do what cmd_init() from src/tincctl.c does, except it doesn't have to generate a tinc-up script.
 bool tinc_setup(const char* tinc_conf, const char* name) {
+	make_names();
 	if(!access(tinc_conf, F_OK)) {
 		fprintf(stderr, "Configuration file %s already exists!\n", tinc_conf);
 		return false;
