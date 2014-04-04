@@ -358,7 +358,7 @@ static FILE *ask_and_open(const char *filename, const char *what, const char *mo
   Generate a public/private ECDSA keypair, and ask for a file to store
   them in.
 */
-bool ecdsa_keygen(bool ask) {
+static bool ecdsa_keygen(bool ask) {
 	ecdsa_t *key;
 	FILE *f;
 	char *pubname, *privname;
@@ -412,7 +412,7 @@ bool ecdsa_keygen(bool ask) {
   Generate a public/private RSA keypair, and ask for a file to store
   them in.
 */
-bool rsa_keygen(int bits, bool ask) {
+static bool rsa_keygen(int bits, bool ask) {
 	rsa_t *key;
 	FILE *f;
 	char *pubname, *privname;
