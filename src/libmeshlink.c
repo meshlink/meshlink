@@ -22,6 +22,7 @@
 #include "ecdsagen.h"
 char *hosts_dir = NULL;
 static char *name = NULL;
+char *tinc_conf = NULL;
 
 
 /*
@@ -193,8 +194,10 @@ int check_port(char *name) {
 	return 0;
 }
 //tinc_setup() should basically do what cmd_init() from src/tincctl.c does, except it doesn't have to generate a tinc-up script.
-bool tinc_setup(const char* tinc_conf, const char* name) {
+bool tinc_setup(const char* confbase, const char* name) {
 	make_names();
+        xasprintf(&tinc_conf, "%s" SLASH "tinc.conf", confbase);
+        xasprintf(&hosts_dir, "%s" SLASH "hosts", confbase);
 	if(!access(tinc_conf, F_OK)) {
 		fprintf(stderr, "Configuration file %s already exists!\n", tinc_conf);
 		return false;
