@@ -2,10 +2,10 @@
 
 int main(int argc , char **argv){
 
-char *tinc_conf = "/tmp/";
+char *confbase = "/tmp/meshlink/";
 char *name = "test";
 
-tinc_setup(tinc_conf, name);
+tinc_setup(confbase, name);
 
 return 0;
 }
