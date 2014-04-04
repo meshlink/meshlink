@@ -23,7 +23,152 @@
 char *hosts_dir = NULL;
 static char *name = NULL;
 char *tinc_conf = NULL;
+static bool tty = false;
 
+/* Open a file with the desired permissions, minus the umask.
+   Also, if we want to create an executable file, we call fchmod()
+   to set the executable bits. */
+
+FILE *fopenmask(const char *filename, const char *mode, mode_t perms) {
+	mode_t mask = umask(0);
+	perms &= ~mask;
+	umask(~perms);
+	FILE *f = fopen(filename, mode);
+#ifdef HAVE_FCHMOD
+	if((perms & 0444) && f)
+		fchmod(fileno(f), perms);
+#endif
+	umask(mask);
+	return f;
+}
+
+static void disable_old_keys(const char *filename, const char *what) {
+	char tmpfile[PATH_MAX] = "";
+	char buf[1024];
+	bool disabled = false;
+	bool block = false;
+	bool error = false;
+	FILE *r, *w;
+
+	r = fopen(filename, "r");
+	if(!r)
+		return;
+
+	snprintf(tmpfile, sizeof tmpfile, "%s.tmp", filename);
+
+	struct stat st = {.st_mode = 0600};
+	fstat(fileno(r), &st);
+	w = fopenmask(tmpfile, "w", st.st_mode);
+
+	while(fgets(buf, sizeof buf, r)) {
+		if(!block && !strncmp(buf, "-----BEGIN ", 11)) {
+			if((strstr(buf, " EC ") && strstr(what, "ECDSA")) || (strstr(buf, " RSA ") && strstr(what, "RSA"))) {
+				disabled = true;
+				block = true;
+			}
+		}
+
+		bool ecdsapubkey = !strncasecmp(buf, "ECDSAPublicKey", 14) && strchr(" \t=", buf[14]) && strstr(what, "ECDSA");
+
+		if(ecdsapubkey)
+			disabled = true;
+
+		if(w) {
+			if(block || ecdsapubkey)
+				fputc('#', w);
+			if(fputs(buf, w) < 0) {
+				error = true;
+				break;
+			}
+		}
+
+		if(block && !strncmp(buf, "-----END ", 9))
+			block = false;
+	}
+
+	if(w)
+		if(fclose(w) < 0)
+			error = true;
+	if(ferror(r) || fclose(r) < 0)
+		error = true;
+
+	if(disabled) {
+		if(!w || error) {
+			fprintf(stderr, "Warning: old key(s) found, remove them by hand!\n");
+			if(w)
+				unlink(tmpfile);
+			return;
+		}
+
+#ifdef HAVE_MINGW
+		// We cannot atomically replace files on Windows.
+		char bakfile[PATH_MAX] = "";
+		snprintf(bakfile, sizeof bakfile, "%s.bak", filename);
+		if(rename(filename, bakfile) || rename(tmpfile, filename)) {
+			rename(bakfile, filename);
+#else
+		if(rename(tmpfile, filename)) {
+#endif
+			fprintf(stderr, "Warning: old key(s) found, remove them by hand!\n");
+		} else  {
+#ifdef HAVE_MINGW
+			unlink(bakfile);
+#endif
+			fprintf(stderr, "Warning: old key(s) found and disabled.\n");
+		}
+	}
+
+	unlink(tmpfile);
+}
+
+static FILE *ask_and_open(const char *filename, const char *what, const char *mode, bool ask, mode_t perms) {
+	FILE *r;
+	char *directory;
+	char buf[PATH_MAX];
+	char buf2[PATH_MAX];
+
+	/* Check stdin and stdout */
+	if(ask && tty) {
+		/* Ask for a file and/or directory name. */
+		fprintf(stderr, "Please enter a file to save %s to [%s]: ", what, filename);
+
+		if(fgets(buf, sizeof buf, stdin) == NULL) {
+			fprintf(stderr, "Error while reading stdin: %s\n", strerror(errno));
+			return NULL;
+		}
+
+		size_t len = strlen(buf);
+		if(len)
+			buf[--len] = 0;
+
+		if(len)
+			filename = buf;
+	}
+
+#ifdef HAVE_MINGW
+	if(filename[0] != '\\' && filename[0] != '/' && !strchr(filename, ':')) {
+#else
+	if(filename[0] != '/') {
+#endif
+		/* The directory is a relative path or a filename. */
+		directory = get_current_dir_name();
+		snprintf(buf2, sizeof buf2, "%s" SLASH "%s", directory, filename);
+		filename = buf2;
+	}
+
+	disable_old_keys(filename, what);
+
+	/* Open it first to keep the inode busy */
+
+	r = fopenmask(filename, mode, perms);
+
+	if(!r) {
+		fprintf(stderr, "Error opening file `%s': %s\n", filename, strerror(errno));
+		return NULL;
+	}
+
+	return r;
+}
 
 /*
   Generate a public/private ECDSA keypair, and ask for a file to store
@@ -43,7 +188,7 @@ bool ecdsa_keygen(bool ask) {
 		fprintf(stderr, "Done.\n");
 
 	xasprintf(&privname, "%s" SLASH "ecdsa_key.priv", confbase);
-	//f = ask_and_open(privname, "private ECDSA key", "a", ask, 0600); //this function is not ported to lib because makes no sense
+	f = ask_and_open(privname, "private ECDSA key", "a", ask, 0600);
 	free(privname);
 
 	if(!f)
@@ -63,7 +208,7 @@ bool ecdsa_keygen(bool ask) {
 	else
 		xasprintf(&pubname, "%s" SLASH "ecdsa_key.pub", confbase);
 
-	//f = ask_and_open(pubname, "public ECDSA key", "a", ask, 0666);
+	f = ask_and_open(pubname, "public ECDSA key", "a", ask, 0666);
 	free(pubname);
 
 	if(!f)
@@ -97,7 +242,7 @@ bool rsa_keygen(int bits, bool ask) {
 		fprintf(stderr, "Done.\n");
 
 	xasprintf(&privname, "%s" SLASH "rsa_key.priv", confbase);
-	//f = ask_and_open(privname, "private RSA key", "a", ask, 0600);
+	f = ask_and_open(privname, "private RSA key", "a", ask, 0600);
 	free(privname);
 
 	if(!f)
@@ -117,7 +262,7 @@ bool rsa_keygen(int bits, bool ask) {
 	else
 		xasprintf(&pubname, "%s" SLASH "rsa_key.pub", confbase);
 
-	//f = ask_and_open(pubname, "public RSA key", "a", ask, 0666);
+	f = ask_and_open(pubname, "public RSA key", "a", ask, 0666);
 	free(pubname);
 
 	if(!f)
@@ -194,7 +339,8 @@ int check_port(char *name) {
 	return 0;
 }
 //tinc_setup() should basically do what cmd_init() from src/tincctl.c does, except it doesn't have to generate a tinc-up script.
-bool tinc_setup(const char* confbase, const char* name) {
+bool tinc_setup(const char* confbaseapi, const char* name) {
+	confbase = confbaseapi;
 	make_names();
         xasprintf(&tinc_conf, "%s" SLASH "tinc.conf", confbase);
         xasprintf(&hosts_dir, "%s" SLASH "hosts", confbase);

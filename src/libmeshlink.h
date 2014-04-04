@@ -24,6 +24,7 @@
 #include "xalloc.h"
 
 extern char *hosts_dir;
+extern FILE *fopenmask(const char *filename, const char *mode, mode_t perms);
 
 extern int check_port(char *name);
 /* OLD: tinc_configuration_t provides all information required to setup "/etc/tinc"
