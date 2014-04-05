@@ -27,6 +27,9 @@ extern char *hosts_dir;
 extern FILE *fopenmask(const char *filename, const char *mode, mode_t perms);
 
 extern int check_port(char *name);
+
+bool tinc_main_thread(void * in);
+
 /* OLD: tinc_configuration_t provides all information required to setup "/etc/tinc"
 I think tinc_setup() should basically do what cmd_init() from src/tincctl.c does, except it doesn't have to generate a tinc-up script.
 */

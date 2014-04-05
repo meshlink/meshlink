@@ -388,7 +388,20 @@ bool tinc_setup(const char* confbaseapi, const char* name) {
 }
 
 
-bool tinc_start(const char* path);
+bool tinc_start(const char* confbaseapi) {
+	pthread_t tincThread;
+	confbase = confbaseapi;
+	pthread_create(&tincThread,NULL,tinc_main_thread,confbaseapi);
+	pthread_detach(tincThread);
+return true;
+}
+
+bool tinc_main_thread(void * in) {
+
+confbase = (char*) in;
+printf("Hello World %s\n",confbase);
+
+}
 
 bool tinc_stop();
 

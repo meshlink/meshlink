@@ -167,6 +167,8 @@ libmeshlink_la_SOURCES = \
 
 libmeshlink_la_CFLAGS = -fPIC
 
+libmeshlink_la_LIBADD = -lpthread
+
 ## Conditionally compile device drivers
 	
 if LINUX
