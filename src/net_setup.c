@@ -891,33 +891,6 @@ bool setup_myself(void) {
 	else if(autoconnect)
 		load_all_nodes();
 
-	/* Open device */
-
-	devops = os_devops;
-
-	if(get_config_string(lookup_config(config_tree, "DeviceType"), &type)) {
-		if(!strcasecmp(type, "dummy"))
-			devops = dummy_devops;
-		else if(!strcasecmp(type, "raw_socket"))
-			devops = raw_socket_devops;
-		else if(!strcasecmp(type, "multicast"))
-			devops = multicast_devops;
-#ifdef ENABLE_UML
-		else if(!strcasecmp(type, "uml"))
-			devops = uml_devops;
-#endif
-#ifdef ENABLE_VDE
-		else if(!strcasecmp(type, "vde"))
-			devops = vde_devops;
-#endif
-	}
-
-	if(!devops.setup())
-		return false;
-
-	if(device_fd >= 0)
-		io_add(&device_io, handle_device_data, NULL, device_fd, IO_READ);
-
 	/* Open sockets */
 
 	if(!do_detach && getenv("LISTEN_FDS")) {
