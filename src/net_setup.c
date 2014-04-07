@@ -723,7 +723,7 @@ static bool add_listen_address(char *address, bool bindto) {
 /*
   Configure node_t myself and set up the local sockets (listen only)
 */
-static bool setup_myself(void) {
+bool setup_myself(void) {
 	char *name, *hostname, *cipher, *digest, *type;
 	char *address = NULL;
 	bool port_specified = false;

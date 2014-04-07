@@ -22,6 +22,7 @@
 #include "names.h"
 //#include "tincctl.h"
 #include "xalloc.h"
+#include "logger.h"
 
 extern char *hosts_dir;
 extern FILE *fopenmask(const char *filename, const char *mode, mode_t perms);

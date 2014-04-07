@@ -18,12 +18,60 @@
 */
 
 #include "libmeshlink.h"
+#include LZO1X_H
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
 #include "crypto.h"
 #include "ecdsagen.h"
 char *hosts_dir = NULL;
 static char *name = NULL;
 char *tinc_conf = NULL;
 static bool tty = false;
+
+#ifdef HAVE_MLOCKALL
+/* If nonzero, disable swapping for this process. */
+static bool do_mlock = false;
+#endif
+
+/*
+  initialize network
+*/
+bool setup_meshlink_network(void) {
+	init_connections();
+	init_subnets();
+	init_nodes();
+	init_edges();
+	init_requests();
+
+	if(get_config_int(lookup_config(config_tree, "PingInterval"), &pinginterval)) {
+		if(pinginterval < 1) {
+			pinginterval = 86400;
+		}
+	} else
+		pinginterval = 60;
+
+	if(!get_config_int(lookup_config(config_tree, "PingTimeout"), &pingtimeout))
+		pingtimeout = 5;
+	if(pingtimeout < 1 || pingtimeout > pinginterval)
+		pingtimeout = pinginterval;
+
+	//TODO: check if this makes sense in libmeshlink
+	if(!get_config_int(lookup_config(config_tree, "MaxOutputBufferSize"), &maxoutbufsize))
+		maxoutbufsize = 10 * MTU;
+
+	if(!setup_myself())
+		return false;
+
+	if(!init_control())
+		return false;
+
+	/* Run subnet-up scripts for our own subnets */
+
+	subnet_update(myself, NULL, true);
+
+	return true;
+}
 
 /* Open a file with the desired permissions, minus the umask.
    Also, if we want to create an executable file, we call fchmod()
@@ -398,8 +446,103 @@ return true;
 
 bool tinc_main_thread(void * in) {
 
+static bool status = false;
+
+/* If nonzero, write log entries to a separate file. */
+bool use_logfile = false;
+
 confbase = (char*) in;
-printf("Hello World %s\n",confbase);
+
+	openlogger("tinc", use_logfile?LOGMODE_FILE:LOGMODE_STDERR);
+
+	init_configuration(&config_tree);
+
+	/* Slllluuuuuuurrrrp! */
+
+	gettimeofday(&now, NULL);
+	srand(now.tv_sec + now.tv_usec);
+	crypto_init();
+
+	if(!read_server_config())
+		return false;
+
+#ifdef HAVE_LZO
+	if(lzo_init() != LZO_E_OK) {
+		logger(DEBUG_ALWAYS, LOG_ERR, "Error initializing LZO compressor!");
+		return false;
+	}
+#endif
+
+	//char *priority = NULL; //shoud be not needed in libmeshlink
+
+#ifdef HAVE_MLOCKALL
+	/* Lock all pages into memory if requested.
+	 * This has to be done after daemon()/fork() so it works for child.
+	 * No need to do that in parent as it's very short-lived. */
+	if(do_mlock && mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
+		logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "mlockall",
+		   strerror(errno));
+		return 1;
+	}
+#endif
+
+	/* Setup sockets and open device. */
+
+	if(!setup_meshlink_network())
+		goto end;
+
+	/* Change process priority */
+	//should be not needed in libmeshlink
+	//if(get_config_string(lookup_config(config_tree, "ProcessPriority"), &priority)) {
+	//	if(!strcasecmp(priority, "Normal")) {
+	//		if (setpriority(NORMAL_PRIORITY_CLASS) != 0) {
+	//			logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "setpriority", strerror(errno));
+	//			goto end;
+	//		}
+	//	} else if(!strcasecmp(priority, "Low")) {
+	//		if (setpriority(BELOW_NORMAL_PRIORITY_CLASS) != 0) {
+	//			       logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "setpriority", strerror(errno));
+	//			goto end;
+	//		}
+	//	} else if(!strcasecmp(priority, "High")) {
+	//		if (setpriority(HIGH_PRIORITY_CLASS) != 0) {
+	//			logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "setpriority", strerror(errno));
+	//			goto end;
+	//		}
+	//	} else {
+	//		logger(DEBUG_ALWAYS, LOG_ERR, "Invalid priority `%s`!", priority);
+	//		goto end;
+	//	}
+	//}
+
+	/* drop privileges */
+	//if (!drop_privs())
+	//	goto end;
+
+	/* Start main loop. It only exits when tinc is killed. */
+
+	logger(DEBUG_ALWAYS, LOG_NOTICE, "Ready");
+
+	try_outgoing_connections();
+
+	status = main_loop();
+
+	/* Shutdown properly. */
+
+end:
+	close_network_connections();
+
+	logger(DEBUG_ALWAYS, LOG_NOTICE, "Terminating");
+
+	//free(priority);
+
+	crypto_exit();
+
+	exit_configuration(&config_tree);
+	free(cmdline_conf);
+	free_names();
+
+	return status;
 
 }
 
