@@ -371,7 +371,7 @@ bool read_server_config(void) {
 	char *fname;
 	bool x;
 
-	read_config_options(config_tree, NULL);
+	//read_config_options(config_tree, NULL);
 
 	xasprintf(&fname, "%s" SLASH "tinc.conf", confbase);
 	errno = 0;
@@ -412,7 +412,7 @@ bool read_host_config(splay_tree_t *config_tree, const char *name) {
 	char *fname;
 	bool x;
 
-	read_config_options(config_tree, name);
+	//read_config_options(config_tree, name);
 
 	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, name);
 	x = read_config_file(config_tree, fname);
