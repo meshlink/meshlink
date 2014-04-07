@@ -77,7 +77,7 @@ void make_names(void) {
 		xasprintf(&logfilename, LOCALSTATEDIR SLASH "log" SLASH "%s.log", identname);
 
 	if(!pidfilename)
-		xasprintf(&pidfilename, LOCALSTATEDIR SLASH "run" SLASH "%s.pid", identname);
+		xasprintf(&pidfilename, SLASH "tmp" SLASH "%s.pid", identname);
 
 	if(!unixsocketname) {
 		int len = strlen(pidfilename);
