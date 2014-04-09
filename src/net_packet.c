@@ -1040,14 +1040,14 @@ void handle_incoming_vpn_data(void *data, int flags) {
 	receive_udppacket(n, &pkt);
 }
 
-void handle_device_data(void *data, int flags) {
-	vpn_packet_t packet;
-
-	packet.priority = 0;
-
-	if(devops.read(&packet)) {
-		myself->in_packets++;
-		myself->in_bytes += packet.len;
-		route(myself, &packet);
-	}
-}
+//void handle_device_data(void *data, int flags) {
+//	vpn_packet_t packet;
+//
+//	packet.priority = 0;
+//
+//	if(devops.read(&packet)) {
+//		myself->in_packets++;
+//		myself->in_bytes += packet.len;
+//		route(myself, &packet);
+//	}
+//}
