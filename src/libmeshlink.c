@@ -549,7 +549,19 @@ end:
 bool tinc_stop();
 
 // can be called from any thread
-bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len);
+bool tinc_send_packet(tincremotehost *receiver, const char* buf, unsigned int len) {
+
+	vpn_packet_t packet;
+
+	packet.priority = 0;
+	memcpy(packet.data,buf,len);
+
+        myself->in_packets++;
+        myself->in_bytes += packet.len;
+        route(myself, &packet);
+
+return true;
+}
 
 // handler runs in tinc thread and should return immediately
 bool tinc_set_packet_receive_handler(void (*handler)(const char* sender, const char* buf, unsigned int len));

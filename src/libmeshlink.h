@@ -23,6 +23,7 @@
 //#include "tincctl.h"
 #include "xalloc.h"
 #include "logger.h"
+#include "route.h"
 
 extern char *hosts_dir;
 extern FILE *fopenmask(const char *filename, const char *mode, mode_t perms);
@@ -40,8 +41,23 @@ bool tinc_start(const char* path);
 
 bool tinc_stop();
 
+typedef struct tincpackethdr {
+  /* Use a standard Type-Length-Value (TLV) element */
+  u_int8_t type;
+  u_int8_t len;
+  u_int16_t reserved;                  /* Always 0 */
+  u_int32_t destination;
+  u_int32_t source;
+} __attribute__ ((__packed__)) tincpackethdr;
+
+typedef struct tincremotehost {
+  char *name;
+  char *publickey;
+
+} tincremotehost;
+
 // can be called from any thread
-bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len);
+bool tinc_send_packet(tincremotehost *receiver, const char* buf, unsigned int len);
 
 // handler runs in tinc thread and should return immediately
 bool tinc_set_packet_receive_handler(void (*handler)(const char* sender, const char* buf, unsigned int len));
