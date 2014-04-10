@@ -549,12 +549,24 @@ end:
 bool tinc_stop();
 
 // can be called from any thread
-bool tinc_send_packet(tincremotehost *receiver, const char* buf, unsigned int len) {
+bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 
 	vpn_packet_t packet;
+	tincpackethdr* hdr = malloc(sizeof(tincpackethdr));
+
+	if (sizeof(hdr) + len > MAXSIZE) {
+
+	//log something
+	return false;
+	}
+
+	memcpy(hdr->destination,receiver->name,sizeof(hdr->destination));
+	memcpy(hdr->source,myself->name,sizeof(hdr->source));
 
 	packet.priority = 0;
-	memcpy(packet.data,buf,len);
+
+	memcpy(packet.data,hdr,sizeof(hdr));
+	memcpy(packet.data+sizeof(hdr),buf,len);
 
         myself->in_packets++;
         myself->in_bytes += packet.len;
@@ -570,7 +582,11 @@ bool tinc_set_packet_receive_handler(void (*handler)(const char* sender, const c
 //It might also be a good idea to add the option of looking up hosts by public
 //key (fingerprints) instead of names.
 
-node_t *tinc_get_host(const char *name);
+node_t *tinc_get_host(const char *name) {
+
+
+
+};
 
 bool tinc_get_hosts(node_t** hosts);
 

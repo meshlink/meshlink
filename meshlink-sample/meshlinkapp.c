@@ -5,12 +5,12 @@ int main(int argc , char **argv){
 char *confbase = "/tmp/meshlink/";
 char *name = "test";
 
-tincremotehost* remotenode = malloc(sizeof(tincremotehost));
+node_t* remotenode = new_node();
 char *remotename = "nameofremotenode";
 
-//TODO: change this, calling a function that returns tincremotehost
+//TODO: change this, calling a function that returns node_t
+remotenode->name = malloc(16);
 remotenode->name = remotename;
-remotenode->publickey = NULL;
 
 tinc_setup(confbase, name);
 tinc_start(confbase);

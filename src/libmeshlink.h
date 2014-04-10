@@ -46,14 +46,8 @@ typedef struct tincpackethdr {
   u_int8_t source[16];
 } __attribute__ ((__packed__)) tincpackethdr;
 
-typedef struct tincremotehost {
-  char *name;
-  char *publickey;
-
-} tincremotehost;
-
 // can be called from any thread
-bool tinc_send_packet(tincremotehost *receiver, const char* buf, unsigned int len);
+bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len);
 
 // handler runs in tinc thread and should return immediately
 bool tinc_set_packet_receive_handler(void (*handler)(const char* sender, const char* buf, unsigned int len));
