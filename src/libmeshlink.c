@@ -565,8 +565,8 @@ bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 
 	packet.priority = 0;
 
-	memcpy(packet.data,hdr,sizeof(hdr));
-	memcpy(packet.data+sizeof(hdr),buf,len);
+	memcpy(packet.data,hdr,32);
+	memcpy(packet.data+32,buf,len);
 
         myself->in_packets++;
         myself->in_bytes += packet.len;
