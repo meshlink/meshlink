@@ -946,12 +946,6 @@ static bool do_decrement_ttl(node_t *source, vpn_packet_t *packet) {
 }
 
 void route(node_t *source, vpn_packet_t *packet) {
-
-	if (/*libmeshlink*/ 1) {
-	printf("%s\n",packet->data);
-	return;
-	}
-
 	if(pcap)
 		send_pcap(packet);
 
