@@ -42,12 +42,8 @@ bool tinc_start(const char* path);
 bool tinc_stop();
 
 typedef struct tincpackethdr {
-  /* Use a standard Type-Length-Value (TLV) element */
-  u_int8_t type;
-  u_int8_t len;
-  u_int16_t reserved;                  /* Always 0 */
-  u_int32_t destination;
-  u_int32_t source;
+  u_int8_t destination[16];
+  u_int8_t source[16];
 } __attribute__ ((__packed__)) tincpackethdr;
 
 typedef struct tincremotehost {
