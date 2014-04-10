@@ -14,6 +14,7 @@ remotenode->publickey = NULL;
 
 tinc_setup(confbase, name);
 tinc_start(confbase);
+sleep(2); //there is a race condition here, tinc_start detaches to a thread the needs time to setup stuff
 while(1) {
 
 //sample data to send out
