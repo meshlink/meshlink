@@ -565,7 +565,7 @@ bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 	vpn_packet_t packet;
 	tincpackethdr* hdr = malloc(sizeof(tincpackethdr));
 
-	if (sizeof(hdr) + len > MAXSIZE) {
+	if (14 + sizeof(hdr) + len > MAXSIZE) {
 
 	//log something
 	return false;
@@ -577,8 +577,9 @@ bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 	packet.priority = 0;
 	packet.len = sizeof(tincpackethdr) + len;
 
-	memcpy(packet.data,hdr,32);
-	memcpy(packet.data+32,buf,len);
+    memset(packet.data,1,14);
+    memcpy(packet.data+14,hdr,32);
+	memcpy(packet.data+32+14,buf,len);
 
         myself->in_packets++;
         myself->in_bytes += packet.len;
