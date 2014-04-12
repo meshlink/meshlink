@@ -51,7 +51,6 @@
 #include "names.h"
 #include "net.h"
 #include "netutl.h"
-#include "process.h"
 #include "protocol.h"
 #include "utils.h"
 #include "xalloc.h"
@@ -150,10 +149,6 @@ static bool parse_options(int argc, char **argv) {
 
 			case 'c': /* config file */
 				confbase = xstrdup(optarg);
-				break;
-
-			case 'D': /* no detach */
-				do_detach = false;
 				break;
 
 			case 'L': /* no detach */
@@ -344,12 +339,6 @@ int main(int argc, char **argv) {
 
 	g_argv = argv;
 
-	if(getenv("LISTEN_PID") && atoi(getenv("LISTEN_PID")) == getpid())
-		do_detach = false;
-#ifdef HAVE_UNSETENV
-	unsetenv("LISTEN_PID");
-#endif
-
 	init_configuration(&config_tree);
 
 	/* Slllluuuuuuurrrrp! */
@@ -368,21 +357,7 @@ int main(int argc, char **argv) {
 	}
 #endif
 
-#ifdef HAVE_MINGW
-	if(!do_detach || !init_service())
-		return main2(argc, argv);
-	else
-		return 1;
-}
-
-int main2(int argc, char **argv) {
-	InitializeCriticalSection(&mutex);
-	EnterCriticalSection(&mutex);
-#endif
 	char *priority = NULL;
-
-	if(!detach())
-		return 1;
 
 #ifdef HAVE_MLOCKALL
 	/* Lock all pages into memory if requested.

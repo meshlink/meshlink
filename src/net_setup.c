@@ -32,7 +32,6 @@
 #include "names.h"
 #include "net.h"
 #include "netutl.h"
-#include "process.h"
 #include "protocol.h"
 #include "route.h"
 #include "rsa.h"
@@ -804,68 +803,26 @@ bool setup_myself(void) {
 
 	/* Open sockets */
 
-	if(!do_detach && getenv("LISTEN_FDS")) {
-		sockaddr_t sa;
-		socklen_t salen;
+	listen_sockets = 0;
+	int cfgs = 0;
 
-		listen_sockets = atoi(getenv("LISTEN_FDS"));
-#ifdef HAVE_UNSETENV
-		unsetenv("LISTEN_FDS");
-#endif
-
-		if(listen_sockets > MAXSOCKETS) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Too many listening sockets");
+	for(config_t *cfg = lookup_config(config_tree, "BindToAddress"); cfg; cfg = lookup_config_next(config_tree, cfg)) {
+		cfgs++;
+		get_config_string(cfg, &address);
+		if(!add_listen_address(address, true))
 			return false;
-		}
-
-		for(int i = 0; i < listen_sockets; i++) {
-			salen = sizeof sa;
-			if(getsockname(i + 3, &sa.sa, &salen) < 0) {
-				logger(DEBUG_ALWAYS, LOG_ERR, "Could not get address of listen fd %d: %s", i + 3, sockstrerror(errno));
-				return false;
-			}
-
-#ifdef FD_CLOEXEC
-			fcntl(i + 3, F_SETFD, FD_CLOEXEC);
-#endif
-
-			int udp_fd = setup_vpn_in_socket(&sa);
-			if(udp_fd < 0)
-				return false;
-
-			io_add(&listen_socket[i].tcp, (io_cb_t)handle_new_meta_connection, &listen_socket[i], i + 3, IO_READ);
-			io_add(&listen_socket[i].udp, (io_cb_t)handle_incoming_vpn_data, &listen_socket[i], udp_fd, IO_READ);
-
-			if(debug_level >= DEBUG_CONNECTIONS) {
-				hostname = sockaddr2hostname(&sa);
-				logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Listening on %s", hostname);
-				free(hostname);
-			}
-
-			memcpy(&listen_socket[i].sa, &sa, salen);
-		}
-	} else {
-		listen_sockets = 0;
-		int cfgs = 0;
-
-		for(config_t *cfg = lookup_config(config_tree, "BindToAddress"); cfg; cfg = lookup_config_next(config_tree, cfg)) {
-			cfgs++;
-			get_config_string(cfg, &address);
-			if(!add_listen_address(address, true))
-				return false;
-		}
-
-		for(config_t *cfg = lookup_config(config_tree, "ListenAddress"); cfg; cfg = lookup_config_next(config_tree, cfg)) {
-			cfgs++;
-			get_config_string(cfg, &address);
-			if(!add_listen_address(address, false))
-				return false;
-		}
-
-		if(!cfgs)
-			if(!add_listen_address(address, NULL))
-				return false;
 	}
+
+	for(config_t *cfg = lookup_config(config_tree, "ListenAddress"); cfg; cfg = lookup_config_next(config_tree, cfg)) {
+		cfgs++;
+		get_config_string(cfg, &address);
+		if(!add_listen_address(address, false))
+			return false;
+	}
+
+	if(!cfgs)
+		if(!add_listen_address(address, NULL))
+			return false;
 
 	if(!listen_sockets) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Unable to create any listening socket!");
