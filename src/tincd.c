@@ -48,7 +48,6 @@
 #include "conf.h"
 #include "crypto.h"
 #include "logger.h"
-#include "names.h"
 #include "net.h"
 #include "netutl.h"
 #include "protocol.h"
@@ -77,9 +76,6 @@ static bool do_chroot = false;
 static const char *switchuser = NULL;
 #endif
 
-/* If nonzero, write log entries to a separate file. */
-bool use_logfile = false;
-
 char **g_argv;                  /* a copy of the cmdline arguments */
 
 static int status = 1;
@@ -95,8 +91,6 @@ static struct option const long_options[] = {
 	{"mlock", no_argument, NULL, 'L'},
 	{"chroot", no_argument, NULL, 'R'},
 	{"user", required_argument, NULL, 'U'},
-	{"logfile", optional_argument, NULL, 4},
-	{"pidfile", required_argument, NULL, 5},
 	{"option", required_argument, NULL, 'o'},
 	{NULL, 0, NULL, 0}
 };
@@ -109,10 +103,9 @@ int main2(int argc, char **argv);
 
 static void usage(bool status) {
 	if(status)
-		fprintf(stderr, "Try `%s --help\' for more information.\n",
-				program_name);
+		fprintf(stderr, "Try `tincd --help\' for more information.\n");
 	else {
-		printf("Usage: %s [option]...\n\n", program_name);
+		printf("Usage: tincd [option]...\n\n");
 		printf( "  -c, --config=DIR              Read configuration options from DIR.\n"
 				"  -D, --no-detach               Don't fork and detach.\n"
 				"  -d, --debug[=LEVEL]           Increase debug level or set it to LEVEL.\n"
@@ -120,8 +113,6 @@ static void usage(bool status) {
 #ifdef HAVE_MLOCKALL
 				"  -L, --mlock                   Lock tinc into main memory.\n"
 #endif
-				"      --logfile[=FILENAME]      Write log entries to a logfile.\n"
-				"      --pidfile=FILENAME        Write PID and control socket cookie to FILENAME.\n"
 				"      --bypass-security         Disables meta protocol security, for debugging.\n"
 				"  -o, --option[HOST.]KEY=VALUE  Set global/host configuration value.\n"
 #ifndef HAVE_MINGW
@@ -169,10 +160,6 @@ static bool parse_options(int argc, char **argv) {
 					debug_level++;
 				break;
 
-			case 'n': /* net name given */
-				netname = xstrdup(optarg);
-				break;
-
 			case 'o': /* option */
 				cfg = parse_config_line(optarg, NULL, ++lineno);
 				if (!cfg)
@@ -207,18 +194,6 @@ static bool parse_options(int argc, char **argv) {
 				bypass_security = true;
 				break;
 
-			case 4:   /* write log entries to a file */
-				use_logfile = true;
-				if(!optarg && optind < argc && *argv[optind] != '-')
-					optarg = argv[optind++];
-				if(optarg)
-					logfilename = xstrdup(optarg);
-				break;
-
-			case 5:   /* open control socket here */
-				pidfilename = xstrdup(optarg);
-				break;
-
 			case '?': /* wrong options */
 				usage(true);
 				return false;
@@ -231,21 +206,6 @@ static bool parse_options(int argc, char **argv) {
 	if(optind < argc) {
 		fprintf(stderr, "%s: unrecognized argument '%s'\n", argv[0], argv[optind]);
 		usage(true);
-		return false;
-	}
-
-	if(!netname && (netname = getenv("NETNAME")))
-		netname = xstrdup(netname);
-
-	/* netname "." is special: a "top-level name" */
-
-	if(netname && (!*netname || !strcmp(netname, "."))) {
-		free(netname);
-		netname = NULL;
-	}
-
-	if(netname && (strpbrk(netname, "\\/") || *netname == '.')) {
-		fprintf(stderr, "Invalid character in netname!\n");
 		return false;
 	}
 
@@ -304,12 +264,8 @@ static bool drop_privs(void) {
 #endif
 
 int main(int argc, char **argv) {
-	program_name = argv[0];
-
 	if(!parse_options(argc, argv))
 		return 1;
-
-	make_names();
 
 	if(show_version) {
 		printf("%s version %s (built %s %s, protocol %d.%d)\n", PACKAGE,
@@ -335,7 +291,7 @@ int main(int argc, char **argv) {
 	}
 #endif
 
-	openlogger("tinc", use_logfile?LOGMODE_FILE:LOGMODE_STDERR);
+	openlogger("tinc", LOGMODE_STDERR);
 
 	g_argv = argv;
 
@@ -424,7 +380,6 @@ end:
 
 	exit_configuration(&config_tree);
 	free(cmdline_conf);
-	free_names();
 
 	return status;
 }

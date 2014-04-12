@@ -27,7 +27,6 @@
 #include "list.h"
 #include "logger.h"
 #include "meta.h"
-#include "names.h"
 #include "net.h"
 #include "netutl.h"
 #include "protocol.h"
@@ -358,8 +357,6 @@ static void do_outgoing_pipe(connection_t *c, char *command) {
 	setenv("REMOTEPORT", port, true);
 	setenv("NODE", c->name, true);
 	setenv("NAME", myself->name, true);
-	if(netname)
-		setenv("NETNAME", netname, true);
 
 	int result = system(command);
 	if(result < 0)

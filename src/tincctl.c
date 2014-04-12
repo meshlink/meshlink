@@ -33,7 +33,6 @@
 #include "ecdsagen.h"
 #include "info.h"
 #include "invitation.h"
-#include "names.h"
 #include "rsagen.h"
 #include "utils.h"
 #include "tincctl.h"
@@ -2098,7 +2097,6 @@ static int switch_network(char *name) {
 	free(netname);
 	netname = strcmp(name, ".") ? xstrdup(name) : NULL;
 
-	make_names();
         xasprintf(&tinc_conf, "%s" SLASH "tinc.conf", confbase);
         xasprintf(&hosts_dir, "%s" SLASH "hosts", confbase);
 	xasprintf(&prompt, "%s> ", identname);
@@ -2414,7 +2412,6 @@ int main(int argc, char *argv[]) {
 	if(!parse_options(argc, argv))
 		return 1;
 
-	make_names();
 	xasprintf(&tinc_conf, "%s" SLASH "tinc.conf", confbase);
 	xasprintf(&hosts_dir, "%s" SLASH "hosts", confbase);
 

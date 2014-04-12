@@ -202,4 +202,7 @@ extern void load_all_nodes(void);
 extern CRITICAL_SECTION mutex;
 #endif
 
+//TODO: move this to a better place
+extern char *confbase;
+
 #endif /* __TINC_NET_H__ */

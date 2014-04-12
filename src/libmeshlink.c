@@ -380,8 +380,7 @@ int check_port(char *name) {
 }
 //tinc_setup() should basically do what cmd_init() from src/tincctl.c does, except it doesn't have to generate a tinc-up script.
 bool tinc_setup(const char* confbaseapi, const char* name) {
-	confbase = confbaseapi;
-	make_names();
+	confbase = xstrdup(confbaseapi);
         xasprintf(&tinc_conf, "%s" SLASH "tinc.conf", confbase);
         xasprintf(&hosts_dir, "%s" SLASH "hosts", confbase);
 	if(!access(tinc_conf, F_OK)) {
@@ -391,11 +390,6 @@ bool tinc_setup(const char* confbaseapi, const char* name) {
 
 	if(!check_id(name)) {
 		fprintf(stderr, "Invalid Name! Only a-z, A-Z, 0-9 and _ are allowed characters.\n");
-		return false;
-	}
-
-	if(!confbase_given && mkdir(confdir, 0755) && errno != EEXIST) {
-		fprintf(stderr, "Could not create directory %s: %s\n", confdir, strerror(errno));
 		return false;
 	}
 
@@ -437,15 +431,14 @@ return true;
 }
 
 bool tinc_main_thread(void * in) {
+	static bool status = false;
 
-static bool status = false;
+	/* If nonzero, write log entries to a separate file. */
+	bool use_logfile = false;
 
-/* If nonzero, write log entries to a separate file. */
-bool use_logfile = false;
+	confbase = (char*) in;
 
-confbase = (char*) in;
-
-	openlogger("tinc", use_logfile?LOGMODE_FILE:LOGMODE_STDERR);
+	openlogger("tinc", LOGMODE_STDERR);
 
 	init_configuration(&config_tree);
 
@@ -532,7 +525,6 @@ end:
 
 	exit_configuration(&config_tree);
 	free(cmdline_conf);
-	free_names();
 
 	return status;
 

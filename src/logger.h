@@ -37,7 +37,6 @@ typedef enum debug_t {
 typedef enum logmode_t {
 	LOGMODE_NULL,
 	LOGMODE_STDERR,
-	LOGMODE_FILE,
 	LOGMODE_SYSLOG
 } logmode_t;
 
@@ -68,7 +67,6 @@ enum {
 extern debug_t debug_level;
 extern bool logcontrol;
 extern void openlogger(const char *, logmode_t);
-extern void reopenlogger(void);
 extern void logger(int, int, const char *, ...) __attribute__ ((__format__(printf, 3, 4)));
 extern void closelogger(void);
 

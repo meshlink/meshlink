@@ -29,7 +29,6 @@
 #include "conf.h"
 #include "list.h"
 #include "logger.h"
-#include "names.h"
 #include "netutl.h"             /* for str2address */
 #include "protocol.h"
 #include "utils.h"              /* for cp */

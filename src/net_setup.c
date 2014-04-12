@@ -29,7 +29,6 @@
 #include "ecdsa.h"
 #include "graph.h"
 #include "logger.h"
-#include "names.h"
 #include "net.h"
 #include "netutl.h"
 #include "protocol.h"
@@ -185,7 +184,7 @@ static bool read_ecdsa_private_key(void) {
 	if(!fp) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Error reading ECDSA private key file `%s': %s", fname, strerror(errno));
 		if(errno == ENOENT)
-			logger(DEBUG_ALWAYS, LOG_INFO, "Create an ECDSA keypair with `tinc -n %s generate-ecdsa-keys'.", netname ?: ".");
+			logger(DEBUG_ALWAYS, LOG_INFO, "Create an ECDSA keypair with `tinc generate-ecdsa-keys'.");
 		free(fname);
 		return false;
 	}

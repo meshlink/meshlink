@@ -49,7 +49,6 @@
 #include "graph.h"
 #include "list.h"
 #include "logger.h"
-#include "names.h"
 #include "netutl.h"
 #include "node.h"
 #include "protocol.h"

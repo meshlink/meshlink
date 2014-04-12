@@ -50,7 +50,6 @@ libmeshlink_la_SOURCES = \
 	list.c list.h \
 	logger.c logger.h \
 	meta.c meta.h \
-	names.c names.h \
 	net.c net.h \
 	net_packet.c \
 	net_setup.c \

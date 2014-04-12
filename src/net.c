@@ -28,7 +28,6 @@
 #include "graph.h"
 #include "logger.h"
 #include "meta.h"
-#include "names.h"
 #include "net.h"
 #include "netutl.h"
 #include "protocol.h"
@@ -40,6 +39,9 @@ static int sleeptime = 10;
 time_t last_config_check = 0;
 static timeout_t pingtimer;
 static timeout_t periodictimer;
+
+//TODO: move this to a better place
+char *confbase;
 
 /* Purge edges of unreachable nodes. Use carefully. */
 
@@ -288,7 +290,6 @@ static void sigterm_handler(void *data) {
 
 static void sighup_handler(void *data) {
 	logger(DEBUG_ALWAYS, LOG_NOTICE, "Got %s signal", strsignal(((signal_t *)data)->signum));
-	reopenlogger();
 	if(reload_configuration())
 		exit(1);
 }

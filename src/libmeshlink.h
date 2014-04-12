@@ -19,7 +19,6 @@
 
 #include "system.h"
 #include "node.h"
-#include "names.h"
 //#include "tincctl.h"
 #include "xalloc.h"
 #include "logger.h"

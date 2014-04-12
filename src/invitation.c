@@ -24,7 +24,6 @@
 #include "ecdsa.h"
 #include "ecdsagen.h"
 #include "invitation.h"
-#include "names.h"
 #include "netutl.h"
 #include "rsagen.h"
 #include "sptps.h"
@@ -546,13 +545,6 @@ static bool finalize_join(void) {
 	char temp_netname[32];
 
 make_names:
-	if(!confbasegiven) {
-		free(confbase);
-		confbase = NULL;
-	}
-
-	make_names();
-
 	free(tinc_conf);
 	free(hosts_dir);
 
@@ -758,7 +750,6 @@ ask_netname:
 
 		free(newbase);
 		netname = line;
-		make_names();
 	}
 
 	fprintf(stderr, "Configuration stored in: %s\n", confbase);
@@ -819,11 +810,6 @@ int cmd_join(int argc, char *argv[]) {
 	}
 
 	// Make sure confbase exists and is accessible.
-	if(!confbase_given && mkdir(confdir, 0755) && errno != EEXIST) {
-		fprintf(stderr, "Could not create directory %s: %s\n", confdir, strerror(errno));
-		return 1;
-	}
-
 	if(mkdir(confbase, 0777) && errno != EEXIST) {
 		fprintf(stderr, "Could not create directory %s: %s\n", confbase, strerror(errno));
 		return 1;

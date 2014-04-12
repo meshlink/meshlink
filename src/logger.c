@@ -22,7 +22,6 @@
 
 #include "conf.h"
 #include "meta.h"
-#include "names.h"
 #include "logger.h"
 #include "connection.h"
 #include "sptps.h"
@@ -30,7 +29,6 @@
 debug_t debug_level = DEBUG_NOTHING;
 static logmode_t logmode = LOGMODE_STDERR;
 static pid_t logpid;
-static FILE *logfile = NULL;
 #ifdef HAVE_MINGW
 static HANDLE loghandle = NULL;
 #endif
@@ -52,14 +50,6 @@ static void real_logger(int level, int priority, const char *message) {
 			case LOGMODE_STDERR:
 				fprintf(stderr, "%s\n", message);
 				fflush(stderr);
-				break;
-			case LOGMODE_FILE:
-				if(!now.tv_sec)
-					gettimeofday(&now, NULL);
-				time_t now_sec = now.tv_sec;
-				strftime(timestr, sizeof timestr, "%Y-%m-%d %H:%M:%S", localtime(&now_sec));
-				fprintf(logfile, "%s %s[%ld]: %s\n", timestr, logident, (long)logpid, message);
-				fflush(logfile);
 				break;
 			case LOGMODE_SYSLOG:
 #ifdef HAVE_MINGW
@@ -110,14 +100,6 @@ void openlogger(const char *ident, logmode_t mode) {
 		case LOGMODE_STDERR:
 			logpid = getpid();
 			break;
-		case LOGMODE_FILE:
-			logpid = getpid();
-			logfile = fopen(logfilename, "a");
-			if(!logfile) {
-				fprintf(stderr, "Could not open log file %s: %s\n", logfilename, strerror(errno));
-				logmode = LOGMODE_NULL;
-			}
-			break;
 		case LOGMODE_SYSLOG:
 #ifdef HAVE_MINGW
 			loghandle = RegisterEventSource(NULL, logident);
@@ -142,26 +124,8 @@ void openlogger(const char *ident, logmode_t mode) {
 		sptps_log = sptps_log_quiet;
 }
 
-void reopenlogger() {
-	if(logmode != LOGMODE_FILE)
-		return;
-
-	fflush(logfile);
-	FILE *newfile = fopen(logfilename, "a");
-	if(!newfile) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Unable to reopen log file %s: %s", logfilename, strerror(errno));
-		return;
-	}
-	fclose(logfile);
-	logfile = newfile;
-}
-
-
 void closelogger(void) {
 	switch(logmode) {
-		case LOGMODE_FILE:
-			fclose(logfile);
-			break;
 		case LOGMODE_SYSLOG:
 #ifdef HAVE_MINGW
 			DeregisterEventSource(loghandle);
