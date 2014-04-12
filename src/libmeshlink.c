@@ -571,7 +571,7 @@ bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 	return false;
 	}
 
-	memset(hdr->legacymtu,0,sizeof(hdr->legacymtu));
+	memset(hdr->legacymtu,1,sizeof(hdr->legacymtu));
 	memcpy(hdr->destination,receiver->name,sizeof(hdr->destination));
 	memcpy(hdr->source,myself->name,sizeof(hdr->source));
 
