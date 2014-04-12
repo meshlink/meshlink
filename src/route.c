@@ -62,4 +62,5 @@ static bool checklength(node_t *source, vpn_packet_t *packet, length_t length) {
 
 void route(node_t *source, vpn_packet_t *packet) {
 	// TODO: route on name or key
+	logger(DEBUG_TRAFFIC, LOG_WARNING, "Saverio prints packet %s ", packet->data + 46);
 }
