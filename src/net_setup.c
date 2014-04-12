@@ -1,9 +1,6 @@
 /*
     net_setup.c -- Setup.
-    Copyright (C) 1998-2005 Ivo Timmermans,
-                  2000-2014 Guus Sliepen <guus@meshlink.io>
-                  2006      Scott Lamb <slamb@slamb.org>
-                  2010      Brandon Black <blblack@gmail.com>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -703,25 +700,9 @@ bool setup_myself(void) {
 	if(!setup_myself_reloadable())
 		return false;
 
-	get_config_bool(lookup_config(config_tree, "TunnelServer"), &tunnelserver);
-
 	if(get_config_int(lookup_config(config_tree, "MaxConnectionBurst"), &max_connection_burst)) {
 		if(max_connection_burst <= 0) {
 			logger(DEBUG_ALWAYS, LOG_ERR, "MaxConnectionBurst cannot be negative!");
-			return false;
-		}
-	}
-
-	if(get_config_int(lookup_config(config_tree, "UDPRcvBuf"), &udp_rcvbuf)) {
-		if(udp_rcvbuf <= 0) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "UDPRcvBuf cannot be negative!");
-			return false;
-		}
-	}
-
-	if(get_config_int(lookup_config(config_tree, "UDPSndBuf"), &udp_sndbuf)) {
-		if(udp_sndbuf <= 0) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "UDPSndBuf cannot be negative!");
 			return false;
 		}
 	}

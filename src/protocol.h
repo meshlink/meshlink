@@ -1,7 +1,6 @@
 /*
     protocol.h -- header for protocol.c
-    Copyright (C) 1999-2005 Ivo Timmermans,
-                  2000-2013 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -57,7 +56,6 @@ typedef struct past_request_t {
 	time_t firstseen;
 } past_request_t;
 
-extern bool tunnelserver;
 extern bool experimental;
 
 extern ecdsa_t *invitation_key;

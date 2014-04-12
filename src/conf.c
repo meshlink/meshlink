@@ -1,11 +1,6 @@
 /*
     conf.c -- configuration code
-    Copyright (C) 1998      Robert van der Meulen
-                  1998-2005 Ivo Timmermans
-                  2000      Cris van Pelt
-                  2010-2011 Julien Muchembled <jm@jmuchemb.eu>
-                  2000-2013 Guus Sliepen <guus@meshlink.io>
-                  2013      Florent Clairambault <florent@clairambault.fr>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,7 +33,6 @@ splay_tree_t *config_tree;
 
 int pinginterval = 0;           /* seconds between pings */
 int pingtimeout = 0;            /* seconds to wait for response */
-list_t *cmdline_conf = NULL;    /* global/host configuration values given at the command line */
 
 static int config_compare(const config_t *a, const config_t *b) {
 	int result;
@@ -46,11 +40,6 @@ static int config_compare(const config_t *a, const config_t *b) {
 	result = strcasecmp(a->variable, b->variable);
 
 	if(result)
-		return result;
-
-	/* give priority to command line options */
-	result = !b->file - !a->file;
-	if (result)
 		return result;
 
 	result = a->line - b->line;
@@ -235,19 +224,15 @@ config_t *parse_config_line(char *line, const char *fname, int lineno) {
 
 	if(!*value) {
 		const char err[] = "No value for variable";
-		if (fname)
-			logger(DEBUG_ALWAYS, LOG_ERR, "%s `%s' on line %d while reading config file %s",
-				err, variable, lineno, fname);
-		else
-			logger(DEBUG_ALWAYS, LOG_ERR, "%s `%s' in command line option %d",
-				err, variable, lineno);
+		logger(DEBUG_ALWAYS, LOG_ERR, "%s `%s' on line %d while reading config file %s",
+			err, variable, lineno, fname);
 		return NULL;
 	}
 
 	cfg = new_config();
 	cfg->variable = xstrdup(variable);
 	cfg->value = xstrdup(value);
-	cfg->file = fname ? xstrdup(fname) : NULL;
+	cfg->file = xstrdup(fname);
 	cfg->line = lineno;
 
 	return cfg;
@@ -309,67 +294,13 @@ bool read_config_file(splay_tree_t *config_tree, const char *fname) {
 	return result;
 }
 
-void read_config_options(splay_tree_t *config_tree, const char *prefix) {
-	size_t prefix_len = prefix ? strlen(prefix) : 0;
-
-	for(const list_node_t *node = cmdline_conf->tail; node; node = node->prev) {
-		const config_t *cfg = node->data;
-		config_t *new;
-
-		if(!prefix) {
-			if(strchr(cfg->variable, '.'))
-				continue;
-		} else {
-			if(strncmp(prefix, cfg->variable, prefix_len) ||
-			   cfg->variable[prefix_len] != '.')
-				continue;
-		}
-
-		new = new_config();
-		if(prefix)
-			new->variable = xstrdup(cfg->variable + prefix_len + 1);
-		else
-			new->variable = xstrdup(cfg->variable);
-		new->value = xstrdup(cfg->value);
-		new->file = NULL;
-		new->line = cfg->line;
-
-		config_add(config_tree, new);
-	}
-}
-
 bool read_server_config(void) {
 	char *fname;
 	bool x;
 
-	//read_config_options(config_tree, NULL);
-
 	xasprintf(&fname, "%s" SLASH "tinc.conf", confbase);
 	errno = 0;
 	x = read_config_file(config_tree, fname);
-
-	// We will try to read the conf files in the "conf.d" dir
-	if (x) {
-		char * dname;
-		xasprintf(&dname, "%s" SLASH "conf.d", confbase);
-		DIR *dir = opendir (dname);
-		// If we can find this dir
-		if (dir) { 
-			struct dirent *ep;
-			// We list all the files in it
-			while (x && (ep = readdir (dir))) {
-				size_t l = strlen(ep->d_name);
-				// And we try to read the ones that end with ".conf"
-				if (l > 5 && !strcmp(".conf", & ep->d_name[ l - 5 ])) {
-					free(fname);
-					xasprintf(&fname, "%s" SLASH "%s", dname, ep->d_name);
-					x = read_config_file(config_tree, fname);
-				}
-			}
-			closedir (dir);
-		}
-		free(dname);
-	}
 
 	if(!x && errno)
 		logger(DEBUG_ALWAYS, LOG_ERR, "Failed to read `%s': %s", fname, strerror(errno));
@@ -382,8 +313,6 @@ bool read_server_config(void) {
 bool read_host_config(splay_tree_t *config_tree, const char *name) {
 	char *fname;
 	bool x;
-
-	//read_config_options(config_tree, name);
 
 	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, name);
 	x = read_config_file(config_tree, fname);

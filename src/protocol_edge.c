@@ -1,8 +1,6 @@
 /*
     protocol_edge.c -- handle the meta-protocol, edges
-    Copyright (C) 1999-2005 Ivo Timmermans,
-                  2000-2012 Guus Sliepen <guus@meshlink.io>
-                  2009      Michael Tokarev <mjt@corpit.ru>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -83,16 +81,6 @@ bool add_edge_h(connection_t *c, const char *request) {
 	from = lookup_node(from_name);
 	to = lookup_node(to_name);
 
-	if(tunnelserver &&
-	   from != myself && from != c->node &&
-	   to != myself && to != c->node) {
-		/* ignore indirect edge registrations for tunnelserver */
-		logger(DEBUG_PROTOCOL, LOG_WARNING,
-		   "Ignoring indirect %s from %s (%s)",
-		   "ADD_EDGE", c->name, c->hostname);
-		return true;
-	}
-
 	if(!from) {
 		from = new_node();
 		from->name = xstrdup(from_name);
@@ -151,8 +139,7 @@ bool add_edge_h(connection_t *c, const char *request) {
 
 	/* Tell the rest about the new edge */
 
-	if(!tunnelserver)
-		forward_request(c, request);
+	forward_request(c, request);
 
 	/* Run MST before or after we tell the rest? */
 
@@ -194,16 +181,6 @@ bool del_edge_h(connection_t *c, const char *request) {
 	from = lookup_node(from_name);
 	to = lookup_node(to_name);
 
-	if(tunnelserver &&
-	   from != myself && from != c->node &&
-	   to != myself && to != c->node) {
-		/* ignore indirect edge registrations for tunnelserver */
-		logger(DEBUG_PROTOCOL, LOG_WARNING,
-		   "Ignoring indirect %s from %s (%s)",
-		   "DEL_EDGE", c->name, c->hostname);
-		return true;
-	}
-
 	if(!from) {
 		logger(DEBUG_PROTOCOL, LOG_ERR, "Got %s from %s (%s) which does not appear in the edge tree",
 				   "DEL_EDGE", c->name, c->hostname);
@@ -236,8 +213,7 @@ bool del_edge_h(connection_t *c, const char *request) {
 
 	/* Tell the rest about the deleted edge */
 
-	if(!tunnelserver)
-		forward_request(c, request);
+	forward_request(c, request);
 
 	/* Delete the edge */
 
@@ -252,8 +228,7 @@ bool del_edge_h(connection_t *c, const char *request) {
 	if(!to->status.reachable) {
 		e = lookup_edge(to, myself);
 		if(e) {
-			if(!tunnelserver)
-				send_del_edge(everyone, e);
+			send_del_edge(everyone, e);
 			edge_del(e);
 		}
 	}

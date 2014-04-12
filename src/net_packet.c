@@ -1,9 +1,6 @@
 /*
     net_packet.c -- Handles in- and outgoing VPN packets
-    Copyright (C) 1998-2005 Ivo Timmermans,
-                  2000-2013 Guus Sliepen <guus@meshlink.io>
-                  2010      Timothy Redaelli <timothy@redaelli.eu>
-                  2010      Brandon Black <blblack@gmail.com>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,16 +23,11 @@
 #include <zlib.h>
 #endif
 
-#ifdef HAVE_LZO
-#include LZO1X_H
-#endif
-
 #include "cipher.h"
 #include "conf.h"
 #include "connection.h"
 #include "crypto.h"
 #include "digest.h"
-#include "ethernet.h"
 #include "graph.h"
 #include "logger.h"
 #include "net.h"
@@ -46,9 +38,6 @@
 #include "xalloc.h"
 
 int keylifetime = 0;
-#ifdef HAVE_LZO
-static char lzo_wrkmem[LZO1X_999_MEM_COMPRESS > LZO1X_1_MEM_COMPRESS ? LZO1X_999_MEM_COMPRESS : LZO1X_1_MEM_COMPRESS];
-#endif
 
 static void send_udppacket(node_t *, vpn_packet_t *);
 
@@ -176,25 +165,12 @@ void send_mtu_probe(node_t *n) {
 }
 
 static void mtu_probe_h(node_t *n, vpn_packet_t *packet, length_t len) {
-	if(!packet->data[0]) {
-		logger(DEBUG_TRAFFIC, LOG_INFO, "Got MTU probe request %d from %s (%s)", packet->len, n->name, n->hostname);
+	logger(DEBUG_TRAFFIC, LOG_INFO, "Got MTU probe length %d from %s (%s)", packet->len, n->name, n->hostname);
 
+	if(!packet->data[0]) {
 		/* It's a probe request, send back a reply */
 
-		/* Type 2 probe replies were introduced in protocol 17.3 */
-		if ((n->options >> 24) == 3) {
-			uint8_t* data = packet->data;
-			*data++ = 2;
-			uint16_t len16 = htons(len); memcpy(data, &len16, 2); data += 2;
-			struct timeval now;
-			gettimeofday(&now, NULL);
-			uint32_t sec = htonl(now.tv_sec); memcpy(data, &sec, 4); data += 4;
-			uint32_t usec = htonl(now.tv_usec); memcpy(data, &usec, 4); data += 4;
-			packet->len = data - packet->data;
-		} else {
-			/* Legacy protocol: n won't understand type 2 probe replies. */
-			packet->data[0] = 1;
-		}
+		packet->data[0] = 1;
 
 		/* Temporarily set udp_confirmed, so that the reply is sent
 		   back exactly the way it came in. */
@@ -204,16 +180,6 @@ static void mtu_probe_h(node_t *n, vpn_packet_t *packet, length_t len) {
 		send_udppacket(n, packet);
 		n->status.udp_confirmed = udp_confirmed;
 	} else {
-		length_t probelen = len;
-		if (packet->data[0] == 2) {
-			if (len < 3)
-				logger(DEBUG_TRAFFIC, LOG_WARNING, "Received invalid (too short) MTU probe reply from %s (%s)", n->name, n->hostname);
-			else {
-				uint16_t probelen16; memcpy(&probelen16, packet->data + 1, 2); probelen = ntohs(probelen16);
-			}
-		}
-		logger(DEBUG_TRAFFIC, LOG_INFO, "Got type %d MTU probe reply %d from %s (%s)", packet->data[0], probelen, n->name, n->hostname);
-
 		/* It's a valid reply: now we know bidirectional communication
 		   is possible using the address and socket that the reply
 		   packet used. */
@@ -223,7 +189,7 @@ static void mtu_probe_h(node_t *n, vpn_packet_t *packet, length_t len) {
 		/* If we haven't established the PMTU yet, restart the discovery process. */
 
 		if(n->mtuprobes > 30) {
-			if (probelen == n->maxmtu + 8) {
+			if (len == n->maxmtu + 8) {
 				logger(DEBUG_TRAFFIC, LOG_INFO, "Increase in PMTU to %s (%s) detected, restarting PMTU discovery", n->name, n->hostname);
 				n->maxmtu = MTU;
 				n->mtuprobes = 10;
@@ -238,38 +204,28 @@ static void mtu_probe_h(node_t *n, vpn_packet_t *packet, length_t len) {
 
 		/* If applicable, raise the minimum supported MTU */
 
-		if(probelen > n->maxmtu)
-			probelen = n->maxmtu;
-		if(n->minmtu < probelen)
-			n->minmtu = probelen;
+		if(len > n->maxmtu)
+			len = n->maxmtu;
+		if(n->minmtu < len)
+			n->minmtu = len;
 
 		/* Calculate RTT and bandwidth.
 		   The RTT is the time between the MTU probe burst was sent and the first
 		   reply is received. The bandwidth is measured using the time between the
-		   arrival of the first and third probe reply (or type 2 probe requests).
+		   arrival of the first and third probe reply.
 		 */
 
 		struct timeval now, diff;
 		gettimeofday(&now, NULL);
 		timersub(&now, &n->probe_time, &diff);
-
-		struct timeval probe_timestamp = now;
-		if (packet->data[0] == 2 && packet->len >= 11) {
-			uint32_t sec; memcpy(&sec, packet->data + 3, 4);
-			uint32_t usec; memcpy(&usec, packet->data + 7, 4);
-			probe_timestamp.tv_sec = ntohl(sec);
-			probe_timestamp.tv_usec = ntohl(usec);
-		}
 		
 		n->probe_counter++;
 
 		if(n->probe_counter == 1) {
 			n->rtt = diff.tv_sec + diff.tv_usec * 1e-6;
-			n->probe_time = probe_timestamp;
+			n->probe_time = now;
 		} else if(n->probe_counter == 3) {
-			struct timeval probe_timestamp_diff;
-			timersub(&probe_timestamp, &n->probe_time, &probe_timestamp_diff);
-			n->bandwidth = 2.0 * probelen / (probe_timestamp_diff.tv_sec + probe_timestamp_diff.tv_usec * 1e-6);
+			n->bandwidth = 2.0 * len / (diff.tv_sec + diff.tv_usec * 1e-6);
 			logger(DEBUG_TRAFFIC, LOG_DEBUG, "%s (%s) RTT %.2f ms, burst bandwidth %.3f Mbit/s, rx packet loss %.2f %%", n->name, n->hostname, n->rtt * 1e3, n->bandwidth * 8e-6, n->packetloss * 1e2);
 		}
 	}
@@ -280,13 +236,7 @@ static length_t compress_packet(uint8_t *dest, const uint8_t *source, length_t l
 		memcpy(dest, source, len);
 		return len;
 	} else if(level == 10) {
-#ifdef HAVE_LZO
-		lzo_uint lzolen = MAXSIZE;
-		lzo1x_1_compress(source, len, dest, &lzolen, lzo_wrkmem);
-		return lzolen;
-#else
 		return -1;
-#endif
 	} else if(level < 10) {
 #ifdef HAVE_ZLIB
 		unsigned long destlen = MAXSIZE;
@@ -296,13 +246,7 @@ static length_t compress_packet(uint8_t *dest, const uint8_t *source, length_t l
 #endif
 			return -1;
 	} else {
-#ifdef HAVE_LZO
-		lzo_uint lzolen = MAXSIZE;
-		lzo1x_999_compress(source, len, dest, &lzolen, lzo_wrkmem);
-		return lzolen;
-#else
 		return -1;
-#endif
 	}
 
 	return -1;
@@ -313,12 +257,6 @@ static length_t uncompress_packet(uint8_t *dest, const uint8_t *source, length_t
 		memcpy(dest, source, len);
 		return len;
 	} else if(level > 9) {
-#ifdef HAVE_LZO
-		lzo_uint lzolen = MAXSIZE;
-		if(lzo1x_decompress_safe(source, len, dest, &lzolen, NULL) == LZO_E_OK)
-			return lzolen;
-		else
-#endif
 			return -1;
 	}
 #ifdef HAVE_ZLIB
@@ -422,11 +360,6 @@ static void receive_udppacket(node_t *n, vpn_packet_t *inpkt) {
 	if(replaywin) {
 		if(inpkt->seqno != n->received_seqno + 1) {
 			if(inpkt->seqno >= n->received_seqno + replaywin * 8) {
-				if(n->farfuture++ < replaywin >> 2) {
-					logger(DEBUG_ALWAYS, LOG_WARNING, "Packet from %s (%s) is %d seqs in the future, dropped (%u)",
-						n->name, n->hostname, inpkt->seqno - n->received_seqno - 1, n->farfuture);
-					return;
-				}
 				logger(DEBUG_ALWAYS, LOG_WARNING, "Lost %d packets from %s (%s)",
 						inpkt->seqno - n->received_seqno - 1, n->name, n->hostname);
 				memset(n->late, 0, replaywin);
@@ -442,7 +375,6 @@ static void receive_udppacket(node_t *n, vpn_packet_t *inpkt) {
 			}
 		}
 
-		n->farfuture = 0;
 		n->late[(inpkt->seqno / 8) % replaywin] &= ~(1 << inpkt->seqno % 8);
 	}
 
@@ -888,8 +820,6 @@ void send_packet(node_t *n, vpn_packet_t *packet) {
 	node_t *via;
 
 	if(n == myself) {
-		if(overwrite_mac)
-			 memcpy(packet->data, mymac.x, ETH_ALEN);
 		n->out_packets++;
 		n->out_bytes += packet->len;
 		// TODO: send to application
@@ -932,11 +862,6 @@ void broadcast_packet(const node_t *from, vpn_packet_t *packet) {
 	// Always give ourself a copy of the packet.
 	if(from != myself)
 		send_packet(myself, packet);
-
-	// In TunnelServer mode, do not forward broadcast packets.
-	// The MST might not be valid and create loops.
-	if(tunnelserver || broadcast_mode == BMODE_NONE)
-		return;
 
 	logger(DEBUG_TRAFFIC, LOG_INFO, "Broadcasting packet of %d bytes from %s (%s)",
 			   packet->len, from->name, from->hostname);

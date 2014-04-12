@@ -35,18 +35,13 @@ libmeshlink_la_SOURCES = \
 	ecdsa.h \
 	ecdsagen.h \
 	edge.c edge.h \
-	ethernet.h \
 	event.c event.h \
 	fake-gai-errnos.h \
 	fake-getaddrinfo.c fake-getaddrinfo.h \
 	fake-getnameinfo.c fake-getnameinfo.h \
-	getopt.c getopt.h \
-	getopt1.c \
 	graph.c graph.h \
 	hash.c hash.h \
 	have.h \
-	ipv4.h \
-	ipv6.h \
 	list.c list.h \
 	logger.c logger.h \
 	meta.c meta.h \

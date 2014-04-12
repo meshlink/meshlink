@@ -1,7 +1,6 @@
 /*
    xalloc.h -- malloc and related fuctions with out of memory checking
-   Copyright (C) 1990, 91, 92, 93, 94, 95, 96, 97 Free Software Foundation, Inc.
-   Copyright (C) 2011-2013 Guus Sliepen <guus@meshlink.io>
+   Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,7 +14,8 @@
 
    You should have received a copy of the GNU General Public License along
    with this program; if not, write to the Free Software Foundation, Inc., Foundation,
-   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.  */
+   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 
 #ifndef __TINC_XALLOC_H__
 #define __TINC_XALLOC_H__

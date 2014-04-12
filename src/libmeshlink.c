@@ -18,7 +18,6 @@
 */
 
 #include "libmeshlink.h"
-#include LZO1X_H
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
@@ -451,13 +450,6 @@ bool tinc_main_thread(void * in) {
 	if(!read_server_config())
 		return false;
 
-#ifdef HAVE_LZO
-	if(lzo_init() != LZO_E_OK) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error initializing LZO compressor!");
-		return false;
-	}
-#endif
-
 	//char *priority = NULL; //shoud be not needed in libmeshlink
 
 #ifdef HAVE_MLOCKALL
@@ -524,7 +516,6 @@ end:
 	crypto_exit();
 
 	exit_configuration(&config_tree);
-	free(cmdline_conf);
 
 	return status;
 
@@ -535,7 +526,7 @@ bool tinc_stop();
 bool route_meshlink(node_t *source,vpn_packet_t *packet) {
 
 	printf("data %s\n",packet->data);
-	printf("data 11%s\n",packet->data+11);
+	printf("data 16%s\n",packet->data+16);
 	printf("data 32%s\n",packet->data+32);
 	node_t* owner = NULL;
 
@@ -575,6 +566,7 @@ bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 	memcpy(hdr->source,myself->name,sizeof(hdr->source));
 
 	packet.priority = 0;
+	packet.len = len + 32;
 
 	memcpy(packet.data,hdr,32);
 	memcpy(packet.data+32,buf,len);

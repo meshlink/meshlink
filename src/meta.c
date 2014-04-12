@@ -1,8 +1,6 @@
 /*
     meta.c -- handle the meta communication
-    Copyright (C) 2000-2013 Guus Sliepen <guus@meshlink.io>,
-                  2000-2005 Ivo Timmermans
-                  2006      Scott Lamb <slamb@slamb.org>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>,
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

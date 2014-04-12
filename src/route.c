@@ -1,7 +1,6 @@
 /*
     route.c -- routing
-    Copyright (C) 2000-2005 Ivo Timmermans,
-                  2000-2013 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,7 +31,6 @@ bool decrement_ttl = false;
 bool directonly = false;
 bool priorityinheritance = false;
 int macexpire = 600;
-bool overwrite_mac = false;
 mac_t mymac = {{0xFE, 0xFD, 0, 0, 0, 0}};
 bool pcap = false;
 

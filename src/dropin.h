@@ -1,7 +1,6 @@
 /*
     dropin.h -- header file for dropin.c
-    Copyright (C) 2000-2005 Ivo Timmermans,
-                  2000-2013 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

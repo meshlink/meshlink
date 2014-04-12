@@ -1,6 +1,6 @@
 dnl Check to find the OpenSSL headers/libraries
 
-AC_DEFUN([tinc_OPENSSL],
+AC_DEFUN([MeshLink_OPENSSL],
 [
   case $host_os in
     *mingw*)

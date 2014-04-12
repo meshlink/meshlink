@@ -1,7 +1,6 @@
 /*
     protocol_key.c -- handle the meta-protocol, key exchange
-    Copyright (C) 1999-2005 Ivo Timmermans,
-                  2000-2013 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -81,8 +80,7 @@ bool key_changed_h(connection_t *c, const char *request) {
 
 	/* Tell the others */
 
-	if(!tunnelserver)
-		forward_request(c, request);
+	forward_request(c, request);
 
 	return true;
 }
@@ -241,9 +239,6 @@ bool req_key_h(connection_t *c, const char *request) {
 		/* No, just send our key back */
 		send_ans_key(from);
 	} else {
-		if(tunnelserver)
-			return true;
-
 		if(!to->status.reachable) {
 			logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) destination %s which is not reachable",
 				"REQ_KEY", c->name, c->hostname, to_name);
@@ -336,9 +331,6 @@ bool ans_key_h(connection_t *c, const char *request) {
 	/* Forward it if necessary */
 
 	if(to != myself) {
-		if(tunnelserver)
-			return true;
-
 		if(!to->status.reachable) {
 			logger(DEBUG_ALWAYS, LOG_WARNING, "Got %s from %s (%s) destination %s which is not reachable",
 				   "ANS_KEY", c->name, c->hostname, to_name);

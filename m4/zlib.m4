@@ -1,6 +1,6 @@
 dnl Check to find the zlib headers/libraries
 
-AC_DEFUN([tinc_ZLIB],
+AC_DEFUN([MeshLink_ZLIB],
 [
   AC_ARG_ENABLE([zlib],
     AS_HELP_STRING([--disable-zlib], [disable zlib compression support]))

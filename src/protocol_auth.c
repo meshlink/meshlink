@@ -1,7 +1,6 @@
 /*
     protocol_auth.c -- handle the meta-protocol, authentication
-    Copyright (C) 1999-2005 Ivo Timmermans,
-                  2000-2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -781,10 +780,7 @@ bool ack_h(connection_t *c, const char *request) {
 
 	/* Notify everyone of the new edge */
 
-	if(tunnelserver)
-		send_add_edge(c, c->edge);
-	else
-		send_add_edge(everyone, c->edge);
+	send_add_edge(everyone, c->edge);
 
 	/* Run MST and SSSP algorithms */
 

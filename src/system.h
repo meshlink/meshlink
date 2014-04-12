@@ -1,7 +1,6 @@
 /*
     system.h -- system headers
-    Copyright (C) 1998-2005 Ivo Timmermans
-                  2003-2013 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

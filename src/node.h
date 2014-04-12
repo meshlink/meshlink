@@ -1,7 +1,6 @@
 /*
     node.h -- header for node.c
-    Copyright (C) 2001-2013 Guus Sliepen <guus@meshlink.io>,
-                  2001-2005 Ivo Timmermans
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -78,7 +77,6 @@ typedef struct node_t {
 	uint32_t received;                      /* Total valid packets received from this node */
 	uint32_t prev_received_seqno;
 	uint32_t prev_received;
-	uint32_t farfuture;                     /* Packets in a row that have arrived from the far future */
 	unsigned char* late;                    /* Bitfield marking late packets */
 
 	length_t mtu;                           /* Maximum size of packets to send to this node */

@@ -1,7 +1,6 @@
 /*
     net.h -- header for net.c
-    Copyright (C) 1998-2005 Ivo Timmermans
-                  2000-2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,7 +20,6 @@
 #ifndef __TINC_NET_H__
 #define __TINC_NET_H__
 
-#include "ipv6.h"
 #include "cipher.h"
 #include "digest.h"
 #include "event.h"
@@ -131,8 +129,6 @@ extern sockaddr_t localdiscovery_address;
 extern listen_socket_t listen_socket[MAXSOCKETS];
 extern int listen_sockets;
 extern int keylifetime;
-extern int udp_rcvbuf;
-extern int udp_sndbuf;
 extern int max_connection_burst;
 extern bool do_prune;
 extern char *myport;

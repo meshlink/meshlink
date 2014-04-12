@@ -1,11 +1,6 @@
 /*
     tincd.c -- the main file for tincd
-    Copyright (C) 1998-2005 Ivo Timmermans
-                  2000-2014 Guus Sliepen <guus@meshlink.io>
-                  2008      Max Rijevski <maksuf@gmail.com>
-                  2009      Michael Tokarev <mjt@tls.msk.ru>
-                  2010      Julien Muchembled <jm@jmuchemb.eu>
-                  2010      Timothy Redaelli <timothy@redaelli.eu>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -31,10 +26,6 @@
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
-#endif
-
-#ifdef HAVE_LZO
-#include LZO1X_H
 #endif
 
 #ifndef HAVE_MINGW
@@ -63,19 +54,6 @@ static bool show_version = false;
 /* If nonzero, use null ciphers and skip all key exchanges. */
 bool bypass_security = false;
 
-#ifdef HAVE_MLOCKALL
-/* If nonzero, disable swapping for this process. */
-static bool do_mlock = false;
-#endif
-
-#ifndef HAVE_MINGW
-/* If nonzero, chroot to netdir after startup. */
-static bool do_chroot = false;
-
-/* If !NULL, do setuid to given user after startup */
-static const char *switchuser = NULL;
-#endif
-
 char **g_argv;                  /* a copy of the cmdline arguments */
 
 static int status = 1;
@@ -88,9 +66,6 @@ static struct option const long_options[] = {
 	{"no-detach", no_argument, NULL, 'D'},
 	{"debug", optional_argument, NULL, 'd'},
 	{"bypass-security", no_argument, NULL, 3},
-	{"mlock", no_argument, NULL, 'L'},
-	{"chroot", no_argument, NULL, 'R'},
-	{"user", required_argument, NULL, 'U'},
 	{"option", required_argument, NULL, 'o'},
 	{NULL, 0, NULL, 0}
 };
@@ -110,15 +85,8 @@ static void usage(bool status) {
 				"  -D, --no-detach               Don't fork and detach.\n"
 				"  -d, --debug[=LEVEL]           Increase debug level or set it to LEVEL.\n"
 				"  -n, --net=NETNAME             Connect to net NETNAME.\n"
-#ifdef HAVE_MLOCKALL
-				"  -L, --mlock                   Lock tinc into main memory.\n"
-#endif
 				"      --bypass-security         Disables meta protocol security, for debugging.\n"
 				"  -o, --option[HOST.]KEY=VALUE  Set global/host configuration value.\n"
-#ifndef HAVE_MINGW
-				"  -R, --chroot                  chroot to NET dir at startup.\n"
-				"  -U, --user=USER               setuid to given USER at startup.\n"
-#endif
 				"      --help                    Display this help and exit.\n"
 				"      --version                 Output version information and exit.\n\n");
 		printf("Report bugs to bugs@meshlink.io.\n");
@@ -131,8 +99,6 @@ static bool parse_options(int argc, char **argv) {
 	int option_index = 0;
 	int lineno = 0;
 
-	cmdline_conf = list_alloc((list_action_t)free_config);
-
 	while((r = getopt_long(argc, argv, "c:DLd::n:o:RU:", long_options, &option_index)) != EOF) {
 		switch (r) {
 			case 0:   /* long option */
@@ -142,15 +108,6 @@ static bool parse_options(int argc, char **argv) {
 				confbase = xstrdup(optarg);
 				break;
 
-			case 'L': /* no detach */
-#ifndef HAVE_MLOCKALL
-				logger(DEBUG_ALWAYS, LOG_ERR, "The %s option is not supported on this platform.", argv[optind - 1]);
-				return false;
-#else
-				do_mlock = true;
-				break;
-#endif
-
 			case 'd': /* increase debug level */
 				if(!optarg && optind < argc && *argv[optind] != '-')
 					optarg = argv[optind++];
@@ -159,28 +116,6 @@ static bool parse_options(int argc, char **argv) {
 				else
 					debug_level++;
 				break;
-
-			case 'o': /* option */
-				cfg = parse_config_line(optarg, NULL, ++lineno);
-				if (!cfg)
-					return false;
-				list_insert_tail(cmdline_conf, cfg);
-				break;
-
-#ifdef HAVE_MINGW
-			case 'R':
-			case 'U':
-				logger(DEBUG_ALWAYS, LOG_ERR, "The %s option is not supported on this platform.", argv[optind - 1]);
-				return false;
-#else
-			case 'R': /* chroot to NETNAME dir */
-				do_chroot = true;
-				break;
-
-			case 'U': /* setuid to USER */
-				switchuser = optarg;
-				break;
-#endif
 
 			case 1:   /* show help */
 				show_help = true;
@@ -211,57 +146,6 @@ static bool parse_options(int argc, char **argv) {
 
 	return true;
 }
-
-static bool drop_privs(void) {
-#ifndef HAVE_MINGW
-	uid_t uid = 0;
-	if (switchuser) {
-		struct passwd *pw = getpwnam(switchuser);
-		if (!pw) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "unknown user `%s'", switchuser);
-			return false;
-		}
-		uid = pw->pw_uid;
-		if (initgroups(switchuser, pw->pw_gid) != 0 ||
-		    setgid(pw->pw_gid) != 0) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s",
-			       "initgroups", strerror(errno));
-			return false;
-		}
-#ifndef __ANDROID__
-// Not supported in android NDK
-		endgrent();
-		endpwent();
-#endif
-	}
-	if (do_chroot) {
-		tzset();        /* for proper timestamps in logs */
-		if (chroot(confbase) != 0 || chdir("/") != 0) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s",
-			       "chroot", strerror(errno));
-			return false;
-		}
-		free(confbase);
-		confbase = xstrdup("");
-	}
-	if (switchuser)
-		if (setuid(uid) != 0) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s",
-			       "setuid", strerror(errno));
-			return false;
-		}
-#endif
-	return true;
-}
-
-#ifdef HAVE_MINGW
-# define setpriority(level) !SetPriorityClass(GetCurrentProcess(), (level))
-#else
-# define NORMAL_PRIORITY_CLASS 0
-# define BELOW_NORMAL_PRIORITY_CLASS 10
-# define HIGH_PRIORITY_CLASS -10
-# define setpriority(level) (setpriority(PRIO_PROCESS, 0, (level)))
-#endif
 
 int main(int argc, char **argv) {
 	if(!parse_options(argc, argv))
@@ -306,57 +190,11 @@ int main(int argc, char **argv) {
 	if(!read_server_config())
 		return 1;
 
-#ifdef HAVE_LZO
-	if(lzo_init() != LZO_E_OK) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error initializing LZO compressor!");
-		return 1;
-	}
-#endif
-
 	char *priority = NULL;
-
-#ifdef HAVE_MLOCKALL
-	/* Lock all pages into memory if requested.
-	 * This has to be done after daemon()/fork() so it works for child.
-	 * No need to do that in parent as it's very short-lived. */
-	if(do_mlock && mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "mlockall",
-		   strerror(errno));
-		return 1;
-	}
-#endif
 
 	/* Setup sockets. */
 
 	if(!setup_network())
-		goto end;
-
-	/* Change process priority */
-
-	if(get_config_string(lookup_config(config_tree, "ProcessPriority"), &priority)) {
-		if(!strcasecmp(priority, "Normal")) {
-			if (setpriority(NORMAL_PRIORITY_CLASS) != 0) {
-				logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "setpriority", strerror(errno));
-				goto end;
-			}
-		} else if(!strcasecmp(priority, "Low")) {
-			if (setpriority(BELOW_NORMAL_PRIORITY_CLASS) != 0) {
-				       logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "setpriority", strerror(errno));
-				goto end;
-			}
-		} else if(!strcasecmp(priority, "High")) {
-			if (setpriority(HIGH_PRIORITY_CLASS) != 0) {
-				logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "setpriority", strerror(errno));
-				goto end;
-			}
-		} else {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Invalid priority `%s`!", priority);
-			goto end;
-		}
-	}
-
-	/* drop privileges */
-	if (!drop_privs())
 		goto end;
 
 	/* Start main loop. It only exits when tinc is killed. */
@@ -379,7 +217,6 @@ end:
 	crypto_exit();
 
 	exit_configuration(&config_tree);
-	free(cmdline_conf);
 
 	return status;
 }

@@ -1,4 +1,4 @@
-Quick how-o cross compile tinc for android (done from $HOME/android/):
+Quick how-to cross compile MeshLink for android (done from $HOME/android/):
 
 - Download android NDK and setup local ARM toolchain:
 wget http://dl.google.com/android/ndk/android-ndk-r8b-linux-x86.tar.bz2
@@ -12,9 +12,9 @@ cd openssl-1.0.1c
 ./Configure dist
 make CC=/tmp/my-android-toolchain/bin/arm-linux-androideabi-gcc AR="/tmp/my-android-toolchain/bin/arm-linux-androideabi-ar r" RANLIB=/tmp/my-android-toolchain/bin/arm-linux-androideabi-ranlib
 
-- Clone and cross-compile tinc:
-git clone git://tinc-vpn.org/tinc
-cd tinc
+- Clone and cross-compile MeshLink:
+git clone git://meshlink.io/meshlink
+cd meshlink
 autoreconf -fsi
 CC=/tmp/my-android-toolchain/bin/arm-linux-androideabi-gcc ./configure --host=arm-linux --disable-lzo --with-openssl-lib=$HOME/android/openssl-1.0.1c --with-openssl-include=$HOME/android/openssl-1.0.1c/include/
 make -j5

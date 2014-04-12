@@ -11,8 +11,6 @@
 
 #include "system.h"
 
-#include "ipv4.h"
-#include "ipv6.h"
 #include "fake-getaddrinfo.h"
 #include "xalloc.h"
 
