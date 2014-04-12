@@ -282,24 +282,6 @@ void handle_meta_connection_data(connection_t *c) {
 	}
 }
 
-#ifndef HAVE_MINGW
-static void sigterm_handler(void *data) {
-	logger(DEBUG_ALWAYS, LOG_NOTICE, "Got %s signal", strsignal(((signal_t *)data)->signum));
-	event_exit();
-}
-
-static void sighup_handler(void *data) {
-	logger(DEBUG_ALWAYS, LOG_NOTICE, "Got %s signal", strsignal(((signal_t *)data)->signum));
-	if(reload_configuration())
-		exit(1);
-}
-
-static void sigalrm_handler(void *data) {
-	logger(DEBUG_ALWAYS, LOG_NOTICE, "Got %s signal", strsignal(((signal_t *)data)->signum));
-	retry();
-}
-#endif
-
 int reload_configuration(void) {
 	char *fname = NULL;
 
@@ -369,32 +351,10 @@ int main_loop(void) {
 	timeout_add(&pingtimer, timeout_handler, &pingtimer, &(struct timeval){pingtimeout, rand() % 100000});
 	timeout_add(&periodictimer, periodic_handler, &periodictimer, &(struct timeval){pingtimeout, rand() % 100000});
 
-#ifndef HAVE_MINGW
-	signal_t sighup = {0};
-	signal_t sigterm = {0};
-	signal_t sigquit = {0};
-	signal_t sigint = {0};
-	signal_t sigalrm = {0};
-
-	signal_add(&sighup, sighup_handler, &sighup, SIGHUP);
-	signal_add(&sigterm, sigterm_handler, &sigterm, SIGTERM);
-	signal_add(&sigquit, sigterm_handler, &sigquit, SIGQUIT);
-	signal_add(&sigint, sigterm_handler, &sigint, SIGINT);
-	signal_add(&sigalrm, sigalrm_handler, &sigalrm, SIGALRM);
-#endif
-
 	if(!event_loop()) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Error while waiting for input: %s", strerror(errno));
 		return 1;
 	}
-
-#ifndef HAVE_MINGW
-	signal_del(&sighup);
-	signal_del(&sigterm);
-	signal_del(&sigquit);
-	signal_del(&sigint);
-	signal_del(&sigalrm);
-#endif
 
 	timeout_del(&periodictimer);
 	timeout_del(&pingtimer);
