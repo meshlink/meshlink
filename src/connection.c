@@ -24,7 +24,7 @@
 #include "list.h"
 #include "cipher.h"
 #include "conf.h"
-#include "control_common.h"
+#include "connection.h"
 #include "list.h"
 #include "logger.h"
 #include "rsa.h"
@@ -88,15 +88,4 @@ void connection_add(connection_t *c) {
 
 void connection_del(connection_t *c) {
 	list_delete(connection_list, c);
-}
-
-bool dump_connections(connection_t *cdump) {
-	for list_each(connection_t, c, connection_list) {
-		send_request(cdump, "%d %d %s %s %x %d %x",
-				CONTROL, REQ_DUMP_CONNECTIONS,
-				c->name, c->hostname, c->options, c->socket,
-				bitfield_to_int(&c->status, sizeof c->status));
-	}
-
-	return send_request(cdump, "%d %d", CONTROL, REQ_DUMP_CONNECTIONS);
 }

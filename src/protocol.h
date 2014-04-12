@@ -123,6 +123,5 @@ extern bool key_changed_h(struct connection_t *, const char *);
 extern bool req_key_h(struct connection_t *, const char *);
 extern bool ans_key_h(struct connection_t *, const char *);
 extern bool tcppacket_h(struct connection_t *, const char *);
-extern bool control_h(struct connection_t *, const char *);
 
 #endif /* __TINC_PROTOCOL_H__ */

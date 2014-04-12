@@ -25,7 +25,6 @@
 #include "cipher.h"
 #include "conf.h"
 #include "connection.h"
-#include "control.h"
 #include "digest.h"
 #include "ecdsa.h"
 #include "graph.h"
@@ -923,9 +922,6 @@ bool setup_network(void) {
 	if(!setup_myself())
 		return false;
 
-	if(!init_control())
-		return false;
-
 	return true;
 }
 
@@ -936,9 +932,6 @@ void close_network_connections(void) {
 	for(list_node_t *node = connection_list->head, *next; node; node = next) {
 		next = node->next;
 		connection_t *c = node->data;
-		/* Keep control connections open until the end, so they know when we really terminated */
-		if(c->status.control)
-			c->socket = -1;
 		c->outgoing = NULL;
 		terminate_connection(c, false);
 	}
@@ -964,8 +957,6 @@ void close_network_connections(void) {
 	exit_connections();
 
 	if(myport) free(myport);
-
-	exit_control();
 
 	return;
 }

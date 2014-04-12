@@ -28,8 +28,6 @@ libmeshlink_la_SOURCES = \
 	cipher.h \
 	conf.c conf.h \
 	connection.c connection.h \
-	control.c control.h \
-	control_common.h \
 	crypto.h \
 	digest.h \
 	dropin.c dropin.h \

@@ -22,8 +22,6 @@
 
 #include "conf.h"
 #include "connection.h"
-#include "control.h"
-#include "control_common.h"
 #include "cipher.h"
 #include "crypto.h"
 #include "digest.h"
@@ -275,18 +273,7 @@ bool id_h(connection_t *c, const char *request) {
 		return false;
 	}
 
-	/* Check if this is a control connection */
-
-	if(name[0] == '^' && !strcmp(name + 1, controlcookie)) {
-		c->status.control = true;
-		c->allow_request = CONTROL;
-		c->last_ping_time = now.tv_sec + 3600;
-
-		free(c->name);
-		c->name = xstrdup("<control>");
-
-		return send_request(c, "%d %d %d", ACK, TINC_CTL_VERSION_CURRENT, getpid());
-	}
+	/* Check if this is an invitation  */
 
 	if(name[0] == '?') {
 		if(!invitation_key) {

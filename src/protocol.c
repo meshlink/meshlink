@@ -39,7 +39,7 @@ static bool (*request_handlers[])(connection_t *, const char *) = {
 		ping_h, pong_h,
 		NULL, NULL, //add_subnet_h, del_subnet_h,
 		add_edge_h, del_edge_h,
-		key_changed_h, req_key_h, ans_key_h, tcppacket_h, control_h,
+		key_changed_h, req_key_h, ans_key_h, tcppacket_h, NULL, //control_h,
 };
 
 /* Request names */

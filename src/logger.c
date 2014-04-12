@@ -25,7 +25,6 @@
 #include "names.h"
 #include "logger.h"
 #include "connection.h"
-#include "control_common.h"
 #include "sptps.h"
 
 debug_t debug_level = DEBUG_NOTHING;
@@ -36,8 +35,6 @@ static FILE *logfile = NULL;
 static HANDLE loghandle = NULL;
 #endif
 static const char *logident = NULL;
-bool logcontrol = false;
-
 
 static void real_logger(int level, int priority, const char *message) {
 	char timestr[32] = "";
@@ -47,7 +44,7 @@ static void real_logger(int level, int priority, const char *message) {
 	if(suppress)
 		return;
 
-	if(!logcontrol && (level > debug_level || logmode == LOGMODE_NULL))
+	if(level > debug_level || logmode == LOGMODE_NULL)
 		return;
 
 	if(level <= debug_level) {
@@ -79,22 +76,6 @@ static void real_logger(int level, int priority, const char *message) {
 			case LOGMODE_NULL:
 				break;
 		}
-	}
-
-	if(logcontrol) {
-		suppress = true;
-		logcontrol = false;
-		for list_each(connection_t, c, connection_list) {
-			if(!c->status.log)
-				continue;
-			logcontrol = true;
-			if(level > (c->outcompression >= 0 ? c->outcompression : debug_level))
-				continue;
-			int len = strlen(message);
-			if(send_request(c, "%d %d %d", CONTROL, REQ_LOG, len))
-				send_meta(c, message, len);
-		}
-		suppress = false;
 	}
 }
 

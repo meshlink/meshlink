@@ -46,7 +46,6 @@
 #include <getopt.h>
 
 #include "conf.h"
-#include "control.h"
 #include "crypto.h"
 #include "logger.h"
 #include "names.h"

@@ -110,6 +110,5 @@ extern connection_t *new_connection(void) __attribute__ ((__malloc__));
 extern void free_connection(connection_t *);
 extern void connection_add(connection_t *);
 extern void connection_del(connection_t *);
-extern bool dump_connections(struct connection_t *);
 
 #endif /* __TINC_CONNECTION_H__ */

@@ -20,7 +20,6 @@
 
 #include "system.h"
 
-#include "control_common.h"
 #include "hash.h"
 #include "logger.h"
 #include "net.h"
@@ -133,23 +132,4 @@ void update_node_udp(node_t *n, const sockaddr_t *sa) {
 		n->hostname = sockaddr2hostname(&n->address);
 		logger(DEBUG_PROTOCOL, LOG_DEBUG, "UDP address of %s set to %s", n->name, n->hostname);
 	}
-}
-
-bool dump_nodes(connection_t *c) {
-	for splay_each(node_t, n, node_tree)
-		send_request(c, "%d %d %s %s %d %d %d %d %x %x %s %s %d %hd %hd %hd %ld", CONTROL, REQ_DUMP_NODES,
-			   n->name, n->hostname ?: "unknown port unknown", cipher_get_nid(n->outcipher),
-			   digest_get_nid(n->outdigest), (int)digest_length(n->outdigest), n->outcompression,
-			   n->options, bitfield_to_int(&n->status, sizeof n->status), n->nexthop ? n->nexthop->name : "-",
-			   n->via ? n->via->name ?: "-" : "-", n->distance, n->mtu, n->minmtu, n->maxmtu, (long)n->last_state_change);
-
-	return send_request(c, "%d %d", CONTROL, REQ_DUMP_NODES);
-}
-
-bool dump_traffic(connection_t *c) {
-	for splay_each(node_t, n, node_tree)
-		send_request(c, "%d %d %s %"PRIu64" %"PRIu64" %"PRIu64" %"PRIu64, CONTROL, REQ_DUMP_TRAFFIC,
-			   n->name, n->in_packets, n->in_bytes, n->out_packets, n->out_bytes);
-
-	return send_request(c, "%d %d", CONTROL, REQ_DUMP_TRAFFIC);
 }

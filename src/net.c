@@ -136,9 +136,6 @@ void terminate_connection(connection_t *c, bool report) {
 */
 static void timeout_handler(void *data) {
 	for list_each(connection_t, c, connection_list) {
-		if(c->status.control)
-			continue;
-
 		if(c->last_ping_time + pingtimeout <= now.tv_sec) {
 			if(c->status.active) {
 				if(c->status.pinged) {
@@ -189,7 +186,7 @@ static void periodic_handler(void *data) {
 		/* Count number of active connections */
 		int nc = 0;
 		for list_each(connection_t, c, connection_list) {
-			if(c->status.active && !c->status.control)
+			if(c->status.active)
 				nc++;
 		}
 
@@ -236,7 +233,7 @@ static void periodic_handler(void *data) {
 			int i = 0;
 
 			for list_each(connection_t, c, connection_list) {
-				if(!c->status.active || c->status.control)
+				if(!c->status.active)
 					continue;
 
 				if(i++ != r)
@@ -332,9 +329,6 @@ int reload_configuration(void) {
 	/* Close connections to hosts that have a changed or deleted host config file */
 
 	for list_each(connection_t, c, connection_list) {
-		if(c->status.control)
-			continue;
-
 		xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, c->name);
 		struct stat s;
 		if(stat(fname, &s) || s.st_mtime > last_config_check) {

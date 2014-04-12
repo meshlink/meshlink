@@ -22,7 +22,6 @@
 
 #include "conf.h"
 #include "connection.h"
-#include "control.h"
 #include "edge.h"
 #include "event.h"
 #include "logger.h"

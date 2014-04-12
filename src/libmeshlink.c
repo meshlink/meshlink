@@ -62,9 +62,6 @@ bool setup_meshlink_network(void) {
 	if(!setup_myself())
 		return false;
 
-	if(!init_control())
-		return false;
-
 	return true;
 }
 

@@ -22,6 +22,5 @@
 #define __TINC_GRAPH_H__
 
 extern void graph(void);
-extern void dump_graph(void);
 
 #endif /* __TINC_GRAPH_H__ */
