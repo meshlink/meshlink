@@ -1,6 +1,6 @@
 /*
     connection.c -- connection list management
-    Copyright (C) 2000-2013 Guus Sliepen <guus@tinc-vpn.org>,
+    Copyright (C) 2000-2013 Guus Sliepen <guus@meshlink.io>,
                   2000-2005 Ivo Timmermans
                   2008      Max Rijevski <maksuf@gmail.com>
 

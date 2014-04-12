@@ -1,7 +1,7 @@
 /*
     ethernet.h -- missing Ethernet related definitions
     Copyright (C) 2005 Ivo Timmermans
-                  2006 Guus Sliepen <guus@tinc-vpn.org>
+                  2006 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
