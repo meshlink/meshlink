@@ -34,7 +34,6 @@
 #include "node.h"
 #include "prf.h"
 #include "protocol.h"
-#include "rsa.h"
 #include "sptps.h"
 #include "utils.h"
 #include "xalloc.h"
@@ -130,14 +129,7 @@ static bool send_proxyrequest(connection_t *c) {
 bool send_id(connection_t *c) {
 	gettimeofday(&c->start, NULL);
 
-	int minor = 0;
-
-	if(experimental) {
-		if(c->outgoing && !read_ecdsa_public_key(c))
-			minor = 1;
-		else
-			minor = myself->connection->protocol_minor;
-	}
+	int minor = myself->connection->protocol_minor;
 
 	if(proxytype && c->outgoing)
 		if(!send_proxyrequest(c))
@@ -335,9 +327,6 @@ bool id_h(connection_t *c, const char *request) {
 		return send_ack(c);
 	}
 
-	if(!experimental)
-		c->protocol_minor = 0;
-
 	if(!c->config_tree) {
 		init_configuration(&c->config_tree);
 
@@ -346,8 +335,7 @@ bool id_h(connection_t *c, const char *request) {
 			return false;
 		}
 
-		if(experimental)
-			read_ecdsa_public_key(c);
+		read_ecdsa_public_key(c);
 	} else {
 		if(c->protocol_minor && !ecdsa_active(c->ecdsa))
 			c->protocol_minor = 1;
@@ -363,256 +351,18 @@ bool id_h(connection_t *c, const char *request) {
 
 	c->allow_request = METAKEY;
 
-	if(c->protocol_minor >= 2) {
-		c->allow_request = ACK;
-		char label[25 + strlen(myself->name) + strlen(c->name)];
-
-		if(c->outgoing)
-			snprintf(label, sizeof label, "tinc TCP key expansion %s %s", myself->name, c->name);
-		else
-			snprintf(label, sizeof label, "tinc TCP key expansion %s %s", c->name, myself->name);
-
-		return sptps_start(&c->sptps, c, c->outgoing, false, myself->connection->ecdsa, c->ecdsa, label, sizeof label, send_meta_sptps, receive_meta_sptps);
-	} else {
-		return send_metakey(c);
-	}
-}
-
-bool send_metakey(connection_t *c) {
-	if(!read_rsa_public_key(c))
-		return false;
-
-	if(!(c->outcipher = cipher_open_blowfish_ofb()))
-		return false;
-
-	if(!(c->outdigest = digest_open_sha1(-1)))
-		return false;
-
-	size_t len = rsa_size(c->rsa);
-	char key[len];
-	char enckey[len];
-	char hexkey[2 * len + 1];
-
-	/* Create a random key */
-
-	randomize(key, len);
-
-	/* The message we send must be smaller than the modulus of the RSA key.
-	   By definition, for a key of k bits, the following formula holds:
-
-	   2^(k-1) <= modulus < 2^(k)
-
-	   Where ^ means "to the power of", not "xor".
-	   This means that to be sure, we must choose our message < 2^(k-1).
-	   This can be done by setting the most significant bit to zero.
-	 */
-
-	key[0] &= 0x7F;
-
-	if(!cipher_set_key_from_rsa(c->outcipher, key, len, true))
-		return false;
-
-	if(debug_level >= DEBUG_SCARY_THINGS) {
-		bin2hex(key, hexkey, len);
-		logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Generated random meta key (unencrypted): %s", hexkey);
-	}
-
-	/* Encrypt the random data
-
-	   We do not use one of the PKCS padding schemes here.
-	   This is allowed, because we encrypt a totally random string
-	   with a length equal to that of the modulus of the RSA key.
-	 */
-
-	if(!rsa_public_encrypt(c->rsa, key, len, enckey)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error during encryption of meta key for %s (%s)", c->name, c->hostname);
-		return false;
-	}
-
-	/* Convert the encrypted random data to a hexadecimal formatted string */
-
-	bin2hex(enckey, hexkey, len);
-
-	/* Send the meta key */
-
-	bool result = send_request(c, "%d %d %d %d %d %s", METAKEY,
-			 cipher_get_nid(c->outcipher),
-			 digest_get_nid(c->outdigest), c->outmaclength,
-			 c->outcompression, hexkey);
-
-	c->status.encryptout = true;
-	return result;
-}
-
-bool metakey_h(connection_t *c, const char *request) {
-	char hexkey[MAX_STRING_SIZE];
-	int cipher, digest, maclength, compression;
-	size_t len = rsa_size(myself->connection->rsa);
-	char enckey[len];
-	char key[len];
-
-	if(sscanf(request, "%*d %d %d %d %d " MAX_STRING, &cipher, &digest, &maclength, &compression, hexkey) != 5) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s)", "METAKEY", c->name, c->hostname);
-		return false;
-	}
-
-	/* Convert the challenge from hexadecimal back to binary */
-
-	int inlen = hex2bin(hexkey, enckey, sizeof enckey);
-
-	/* Check if the length of the meta key is all right */
-
-	if(inlen != len) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Possible intruder %s (%s): %s", c->name, c->hostname, "wrong keylength");
-		return false;
-	}
-
-	/* Decrypt the meta key */
-
-	if(!rsa_private_decrypt(myself->connection->rsa, enckey, len, key)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error during decryption of meta key for %s (%s)", c->name, c->hostname);
-		return false;
-	}
-
-	if(debug_level >= DEBUG_SCARY_THINGS) {
-		bin2hex(key, hexkey, len);
-		logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Received random meta key (unencrypted): %s", hexkey);
-	}
-
-	/* Check and lookup cipher and digest algorithms */
-
-	if(!(c->incipher = cipher_open_by_nid(cipher)) || !cipher_set_key_from_rsa(c->incipher, key, len, false)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error during initialisation of cipher from %s (%s)", c->name, c->hostname);
-		return false;
-	}
-
-	if(!(c->indigest = digest_open_by_nid(digest, -1))) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error during initialisation of digest from %s (%s)", c->name, c->hostname);
-		return false;
-	}
-
-	c->status.decryptin = true;
-
-	c->allow_request = CHALLENGE;
-
-	return send_challenge(c);
-}
-
-bool send_challenge(connection_t *c) {
-	size_t len = rsa_size(c->rsa);
-	char buffer[len * 2 + 1];
-
-	if(!c->hischallenge)
-		c->hischallenge = xrealloc(c->hischallenge, len);
-
-	/* Copy random data to the buffer */
-
-	randomize(c->hischallenge, len);
-
-	/* Convert to hex */
-
-	bin2hex(c->hischallenge, buffer, len);
-
-	/* Send the challenge */
-
-	return send_request(c, "%d %s", CHALLENGE, buffer);
-}
-
-bool challenge_h(connection_t *c, const char *request) {
-	char buffer[MAX_STRING_SIZE];
-	size_t len = rsa_size(myself->connection->rsa);
-	size_t digestlen = digest_length(c->indigest);
-	char digest[digestlen];
-
-	if(sscanf(request, "%*d " MAX_STRING, buffer) != 1) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s)", "CHALLENGE", c->name, c->hostname);
-		return false;
-	}
-
-	/* Convert the challenge from hexadecimal back to binary */
-
-	int inlen = hex2bin(buffer, buffer, sizeof buffer);
-
-	/* Check if the length of the challenge is all right */
-
-	if(inlen != len) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Possible intruder %s (%s): %s", c->name, c->hostname, "wrong challenge length");
-		return false;
-	}
-
-	/* Calculate the hash from the challenge we received */
-
-	if(!digest_create(c->indigest, buffer, len, digest))
-		return false;
-
-	/* Convert the hash to a hexadecimal formatted string */
-
-	bin2hex(digest, buffer, digestlen);
-
-	/* Send the reply */
-
-	c->allow_request = CHAL_REPLY;
-
-	return send_request(c, "%d %s", CHAL_REPLY, buffer);
-}
-
-bool chal_reply_h(connection_t *c, const char *request) {
-	char hishash[MAX_STRING_SIZE];
-
-	if(sscanf(request, "%*d " MAX_STRING, hishash) != 1) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s)", "CHAL_REPLY", c->name,
-			   c->hostname);
-		return false;
-	}
-
-	/* Convert the hash to binary format */
-
-	int inlen = hex2bin(hishash, hishash, sizeof hishash);
-
-	/* Check if the length of the hash is all right */
-
-	if(inlen != digest_length(c->outdigest)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Possible intruder %s (%s): %s", c->name, c->hostname, "wrong challenge reply length");
-		return false;
-	}
-
-
-	/* Verify the hash */
-
-	if(!digest_verify(c->outdigest, c->hischallenge, rsa_size(c->rsa), hishash)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Possible intruder %s (%s): %s", c->name, c->hostname, "wrong challenge reply");
-		return false;
-	}
-
-	/* Identity has now been positively verified.
-	   Send an acknowledgement with the rest of the information needed.
-	 */
-
-	free(c->hischallenge);
-	c->hischallenge = NULL;
 	c->allow_request = ACK;
+	char label[25 + strlen(myself->name) + strlen(c->name)];
 
-	return send_ack(c);
-}
+	if(c->outgoing)
+		snprintf(label, sizeof label, "tinc TCP key expansion %s %s", myself->name, c->name);
+	else
+		snprintf(label, sizeof label, "tinc TCP key expansion %s %s", c->name, myself->name);
 
-static bool send_upgrade(connection_t *c) {
-	/* Special case when protocol_minor is 1: the other end is ECDSA capable,
-	 * but doesn't know our key yet. So send it now. */
-
-	char *pubkey = ecdsa_get_base64_public_key(myself->connection->ecdsa);
-
-	if(!pubkey)
-		return false;
-
-	bool result = send_request(c, "%d %s", ACK, pubkey);
-	free(pubkey);
-	return result;
+	return sptps_start(&c->sptps, c, c->outgoing, false, myself->connection->ecdsa, c->ecdsa, label, sizeof label, send_meta_sptps, receive_meta_sptps);
 }
 
 bool send_ack(connection_t *c) {
-	if(c->protocol_minor == 1)
-		return send_upgrade(c);
-
 	/* ACK message contains rest of the information the other end needs
 	   to create node_t and edge_t structures. */
 
@@ -643,7 +393,7 @@ bool send_ack(connection_t *c) {
 	if(!get_config_int(lookup_config(c->config_tree, "Weight"), &c->estimated_weight))
 		get_config_int(lookup_config(config_tree, "Weight"), &c->estimated_weight);
 
-	return send_request(c, "%d %s %d %x", ACK, myport, c->estimated_weight, (c->options & 0xffffff) | (experimental ? (PROT_MINOR << 24) : 0));
+	return send_request(c, "%d %s %d %x", ACK, myport, c->estimated_weight, (c->options & 0xffffff) | (PROT_MINOR << 24));
 }
 
 static void send_everything(connection_t *c) {
@@ -667,29 +417,7 @@ static void send_everything(connection_t *c) {
 	}
 }
 
-static bool upgrade_h(connection_t *c, const char *request) {
-	char pubkey[MAX_STRING_SIZE];
-
-	if(sscanf(request, "%*d " MAX_STRING, pubkey) != 1) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s)", "ACK", c->name, c->hostname);
-		return false;
-	}
-
-	if(ecdsa_active(c->ecdsa) || read_ecdsa_public_key(c)) {
-		logger(DEBUG_ALWAYS, LOG_INFO, "Already have ECDSA public key from %s (%s), not upgrading.", c->name, c->hostname);
-		return false;
-	}
-
-	logger(DEBUG_ALWAYS, LOG_INFO, "Got ECDSA public key from %s (%s), upgrading!", c->name, c->hostname);
-	append_config_file(c->name, "ECDSAPublicKey", pubkey);
-	c->allow_request = TERMREQ;
-	return send_termreq(c);
-}
-
 bool ack_h(connection_t *c, const char *request) {
-	if(c->protocol_minor == 1)
-		return upgrade_h(c, request);
-
 	char hisport[MAX_STRING_SIZE];
 	char *hisaddress;
 	int weight, mtu;

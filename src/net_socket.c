@@ -481,9 +481,6 @@ begin:
 
 	c->status.connecting = true;
 	c->name = xstrdup(outgoing->name);
-	c->outcipher = myself->connection->outcipher;
-	c->outdigest = myself->connection->outdigest;
-	c->outmaclength = myself->connection->outmaclength;
 	c->outcompression = myself->connection->outcompression;
 	c->last_ping_time = now.tv_sec;
 
@@ -628,9 +625,6 @@ void handle_new_meta_connection(void *data, int flags) {
 
 	c = new_connection();
 	c->name = xstrdup("<unknown>");
-	c->outcipher = myself->connection->outcipher;
-	c->outdigest = myself->connection->outdigest;
-	c->outmaclength = myself->connection->outmaclength;
 	c->outcompression = myself->connection->outcompression;
 
 	c->address = sa;

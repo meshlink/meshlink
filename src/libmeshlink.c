@@ -263,63 +263,6 @@ bool ecdsa_keygen(bool ask) {
 	return true;
 }
 
-/*
-  Generate a public/private RSA keypair, and ask for a file to store
-  them in.
-*/
-bool rsa_keygen(int bits, bool ask) {
-	rsa_t *key;
-	FILE *f;
-	char *pubname, *privname;
-
-	fprintf(stderr, "Generating %d bits keys:\n", bits);
-
-	if(!(key = rsa_generate(bits, 0x10001))) {
-		fprintf(stderr, "Error during key generation!\n");
-		return false;
-	} else
-		fprintf(stderr, "Done.\n");
-
-	xasprintf(&privname, "%s" SLASH "rsa_key.priv", confbase);
-	f = ask_and_open(privname, "private RSA key", "a", ask, 0600);
-	free(privname);
-
-	if(!f)
-		return false;
-
-	if(!rsa_write_pem_private_key(key, f)) {
-		fprintf(stderr, "Error writing private key!\n");
-		fclose(f);
-		rsa_free(key);
-		return false;
-	}
-
-	fclose(f);
-
-	if(name)
-		xasprintf(&pubname, "%s" SLASH "hosts" SLASH "%s", confbase, name);
-	else
-		xasprintf(&pubname, "%s" SLASH "rsa_key.pub", confbase);
-
-	f = ask_and_open(pubname, "public RSA key", "a", ask, 0666);
-	free(pubname);
-
-	if(!f)
-		return false;
-
-	if(!rsa_write_pem_public_key(key, f)) {
-		fprintf(stderr, "Error writing public key!\n");
-		fclose(f);
-		rsa_free(key);
-		return false;
-	}
-
-	fclose(f);
-	rsa_free(key);
-
-	return true;
-}
-
 static bool try_bind(int port) {
 	struct addrinfo *ai = NULL;
 	struct addrinfo hint = {
@@ -411,7 +354,7 @@ bool tinc_setup(const char* confbaseapi, const char* name) {
 	fprintf(f, "Name = %s\n", name);
 	fclose(f);
 
-	if(!rsa_keygen(2048, false) || !ecdsa_keygen(false))
+	if(!ecdsa_keygen(false))
 		return false;
 
 	check_port(name);

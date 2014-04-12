@@ -33,7 +33,7 @@ typedef struct node_status_t {
 	unsigned int visited:1;                 /* 1 if this node has been visited by one of the graph algorithms */
 	unsigned int reachable:1;               /* 1 if this node is reachable in the graph */
 	unsigned int indirect:1;                /* 1 if this node is not directly reachable by us */
-	unsigned int sptps:1;                   /* 1 if this node supports SPTPS */
+	unsigned int unused_sptps:1;            /* 1 if this node supports SPTPS */
 	unsigned int udp_confirmed:1;           /* 1 if the address is one that we received UDP traffic on */
 	unsigned int broadcast:1;		/* 1 if the next UDP packet should be broadcast to the local network */
 	unsigned int unused:23;
@@ -53,12 +53,6 @@ typedef struct node_t {
 
 	ecdsa_t *ecdsa;                         /* His public ECDSA key */
 	sptps_t sptps;
-
-	cipher_t *incipher;                     /* Cipher for UDP packets */
-	digest_t *indigest;                     /* Digest for UDP packets */
-
-	cipher_t *outcipher;                    /* Cipher for UDP packets */
-	digest_t *outdigest;                    /* Digest for UDP packets */
 
 	int incompression;                      /* Compressionlevel, 0 = no compression */
 	int outcompression;                     /* Compressionlevel, 0 = no compression */

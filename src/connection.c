@@ -25,7 +25,6 @@
 #include "connection.h"
 #include "list.h"
 #include "logger.h"
-#include "rsa.h"
 #include "utils.h"
 #include "xalloc.h"
 
@@ -52,16 +51,8 @@ void free_connection(connection_t *c) {
 	if(!c)
 		return;
 
-	cipher_close(c->incipher);
-	digest_close(c->indigest);
-	cipher_close(c->outcipher);
-	digest_close(c->outdigest);
-
 	sptps_stop(&c->sptps);
 	ecdsa_free(c->ecdsa);
-	rsa_free(c->rsa);
-
-	free(c->hischallenge);
 
 	buffer_clear(&c->inbuf);
 	buffer_clear(&c->outbuf);

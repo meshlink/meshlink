@@ -64,11 +64,6 @@ void free_node(node_t *n) {
 
 	sockaddrfree(&n->address);
 
-	cipher_close(n->incipher);
-	digest_close(n->indigest);
-	cipher_close(n->outcipher);
-	digest_close(n->outdigest);
-
 	ecdsa_free(n->ecdsa);
 	sptps_stop(&n->sptps);
 

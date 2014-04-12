@@ -27,12 +27,10 @@
 #include "utils.h"
 #include "xalloc.h"
 
-bool experimental = true;
-
 /* Jumptable for the request handlers */
 
 static bool (*request_handlers[])(connection_t *, const char *) = {
-		id_h, metakey_h, challenge_h, chal_reply_h, ack_h,
+		id_h, NULL, NULL, NULL /* metakey_h, challenge_h, chal_reply_h */, ack_h,
 		status_h, error_h, termreq_h,
 		ping_h, pong_h,
 		NULL, NULL, //add_subnet_h, del_subnet_h,

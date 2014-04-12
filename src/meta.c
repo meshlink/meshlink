@@ -51,25 +51,7 @@ bool send_meta(connection_t *c, const char *buffer, int length) {
 	logger(DEBUG_META, LOG_DEBUG, "Sending %d bytes of metadata to %s (%s)", length,
 			   c->name, c->hostname);
 
-	if(c->protocol_minor >= 2)
-		return sptps_send_record(&c->sptps, 0, buffer, length);
-
-	/* Add our data to buffer */
-	if(c->status.encryptout) {
-		size_t outlen = length;
-
-		if(!cipher_encrypt(c->outcipher, buffer, length, buffer_prepare(&c->outbuf, length), &outlen, false) || outlen != length) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Error while encrypting metadata to %s (%s)",
-					c->name, c->hostname);
-			return false;
-		}
-	} else {
-		buffer_add(&c->outbuf, buffer, length);
-	}
-
-	io_set(&c->io, IO_READ | IO_WRITE);
-
-	return true;
+	return sptps_send_record(&c->sptps, 0, buffer, length);
 }
 
 void broadcast_meta(connection_t *from, const char *buffer, int length) {
@@ -151,97 +133,5 @@ bool receive_meta(connection_t *c) {
 		return false;
 	}
 
-	do {
-		if(c->protocol_minor >= 2)
-			return sptps_receive_data(&c->sptps, bufp, inlen);
-
-		if(!c->status.decryptin) {
-			endp = memchr(bufp, '\n', inlen);
-			if(endp)
-				endp++;
-			else
-				endp = bufp + inlen;
-
-			buffer_add(&c->inbuf, bufp, endp - bufp);
-
-			inlen -= endp - bufp;
-			bufp = endp;
-		} else {
-			size_t outlen = inlen;
-
-			if(!cipher_decrypt(c->incipher, bufp, inlen, buffer_prepare(&c->inbuf, inlen), &outlen, false) || inlen != outlen) {
-				logger(DEBUG_ALWAYS, LOG_ERR, "Error while decrypting metadata from %s (%s)",
-					   c->name, c->hostname);
-				return false;
-			}
-
-			inlen = 0;
-		}
-
-		while(c->inbuf.len) {
-			/* Are we receiving a TCPpacket? */
-
-			if(c->tcplen) {
-				char *tcpbuffer = buffer_read(&c->inbuf, c->tcplen);
-				if(!tcpbuffer)
-					break;
-
-				if(!c->node) {
-					if(c->outgoing && proxytype == PROXY_SOCKS4 && c->allow_request == ID) {
-						if(tcpbuffer[0] == 0 && tcpbuffer[1] == 0x5a) {
-							logger(DEBUG_CONNECTIONS, LOG_DEBUG, "Proxy request granted");
-						} else {
-							logger(DEBUG_CONNECTIONS, LOG_ERR, "Proxy request rejected");
-							return false;
-						}
-					} else if(c->outgoing && proxytype == PROXY_SOCKS5 && c->allow_request == ID) {
-						if(tcpbuffer[0] != 5) {
-							logger(DEBUG_CONNECTIONS, LOG_ERR, "Invalid response from proxy server");
-							return false;
-						}
-						if(tcpbuffer[1] == (char)0xff) {
-							logger(DEBUG_CONNECTIONS, LOG_ERR, "Proxy request rejected: unsuitable authentication method");
-							return false;
-						}
-						if(tcpbuffer[2] != 5) {
-							logger(DEBUG_CONNECTIONS, LOG_ERR, "Invalid response from proxy server");
-							return false;
-						}
-						if(tcpbuffer[3] == 0) {
-							logger(DEBUG_CONNECTIONS, LOG_DEBUG, "Proxy request granted");
-						} else {
-							logger(DEBUG_CONNECTIONS, LOG_DEBUG, "Proxy request rejected");
-							return false;
-						}
-					} else {
-						logger(DEBUG_CONNECTIONS, LOG_ERR, "c->tcplen set but c->node is NULL!");
-						abort();
-					}
-				} else {
-					if(c->allow_request == ALL) {
-						receive_tcppacket(c, tcpbuffer, c->tcplen);
-					} else {
-						logger(DEBUG_CONNECTIONS, LOG_ERR, "Got unauthorized TCP packet from %s (%s)", c->name, c->hostname);
-						return false;
-					}
-				}
-
-				c->tcplen = 0;
-			}
-
-			/* Otherwise we are waiting for a request */
-
-			char *request = buffer_readline(&c->inbuf);
-			if(request) {
-				bool result = receive_request(c, request);
-				if(!result)
-					return false;
-				continue;
-			} else {
-				break;
-			}
-		}
-	} while(inlen);
-
-	return true;
+	return sptps_receive_data(&c->sptps, bufp, inlen);
 }

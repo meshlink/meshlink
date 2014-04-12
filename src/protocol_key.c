@@ -37,19 +37,11 @@ static bool mykeyused = false;
 void send_key_changed(void) {
 	send_request(everyone, "%d %x %s", KEY_CHANGED, rand(), myself->name);
 
-	/* Immediately send new keys to directly connected nodes to keep UDP mappings alive */
-
-	for list_each(connection_t, c, connection_list)
-		if(c->status.active && c->node && c->node->status.reachable && !c->node->status.sptps)
-			send_ans_key(c->node);
-
 	/* Force key exchange for connections using SPTPS */
 
-	if(experimental) {
-		for splay_each(node_t, n, node_tree)
-			if(n->status.reachable && n->status.validkey && n->status.sptps)
-				sptps_force_kex(&n->sptps);
-	}
+	for splay_each(node_t, n, node_tree)
+		if(n->status.reachable && n->status.validkey)
+			sptps_force_kex(&n->sptps);
 }
 
 bool key_changed_h(connection_t *c, const char *request) {
@@ -73,11 +65,6 @@ bool key_changed_h(connection_t *c, const char *request) {
 		return true;
 	}
 
-	if(!n->status.sptps) {
-		n->status.validkey = false;
-		n->last_req_key = 0;
-	}
-
 	/* Tell the others */
 
 	forward_request(c, request);
@@ -94,27 +81,23 @@ static bool send_initial_sptps_data(void *handle, uint8_t type, const char *data
 }
 
 bool send_req_key(node_t *to) {
-	if(to->status.sptps) {
-		if(!node_read_ecdsa_public_key(to)) {
-			logger(DEBUG_PROTOCOL, LOG_DEBUG, "No ECDSA key known for %s (%s)", to->name, to->hostname);
-			send_request(to->nexthop->connection, "%d %s %s %d", REQ_KEY, myself->name, to->name, REQ_PUBKEY);
-			return true;
-		}
-
-		if(to->sptps.label)
-			logger(DEBUG_ALWAYS, LOG_DEBUG, "send_req_key(%s) called while sptps->label != NULL!", to->name);
-
-		char label[25 + strlen(myself->name) + strlen(to->name)];
-		snprintf(label, sizeof label, "tinc UDP key expansion %s %s", myself->name, to->name);
-		sptps_stop(&to->sptps);
-		to->status.validkey = false;
-		to->status.waitingforkey = true;
-		to->last_req_key = now.tv_sec;
-		to->incompression = myself->incompression;
-		return sptps_start(&to->sptps, to, true, true, myself->connection->ecdsa, to->ecdsa, label, sizeof label, send_initial_sptps_data, receive_sptps_record);
+	if(!node_read_ecdsa_public_key(to)) {
+		logger(DEBUG_PROTOCOL, LOG_DEBUG, "No ECDSA key known for %s (%s)", to->name, to->hostname);
+		send_request(to->nexthop->connection, "%d %s %s %d", REQ_KEY, myself->name, to->name, REQ_PUBKEY);
+		return true;
 	}
 
-	return send_request(to->nexthop->connection, "%d %s %s", REQ_KEY, myself->name, to->name);
+	if(to->sptps.label)
+		logger(DEBUG_ALWAYS, LOG_DEBUG, "send_req_key(%s) called while sptps->label != NULL!", to->name);
+
+	char label[25 + strlen(myself->name) + strlen(to->name)];
+	snprintf(label, sizeof label, "tinc UDP key expansion %s %s", myself->name, to->name);
+	sptps_stop(&to->sptps);
+	to->status.validkey = false;
+	to->status.waitingforkey = true;
+	to->last_req_key = now.tv_sec;
+	to->incompression = myself->incompression;
+	return sptps_start(&to->sptps, to, true, true, myself->connection->ecdsa, to->ecdsa, label, sizeof label, send_initial_sptps_data, receive_sptps_record);
 }
 
 /* REQ_KEY is overloaded to allow arbitrary requests to be routed between two nodes. */
@@ -233,7 +216,7 @@ bool req_key_h(connection_t *c, const char *request) {
 
 	if(to == myself) {                      /* Yes */
 		/* Is this an extended REQ_KEY message? */
-		if(experimental && reqno)
+		if(reqno)
 			return req_key_ext_h(c, request, from, reqno);
 
 		/* No, just send our key back */
@@ -252,42 +235,7 @@ bool req_key_h(connection_t *c, const char *request) {
 }
 
 bool send_ans_key(node_t *to) {
-	if(to->status.sptps)
-		abort();
-
-	size_t keylen = cipher_keylength(myself->incipher);
-	char key[keylen * 2 + 1];
-
-	cipher_close(to->incipher);
-	digest_close(to->indigest);
-
-	to->incipher = cipher_open_by_nid(cipher_get_nid(myself->incipher));
-	to->indigest = digest_open_by_nid(digest_get_nid(myself->indigest), digest_length(myself->indigest));
-	to->incompression = myself->incompression;
-
-	if(!to->incipher || !to->indigest)
-		abort();
-
-	randomize(key, keylen);
-	if(!cipher_set_key(to->incipher, key, false))
-		abort();
-	if(!digest_set_key(to->indigest, key, keylen))
-		abort();
-
-	bin2hex(key, key, keylen);
-
-	// Reset sequence number and late packet window
-	mykeyused = true;
-	to->received_seqno = 0;
-	to->received = 0;
-	if(replaywin) memset(to->late, 0, replaywin);
-
-	return send_request(to->nexthop->connection, "%d %s %s %s %d %d %d %d", ANS_KEY,
-						myself->name, to->name, key,
-						cipher_get_nid(to->incipher),
-						digest_get_nid(to->indigest),
-						(int)digest_length(to->indigest),
-						to->incompression);
+	abort();
 }
 
 bool ans_key_h(connection_t *c, const char *request) {
@@ -351,8 +299,6 @@ bool ans_key_h(connection_t *c, const char *request) {
 	}
 
 	/* Don't use key material until every check has passed. */
-	cipher_close(from->outcipher);
-	digest_close(from->outdigest);
 	from->status.validkey = false;
 
 	if(compression < 0 || compression > 11) {
@@ -364,79 +310,22 @@ bool ans_key_h(connection_t *c, const char *request) {
 
 	/* SPTPS or old-style key exchange? */
 
-	if(from->status.sptps) {
-		char buf[strlen(key)];
-		int len = b64decode(key, buf, strlen(key));
+	char buf[strlen(key)];
+	int len = b64decode(key, buf, strlen(key));
 
-		if(!len || !sptps_receive_data(&from->sptps, buf, len))
-			logger(DEBUG_ALWAYS, LOG_ERR, "Error processing SPTPS data from %s (%s)", from->name, from->hostname);
+	if(!len || !sptps_receive_data(&from->sptps, buf, len))
+		logger(DEBUG_ALWAYS, LOG_ERR, "Error processing SPTPS data from %s (%s)", from->name, from->hostname);
 
-		if(from->status.validkey) {
-			if(*address && *port) {
-				logger(DEBUG_PROTOCOL, LOG_DEBUG, "Using reflexive UDP address from %s: %s port %s", from->name, address, port);
-				sockaddr_t sa = str2sockaddr(address, port);
-				update_node_udp(from, &sa);
-			}
-
-			if(from->options & OPTION_PMTU_DISCOVERY && !(from->options & OPTION_TCPONLY))
-				send_mtu_probe(from);
+	if(from->status.validkey) {
+		if(*address && *port) {
+			logger(DEBUG_PROTOCOL, LOG_DEBUG, "Using reflexive UDP address from %s: %s port %s", from->name, address, port);
+			sockaddr_t sa = str2sockaddr(address, port);
+			update_node_udp(from, &sa);
 		}
 
-		return true;
+		if(from->options & OPTION_PMTU_DISCOVERY && !(from->options & OPTION_TCPONLY))
+			send_mtu_probe(from);
 	}
-
-	/* Check and lookup cipher and digest algorithms */
-
-	if(cipher) {
-		if(!(from->outcipher = cipher_open_by_nid(cipher))) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Node %s (%s) uses unknown cipher!", from->name, from->hostname);
-			return false;
-		}
-	} else {
-		from->outcipher = NULL;
-	}
-
-	if(digest) {
-		if(!(from->outdigest = digest_open_by_nid(digest, maclength))) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Node %s (%s) uses unknown digest!", from->name, from->hostname);
-			return false;
-		}
-	} else {
-		from->outdigest = NULL;
-	}
-
-	if(maclength != digest_length(from->outdigest)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Node %s (%s) uses bogus MAC length!", from->name, from->hostname);
-		return false;
-	}
-
-	/* Process key */
-
-	keylen = hex2bin(key, key, sizeof key);
-
-	if(keylen != cipher_keylength(from->outcipher)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Node %s (%s) uses wrong keylength!", from->name, from->hostname);
-		return true;
-	}
-
-	/* Update our copy of the origin's packet key */
-
-	if(!cipher_set_key(from->outcipher, key, true))
-		return false;
-	if(!digest_set_key(from->outdigest, key, keylen))
-		return false;
-
-	from->status.validkey = true;
-	from->sent_seqno = 0;
-
-	if(*address && *port) {
-		logger(DEBUG_PROTOCOL, LOG_DEBUG, "Using reflexive UDP address from %s: %s port %s", from->name, address, port);
-		sockaddr_t sa = str2sockaddr(address, port);
-		update_node_udp(from, &sa);
-	}
-
-	if(from->options & OPTION_PMTU_DISCOVERY && !(from->options & OPTION_TCPONLY))
-		send_mtu_probe(from);
 
 	return true;
 }
