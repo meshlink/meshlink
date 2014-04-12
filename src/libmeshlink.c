@@ -534,9 +534,8 @@ bool tinc_stop();
 
 bool route_meshlink(node_t *source,vpn_packet_t *packet) {
 
-	printf("data %s\n",packet->data);
-	printf("data 11%s\n",packet->data+11);
-	printf("data 32%s\n",packet->data+32);
+	printf("data %s\n",packet->data+14);
+	printf("data 46%s\n",packet->data+sizeof(tincpackethdr));
 	node_t* owner = NULL;
 
 	tincpackethdr* hdr = (tincpackethdr*)packet->data;
@@ -564,8 +563,7 @@ bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 
 	vpn_packet_t packet;
 	tincpackethdr* hdr = malloc(sizeof(tincpackethdr));
-
-	if (sizeof(hdr) + len > MAXSIZE) {
+	if (sizeof(tincpackethdr) + len > MAXSIZE) {
 
 	//log something
 	return false;
@@ -578,8 +576,8 @@ bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 	packet.priority = 0;
 	packet.len = sizeof(tincpackethdr) + len;
 
-	memcpy(packet.data,hdr,32+14);
-	memcpy(packet.data+32+14,buf,len);
+	memcpy(packet.data,hdr,sizeof(tincpackethdr));
+	memcpy(packet.data+sizeof(tincpackethdr),buf,len);
 
         myself->in_packets++;
         myself->in_bytes += packet.len;
