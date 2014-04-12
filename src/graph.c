@@ -53,7 +53,6 @@
 #include "netutl.h"
 #include "node.h"
 #include "protocol.h"
-#include "script.h"
 #include "utils.h"
 #include "xalloc.h"
 #include "graph.h"
@@ -230,29 +229,7 @@ static void check_reachability(void) {
 
 			timeout_del(&n->mtutimeout);
 
-			char *name;
-			char *address;
-			char *port;
-			char *envp[8] = {NULL};
-
-			xasprintf(&envp[0], "NETNAME=%s", netname ? : "");
-			xasprintf(&envp[3], "NODE=%s", n->name);
-			sockaddr2str(&n->address, &address, &port);
-			xasprintf(&envp[4], "REMOTEADDRESS=%s", address);
-			xasprintf(&envp[5], "REMOTEPORT=%s", port);
-			xasprintf(&envp[6], "NAME=%s", myself->name);
-
-			execute_script(n->status.reachable ? "host-up" : "host-down", envp);
-
-			xasprintf(&name, n->status.reachable ? "hosts/%s-up" : "hosts/%s-down", n->name);
-			execute_script(name, envp);
-
-			free(name);
-			free(address);
-			free(port);
-
-			for(int i = 0; i < 7; i++)
-				free(envp[i]);
+			//TODO: callback to application to inform of this node going up/down
 
 			if(!n->status.reachable) {
 				update_node_udp(n, NULL);

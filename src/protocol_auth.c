@@ -39,7 +39,6 @@
 #include "prf.h"
 #include "protocol.h"
 #include "rsa.h"
-#include "script.h"
 #include "sptps.h"
 #include "utils.h"
 #include "xalloc.h"
@@ -176,20 +175,7 @@ static bool finalize_invitation(connection_t *c, const char *data, uint16_t len)
 
 	logger(DEBUG_CONNECTIONS, LOG_INFO, "Key succesfully received from %s (%s)", c->name, c->hostname);
 
-	// Call invitation-accepted script
-	char *envp[7] = {NULL};
-	char *address, *port;
-
-	xasprintf(&envp[0], "NETNAME=%s", netname ? : "");
-        xasprintf(&envp[3], "NODE=%s", c->name);
-	sockaddr2str(&c->address, &address, &port);
-	xasprintf(&envp[4], "REMOTEADDRESS=%s", address);
-	xasprintf(&envp[5], "NAME=%s", myself->name);
-
-	execute_script("invitation-accepted", envp);
-
-	for(int i = 0; envp[i] && i < 7; i++)
-		free(envp[i]);
+	//TODO: callback to application to inform of an accepted invitation
 
 	sptps_send_record(&c->sptps, 2, data, 0);
 	return true;
@@ -755,7 +741,7 @@ bool ack_h(connection_t *c, const char *request) {
 			}
 
 			terminate_connection(n->connection, false);
-			/* Run graph algorithm to purge key and make sure up/down scripts are rerun with new IP addresses and stuff */
+			/* Run graph algorithm to keep things in sync */
 			graph();
 		}
 	}

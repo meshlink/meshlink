@@ -27,7 +27,6 @@
 #include "names.h"
 #include "netutl.h"
 #include "rsagen.h"
-#include "script.h"
 #include "sptps.h"
 #include "tincctl.h"
 #include "utils.h"
@@ -433,22 +432,6 @@ int cmd_invite(int argc, char *argv[]) {
 	// Create an URL from the local address, key hash and cookie
 	char *url;
 	xasprintf(&url, "%s/%s%s", address, hash, cookie);
-
-	// Call the inviation-created script
-	char *envp[6] = {};
-	xasprintf(&envp[0], "NAME=%s", myname);
-	xasprintf(&envp[1], "NETNAME=%s", netname);
-	xasprintf(&envp[2], "NODE=%s", argv[1]);
-	xasprintf(&envp[3], "INVITATION_FILE=%s", filename);
-	xasprintf(&envp[4], "INVITATION_URL=%s", url);
-	execute_script("invitation-created", envp);
-	for(int i = 0; i < 6 && envp[i]; i++)
-		free(envp[i]);
-
-	puts(url);
-	free(url);
-	free(filename);
-	free(address);
 
 	return 0;
 }

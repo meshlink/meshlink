@@ -69,7 +69,6 @@ libmeshlink_la_SOURCES = \
 	route.c route.h \
 	rsa.h \
 	rsagen.h \
-	script.c script.h \
 	splay_tree.c splay_tree.h \
 	sptps.c sptps.h \
 	system.h \

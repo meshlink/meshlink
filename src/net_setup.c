@@ -37,7 +37,6 @@
 #include "protocol.h"
 #include "route.h"
 #include "rsa.h"
-#include "script.h"
 #include "utils.h"
 #include "xalloc.h"
 
@@ -50,9 +49,6 @@ char *proxypass;
 proxytype_t proxytype;
 int autoconnect;
 bool disablebuggypeers;
-
-char *scriptinterpreter;
-char *scriptextension;
 
 bool node_read_ecdsa_public_key(node_t *n) {
 	if(ecdsa_active(n->ecdsa))
@@ -387,15 +383,6 @@ bool setup_myself_reloadable(void) {
 	char *address = NULL;
 	char *space;
 	bool choice;
-
-	free(scriptinterpreter);
-	scriptinterpreter = NULL;
-	get_config_string(lookup_config(config_tree, "ScriptsInterpreter"), &scriptinterpreter);
-
-
-	free(scriptextension);
-	if(!get_config_string(lookup_config(config_tree, "ScriptsExtension"), &scriptextension))
-		scriptextension = xstrdup("");
 
 	get_config_string(lookup_config(config_tree, "Proxy"), &proxy);
 	if(proxy) {
@@ -939,17 +926,6 @@ bool setup_network(void) {
 	if(!init_control())
 		return false;
 
-	/* Run tinc-up script to further initialize the tap interface */
-
-	char *envp[5] = {NULL};
-	xasprintf(&envp[0], "NETNAME=%s", netname ? : "");
-	xasprintf(&envp[3], "NAME=%s", myself->name);
-
-	execute_script("tinc-up", envp);
-
-	for(int i = 0; i < 4; i++)
-		free(envp[i]);
-
 	return true;
 }
 
@@ -982,21 +958,12 @@ void close_network_connections(void) {
 		close(listen_socket[i].udp.fd);
 	}
 
-	char *envp[5] = {NULL};
-	xasprintf(&envp[0], "NETNAME=%s", netname ? : "");
-	xasprintf(&envp[3], "NAME=%s", myself->name);
-
 	exit_requests();
 	exit_edges();
 	exit_nodes();
 	exit_connections();
 
-	execute_script("tinc-down", envp);
-
 	if(myport) free(myport);
-
-	for(int i = 0; i < 4; i++)
-		free(envp[i]);
 
 	exit_control();
 
