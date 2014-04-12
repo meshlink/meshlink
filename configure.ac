@@ -74,40 +74,6 @@ case $host_os in
   ;;
 esac
 
-AC_ARG_ENABLE(uml,
-  AS_HELP_STRING([--enable-uml], [enable support for User Mode Linux]),
-  [ AS_IF([test "x$enable_uml" = "xyes"],
-      [ AC_DEFINE(ENABLE_UML, 1, [Support for UML])
-        uml=true
-      ],
-      [uml=false])
-  ],
-  [uml=false]
-)
-
-AC_ARG_ENABLE(vde,
-  AS_HELP_STRING([--enable-vde], [enable support for Virtual Distributed Ethernet]),
-  [ AS_IF([test "x$enable_vde" = "xyes"],
-      [ AC_CHECK_HEADERS(libvdeplug_dyn.h, [], [AC_MSG_ERROR([VDE plug header files not found.]); break])
-        AC_DEFINE(ENABLE_VDE, 1, [Support for VDE])
-        vde=true
-      ],
-      [vde=false])
-  ],
-  [vde=false]
-)
-
-AC_ARG_ENABLE(tunemu,
-  AS_HELP_STRING([--enable-tunemu], [enable support for the tunemu driver]),
-  [ AS_IF([test "x$enable_tunemu" = "xyes"],
-      [ AC_DEFINE(ENABLE_TUNEMU, 1, [Support for tunemu])
-        tunemu=true
-      ],
-      [tunemu=false])
-  ],
-  [tunemu=false]
-)
-
 AC_ARG_WITH(windows2000,
   AS_HELP_STRING([--with-windows2000], [compile with support for Windows 2000. This disables support for tunneling over existing IPv6 networks.]),
   [ AS_IF([test "x$with_windows2000" = "xyes"],
@@ -210,32 +176,11 @@ AC_CACHE_SAVE
 
 dnl These are defined in files in m4/
 
-dnl AC_ARG_WITH(libgcrypt, AC_HELP_STRING([--with-libgcrypt], [enable use of libgcrypt instead of OpenSSL])], [])
-
-tinc_CURSES
-tinc_READLINE
 tinc_ZLIB
 tinc_LZO
 
-if test -n "$with_libgcrypt"; then
-	gcrypt=true
-	tinc_LIBGCRYPT
-else
-	openssl=true
-	tinc_OPENSSL
-fi
+tinc_OPENSSL
 	
-AM_CONDITIONAL(OPENSSL, test -n "$openssl")
-AM_CONDITIONAL(GCRYPT, test -n "$gcrypt")
-
-dnl Check if support for jumbograms is requested
-AC_ARG_ENABLE(jumbograms,
-  AS_HELP_STRING([--enable-jumbograms], [enable support for jumbograms (packets up to 9000 bytes)]),
-  [ AS_IF([test "x$enable_jumbograms" = "xyes"],
-      [ AC_DEFINE(ENABLE_JUMBOGRAMS, 1, [Support for jumbograms (packets up to 9000 bytes)]) ])
-  ]
-)
-
-AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile m4/Makefile gui/Makefile test/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile m4/Makefile test/Makefile])
 
 AC_OUTPUT

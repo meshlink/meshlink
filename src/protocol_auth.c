@@ -26,7 +26,6 @@
 #include "control_common.h"
 #include "cipher.h"
 #include "crypto.h"
-#include "device.h"
 #include "digest.h"
 #include "ecdsa.h"
 #include "edge.h"
@@ -182,8 +181,6 @@ static bool finalize_invitation(connection_t *c, const char *data, uint16_t len)
 	char *address, *port;
 
 	xasprintf(&envp[0], "NETNAME=%s", netname ? : "");
-        xasprintf(&envp[1], "DEVICE=%s", device ? : "");
-        xasprintf(&envp[2], "INTERFACE=%s", iface ? : "");
         xasprintf(&envp[3], "NODE=%s", c->name);
 	sockaddr2str(&c->address, &address, &port);
 	xasprintf(&envp[4], "REMOTEADDRESS=%s", address);

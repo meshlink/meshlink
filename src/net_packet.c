@@ -35,7 +35,6 @@
 #include "connection.h"
 #include "crypto.h"
 #include "digest.h"
-#include "device.h"
 #include "ethernet.h"
 #include "graph.h"
 #include "logger.h"
@@ -893,7 +892,7 @@ void send_packet(node_t *n, vpn_packet_t *packet) {
 			 memcpy(packet->data, mymac.x, ETH_ALEN);
 		n->out_packets++;
 		n->out_bytes += packet->len;
-		devops.write(packet);
+		// TODO: send to application
 		return;
 	}
 
@@ -1039,15 +1038,3 @@ void handle_incoming_vpn_data(void *data, int flags) {
 
 	receive_udppacket(n, &pkt);
 }
-
-//void handle_device_data(void *data, int flags) {
-//	vpn_packet_t packet;
-//
-//	packet.priority = 0;
-//
-//	if(devops.read(&packet)) {
-//		myself->in_packets++;
-//		myself->in_bytes += packet.len;
-//		route(myself, &packet);
-//	}
-//}

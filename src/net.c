@@ -25,7 +25,6 @@
 #include "utils.h"
 #include "conf.h"
 #include "connection.h"
-#include "device.h"
 #include "graph.h"
 #include "logger.h"
 #include "meta.h"

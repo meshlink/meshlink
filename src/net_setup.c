@@ -26,7 +26,6 @@
 #include "conf.h"
 #include "connection.h"
 #include "control.h"
-#include "device.h"
 #include "digest.h"
 #include "ecdsa.h"
 #include "graph.h"
@@ -44,8 +43,6 @@
 #include "xalloc.h"
 
 char *myport;
-static io_t device_io;
-devops_t devops;
 
 char *proxyhost;
 char *proxyport;
@@ -1019,8 +1016,6 @@ bool setup_network(void) {
 
 	char *envp[5] = {NULL};
 	xasprintf(&envp[0], "NETNAME=%s", netname ? : "");
-	xasprintf(&envp[1], "DEVICE=%s", device ? : "");
-	xasprintf(&envp[2], "INTERFACE=%s", iface ? : "");
 	xasprintf(&envp[3], "NAME=%s", myself->name);
 
 	execute_script("tinc-up", envp);
@@ -1067,8 +1062,6 @@ void close_network_connections(void) {
 
 	char *envp[5] = {NULL};
 	xasprintf(&envp[0], "NETNAME=%s", netname ? : "");
-	xasprintf(&envp[1], "DEVICE=%s", device ? : "");
-	xasprintf(&envp[2], "INTERFACE=%s", iface ? : "");
 	xasprintf(&envp[3], "NAME=%s", myself->name);
 
 	exit_requests();
@@ -1083,8 +1076,6 @@ void close_network_connections(void) {
 
 	for(int i = 0; i < 4; i++)
 		free(envp[i]);
-
-	devops.close();
 
 	exit_control();
 

@@ -22,7 +22,6 @@
 
 #include "splay_tree.h"
 #include "control_common.h"
-#include "device.h"
 #include "hash.h"
 #include "logger.h"
 #include "names.h"
@@ -206,8 +205,6 @@ void subnet_update(node_t *owner, subnet_t *subnet, bool up) {
 
 	char *envp[10] = {NULL};
 	xasprintf(&envp[0], "NETNAME=%s", netname ? : "");
-	xasprintf(&envp[1], "DEVICE=%s", device ? : "");
-	xasprintf(&envp[2], "INTERFACE=%s", iface ? : "");
 	xasprintf(&envp[3], "NODE=%s", owner->name);
 
 	if(owner != myself) {

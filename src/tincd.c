@@ -48,7 +48,6 @@
 #include "conf.h"
 #include "control.h"
 #include "crypto.h"
-#include "device.h"
 #include "logger.h"
 #include "names.h"
 #include "net.h"
@@ -397,7 +396,7 @@ int main2(int argc, char **argv) {
 	}
 #endif
 
-	/* Setup sockets and open device. */
+	/* Setup sockets. */
 
 	if(!setup_network())
 		goto end;

@@ -45,7 +45,6 @@
 #include "system.h"
 
 #include "connection.h"
-#include "device.h"
 #include "edge.h"
 #include "graph.h"
 #include "list.h"
@@ -238,8 +237,6 @@ static void check_reachability(void) {
 			char *envp[8] = {NULL};
 
 			xasprintf(&envp[0], "NETNAME=%s", netname ? : "");
-			xasprintf(&envp[1], "DEVICE=%s", device ? : "");
-			xasprintf(&envp[2], "INTERFACE=%s", iface ? : "");
 			xasprintf(&envp[3], "NODE=%s", n->name);
 			sockaddr2str(&n->address, &address, &port);
 			xasprintf(&envp[4], "REMOTEADDRESS=%s", address);
