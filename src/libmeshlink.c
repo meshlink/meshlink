@@ -571,14 +571,15 @@ bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 	return false;
 	}
 
+	memset(hdr->legacymtu,0,sizeof(hdr->legacymtu));
 	memcpy(hdr->destination,receiver->name,sizeof(hdr->destination));
 	memcpy(hdr->source,myself->name,sizeof(hdr->source));
 
 	packet.priority = 0;
 	packet.len = sizeof(tincpackethdr) + len;
 
-	memcpy(packet.data,hdr,32);
-	memcpy(packet.data+32,buf,len);
+	memcpy(packet.data,hdr,32+14);
+	memcpy(packet.data+32+14,buf,len);
 
         myself->in_packets++;
         myself->in_bytes += packet.len;
