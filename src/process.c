@@ -30,7 +30,6 @@
 #include "net.h"
 #include "node.h"
 #include "process.h"
-#include "subnet.h"
 #include "utils.h"
 #include "xalloc.h"
 

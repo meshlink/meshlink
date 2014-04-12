@@ -38,7 +38,6 @@
 #include "route.h"
 #include "rsa.h"
 #include "script.h"
-#include "subnet.h"
 #include "utils.h"
 #include "xalloc.h"
 
@@ -308,62 +307,6 @@ static void keyexpire_handler(void *data) {
 void regenerate_key(void) {
 	logger(DEBUG_STATUS, LOG_INFO, "Expiring symmetric keys");
 	send_key_changed();
-}
-
-/*
-  Read Subnets from all host config files
-*/
-void load_all_subnets(void) {
-	DIR *dir;
-	struct dirent *ent;
-	char *dname;
-
-	xasprintf(&dname, "%s" SLASH "hosts", confbase);
-	dir = opendir(dname);
-	if(!dir) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Could not open %s: %s", dname, strerror(errno));
-		free(dname);
-		return;
-	}
-
-	while((ent = readdir(dir))) {
-		if(!check_id(ent->d_name))
-			continue;
-
-		node_t *n = lookup_node(ent->d_name);
-		#ifdef _DIRENT_HAVE_D_TYPE
-		//if(ent->d_type != DT_REG)
-		//	continue;
-		#endif
-
-		splay_tree_t *config_tree;
-		init_configuration(&config_tree);
-		read_config_options(config_tree, ent->d_name);
-		read_host_config(config_tree, ent->d_name);
-
-		if(!n) {
-			n = new_node();
-			n->name = xstrdup(ent->d_name);
-			node_add(n);
-		}
-
-		for(config_t *cfg = lookup_config(config_tree, "Subnet"); cfg; cfg = lookup_config_next(config_tree, cfg)) {
-			subnet_t *s, *s2;
-
-			if(!get_config_subnet(cfg, &s))
-				continue;
-
-			if((s2 = lookup_subnet(n, s))) {
-				s2->expires = -1;
-			} else {
-				subnet_add(n, s);
-			}
-		}
-
-		exit_configuration(&config_tree);
-	}
-
-	closedir(dir);
 }
 
 void load_all_nodes(void) {
@@ -771,25 +714,12 @@ bool setup_myself(void) {
 		sockaddr2str(&sa, NULL, &myport);
 	}
 
-	/* Read in all the subnets specified in the host configuration file */
-
-	for(config_t *cfg = lookup_config(config_tree, "Subnet"); cfg; cfg = lookup_config_next(config_tree, cfg)) {
-		subnet_t *subnet;
-
-		if(!get_config_subnet(cfg, &subnet))
-			return false;
-
-		subnet_add(myself, subnet);
-	}
-
 	/* Check some options */
 
 	if(!setup_myself_reloadable())
 		return false;
 
-	get_config_bool(lookup_config(config_tree, "StrictSubnets"), &strictsubnets);
 	get_config_bool(lookup_config(config_tree, "TunnelServer"), &tunnelserver);
-	strictsubnets |= tunnelserver;
 
 	if(get_config_int(lookup_config(config_tree, "MaxConnectionBurst"), &max_connection_burst)) {
 		if(max_connection_burst <= 0) {
@@ -883,9 +813,7 @@ bool setup_myself(void) {
 
 	graph();
 
-	if(strictsubnets)
-		load_all_subnets();
-	else if(autoconnect)
+	if(autoconnect)
 		load_all_nodes();
 
 	/* Open sockets */
@@ -986,7 +914,6 @@ bool setup_myself(void) {
 */
 bool setup_network(void) {
 	init_connections();
-	init_subnets();
 	init_nodes();
 	init_edges();
 	init_requests();
@@ -1023,10 +950,6 @@ bool setup_network(void) {
 	for(int i = 0; i < 4; i++)
 		free(envp[i]);
 
-	/* Run subnet-up scripts for our own subnets */
-
-	subnet_update(myself, NULL, true);
-
 	return true;
 }
 
@@ -1048,7 +971,6 @@ void close_network_connections(void) {
 		list_delete_list(outgoing_list);
 
 	if(myself && myself->connection) {
-		subnet_update(myself, NULL, false);
 		terminate_connection(myself->connection, false);
 		free_connection(myself->connection);
 	}
@@ -1066,7 +988,6 @@ void close_network_connections(void) {
 
 	exit_requests();
 	exit_edges();
-	exit_subnets();
 	exit_nodes();
 	exit_connections();
 

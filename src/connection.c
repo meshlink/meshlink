@@ -28,7 +28,6 @@
 #include "list.h"
 #include "logger.h"
 #include "rsa.h"
-#include "subnet.h"
 #include "utils.h"
 #include "xalloc.h"
 

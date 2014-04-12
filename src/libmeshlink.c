@@ -39,7 +39,6 @@ static bool do_mlock = false;
 */
 bool setup_meshlink_network(void) {
 	init_connections();
-	init_subnets();
 	init_nodes();
 	init_edges();
 	init_requests();
@@ -65,10 +64,6 @@ bool setup_meshlink_network(void) {
 
 	if(!init_control())
 		return false;
-
-	/* Run subnet-up scripts for our own subnets */
-
-	subnet_update(myself, NULL, true);
 
 	return true;
 }

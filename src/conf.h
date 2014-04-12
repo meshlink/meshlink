@@ -31,8 +31,6 @@ typedef struct config_t {
 	int line;
 } config_t;
 
-#include "subnet.h"
-
 extern splay_tree_t *config_tree;
 
 extern int pinginterval;
@@ -52,7 +50,6 @@ extern bool get_config_bool(const config_t *, bool *);
 extern bool get_config_int(const config_t *, int *);
 extern bool get_config_string(const config_t *, char **);
 extern bool get_config_address(const config_t *, struct addrinfo **);
-extern bool get_config_subnet(const config_t *, struct subnet_t **);
 
 extern config_t *parse_config_line(char *, const char *, int);
 extern bool read_config_file(splay_tree_t *, const char *);

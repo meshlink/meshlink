@@ -58,7 +58,6 @@ typedef struct past_request_t {
 } past_request_t;
 
 extern bool tunnelserver;
-extern bool strictsubnets;
 extern bool experimental;
 
 extern ecdsa_t *invitation_key;
@@ -74,7 +73,6 @@ extern ecdsa_t *invitation_key;
 #include "edge.h"
 #include "net.h"
 #include "node.h"
-#include "subnet.h"
 
 /* Basic functions */
 
@@ -100,8 +98,6 @@ extern bool send_error(struct connection_t *, int, const  char *);
 extern bool send_termreq(struct connection_t *);
 extern bool send_ping(struct connection_t *);
 extern bool send_pong(struct connection_t *);
-extern bool send_add_subnet(struct connection_t *, const struct subnet_t *);
-extern bool send_del_subnet(struct connection_t *, const struct subnet_t *);
 extern bool send_add_edge(struct connection_t *, const struct edge_t *);
 extern bool send_del_edge(struct connection_t *, const struct edge_t *);
 extern void send_key_changed(void);
@@ -121,8 +117,6 @@ extern bool error_h(struct connection_t *, const char *);
 extern bool termreq_h(struct connection_t *, const char *);
 extern bool ping_h(struct connection_t *, const char *);
 extern bool pong_h(struct connection_t *, const char *);
-extern bool add_subnet_h(struct connection_t *, const char *);
-extern bool del_subnet_h(struct connection_t *, const char *);
 extern bool add_edge_h(struct connection_t *, const char *);
 extern bool del_edge_h(struct connection_t *, const char *);
 extern bool key_changed_h(struct connection_t *, const char *);

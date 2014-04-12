@@ -29,7 +29,6 @@
 #include "xalloc.h"
 
 bool tunnelserver = false;
-bool strictsubnets = false;
 bool experimental = true;
 
 /* Jumptable for the request handlers */
@@ -38,7 +37,7 @@ static bool (*request_handlers[])(connection_t *, const char *) = {
 		id_h, metakey_h, challenge_h, chal_reply_h, ack_h,
 		status_h, error_h, termreq_h,
 		ping_h, pong_h,
-		add_subnet_h, del_subnet_h,
+		NULL, NULL, //add_subnet_h, del_subnet_h,
 		add_edge_h, del_edge_h,
 		key_changed_h, req_key_h, ans_key_h, tcppacket_h, control_h,
 };

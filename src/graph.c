@@ -54,7 +54,6 @@
 #include "node.h"
 #include "protocol.h"
 #include "script.h"
-#include "subnet.h"
 #include "utils.h"
 #include "xalloc.h"
 #include "graph.h"
@@ -255,8 +254,6 @@ static void check_reachability(void) {
 			for(int i = 0; i < 7; i++)
 				free(envp[i]);
 
-			subnet_update(n, NULL, n->status.reachable);
-
 			if(!n->status.reachable) {
 				update_node_udp(n, NULL);
 				memset(&n->status, 0, sizeof n->status);
@@ -274,7 +271,6 @@ static void check_reachability(void) {
 }
 
 void graph(void) {
-	subnet_cache_flush();
 	sssp_bfs();
 	check_reachability();
 	mst_kruskal();

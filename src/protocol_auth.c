@@ -678,6 +678,7 @@ bool send_ack(connection_t *c) {
 static void send_everything(connection_t *c) {
 	/* Send all known subnets and edges */
 
+	// TODO: remove this
 	if(disablebuggypeers) {
 		static struct {
 			vpn_packet_t pkt;
@@ -689,17 +690,7 @@ static void send_everything(connection_t *c) {
 		send_tcppacket(c, &zeropkt.pkt);
 	}
 
-	if(tunnelserver) {
-		for splay_each(subnet_t, s, myself->subnet_tree)
-			send_add_subnet(c, s);
-
-		return;
-	}
-
 	for splay_each(node_t, n, node_tree) {
-		for splay_each(subnet_t, s, n->subnet_tree)
-			send_add_subnet(c, s);
-
 		for splay_each(edge_t, e, n->edge_tree)
 			send_add_edge(c, e);
 	}

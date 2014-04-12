@@ -53,7 +53,6 @@ node_t *new_node(void) {
 	node_t *n = xzalloc(sizeof *n);
 
 	if(replaywin) n->late = xzalloc(replaywin);
-	n->subnet_tree = new_subnet_tree();
 	n->edge_tree = new_edge_tree();
 	n->mtu = MTU;
 	n->maxmtu = MTU;
@@ -62,9 +61,6 @@ node_t *new_node(void) {
 }
 
 void free_node(node_t *n) {
-	if(n->subnet_tree)
-		free_subnet_tree(n->subnet_tree);
-
 	if(n->edge_tree)
 		free_edge_tree(n->edge_tree);
 
@@ -97,9 +93,6 @@ void node_add(node_t *n) {
 }
 
 void node_del(node_t *n) {
-	for splay_each(subnet_t, s, n->subnet_tree)
-		subnet_del(n, s);
-
 	for splay_each(edge_t, e, n->edge_tree)
 		edge_del(e);
 

@@ -67,9 +67,6 @@ bool control_h(connection_t *c, const char *request) {
 		case REQ_DUMP_EDGES:
 			return dump_edges(c);
 
-		case REQ_DUMP_SUBNETS:
-			return dump_subnets(c);
-
 		case REQ_DUMP_CONNECTIONS:
 			return dump_connections(c);
 

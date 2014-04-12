@@ -187,34 +187,6 @@ bool get_config_address(const config_t *cfg, struct addrinfo **result) {
 	return false;
 }
 
-bool get_config_subnet(const config_t *cfg, subnet_t ** result) {
-	subnet_t subnet = {NULL};
-
-	if(!cfg)
-		return false;
-
-	if(!str2net(&subnet, cfg->value)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Subnet expected for configuration variable %s in %s line %d",
-			   cfg->variable, cfg->file, cfg->line);
-		return false;
-	}
-
-	/* Teach newbies what subnets are... */
-
-	if(((subnet.type == SUBNET_IPV4)
-		&& !maskcheck(&subnet.net.ipv4.address, subnet.net.ipv4.prefixlength, sizeof subnet.net.ipv4.address))
-		|| ((subnet.type == SUBNET_IPV6)
-		&& !maskcheck(&subnet.net.ipv6.address, subnet.net.ipv6.prefixlength, sizeof subnet.net.ipv6.address))) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Network address and prefix length do not match for configuration variable %s in %s line %d",
-			   cfg->variable, cfg->file, cfg->line);
-		return false;
-	}
-
-	*(*result = new_subnet()) = subnet;
-
-	return true;
-}
-
 /*
   Read exactly one line and strip the trailing newline if any.
 */

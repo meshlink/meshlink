@@ -23,6 +23,7 @@
 #include "conf.h"
 #include "logger.h"
 #include "names.h"
+#include "net.h"
 #include "script.h"
 #include "xalloc.h"
 

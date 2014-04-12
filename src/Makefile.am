@@ -66,15 +66,12 @@ libmeshlink_la_SOURCES = \
 	protocol_edge.c \
 	protocol_key.c \
 	protocol_misc.c \
-	protocol_subnet.c \
 	route.c route.h \
 	rsa.h \
 	rsagen.h \
 	script.c script.h \
 	splay_tree.c splay_tree.h \
 	sptps.c sptps.h \
-	subnet.c subnet.h \
-	subnet_parse.c \
 	system.h \
 	tincd.c \
 	utils.c utils.h \

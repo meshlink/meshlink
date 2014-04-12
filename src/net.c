@@ -32,7 +32,6 @@
 #include "net.h"
 #include "netutl.h"
 #include "protocol.h"
-#include "subnet.h"
 #include "xalloc.h"
 
 int contradicting_add_edge = 0;
@@ -42,22 +41,17 @@ time_t last_config_check = 0;
 static timeout_t pingtimer;
 static timeout_t periodictimer;
 
-/* Purge edges and subnets of unreachable nodes. Use carefully. */
+/* Purge edges of unreachable nodes. Use carefully. */
 
+// TODO: remove
 void purge(void) {
 	logger(DEBUG_PROTOCOL, LOG_DEBUG, "Purging unreachable nodes");
 
-	/* Remove all edges and subnets owned by unreachable nodes. */
+	/* Remove all edges owned by unreachable nodes. */
 
 	for splay_each(node_t, n, node_tree) {
 		if(!n->status.reachable) {
 			logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Purging node %s (%s)", n->name, n->hostname);
-
-			for splay_each(subnet_t, s, n->subnet_tree) {
-				send_del_subnet(everyone, s);
-				if(!strictsubnets)
-					subnet_del(n, s);
-			}
 
 			for splay_each(edge_t, e, n->edge_tree) {
 				if(!tunnelserver)
@@ -74,10 +68,6 @@ void purge(void) {
 			for splay_each(edge_t, e, edge_weight_tree)
 				if(e->to == n)
 					return;
-
-			if(!autoconnect && (!strictsubnets || !n->subnet_tree->head))
-				/* in strictsubnets mode do not delete nodes with subnets */
-				node_del(n);
 		}
 	}
 }
@@ -334,64 +324,6 @@ int reload_configuration(void) {
 	/* Parse some options that are allowed to be changed while tinc is running */
 
 	setup_myself_reloadable();
-
-	/* If StrictSubnet is set, expire deleted Subnets and read new ones in */
-
-	if(strictsubnets) {
-		for splay_each(subnet_t, subnet, subnet_tree)
-			subnet->expires = 1;
-
-		load_all_subnets();
-
-		for splay_each(subnet_t, subnet, subnet_tree) {
-			if(subnet->expires == 1) {
-				send_del_subnet(everyone, subnet);
-				if(subnet->owner->status.reachable)
-					subnet_update(subnet->owner, subnet, false);
-				subnet_del(subnet->owner, subnet);
-			} else if(subnet->expires == -1) {
-				subnet->expires = 0;
-			} else {
-				send_add_subnet(everyone, subnet);
-				if(subnet->owner->status.reachable)
-					subnet_update(subnet->owner, subnet, true);
-			}
-		}
-	} else { /* Only read our own subnets back in */
-		for splay_each(subnet_t, subnet, myself->subnet_tree)
-			if(!subnet->expires)
-				subnet->expires = 1;
-
-		config_t *cfg = lookup_config(config_tree, "Subnet");
-
-		while(cfg) {
-			subnet_t *subnet, *s2;
-
-			if(!get_config_subnet(cfg, &subnet))
-				continue;
-
-			if((s2 = lookup_subnet(myself, subnet))) {
-				if(s2->expires == 1)
-					s2->expires = 0;
-
-				free_subnet(subnet);
-			} else {
-				subnet_add(myself, subnet);
-				send_add_subnet(everyone, subnet);
-				subnet_update(myself, subnet, true);
-			}
-
-			cfg = lookup_config_next(config_tree, cfg);
-		}
-
-		for splay_each(subnet_t, subnet, myself->subnet_tree) {
-			if(subnet->expires == 1) {
-				send_del_subnet(everyone, subnet);
-				subnet_update(myself, subnet, false);
-				subnet_del(myself, subnet);
-			}
-		}
-	}
 
 	/* Try to make outgoing connections */
 
