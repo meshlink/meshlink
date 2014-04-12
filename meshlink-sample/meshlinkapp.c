@@ -4,6 +4,7 @@ int main(int argc , char **argv){
 
 char *confbase = "/tmp/meshlink/";
 char *name = "test";
+debug_level = 5;
 
 node_t* remotenode = new_node();
 char *remotename = "nameofremotenode";
