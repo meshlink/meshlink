@@ -471,57 +471,30 @@ end:
 
 bool tinc_stop();
 
-bool route_meshlink(node_t *source,vpn_packet_t *packet) {
-
-	printf("data %s\n",packet->data);
-	printf("data 16%s\n",packet->data+16);
-	printf("data 32%s\n",packet->data+32);
-	node_t* owner = NULL;
-
-	tincpackethdr* hdr = (tincpackethdr*)packet->data;
-	owner = lookup_node(hdr->destination);
-
-	if (owner == NULL) {
-	//Lookup failed
-	printf("NULL\n");
-	return false;
-	}
-	printf("lookupnode %s\n",owner->name);
-
-	if(!owner->status.reachable) {
-	//Do some here
-	return false;
-	}
-
-	//TODO: I skipped here a lot of checks !
-
-	send_packet(owner,packet);
-
-}
 // can be called from any thread
 bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 
 	vpn_packet_t packet;
 	tincpackethdr* hdr = malloc(sizeof(tincpackethdr));
-
-	if (sizeof(hdr) + len > MAXSIZE) {
+	if (sizeof(tincpackethdr) + len > MAXSIZE) {
 
 	//log something
 	return false;
 	}
 
+	memset(hdr->legacymtu,1,sizeof(hdr->legacymtu));
 	memcpy(hdr->destination,receiver->name,sizeof(hdr->destination));
 	memcpy(hdr->source,myself->name,sizeof(hdr->source));
 
 	packet.priority = 0;
-	packet.len = len + 32;
+	packet.len = sizeof(tincpackethdr) + len;
 
-	memcpy(packet.data,hdr,32);
-	memcpy(packet.data+32,buf,len);
+	memcpy(packet.data,hdr,sizeof(tincpackethdr));
+	memcpy(packet.data+sizeof(tincpackethdr),buf,len);
 
         myself->in_packets++;
         myself->in_bytes += packet.len;
-        route_meshlink(myself, &packet);
+        route(myself, &packet);
 
 return true;
 }

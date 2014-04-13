@@ -23,6 +23,7 @@
 #include "net.h"
 #include "route.h"
 #include "utils.h"
+#include "libmeshlink.h"
 
 rmode_t routing_mode = RMODE_ROUTER;
 fmode_t forwarding_mode = FMODE_INTERNAL;
@@ -58,6 +59,32 @@ static bool checklength(node_t *source, vpn_packet_t *packet, length_t length) {
 		return true;
 }
 
-void route(node_t *source, vpn_packet_t *packet) {
-	// TODO: route on name or key
+void route(node_t *source,vpn_packet_t *packet) {
+    // TODO: route on name or key
+
+    node_t* owner = NULL;
+    tincpackethdr* hdr = (tincpackethdr*)packet->data;
+    owner = lookup_node(hdr->destination);
+    if (owner == NULL) {
+    //Lookup failed
+    logger(DEBUG_TRAFFIC, LOG_WARNING, "Cant lookup the owner of a packet in the route() function. This should never happen \n");
+    return;
+    }
+
+    if (owner == myself ) {
+    //TODO: implement sending received data from meshlink library to the application
+    logger(DEBUG_TRAFFIC, LOG_WARNING, "I received a packet for me with payload: %s \n", packet->data + 46);
+    return;
+    }
+
+    if(!owner->status.reachable) {
+    //TODO: check what to do here, not just print a warning
+    logger(DEBUG_TRAFFIC, LOG_WARNING, "The owner of a packet in the route() function is unreachable. Dropping packet. \n");
+    return;
+    }
+
+    //TODO: I skipped here a lot of checks !
+
+    send_packet(owner,packet);
+    return;
 }
