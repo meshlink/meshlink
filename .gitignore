@@ -2,6 +2,8 @@ Makefile
 Makefile.in
 *.o
 *.a
+*.lo
+*.la
 /config.*
 /src/tincd
 /autom4te.cache
