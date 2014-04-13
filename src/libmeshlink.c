@@ -372,6 +372,19 @@ bool tinc_start(const char* confbaseapi) {
 return true;
 }
 
+__attribute__((constructor)) static void meshlink_init(void) {
+	/* Slllluuuuuuurrrrp! */
+
+	gettimeofday(&now, NULL);
+	srand(now.tv_sec + now.tv_usec);
+	crypto_init();
+}
+
+__attribute__((destructor)) static void meshlink_exit(void) {
+	crypto_exit();
+}
+
+
 bool tinc_main_thread(void * in) {
 	static bool status = false;
 
@@ -383,12 +396,6 @@ bool tinc_main_thread(void * in) {
 	openlogger("tinc", LOGMODE_STDERR);
 
 	init_configuration(&config_tree);
-
-	/* Slllluuuuuuurrrrp! */
-
-	gettimeofday(&now, NULL);
-	srand(now.tv_sec + now.tv_usec);
-	crypto_init();
 
 	if(!read_server_config())
 		return false;
@@ -455,8 +462,6 @@ end:
 	logger(DEBUG_ALWAYS, LOG_NOTICE, "Terminating");
 
 	//free(priority);
-
-	crypto_exit();
 
 	exit_configuration(&config_tree);
 
