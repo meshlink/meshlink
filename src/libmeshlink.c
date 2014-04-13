@@ -31,6 +31,7 @@
 #include "protocol.h"
 
 char *hosts_dir = NULL;
+recvdata_cb_t recv_callback;
 static char *name = NULL;
 char *tinc_conf = NULL;
 static bool tty = false;
@@ -363,7 +364,6 @@ __attribute__((destructor)) static void meshlink_exit(void) {
 
 void *tinc_main_thread(void * in) {
 	static bool status = false;
-
 	/* If nonzero, write log entries to a separate file. */
 	bool use_logfile = false;
 
@@ -491,6 +491,8 @@ automatically distributed blacklist or whitelist would be the next step.
 */
 bool tinc_blacklist(node_t *host);
 
-
+void recvdata_register_cb(recvdata_cb_t cb) {
+recv_callback = cb;
+};
 
 

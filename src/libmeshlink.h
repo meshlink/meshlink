@@ -24,6 +24,11 @@
 #include "logger.h"
 #include "route.h"
 
+typedef void (*recvdata_cb_t)(void *data);
+void recvdata_register_cb(recvdata_cb_t cb);
+
+extern recvdata_cb_t recv_callback;
+
 extern char *hosts_dir;
 extern FILE *fopenmask(const char *filename, const char *mode, mode_t perms);
 

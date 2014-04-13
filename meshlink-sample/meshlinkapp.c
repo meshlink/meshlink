@@ -1,5 +1,12 @@
 #include <libmeshlink.h>
 
+
+void handle_recv_data(void *data);
+void handle_recv_data(void *data) {
+printf("do nothing for now\n");
+
+}
+
 int main(int argc , char **argv){
 
 char *confbase = argc > 1 ? argv[1] : "/tmp/meshlink/";
@@ -15,6 +22,10 @@ remotenode->name = remotename;
 
 tinc_setup(confbase, name);
 tinc_start(confbase);
+
+//Register callback function for incoming data
+recvdata_register_cb(handle_recv_data);
+
 sleep(2); //there is a race condition here, tinc_start detaches to a thread the needs time to setup stuff
 while(1) {
 
