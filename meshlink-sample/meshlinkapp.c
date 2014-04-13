@@ -3,7 +3,7 @@
 
 void handle_recv_data(void *data);
 void handle_recv_data(void *data) {
-printf("do nothing for now\n");
+printf("Data received is %s\n",data);
 
 }
 
