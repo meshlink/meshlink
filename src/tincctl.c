@@ -1,6 +1,6 @@
 /*
     tincctl.c -- Controlling a running tincd
-    Copyright (C) 2007-2014 Guus Sliepen <guus@tinc-vpn.org>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -143,7 +143,7 @@ static void usage(bool status) {
 				"  join INVITATION            Join a VPN using an INVITIATION\n"
 				"  network [NETNAME]          List all known networks, or switch to the one named NETNAME.\n"
 				"\n");
-		printf("Report bugs to tinc@tinc-vpn.org.\n");
+		printf("Report bugs to bugs@meshlink.io.\n");
 	}
 }
 
@@ -1321,8 +1321,6 @@ const var_t variables[] = {
 	{"ScriptsInterpreter", VAR_SERVER},
 	{"StrictSubnets", VAR_SERVER},
 	{"TunnelServer", VAR_SERVER},
-	{"UDPRcvBuf", VAR_SERVER},
-	{"UDPSndBuf", VAR_SERVER},
 	{"VDEGroup", VAR_SERVER},
 	{"VDEPort", VAR_SERVER},
 	/* Host configuration */

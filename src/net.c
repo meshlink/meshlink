@@ -1,9 +1,6 @@
 /*
     net.c -- most of the network code
-    Copyright (C) 1998-2005 Ivo Timmermans,
-                  2000-2013 Guus Sliepen <guus@tinc-vpn.org>
-                  2006      Scott Lamb <slamb@slamb.org>
-                  2011      Loïc Grenié <loic.grenie@gmail.com>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -56,8 +53,7 @@ void purge(void) {
 			logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Purging node %s (%s)", n->name, n->hostname);
 
 			for splay_each(edge_t, e, n->edge_tree) {
-				if(!tunnelserver)
-					send_del_edge(everyone, e);
+				send_del_edge(everyone, e);
 				edge_del(e);
 			}
 		}
@@ -90,7 +86,7 @@ void terminate_connection(connection_t *c, bool report) {
 		c->node->connection = NULL;
 
 	if(c->edge) {
-		if(report && !tunnelserver)
+		if(report)
 			send_del_edge(everyone, c->edge);
 
 		edge_del(c->edge);
@@ -106,8 +102,7 @@ void terminate_connection(connection_t *c, bool report) {
 			edge_t *e;
 			e = lookup_edge(c->node, myself);
 			if(e) {
-				if(!tunnelserver)
-					send_del_edge(everyone, e);
+				send_del_edge(everyone, e);
 				edge_del(e);
 			}
 		}
@@ -294,8 +289,6 @@ int reload_configuration(void) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Unable to reread configuration file.");
 		return EINVAL;
 	}
-
-	read_config_options(config_tree, NULL);
 
 	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, myself->name);
 	read_config_file(config_tree, fname);

@@ -1,7 +1,6 @@
 /*
     protocol.c -- handle the meta-protocol, basic functions
-    Copyright (C) 1999-2005 Ivo Timmermans,
-                  2000-2013 Guus Sliepen <guus@tinc-vpn.org>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,13 +27,10 @@
 #include "utils.h"
 #include "xalloc.h"
 
-bool tunnelserver = false;
-bool experimental = true;
-
 /* Jumptable for the request handlers */
 
 static bool (*request_handlers[])(connection_t *, const char *) = {
-		id_h, metakey_h, challenge_h, chal_reply_h, ack_h,
+		id_h, NULL, NULL, NULL /* metakey_h, challenge_h, chal_reply_h */, ack_h,
 		status_h, error_h, termreq_h,
 		ping_h, pong_h,
 		NULL, NULL, //add_subnet_h, del_subnet_h,

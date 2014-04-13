@@ -1,7 +1,6 @@
 /*
     have.h -- include headers which are known to exist
-    Copyright (C) 1998-2005 Ivo Timmermans
-                  2003-2013 Guus Sliepen <guus@tinc-vpn.org>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -133,22 +132,6 @@
 #include <net/if_types.h>
 #endif
 
-#ifdef HAVE_NET_IF_TUN_H
-#include <net/if_tun.h>
-#endif
-
-#ifdef HAVE_NET_TUN_IF_TUN_H
-#include <net/tun/if_tun.h>
-#endif
-
-#ifdef HAVE_NET_IF_TAP_H
-#include <net/if_tap.h>
-#endif
-
-#ifdef HAVE_NET_TAP_IF_TAP_H
-#include <net/tap/if_tap.h>
-#endif
-
 #ifdef HAVE_NETINET_IN_SYSTM_H
 #include <netinet/in_systm.h>
 #endif
@@ -175,26 +158,6 @@
 
 #ifdef HAVE_NETINET_IP6_H
 #include <netinet/ip6.h>
-#endif
-
-#ifdef HAVE_NET_ETHERNET_H
-#include <net/ethernet.h>
-#endif
-
-#ifdef HAVE_NET_IF_ARP_H
-#include <net/if_arp.h>
-#endif
-
-#ifdef HAVE_NETINET_IP_ICMP_H
-#include <netinet/ip_icmp.h>
-#endif
-
-#ifdef HAVE_NETINET_ICMP6_H
-#include <netinet/icmp6.h>
-#endif
-
-#ifdef HAVE_NETINET_IF_ETHER_H
-#include <netinet/if_ether.h>
 #endif
 
 #ifdef HAVE_MINGW

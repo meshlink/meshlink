@@ -7,7 +7,7 @@ char *name = "test";
 debug_level = 5;
 
 node_t* remotenode = new_node();
-char *remotename = "nameofremotenode";
+char *remotename = "ml";
 
 //TODO: change this, calling a function that returns node_t
 remotenode->name = malloc(16);

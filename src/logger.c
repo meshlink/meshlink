@@ -1,7 +1,6 @@
 /*
     logger.c -- logging code
-    Copyright (C) 2004-2013 Guus Sliepen <guus@tinc-vpn.org>
-                  2004-2005 Ivo Timmermans
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

@@ -1,6 +1,6 @@
 /*
     sptps_test.c -- Simple Peer-to-Peer Security test program
-    Copyright (C) 2011-2013 Guus Sliepen <guus@tinc-vpn.org>,
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -81,7 +81,7 @@ static void usage() {
 			"  -R, --replay-window N   Set replay window to N bytes.\n"
 			"  -v, --verbose           Display debug messages.\n"
 			"\n");
-	fprintf(stderr, "Report bugs to tinc@tinc-vpn.org.\n");
+	fprintf(stderr, "Report bugs to bugs@meshlink.io.\n");
 }
 
 int main(int argc, char *argv[]) {

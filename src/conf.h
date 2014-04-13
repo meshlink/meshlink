@@ -1,7 +1,6 @@
 /*
     conf.h -- header for conf.c
-    Copyright (C) 1998-2005 Ivo Timmermans
-                  2000-2013 Guus Sliepen <guus@tinc-vpn.org>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,7 +36,6 @@ extern int pinginterval;
 extern int pingtimeout;
 extern int maxtimeout;
 extern bool bypass_security;
-extern list_t *cmdline_conf;
 
 extern void init_configuration(splay_tree_t **);
 extern void exit_configuration(splay_tree_t **);

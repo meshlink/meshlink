@@ -1,6 +1,6 @@
 /*
     invitation.c -- Create and accept invitations
-    Copyright (C) 2013-2014 Guus Sliepen <guus@tinc-vpn.org>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@
 #include "ecdsagen.h"
 #include "invitation.h"
 #include "netutl.h"
-#include "rsagen.h"
 #include "sptps.h"
 #include "tincctl.h"
 #include "utils.h"
@@ -712,19 +711,7 @@ make_names:
 	sptps_send_record(&sptps, 1, b64key, strlen(b64key));
 	free(b64key);
 
-
-	rsa_t *rsa = rsa_generate(2048, 0x1001);
-	xasprintf(&filename, "%s" SLASH "rsa_key.priv", confbase);
-	f = fopenmask(filename, "w", 0600);
-
-	rsa_write_pem_private_key(rsa, f);
-	fclose(f);
-
-	rsa_write_pem_public_key(rsa, fh);
-	fclose(fh);
-
 	ecdsa_free(key);
-	rsa_free(rsa);
 
 	check_port(name);
 

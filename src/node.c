@@ -1,7 +1,6 @@
 /*
     node.c -- node tree management
-    Copyright (C) 2001-2013 Guus Sliepen <guus@tinc-vpn.org>,
-                  2001-2005 Ivo Timmermans
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>,
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -64,11 +63,6 @@ void free_node(node_t *n) {
 		free_edge_tree(n->edge_tree);
 
 	sockaddrfree(&n->address);
-
-	cipher_close(n->incipher);
-	digest_close(n->indigest);
-	cipher_close(n->outcipher);
-	digest_close(n->outdigest);
 
 	ecdsa_free(n->ecdsa);
 	sptps_stop(&n->sptps);

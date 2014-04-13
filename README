@@ -1,52 +1,27 @@
-This is the README file for tinc version 1.1pre10. Installation
-instructions may be found in the INSTALL file.
+This is the README file for the MeshLink library. Installation instructions may
+be found in the INSTALL file.
 
-tinc is Copyright (C) 1998-2014 by:
-
-Ivo Timmermans,
-Guus Sliepen <guus@tinc-vpn.org>,
-and others.
-
-For a complete list of authors see the AUTHORS file.
+MeshLink is Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or (at
 your option) any later version. See the file COPYING for more details.
 
-
-This is a pre-release
----------------------
-
-Please note that this is NOT a stable release. Until version 1.1.0 is released,
-please use one of the 1.0.x versions if you need a stable version of tinc.
-
-Although tinc 1.1 will be protocol compatible with tinc 1.0.x, the
-functionality of the tinc program may still change, and the control socket
-protocol is not fixed yet.
+To obtain a license to use this library in commercial software, please contact
+sales@meshlink.io.
 
 
-Security statement
-------------------
+This is not a finished version
+------------------------------
 
-This version uses an experimental and unfinished cryptographic protocol. Use it
-at your own risk.
-
-
-Compatibility
--------------
-
-Version 1.1pre10 is compatible with 1.0pre8, 1.0 and later, but not with older
-versions of tinc.
-
-When the ExperimentalProtocol option is used, tinc is still compatible with
-1.0.X and 1.1pre10 itself, but not with any other 1.1preX version.
+Please do not use this library yet.
 
 
 Requirements
 ------------
 
-In order to compile tinc, you will need a GNU C compiler environment. Please
+In order to compile MeshLink, you will need a GNU C compiler environment. Please
 ensure you have the latest stable versions of all the required libraries:
 
 - OpenSSL (http://www.openssl.org/) version 1.0.0 or later, with support for
@@ -55,40 +30,20 @@ ensure you have the latest stable versions of all the required libraries:
 The following libraries are used by default, but can be disabled if necessary:
 
 - zlib (http://www.gzip.org/zlib/)
-- lzo (http://www.oberhumer.com/opensource/lzo/)
-- ncurses (http://invisible-island.net/ncurses/)
-- readline (ftp://ftp.gnu.org/pub/gnu/readline/)
-
 
 Features
 --------
 
-Tinc is a peer-to-peer VPN daemon that supports VPNs with an arbitrary number
-of nodes. Instead of configuring tunnels, you give tinc the location and
-public key of a few nodes in the VPN. After making the initial connections to
-those nodes, tinc will learn about all other nodes on the VPN, and will make
-connections automatically. When direct connections are not possible, data will
-be forwarded by intermediate nodes.
+MeshLink is a library that allows applications to connect to other instances of
+itself, and exchange messages in a secure way. MeshLink provides end-to-end
+encryption and authentication of messages with perfect forward secrecy. The
+MeshLink library starts its own thread which handles all network
+communications. The application only needs to register callbacks to get
+notified of incoming messages and other important events.
 
-By default, nodes authenticate each other using 2048 bit RSA (or 521 bit
-ECDSA*) keys. Traffic is encrypted using Blowfish in CBC mode (or AES-256 in
-GCM mode*), authenticated using HMAC-SHA1 (or GCM*), and is protected against
-replay attacks.
+Other noteworthy features are:
 
-*) When using the ExperimentalProtocol option.
-
-Tinc fully supports IPv6.
-
-Tinc can operate in several routing modes. In the default mode, "router", every
-node is associated with one or more IPv4 and/or IPv6 Subnets. The other two
-modes, "switch" and "hub", let the tinc daemons work together to form a virtual
-Ethernet network switch or hub.
-
-Normally, when started tinc will detach and run in the background. In a native
-Windows environment this means tinc will intall itself as a service, which will
-restart after reboots.  To prevent tinc from detaching or running as a service,
-use the -D option.
-
-The status of the VPN can be queried using the "tinc" command, which connects
-to a running tinc daemon via a control connection. The same tool also makes it
-easy to start and stop tinc, and to change its configuration.
+- IPv6 support
+- NAT traversal (requires at least one node that is not behind a NAT)
+- Ed25519 keys (TBD)
+- AES-256-GCM encryption and message authentication

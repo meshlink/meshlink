@@ -1,8 +1,8 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([tinc], [1.1pre10])
-AC_CONFIG_SRCDIR([src/tincd.c])
+AC_INIT([MeshLink], [0.1])
+AC_CONFIG_SRCDIR([src/libmeshlink.c])
 AC_GNU_SOURCE
 AM_INIT_AUTOMAKE([check-news std-options subdir-objects -Wall])
 AC_CONFIG_HEADERS([config.h])
@@ -57,7 +57,7 @@ case $host_os in
   ;;
   *bsd*)
     bsd=true
-    AC_MSG_WARN("Unknown BSD variant, tinc might not compile or work!")
+    AC_MSG_WARN("Unknown BSD variant, MeshLink might not compile or work!")
     AC_DEFINE(HAVE_BSD, 1, [Unknown BSD variant])
   ;;
   *cygwin*)
@@ -146,8 +146,8 @@ AC_TYPE_SIZE_T
 AC_HEADER_TIME
 AC_STRUCT_TM
 
-tinc_ATTRIBUTE(__malloc__)
-tinc_ATTRIBUTE(__warn_unused_result__)
+MeshLink_ATTRIBUTE(__malloc__)
+MeshLink_ATTRIBUTE(__warn_unused_result__)
 
 AC_CHECK_TYPES([socklen_t, struct ether_header, struct arphdr, struct ether_arp, struct in_addr, struct addrinfo, struct ip, struct icmp, struct in6_addr, struct sockaddr_in6, struct ip6_hdr, struct icmp6_hdr, struct nd_neighbor_solicit, struct nd_opt_hdr], , ,
   [#include "src/have.h"]
@@ -176,10 +176,9 @@ AC_CACHE_SAVE
 
 dnl These are defined in files in m4/
 
-tinc_ZLIB
-tinc_LZO
+MeshLink_ZLIB
 
-tinc_OPENSSL
+MeshLink_OPENSSL
 	
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile m4/Makefile test/Makefile])
 

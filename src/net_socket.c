@@ -1,9 +1,6 @@
 /*
     net_socket.c -- Handle various kinds of sockets.
-    Copyright (C) 1998-2005 Ivo Timmermans,
-                  2000-2014 Guus Sliepen <guus@tinc-vpn.org>
-                  2006      Scott Lamb <slamb@slamb.org>
-                  2009      Florian Forster <octo@verplant.org>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -41,8 +38,6 @@
 int addressfamily = AF_UNSPEC;
 int maxtimeout = 900;
 int seconds_till_retry = 5;
-int udp_rcvbuf = 0;
-int udp_sndbuf = 0;
 int max_connection_burst = 100;
 
 listen_socket_t listen_socket[MAXSOCKETS];
@@ -77,35 +72,6 @@ static void configure_tcp(connection_t *c) {
 	option = IPTOS_LOWDELAY;
 	setsockopt(c->socket, SOL_IP, IP_TOS, (void *)&option, sizeof option);
 #endif
-}
-
-static bool bind_to_interface(int sd) {
-	char *iface;
-
-#if defined(SOL_SOCKET) && defined(SO_BINDTODEVICE)
-	struct ifreq ifr;
-	int status;
-#endif /* defined(SOL_SOCKET) && defined(SO_BINDTODEVICE) */
-
-	if(!get_config_string (lookup_config (config_tree, "BindToInterface"), &iface))
-		return true;
-
-#if defined(SOL_SOCKET) && defined(SO_BINDTODEVICE)
-	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_ifrn.ifrn_name, iface, IFNAMSIZ);
-	ifr.ifr_ifrn.ifrn_name[IFNAMSIZ - 1] = 0;
-
-	status = setsockopt(sd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr));
-	if(status) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Can't bind to interface %s: %s", iface,
-				strerror(errno));
-		return false;
-	}
-#else /* if !defined(SOL_SOCKET) || !defined(SO_BINDTODEVICE) */
-	logger(DEBUG_ALWAYS, LOG_WARNING, "%s not supported on this platform", "BindToInterface");
-#endif
-
-	return true;
 }
 
 static bool bind_to_address(connection_t *c) {
@@ -241,12 +207,6 @@ int setup_vpn_in_socket(const sockaddr_t *sa) {
 	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof option);
 	setsockopt(nfd, SOL_SOCKET, SO_BROADCAST, (void *)&option, sizeof option);
 
-	if(udp_rcvbuf && setsockopt(nfd, SOL_SOCKET, SO_RCVBUF, (void *)&udp_rcvbuf, sizeof(udp_rcvbuf)))
-		logger(DEBUG_ALWAYS, LOG_WARNING, "Can't set UDP SO_RCVBUF to %i: %s", udp_rcvbuf, strerror(errno));
-
-	if(udp_sndbuf && setsockopt(nfd, SOL_SOCKET, SO_SNDBUF, (void *)&udp_sndbuf, sizeof(udp_sndbuf)))
-		logger(DEBUG_ALWAYS, LOG_WARNING, "Can't set UDP SO_SNDBUF to %i: %s", udp_sndbuf, strerror(errno));
-
 #if defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
 	if(sa->sa.sa_family == AF_INET6)
 		setsockopt(nfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof option);
@@ -283,11 +243,6 @@ int setup_vpn_in_socket(const sockaddr_t *sa) {
 #else
 #warning No way to disable IPv6 fragmentation
 #endif
-
-	if (!bind_to_interface(nfd)) {
-		closesocket(nfd);
-		return -1;
-	}
 
 	if(bind(nfd, &sa->sa, SALEN(sa->sa))) {
 		closesocket(nfd);
@@ -501,7 +456,6 @@ begin:
 			setsockopt(c->socket, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof option);
 #endif
 
-		bind_to_interface(c->socket);
 		bind_to_address(c);
 	}
 
@@ -527,9 +481,6 @@ begin:
 
 	c->status.connecting = true;
 	c->name = xstrdup(outgoing->name);
-	c->outcipher = myself->connection->outcipher;
-	c->outdigest = myself->connection->outdigest;
-	c->outmaclength = myself->connection->outmaclength;
 	c->outcompression = myself->connection->outcompression;
 	c->last_ping_time = now.tv_sec;
 
@@ -674,9 +625,6 @@ void handle_new_meta_connection(void *data, int flags) {
 
 	c = new_connection();
 	c->name = xstrdup("<unknown>");
-	c->outcipher = myself->connection->outcipher;
-	c->outdigest = myself->connection->outdigest;
-	c->outmaclength = myself->connection->outmaclength;
 	c->outcompression = myself->connection->outcompression;
 
 	c->address = sa;

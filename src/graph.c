@@ -1,7 +1,6 @@
 /*
     graph.c -- graph algorithms
-    Copyright (C) 2001-2013 Guus Sliepen <guus@tinc-vpn.org>,
-                  2001-2005 Ivo Timmermans
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -209,16 +208,11 @@ static void check_reachability(void) {
 					   n->name, n->hostname);
 			}
 
-			if(experimental && OPTION_VERSION(n->options) >= 2)
-				n->status.sptps = true;
-
 			/* TODO: only clear status.validkey if node is unreachable? */
 
 			n->status.validkey = false;
-			if(n->status.sptps) {
-				sptps_stop(&n->sptps);
-				n->status.waitingforkey = false;
-			}
+			sptps_stop(&n->sptps);
+			n->status.waitingforkey = false;
 			n->last_req_key = 0;
 
 			n->status.udp_confirmed = false;
@@ -235,12 +229,8 @@ static void check_reachability(void) {
 				memset(&n->status, 0, sizeof n->status);
 				n->options = 0;
 			} else if(n->connection) {
-				if(n->status.sptps) {
-					if(n->connection->outgoing)
-						send_req_key(n);
-				} else {
-					send_ans_key(n);
-				}
+				if(n->connection->outgoing)
+					send_req_key(n);
 			}
 		}
 	}

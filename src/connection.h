@@ -1,7 +1,6 @@
 /*
     connection.h -- header for connection.c
-    Copyright (C) 2000-2013 Guus Sliepen <guus@tinc-vpn.org>,
-                  2000-2005 Ivo Timmermans
+    Copyright (C) 2000-2013 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,7 +23,6 @@
 #include "buffer.h"
 #include "cipher.h"
 #include "digest.h"
-#include "rsa.h"
 #include "list.h"
 #include "sptps.h"
 
@@ -41,8 +39,8 @@ typedef struct connection_status_t {
 		unsigned int unused_termreq:1;          /* the termination of this connection was requested */
 		unsigned int remove_unused:1;           /* Set to 1 if you want this connection removed */
 		unsigned int timeout_unused:1;          /* 1 if gotten timeout */
-		unsigned int encryptout:1;              /* 1 if we can encrypt outgoing traffic */
-		unsigned int decryptin:1;               /* 1 if we have to decrypt incoming traffic */
+		unsigned int unused_encryptout:1;       /* 1 if we can encrypt outgoing traffic */
+		unsigned int unused_decryptin:1;        /* 1 if we have to decrypt incoming traffic */
 		unsigned int mst:1;                     /* 1 if this connection is part of a minimum spanning tree */
 		unsigned int control:1;                 /* 1 if this is a control connection */
 		unsigned int pcap:1;                    /* 1 if this is a control connection requesting packet capture */
@@ -75,20 +73,11 @@ typedef struct connection_t {
 	struct node_t *node;            /* node associated with the other end */
 	struct edge_t *edge;            /* edge associated with this connection */
 
-	rsa_t *rsa;                     /* his public RSA key */
 	ecdsa_t *ecdsa;                 /* his public ECDSA key */
-	cipher_t *incipher;             /* Cipher he will use to send data to us */
-	cipher_t *outcipher;            /* Cipher we will use to send data to him */
-	digest_t *indigest;
-	digest_t *outdigest;
 	sptps_t sptps;
 
-	int inmaclength;
-	int outmaclength;
 	int incompression;
 	int outcompression;
-
-	char *hischallenge;             /* The challenge we sent to him */
 
 	struct buffer_t inbuf;
 	struct buffer_t outbuf;

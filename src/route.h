@@ -1,7 +1,6 @@
 /*
     route.h -- header file for route.c
-    Copyright (C) 2000-2005 Ivo Timmermans
-                  2000-2012 Guus Sliepen <guus@tinc-vpn.org>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -47,7 +46,6 @@ extern fmode_t forwarding_mode;
 extern bmode_t broadcast_mode;
 extern bool decrement_ttl;
 extern bool directonly;
-extern bool overwrite_mac;
 extern bool priorityinheritance;
 extern int macexpire;
 extern bool pcap;

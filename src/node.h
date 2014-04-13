@@ -1,7 +1,6 @@
 /*
     node.h -- header for node.c
-    Copyright (C) 2001-2013 Guus Sliepen <guus@tinc-vpn.org>,
-                  2001-2005 Ivo Timmermans
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,7 +33,7 @@ typedef struct node_status_t {
 	unsigned int visited:1;                 /* 1 if this node has been visited by one of the graph algorithms */
 	unsigned int reachable:1;               /* 1 if this node is reachable in the graph */
 	unsigned int indirect:1;                /* 1 if this node is not directly reachable by us */
-	unsigned int sptps:1;                   /* 1 if this node supports SPTPS */
+	unsigned int unused_sptps:1;            /* 1 if this node supports SPTPS */
 	unsigned int udp_confirmed:1;           /* 1 if the address is one that we received UDP traffic on */
 	unsigned int broadcast:1;		/* 1 if the next UDP packet should be broadcast to the local network */
 	unsigned int unused:23;
@@ -55,12 +54,6 @@ typedef struct node_t {
 	ecdsa_t *ecdsa;                         /* His public ECDSA key */
 	sptps_t sptps;
 
-	cipher_t *incipher;                     /* Cipher for UDP packets */
-	digest_t *indigest;                     /* Digest for UDP packets */
-
-	cipher_t *outcipher;                    /* Cipher for UDP packets */
-	digest_t *outdigest;                    /* Digest for UDP packets */
-
 	int incompression;                      /* Compressionlevel, 0 = no compression */
 	int outcompression;                     /* Compressionlevel, 0 = no compression */
 
@@ -78,7 +71,6 @@ typedef struct node_t {
 	uint32_t received;                      /* Total valid packets received from this node */
 	uint32_t prev_received_seqno;
 	uint32_t prev_received;
-	uint32_t farfuture;                     /* Packets in a row that have arrived from the far future */
 	unsigned char* late;                    /* Bitfield marking late packets */
 
 	length_t mtu;                           /* Maximum size of packets to send to this node */

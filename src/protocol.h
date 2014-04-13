@@ -1,7 +1,6 @@
 /*
     protocol.h -- header for protocol.c
-    Copyright (C) 1999-2005 Ivo Timmermans,
-                  2000-2013 Guus Sliepen <guus@tinc-vpn.org>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -57,9 +56,6 @@ typedef struct past_request_t {
 	time_t firstseen;
 } past_request_t;
 
-extern bool tunnelserver;
-extern bool experimental;
-
 extern ecdsa_t *invitation_key;
 
 /* Maximum size of strings in a request.
@@ -88,10 +84,6 @@ extern bool seen_request(const char *);
 /* Requests */
 
 extern bool send_id(struct connection_t *);
-extern bool send_metakey(struct connection_t *);
-extern bool send_metakey_ec(struct connection_t *);
-extern bool send_challenge(struct connection_t *);
-extern bool send_chal_reply(struct connection_t *);
 extern bool send_ack(struct connection_t *);
 extern bool send_status(struct connection_t *, int, const char *);
 extern bool send_error(struct connection_t *, int, const  char *);
@@ -108,9 +100,6 @@ extern bool send_tcppacket(struct connection_t *, const struct vpn_packet_t *);
 /* Request handlers  */
 
 extern bool id_h(struct connection_t *, const char *);
-extern bool metakey_h(struct connection_t *, const char *);
-extern bool challenge_h(struct connection_t *, const char *);
-extern bool chal_reply_h(struct connection_t *, const char *);
 extern bool ack_h(struct connection_t *, const char *);
 extern bool status_h(struct connection_t *, const char *);
 extern bool error_h(struct connection_t *, const char *);

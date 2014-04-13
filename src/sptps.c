@@ -1,7 +1,6 @@
 /*
     sptps.c -- Simple Peer-to-Peer Security
-    Copyright (C) 2011-2013 Guus Sliepen <guus@tinc-vpn.org>,
-                  2010      Brandon L. Black <blblack@gmail.com>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -437,11 +436,7 @@ static bool sptps_receive_data_datagram(sptps_t *s, const char *data, size_t len
 	if(s->replaywin) {
 		if(seqno != s->inseqno) {
 			if(seqno >= s->inseqno + s->replaywin * 8) {
-				// Prevent packets that jump far ahead of the queue from causing many others to be dropped.
-				if(s->farfuture++ < s->replaywin >> 2)
-					return error(s, EIO, "Packet is %d seqs in the future, dropped (%u)\n", seqno - s->inseqno, s->farfuture);
-
-				// Unless we have seen lots of them, in which case we consider the others lost.
+				// TODO: Prevent packets that jump far ahead of the queue from causing many others to be dropped.
 				warning(s, "Lost %d packets\n", seqno - s->inseqno);
 				// Mark all packets in the replay window as being late.
 				memset(s->late, 255, s->replaywin);
@@ -458,7 +453,6 @@ static bool sptps_receive_data_datagram(sptps_t *s, const char *data, size_t len
 
 		// Mark the current packet as not being late.
 		s->late[(seqno / 8) % s->replaywin] &= ~(1 << seqno % 8);
-		s->farfuture = 0;
 	}
 
 	if(seqno >= s->inseqno)

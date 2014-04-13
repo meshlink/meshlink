@@ -1,9 +1,6 @@
 /*
     net_setup.c -- Setup.
-    Copyright (C) 1998-2005 Ivo Timmermans,
-                  2000-2014 Guus Sliepen <guus@tinc-vpn.org>
-                  2006      Scott Lamb <slamb@slamb.org>
-                  2010      Brandon Black <blblack@gmail.com>
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -33,7 +30,6 @@
 #include "netutl.h"
 #include "protocol.h"
 #include "route.h"
-#include "rsa.h"
 #include "utils.h"
 #include "xalloc.h"
 
@@ -132,44 +128,6 @@ bool read_ecdsa_public_key(connection_t *c) {
 	return c->ecdsa;
 }
 
-bool read_rsa_public_key(connection_t *c) {
-	if(ecdsa_active(c->ecdsa))
-		return true;
-
-	FILE *fp;
-	char *fname;
-	char *n;
-
-	/* First, check for simple PublicKey statement */
-
-	if(get_config_string(lookup_config(c->config_tree, "PublicKey"), &n)) {
-		c->rsa = rsa_set_hex_public_key(n, "FFFF");
-		free(n);
-		return c->rsa;
-	}
-
-	/* Else, check for PublicKeyFile statement and read it */
-
-	if(!get_config_string(lookup_config(c->config_tree, "PublicKeyFile"), &fname))
-		xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, c->name);
-
-	fp = fopen(fname, "r");
-
-	if(!fp) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error reading RSA public key file `%s': %s", fname, strerror(errno));
-		free(fname);
-		return false;
-	}
-
-	c->rsa = rsa_read_pem_public_key(fp);
-	fclose(fp);
-
-	if(!c->rsa)
-		logger(DEBUG_ALWAYS, LOG_ERR, "Reading RSA public key file `%s' failed: %s", fname, strerror(errno));
-	free(fname);
-	return c->rsa;
-}
-
 static bool read_ecdsa_private_key(void) {
 	FILE *fp;
 	char *fname;
@@ -233,61 +191,6 @@ static bool read_invitation_key(void) {
 
 	free(fname);
 	return invitation_key;
-}
-
-static bool read_rsa_private_key(void) {
-	FILE *fp;
-	char *fname;
-	char *n, *d;
-
-	/* First, check for simple PrivateKey statement */
-
-	if(get_config_string(lookup_config(config_tree, "PrivateKey"), &d)) {
-		if(!get_config_string(lookup_config(config_tree, "PublicKey"), &n)) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "PrivateKey used but no PublicKey found!");
-			free(d);
-			return false;
-		}
-		myself->connection->rsa = rsa_set_hex_private_key(n, "FFFF", d);
-		free(n);
-		free(d);
-		return myself->connection->rsa;
-	}
-
-	/* Else, check for PrivateKeyFile statement and read it */
-
-	if(!get_config_string(lookup_config(config_tree, "PrivateKeyFile"), &fname))
-		xasprintf(&fname, "%s" SLASH "rsa_key.priv", confbase);
-
-	fp = fopen(fname, "r");
-
-	if(!fp) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error reading RSA private key file `%s': %s",
-			   fname, strerror(errno));
-		free(fname);
-		return false;
-	}
-
-#if !defined(HAVE_MINGW) && !defined(HAVE_CYGWIN)
-	struct stat s;
-
-	if(fstat(fileno(fp), &s)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Could not stat RSA private key file `%s': %s'", fname, strerror(errno));
-		free(fname);
-		return false;
-	}
-
-	if(s.st_mode & ~0100700)
-		logger(DEBUG_ALWAYS, LOG_WARNING, "Warning: insecure file permissions for RSA private key file `%s'!", fname);
-#endif
-
-	myself->connection->rsa = rsa_read_pem_private_key(fp);
-	fclose(fp);
-
-	if(!myself->connection->rsa)
-		logger(DEBUG_ALWAYS, LOG_ERR, "Reading RSA private key file `%s' failed: %s", fname, strerror(errno));
-	free(fname);
-	return myself->connection->rsa;
 }
 
 static timeout_t keyexpire_timeout;
@@ -674,16 +577,7 @@ bool setup_myself(void) {
 
 	myself->options |= PROT_MINOR << 24;
 
-	if(!get_config_bool(lookup_config(config_tree, "ExperimentalProtocol"), &experimental)) {
-		experimental = read_ecdsa_private_key();
-		if(!experimental)
-			logger(DEBUG_ALWAYS, LOG_WARNING, "Support for SPTPS disabled.");
-	} else {
-		if(experimental && !read_ecdsa_private_key())
-			return false;
-	}
-
-	if(!read_rsa_private_key())
+	if(!read_ecdsa_private_key())
 		return false;
 
 	/* Ensure myport is numeric */
@@ -703,25 +597,9 @@ bool setup_myself(void) {
 	if(!setup_myself_reloadable())
 		return false;
 
-	get_config_bool(lookup_config(config_tree, "TunnelServer"), &tunnelserver);
-
 	if(get_config_int(lookup_config(config_tree, "MaxConnectionBurst"), &max_connection_burst)) {
 		if(max_connection_burst <= 0) {
 			logger(DEBUG_ALWAYS, LOG_ERR, "MaxConnectionBurst cannot be negative!");
-			return false;
-		}
-	}
-
-	if(get_config_int(lookup_config(config_tree, "UDPRcvBuf"), &udp_rcvbuf)) {
-		if(udp_rcvbuf <= 0) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "UDPRcvBuf cannot be negative!");
-			return false;
-		}
-	}
-
-	if(get_config_int(lookup_config(config_tree, "UDPSndBuf"), &udp_sndbuf)) {
-		if(udp_sndbuf <= 0) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "UDPSndBuf cannot be negative!");
 			return false;
 		}
 	}
@@ -736,43 +614,7 @@ bool setup_myself(void) {
 		sptps_replaywin = replaywin;
 	}
 
-	/* Generate packet encryption key */
-
-	if(!get_config_string(lookup_config(config_tree, "Cipher"), &cipher))
-		cipher = xstrdup("blowfish");
-
-	if(!strcasecmp(cipher, "none")) {
-		myself->incipher = NULL;
-	} else if(!(myself->incipher = cipher_open_by_name(cipher))) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Unrecognized cipher type!");
-		return false;
-	}
-
-	free(cipher);
-
 	timeout_add(&keyexpire_timeout, keyexpire_handler, &keyexpire_timeout, &(struct timeval){keylifetime, rand() % 100000});
-
-	/* Check if we want to use message authentication codes... */
-
-	int maclength = 4;
-	get_config_int(lookup_config(config_tree, "MACLength"), &maclength);
-
-	if(maclength < 0) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Bogus MAC length!");
-		return false;
-	}
-
-	if(!get_config_string(lookup_config(config_tree, "Digest"), &digest))
-		digest = xstrdup("sha1");
-
-	if(!strcasecmp(digest, "none")) {
-		myself->indigest = NULL;
-	} else if(!(myself->indigest = digest_open_by_name(digest, maclength))) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Unrecognized digest type!");
-		return false;
-	}
-
-	free(digest);
 
 	/* Compression */
 
@@ -792,7 +634,6 @@ bool setup_myself(void) {
 	myself->via = myself;
 	myself->status.reachable = true;
 	myself->last_state_change = now.tv_sec;
-	myself->status.sptps = experimental;
 	node_add(myself);
 
 	graph();
