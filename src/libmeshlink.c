@@ -17,12 +17,19 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "libmeshlink.h"
-#ifdef HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#endif
+#include "system.h"
+
+#include <pthread.h>
+
+#include "connection.h"
 #include "crypto.h"
 #include "ecdsagen.h"
+#include "edge.h"
+#include "libmeshlink.h"
+#include "net.h"
+#include "node.h"
+#include "protocol.h"
+
 char *hosts_dir = NULL;
 static char *name = NULL;
 char *tinc_conf = NULL;
@@ -32,37 +39,6 @@ static bool tty = false;
 /* If nonzero, disable swapping for this process. */
 static bool do_mlock = false;
 #endif
-
-/*
-  initialize network
-*/
-bool setup_meshlink_network(void) {
-	init_connections();
-	init_nodes();
-	init_edges();
-	init_requests();
-
-	if(get_config_int(lookup_config(config_tree, "PingInterval"), &pinginterval)) {
-		if(pinginterval < 1) {
-			pinginterval = 86400;
-		}
-	} else
-		pinginterval = 60;
-
-	if(!get_config_int(lookup_config(config_tree, "PingTimeout"), &pingtimeout))
-		pingtimeout = 5;
-	if(pingtimeout < 1 || pingtimeout > pinginterval)
-		pingtimeout = pinginterval;
-
-	//TODO: check if this makes sense in libmeshlink
-	if(!get_config_int(lookup_config(config_tree, "MaxOutputBufferSize"), &maxoutbufsize))
-		maxoutbufsize = 10 * MTU;
-
-	if(!setup_myself())
-		return false;
-
-	return true;
-}
 
 /* Open a file with the desired permissions, minus the umask.
    Also, if we want to create an executable file, we call fchmod()
@@ -292,7 +268,7 @@ static bool try_bind(int port) {
 	return true;
 }
 
-int check_port(char *name) {
+int check_port(const char *name) {
 	if(try_bind(655))
 		return 655;
 
@@ -366,8 +342,8 @@ bool tinc_setup(const char* confbaseapi, const char* name) {
 
 bool tinc_start(const char* confbaseapi) {
 	pthread_t tincThread;
-	confbase = confbaseapi;
-	pthread_create(&tincThread,NULL,tinc_main_thread,confbaseapi);
+	confbase = xstrdup(confbaseapi);
+	pthread_create(&tincThread,NULL,tinc_main_thread,confbase);
 	pthread_detach(tincThread);
 return true;
 }
@@ -385,7 +361,7 @@ __attribute__((destructor)) static void meshlink_exit(void) {
 }
 
 
-bool tinc_main_thread(void * in) {
+void *tinc_main_thread(void * in) {
 	static bool status = false;
 
 	/* If nonzero, write log entries to a separate file. */
@@ -402,49 +378,10 @@ bool tinc_main_thread(void * in) {
 
 	//char *priority = NULL; //shoud be not needed in libmeshlink
 
-#ifdef HAVE_MLOCKALL
-	/* Lock all pages into memory if requested.
-	 * This has to be done after daemon()/fork() so it works for child.
-	 * No need to do that in parent as it's very short-lived. */
-	if(do_mlock && mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "mlockall",
-		   strerror(errno));
-		return 1;
-	}
-#endif
-
 	/* Setup sockets and open device. */
 
-	if(!setup_meshlink_network())
+	if(!setup_network())
 		goto end;
-
-	/* Change process priority */
-	//should be not needed in libmeshlink
-	//if(get_config_string(lookup_config(config_tree, "ProcessPriority"), &priority)) {
-	//	if(!strcasecmp(priority, "Normal")) {
-	//		if (setpriority(NORMAL_PRIORITY_CLASS) != 0) {
-	//			logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "setpriority", strerror(errno));
-	//			goto end;
-	//		}
-	//	} else if(!strcasecmp(priority, "Low")) {
-	//		if (setpriority(BELOW_NORMAL_PRIORITY_CLASS) != 0) {
-	//			       logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "setpriority", strerror(errno));
-	//			goto end;
-	//		}
-	//	} else if(!strcasecmp(priority, "High")) {
-	//		if (setpriority(HIGH_PRIORITY_CLASS) != 0) {
-	//			logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "setpriority", strerror(errno));
-	//			goto end;
-	//		}
-	//	} else {
-	//		logger(DEBUG_ALWAYS, LOG_ERR, "Invalid priority `%s`!", priority);
-	//		goto end;
-	//	}
-	//}
-
-	/* drop privileges */
-	//if (!drop_privs())
-	//	goto end;
 
 	/* Start main loop. It only exits when tinc is killed. */
 
@@ -465,8 +402,7 @@ end:
 
 	exit_configuration(&config_tree);
 
-	return status;
-
+	return (void *)status;
 }
 
 bool tinc_stop();
