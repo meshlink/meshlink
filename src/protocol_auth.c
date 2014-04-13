@@ -349,8 +349,6 @@ bool id_h(connection_t *c, const char *request) {
 		return false;
 	}
 
-	c->allow_request = METAKEY;
-
 	c->allow_request = ACK;
 	char label[25 + strlen(myself->name) + strlen(c->name)];
 

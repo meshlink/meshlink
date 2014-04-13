@@ -51,6 +51,12 @@ bool send_meta(connection_t *c, const char *buffer, int length) {
 	logger(DEBUG_META, LOG_DEBUG, "Sending %d bytes of metadata to %s (%s)", length,
 			   c->name, c->hostname);
 
+	if(c->allow_request == ID) {
+		buffer_add(&c->outbuf, buffer, length);
+		io_set(&c->io, IO_READ | IO_WRITE);
+		return true;
+	}
+
 	return sptps_send_record(&c->sptps, 0, buffer, length);
 }
 
@@ -131,6 +137,33 @@ bool receive_meta(connection_t *c) {
 			logger(DEBUG_ALWAYS, LOG_ERR, "Metadata socket read error for %s (%s): %s",
 				   c->name, c->hostname, sockstrerror(sockerrno));
 		return false;
+	}
+
+	if(c->allow_request == ID) {
+		endp = memchr(bufp, '\n', inlen);
+		if(endp)
+			endp++;
+		else
+			endp = bufp + inlen;
+
+		buffer_add(&c->inbuf, bufp, endp - bufp);
+
+		inlen -= endp - bufp;
+		bufp = endp;
+
+		while(c->inbuf.len) {
+			char *request = buffer_readline(&c->inbuf);
+			if(request) {
+				bool result = receive_request(c, request);
+				if(!result)
+					return false;
+				continue;
+			} else {
+				break;
+			}
+		}
+
+		return true;
 	}
 
 	return sptps_receive_data(&c->sptps, bufp, inlen);
