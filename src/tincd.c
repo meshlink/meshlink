@@ -147,7 +147,7 @@ static bool parse_options(int argc, char **argv) {
 	return true;
 }
 
-int main(int argc, char **argv) {
+int old_main(int argc, char **argv) {
 	if(!parse_options(argc, argv))
 		return 1;
 
