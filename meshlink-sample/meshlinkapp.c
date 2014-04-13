@@ -2,12 +2,12 @@
 
 int main(int argc , char **argv){
 
-char *confbase = "/tmp/meshlink/";
-char *name = "test";
+char *confbase = argc > 1 ? argv[1] : "/tmp/meshlink/";
+char *name = argc > 2 ? argv[2] : "foo";
 debug_level = 5;
 
 node_t* remotenode = new_node();
-char *remotename = "ml";
+char *remotename = argc > 3 ? argv[3] : "bar";
 
 //TODO: change this, calling a function that returns node_t
 remotenode->name = malloc(16);
