@@ -532,32 +532,6 @@ end:
 
 bool tinc_stop();
 
-bool route_meshlink(node_t *source,vpn_packet_t *packet) {
-
-	printf("data %s\n",packet->data+14);
-	printf("data 46%s\n",packet->data+sizeof(tincpackethdr));
-	node_t* owner = NULL;
-
-	tincpackethdr* hdr = (tincpackethdr*)packet->data;
-	owner = lookup_node(hdr->destination);
-
-	if (owner == NULL) {
-	//Lookup failed
-	printf("NULL\n");
-	return false;
-	}
-	printf("lookupnode %s\n",owner->name);
-
-	if(!owner->status.reachable) {
-	//Do some here
-	return false;
-	}
-
-	//TODO: I skipped here a lot of checks !
-
-	send_packet(owner,packet);
-
-}
 // can be called from any thread
 bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 
@@ -581,7 +555,7 @@ bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 
         myself->in_packets++;
         myself->in_bytes += packet.len;
-        route_meshlink(myself, &packet);
+        route(myself, &packet);
 
 return true;
 }
