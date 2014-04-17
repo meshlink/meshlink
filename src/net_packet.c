@@ -562,6 +562,7 @@ bool receive_sptps_record(void *handle, uint8_t type, const char *data, uint16_t
 	}
 
 	int offset = (type & PKT_MAC) ? 0 : 14;
+	offset = 0; //TODO: This is just a dirty hack. We dont have IP packets inside libmeshlink
 	if(type & PKT_COMPRESSED) {
 		length_t ulen = uncompress_packet(inpkt.data + offset, (const uint8_t *)data, len, from->incompression);
 		if(ulen < 0) {
@@ -574,25 +575,6 @@ bool receive_sptps_record(void *handle, uint8_t type, const char *data, uint16_t
 	} else {
 		memcpy(inpkt.data + offset, data, len);
 		inpkt.len = len + offset;
-	}
-
-	/* Generate the Ethernet packet type if necessary */
-	if(offset) {
-		switch(inpkt.data[14] >> 4) {
-			case 4:
-				inpkt.data[12] = 0x08;
-				inpkt.data[13] = 0x00;
-				break;
-			case 6:
-				inpkt.data[12] = 0x86;
-				inpkt.data[13] = 0xDD;
-				break;
-			default:
-				logger(DEBUG_TRAFFIC, LOG_ERR,
-						   "Unknown IP version %d while reading packet from %s (%s)",
-						   inpkt.data[14] >> 4, from->name, from->hostname);
-				return false;
-		}
 	}
 
 	receive_packet(from, &inpkt);
