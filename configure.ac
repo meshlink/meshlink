@@ -179,8 +179,6 @@ dnl These are defined in files in m4/
 
 MeshLink_ZLIB
 
-MeshLink_OPENSSL
-	
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile m4/Makefile test/Makefile])
 
 AC_OUTPUT
