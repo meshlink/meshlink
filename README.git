@@ -1,7 +1,6 @@
 Before you can start compiling MeshLink from a fresh git clone, you have
 to install the very latest versions of the following packages:
 
-- OpenSSL
 - zlib
 - GCC
 - automake

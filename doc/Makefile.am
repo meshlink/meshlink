@@ -1,12 +1,12 @@
 ## Process this file with automake to get Makefile.in
 
-info_TEXINFOS = tinc.texi
+info_TEXINFOS = meshlink.texi
 
 man_MANS =
 
-EXTRA_DIST = tincinclude.texi.in
+EXTRA_DIST = include.texi.in
 
-CLEANFILES = *.html tincinclude.texi
+CLEANFILES = *.html include.texi
 
 # Use `ginstall' in the definition of man_MANS to avoid
 # confusion with the `install' target.  The install rule transforms `ginstall'
@@ -22,7 +22,7 @@ substitute = sed \
 	-e s,'@sysconfdir\@',"$(sysconfdir)",g \
 	-e s,'@localstatedir\@',"$(localstatedir)",g
 
-tincinclude.texi: tincinclude.texi.in
+include.texi: include.texi.in
 	$(substitute) $? > $@
 	
-tinc.texi: tincinclude.texi
+meshlink.texi: include.texi

@@ -1,0 +1,116 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename meshlink.info
+@settitle MeshLink Manual
+@setchapternewpage odd
+@c %**end of header
+
+@include include.texi
+
+@ifinfo
+@dircategory Networking tools
+@direntry
+* MeshLink: (MeshLink).              The MeshLink library.
+@end direntry
+
+This is the info manual for the MeshLink library version @value{VERSION}.
+
+Copyright @copyright{} 2014 Guus Sliepen <guus@@tinc-vpn.org>.
+
+Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the
+entire resulting derived work is distributed under the terms of a
+permission notice identical to this one.
+@end ifinfo
+
+@afourpaper
+@paragraphindent none
+@finalout
+
+@titlepage
+@title The MeshLink library
+@author Guus Sliepen
+
+@page
+@vskip 0pt plus 1filll
+This is the info manual for the MeshLink library version @value{VERSION}.
+
+Copyright @copyright{} 2014 Guus Sliepen <guus@@tinc-vpn.org>
+
+Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the
+entire resulting derived work is distributed under the terms of a
+permission notice identical to this one.
+@end titlepage
+
+@ifnottex
+@c ==================================================================
+@node Top
+@top Top
+
+@menu
+* Introduction::
+* About us::
+* Concept Index::               All used terms explained
+@end menu
+@end ifnottex
+
+@c ==================================================================
+@node    Introduction
+@chapter Introduction
+
+The MeshLink library allows applications that link to it to connect to other
+instances of itself, and exchange messages in a secure way. MeshLink provides
+end-to-end encryption and authentication of messages with perfect forward
+secrecy. The MeshLink library starts its own thread which handles all network
+communications. The application only needs to register callbacks to get
+notified of incoming messages and other important events.
+
+This manual will contain information on how to compile the MeshLink library itself,
+as well as how to integrate the MeshLink library into your own applications.
+
+
+@c ==================================================================
+@node    About us
+@chapter About us
+
+
+@menu
+* Contact information::
+* Authors::
+@end menu
+
+
+@c ==================================================================
+@node    Contact information
+@section Contact information
+
+The MeshLink website is at @url{http://meshlink.io/}.
+
+
+@c ==================================================================
+@node    Authors
+@section Authors
+
+@table @asis
+@item Guus Sliepen (@email{guus@@meshlink.io})
+@end table
+
+@c ==================================================================
+@node    Concept Index
+@unnumbered Concept Index
+
+@c ==================================================================
+@printindex cp
+
+@c ==================================================================
+@contents
+@bye

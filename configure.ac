@@ -6,6 +6,7 @@ AC_CONFIG_SRCDIR([src/libmeshlink.c])
 AC_GNU_SOURCE
 AM_INIT_AUTOMAKE([check-news std-options subdir-objects -Wall])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIR([m4])
 
 # Enable GNU extensions.
 # Define this here, not in acconfig's @TOP@ section, since definitions
@@ -178,8 +179,6 @@ dnl These are defined in files in m4/
 
 MeshLink_ZLIB
 
-MeshLink_OPENSSL
-	
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile m4/Makefile test/Makefile])
 
 AC_OUTPUT

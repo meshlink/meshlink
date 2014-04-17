@@ -37,6 +37,7 @@
 #include "sptps.h"
 #include "utils.h"
 #include "xalloc.h"
+#include "ed25519/sha512.h"
 
 ecdsa_t *invitation_key = NULL;
 
@@ -182,17 +183,14 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const char *dat
 		return false;
 
 	// Recover the filename from the cookie and the key
-	digest_t *digest = digest_open_by_name("sha256", 18);
-	if(!digest)
-		abort();
 	char *fingerprint = ecdsa_get_base64_public_key(invitation_key);
+	char hash[64];
 	char hashbuf[18 + strlen(fingerprint)];
 	char cookie[25];
 	memcpy(hashbuf, data, 18);
 	memcpy(hashbuf + 18, fingerprint, sizeof hashbuf - 18);
-	digest_create(digest, hashbuf, sizeof hashbuf, cookie);
-	b64encode_urlsafe(cookie, cookie, 18);
-	digest_close(digest);
+	sha512(hashbuf, sizeof hashbuf, hash);
+	b64encode_urlsafe(hash, cookie, 18);
 	free(fingerprint);
 
 	char filename[PATH_MAX], usedname[PATH_MAX];

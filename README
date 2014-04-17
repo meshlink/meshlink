@@ -21,11 +21,7 @@ Please do not use this library yet.
 Requirements
 ------------
 
-In order to compile MeshLink, you will need a GNU C compiler environment. Please
-ensure you have the latest stable versions of all the required libraries:
-
-- OpenSSL (http://www.openssl.org/) version 1.0.0 or later, with support for
-  elliptic curve cryptography (ECC) and Galois counter mode (GCM) enabled.
+In order to compile MeshLink, you will need a GNU C compiler environment.
 
 The following libraries are used by default, but can be disabled if necessary:
 
@@ -46,4 +42,4 @@ Other noteworthy features are:
 - IPv6 support
 - NAT traversal (requires at least one node that is not behind a NAT)
 - Ed25519 keys (TBD)
-- AES-256-GCM encryption and message authentication
+- ChaCha-Poly1305 encryption and message authentication

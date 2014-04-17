@@ -1,5 +1,5 @@
 /*
-    digest.h -- header file digest.c
+    crypto.c -- Cryptographic miscellaneous functions and initialisation
     Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
@@ -17,16 +17,30 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_OPENSSL_DIGEST_H__
-#define __TINC_OPENSSL_DIGEST_H__
+#include "system.h"
 
-#include <openssl/evp.h>
+#include "crypto.h"
 
-struct digest {
-	const EVP_MD *digest;
-	int maclength;
-	int keylength;
-	char *key;
-};
+//TODO: use a strict random source once to seed a PRNG?
 
-#endif
+static int random_fd = -1;
+
+void crypto_init(void) {
+	random_fd = open("/dev/urandom", O_RDONLY);
+	if(random_fd < 0)
+		random_fd = open("/dev/random", O_RDONLY);
+	if(random_fd < 0) {
+		fprintf(stderr, "Could not open source of random numbers: %s\n", strerror(errno));
+		abort();
+	}
+}
+
+void crypto_exit(void) {
+}
+
+void randomize(void *out, size_t outlen) {
+	if(read(random_fd, out, outlen) != outlen) {
+		fprintf(stderr, "Error reading random numbers: %s\n", strerror(errno));
+		abort();
+	}
+}
