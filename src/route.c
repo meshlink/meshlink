@@ -66,6 +66,7 @@ void route(node_t *source,vpn_packet_t *packet) {
     node_t* via = NULL;
     tincpackethdr* hdr = (tincpackethdr*)packet->data;
     owner = lookup_node(hdr->destination);
+    logger(DEBUG_TRAFFIC, LOG_WARNING, "Routing packet from: %s . To: %s \n",hdr->source,hdr->destination);
 
     //Check Lenght
     if(!checklength(source, packet, (sizeof(tincpackethdr))))
@@ -74,6 +75,7 @@ void route(node_t *source,vpn_packet_t *packet) {
     if (owner == NULL) {
     //Lookup failed
     logger(DEBUG_TRAFFIC, LOG_WARNING, "Cant lookup the owner of a packet in the route() function. This should never happen \n");
+    logger(DEBUG_TRAFFIC, LOG_WARNING, "Destination was: %s \n",hdr->destination);
     return;
     }
 
