@@ -63,8 +63,14 @@ void route(node_t *source,vpn_packet_t *packet) {
     // TODO: route on name or key
 
     node_t* owner = NULL;
+    node_t* via = NULL;
     tincpackethdr* hdr = (tincpackethdr*)packet->data;
     owner = lookup_node(hdr->destination);
+
+    //Check Lenght
+    if(!checklength(source, packet, (sizeof(tincpackethdr))))
+        return;
+
     if (owner == NULL) {
     //Lookup failed
     logger(DEBUG_TRAFFIC, LOG_WARNING, "Cant lookup the owner of a packet in the route() function. This should never happen \n");
@@ -84,7 +90,16 @@ void route(node_t *source,vpn_packet_t *packet) {
     return;
     }
 
-    //TODO: I skipped here a lot of checks !
+    via = (owner->via == myself) ? owner->nexthop : owner->via;
+    if(via == source) {
+	logger(DEBUG_TRAFFIC, LOG_ERR, "Routing loop for packet from %s (%s)!", source->name, source->hostname);
+	return;
+    }
+
+    if (directonly && owner!=via) {
+    logger(DEBUG_TRAFFIC, LOG_WARNING, "Direct Only is requested. Dropping packet because direct connection not available \n");
+    return;
+    }
 
     send_packet(owner,packet);
     return;
