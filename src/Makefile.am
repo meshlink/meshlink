@@ -80,7 +80,7 @@ libmeshlink_la_SOURCES = \
 	net_socket.c \
 	netutl.c netutl.h \
 	node.c node.h \
-	prf.h \
+	prf.c prf.h \
 	protocol.c protocol.h \
 	protocol_auth.c \
 	protocol_edge.c \
@@ -105,14 +105,12 @@ libmeshlink_la_SOURCES += \
 	openssl/digest.c openssl/digest.h \
 	ed25519/ecdh.c \
 	ed25519/ecdsa.c \
-	ed25519/ecdsagen.c \
-	openssl/prf.c
+	ed25519/ecdsagen.c
 sptps_test_SOURCES += \
 	openssl/crypto.c \
 	openssl/digest.c openssl/digest.h \
 	ed25519/ecdh.c \
-	ed25519/ecdsa.c \
-	openssl/prf.c
+	ed25519/ecdsa.c
 sptps_keypair_SOURCES += \
 	openssl/crypto.c \
 	ed25519/ecdsagen.c
@@ -121,8 +119,7 @@ sptps_speed_SOURCES += \
 	openssl/digest.c openssl/digest.h \
 	ed25519/ecdh.c \
 	ed25519/ecdsa.c \
-	ed25519/ecdsagen.c \
-	openssl/prf.c
+	ed25519/ecdsagen.c
 
 sptps_speed_LDADD = -lrt
 
