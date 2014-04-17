@@ -103,9 +103,9 @@ libmeshlink_la_LIBADD = -lpthread
 libmeshlink_la_SOURCES += \
 	openssl/crypto.c \
 	openssl/digest.c openssl/digest.h \
-	openssl/ecdh.c \
-	openssl/ecdsa.c \
-	openssl/ecdsagen.c \
+	ed25519/ecdh.c \
+	ed25519/ecdsa.c \
+	ed25519/ecdsagen.c \
 	openssl/prf.c
 sptps_test_SOURCES += \
 	openssl/crypto.c \
