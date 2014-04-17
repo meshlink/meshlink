@@ -30,6 +30,7 @@ chacha_poly1305_SOURCES = \
 
 sptps_test_SOURCES = \
 	logger.c logger.h \
+	prf.c prf.h \
 	sptps.c sptps.h \
 	sptps_test.c \
 	utils.c utils.h \
@@ -43,6 +44,7 @@ sptps_keypair_SOURCES = \
 
 sptps_speed_SOURCES = \
 	logger.c logger.h \
+	prf.c prf.h \
 	sptps.c sptps.h \
 	sptps_speed.c \
 	utils.c utils.h \
@@ -58,7 +60,6 @@ libmeshlink_la_SOURCES = \
 	conf.c conf.h \
 	connection.c connection.h \
 	crypto.h \
-	digest.h \
 	dropin.c dropin.h \
 	ecdh.h \
 	ecdsa.h \
@@ -102,13 +103,11 @@ libmeshlink_la_LIBADD = -lpthread
 
 libmeshlink_la_SOURCES += \
 	openssl/crypto.c \
-	openssl/digest.c openssl/digest.h \
 	ed25519/ecdh.c \
 	ed25519/ecdsa.c \
 	ed25519/ecdsagen.c
 sptps_test_SOURCES += \
 	openssl/crypto.c \
-	openssl/digest.c openssl/digest.h \
 	ed25519/ecdh.c \
 	ed25519/ecdsa.c
 sptps_keypair_SOURCES += \
@@ -116,7 +115,6 @@ sptps_keypair_SOURCES += \
 	ed25519/ecdsagen.c
 sptps_speed_SOURCES += \
 	openssl/crypto.c \
-	openssl/digest.c openssl/digest.h \
 	ed25519/ecdh.c \
 	ed25519/ecdsa.c \
 	ed25519/ecdsagen.c
