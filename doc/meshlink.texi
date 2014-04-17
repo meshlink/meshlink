@@ -5,7 +5,7 @@
 @setchapternewpage odd
 @c %**end of header
 
-@include tincinclude.texi
+@include include.texi
 
 @ifinfo
 @dircategory Networking tools
