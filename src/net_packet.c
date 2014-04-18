@@ -338,35 +338,27 @@ static void send_sptps_packet(node_t *n, vpn_packet_t *origpkt) {
 	}
 
 	uint8_t type = 0;
-	int offset = 0;
 
+	// TODO: use a better way to signal that this is a PMTU probe
 	if(!(origpkt->data[12] | origpkt->data[13])) {
 		sptps_send_record(&n->sptps, PKT_PROBE, (char *)origpkt->data, origpkt->len);
 		return;
 	}
 
-	if(routing_mode == RMODE_ROUTER)
-		offset = 14;
-	else
-		type = PKT_MAC;
-
-	if(origpkt->len < offset)
-		return;
-
 	vpn_packet_t outpkt;
 
 	if(n->outcompression) {
-		int len = compress_packet(outpkt.data + offset, origpkt->data + offset, origpkt->len - offset, n->outcompression);
+		int len = compress_packet(outpkt.data, origpkt->data, origpkt->len, n->outcompression);
 		if(len < 0) {
 			logger(DEBUG_TRAFFIC, LOG_ERR, "Error while compressing packet to %s (%s)", n->name, n->hostname);
-		} else if(len < origpkt->len - offset) {
-			outpkt.len = len + offset;
+		} else if(len < origpkt->len) {
+			outpkt.len = len;
 			origpkt = &outpkt;
 			type |= PKT_COMPRESSED;
 		}
 	}
 
-	sptps_send_record(&n->sptps, type, (char *)origpkt->data + offset, origpkt->len - offset);
+	sptps_send_record(&n->sptps, type, (char *)origpkt->data, origpkt->len);
 	return;
 }
 
@@ -548,51 +540,23 @@ bool receive_sptps_record(void *handle, uint8_t type, const char *data, uint16_t
 		return true;
 	}
 
-	if(type & ~(PKT_COMPRESSED | PKT_MAC)) {
+	if(type & ~(PKT_COMPRESSED)) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Unexpected SPTPS record type %d len %d from %s (%s)", type, len, from->name, from->hostname);
 		return false;
 	}
 
-	/* Check if we have the headers we need */
-	if(routing_mode != RMODE_ROUTER && !(type & PKT_MAC)) {
-		logger(DEBUG_TRAFFIC, LOG_ERR, "Received packet from %s (%s) without MAC header (maybe Mode is not set correctly)", from->name, from->hostname);
-		return false;
-	} else if(routing_mode == RMODE_ROUTER && (type & PKT_MAC)) {
-		logger(DEBUG_TRAFFIC, LOG_WARNING, "Received packet from %s (%s) with MAC header (maybe Mode is not set correctly)", from->name, from->hostname);
-	}
-
-	int offset = (type & PKT_MAC) ? 0 : 14;
 	if(type & PKT_COMPRESSED) {
-		length_t ulen = uncompress_packet(inpkt.data + offset, (const uint8_t *)data, len, from->incompression);
+		length_t ulen = uncompress_packet(inpkt.data, (const uint8_t *)data, len, from->incompression);
 		if(ulen < 0) {
 			return false;
 		} else {
-			inpkt.len = ulen + offset;
+			inpkt.len = ulen;
 		}
 		if(inpkt.len > MAXSIZE)
 			abort();
 	} else {
-		memcpy(inpkt.data + offset, data, len);
-		inpkt.len = len + offset;
-	}
-
-	/* Generate the Ethernet packet type if necessary */
-	if(offset) {
-		switch(inpkt.data[14] >> 4) {
-			case 4:
-				inpkt.data[12] = 0x08;
-				inpkt.data[13] = 0x00;
-				break;
-			case 6:
-				inpkt.data[12] = 0x86;
-				inpkt.data[13] = 0xDD;
-				break;
-			default:
-				logger(DEBUG_TRAFFIC, LOG_ERR,
-						   "Unknown IP version %d while reading packet from %s (%s)",
-						   inpkt.data[14] >> 4, from->name, from->hostname);
-				return false;
-		}
+		memcpy(inpkt.data, data, len);
+		inpkt.len = len;
 	}
 
 	receive_packet(from, &inpkt);

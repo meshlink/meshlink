@@ -25,7 +25,6 @@
 #include "utils.h"
 #include "libmeshlink.h"
 
-rmode_t routing_mode = RMODE_ROUTER;
 fmode_t forwarding_mode = FMODE_INTERNAL;
 bmode_t broadcast_mode = BMODE_MST;
 bool decrement_ttl = false;

@@ -41,7 +41,6 @@ typedef enum bmode_t {
 	BMODE_DIRECT,
 } bmode_t;
 
-extern rmode_t routing_mode;
 extern fmode_t forwarding_mode;
 extern bmode_t broadcast_mode;
 extern bool decrement_ttl;
