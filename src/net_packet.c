@@ -602,31 +602,9 @@ void broadcast_packet(const node_t *from, vpn_packet_t *packet) {
 	logger(DEBUG_TRAFFIC, LOG_INFO, "Broadcasting packet of %d bytes from %s (%s)",
 			   packet->len, from->name, from->hostname);
 
-	switch(broadcast_mode) {
-		// In MST mode, broadcast packets travel via the Minimum Spanning Tree.
-		// This guarantees all nodes receive the broadcast packet, and
-		// usually distributes the sending of broadcast packets over all nodes.
-		case BMODE_MST:
-			for list_each(connection_t, c, connection_list)
-				if(c->status.active && c->status.mst && c != from->nexthop->connection)
-					send_packet(c->node, packet);
-			break;
-
-		// In direct mode, we send copies to each node we know of.
-		// However, this only reaches nodes that can be reached in a single hop.
-		// We don't have enough information to forward broadcast packets in this case.
-		case BMODE_DIRECT:
-			if(from != myself)
-				break;
-
-			for splay_each(node_t, n, node_tree)
-				if(n->status.reachable && n != myself && ((n->via == myself && n->nexthop == n) || n->via == n))
-					send_packet(n, packet);
-			break;
-
-		default:
-			break;
-	}
+	for list_each(connection_t, c, connection_list)
+		if(c->status.active && c->status.mst && c != from->nexthop->connection)
+			send_packet(c->node, packet);
 }
 
 static node_t *try_harder(const sockaddr_t *from, const vpn_packet_t *pkt) {

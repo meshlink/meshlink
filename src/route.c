@@ -25,14 +25,7 @@
 #include "utils.h"
 #include "libmeshlink.h"
 
-fmode_t forwarding_mode = FMODE_INTERNAL;
-bmode_t broadcast_mode = BMODE_MST;
 bool decrement_ttl = false;
-bool directonly = false;
-bool priorityinheritance = false;
-int macexpire = 600;
-mac_t mymac = {{0xFE, 0xFD, 0, 0, 0, 0}};
-bool pcap = false;
 
 static bool ratelimit(int frequency) {
 	static time_t lasttime = 0;
@@ -95,11 +88,6 @@ void route(node_t *source,vpn_packet_t *packet) {
     if(via == source) {
 	logger(DEBUG_TRAFFIC, LOG_ERR, "Routing loop for packet from %s (%s)!", source->name, source->hostname);
 	return;
-    }
-
-    if (directonly && owner!=via) {
-    logger(DEBUG_TRAFFIC, LOG_WARNING, "Direct Only is requested. Dropping packet because direct connection not available \n");
-    return;
     }
 
     send_packet(owner,packet);

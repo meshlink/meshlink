@@ -23,33 +23,7 @@
 #include "net.h"
 #include "node.h"
 
-typedef enum rmode_t {
-	RMODE_HUB = 0,
-	RMODE_SWITCH,
-	RMODE_ROUTER,
-} rmode_t;
-
-typedef enum fmode_t {
-	FMODE_OFF = 0,
-	FMODE_INTERNAL,
-	FMODE_KERNEL,
-} fmode_t;
-
-typedef enum bmode_t {
-	BMODE_NONE = 0,
-	BMODE_MST,
-	BMODE_DIRECT,
-} bmode_t;
-
-extern fmode_t forwarding_mode;
-extern bmode_t broadcast_mode;
 extern bool decrement_ttl;
-extern bool directonly;
-extern bool priorityinheritance;
-extern int macexpire;
-extern bool pcap;
-
-extern mac_t mymac;
 
 extern void route(struct node_t *, struct vpn_packet_t *);
 

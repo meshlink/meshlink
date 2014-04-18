@@ -196,7 +196,6 @@ char *get_name(void) {
 
 bool setup_myself_reloadable(void) {
 	localdiscovery = true;
-	macexpire = 600; // TODO: remove
 	keylifetime = 3600; // TODO: check if this can be removed as well
 	maxtimeout = 900;
 	autoconnect = 3;
