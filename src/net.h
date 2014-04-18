@@ -38,18 +38,6 @@
 
 #define MAXSOCKETS 8    /* Probably overkill... */
 
-typedef struct mac_t {
-	uint8_t x[6];
-} mac_t;
-
-typedef struct ipv4_t {
-	uint8_t x[4];
-} ipv4_t;
-
-typedef struct ipv6_t {
-	uint16_t x[8];
-} ipv6_t;
-
 typedef short length_t;
 
 #define AF_UNKNOWN 255
@@ -88,7 +76,6 @@ typedef struct vpn_packet_t {
 /* Packet types when using SPTPS */
 
 #define PKT_COMPRESSED 1
-#define PKT_MAC 2
 #define PKT_PROBE 4
 
 typedef enum packet_type_t {
