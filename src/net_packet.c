@@ -131,7 +131,6 @@ static void send_mtu_probe_handler(void *data) {
 		memset(packet.data, 0, 14);
 		randomize(packet.data + 14, len - 14);
 		packet.len = len;
-		packet.priority = 0;
 		n->status.broadcast = i >= 4 && n->mtuprobes <= 10 && n->prevedge;
 
 		logger(DEBUG_TRAFFIC, LOG_INFO, "Sending MTU probe length %d to %s (%s)", len, n->name, n->hostname);
@@ -285,16 +284,10 @@ static void receive_packet(node_t *n, vpn_packet_t *packet) {
 }
 
 static bool try_mac(node_t *n, const vpn_packet_t *inpkt) {
-	return sptps_verify_datagram(&n->sptps, (char *)&inpkt->seqno, inpkt->len);
+	return sptps_verify_datagram(&n->sptps, inpkt->data, inpkt->len);
 }
 
 static void receive_udppacket(node_t *n, vpn_packet_t *inpkt) {
-	vpn_packet_t pkt1, pkt2;
-	vpn_packet_t *pkt[] = { &pkt1, &pkt2, &pkt1, &pkt2 };
-	int nextpkt = 0;
-	vpn_packet_t *outpkt = pkt[0];
-	size_t outlen;
-
 	if(!n->sptps.state) {
 		if(!n->status.waitingforkey) {
 			logger(DEBUG_TRAFFIC, LOG_DEBUG, "Got packet from %s (%s) but we haven't exchanged keys yet", n->name, n->hostname);
@@ -304,7 +297,7 @@ static void receive_udppacket(node_t *n, vpn_packet_t *inpkt) {
 		}
 		return;
 	}
-	sptps_receive_data(&n->sptps, (char *)&inpkt->seqno, inpkt->len);
+	sptps_receive_data(&n->sptps, inpkt->data, inpkt->len);
 }
 
 void receive_tcppacket(connection_t *c, const char *buffer, int len) {
@@ -314,10 +307,7 @@ void receive_tcppacket(connection_t *c, const char *buffer, int len) {
 		return;
 
 	outpkt.len = len;
-	if(c->options & OPTION_TCPONLY)
-		outpkt.priority = 0;
-	else
-		outpkt.priority = -1;
+	outpkt.tcp = true;
 	memcpy(outpkt.data, buffer, len);
 
 	receive_packet(c->node, &outpkt);
@@ -339,9 +329,9 @@ static void send_sptps_packet(node_t *n, vpn_packet_t *origpkt) {
 
 	uint8_t type = 0;
 
-	// TODO: use a better way to signal that this is a PMTU probe
-	if(!(origpkt->data[12] | origpkt->data[13])) {
-		sptps_send_record(&n->sptps, PKT_PROBE, (char *)origpkt->data, origpkt->len);
+	// If it's a probe, send it immediately without trying to compress it.
+	if(origpkt->probe) {
+		sptps_send_record(&n->sptps, PKT_PROBE, origpkt->data, origpkt->len);
 		return;
 	}
 
@@ -358,7 +348,7 @@ static void send_sptps_packet(node_t *n, vpn_packet_t *origpkt) {
 		}
 	}
 
-	sptps_send_record(&n->sptps, type, (char *)origpkt->data, origpkt->len);
+	sptps_send_record(&n->sptps, type, origpkt->data, origpkt->len);
 	return;
 }
 
@@ -458,10 +448,6 @@ static void send_udppacket(node_t *n, vpn_packet_t *origpkt) {
 	vpn_packet_t *outpkt;
 	int origlen = origpkt->len;
 	size_t outlen;
-#if defined(SOL_IP) && defined(IP_TOS)
-	static int priority = 0;
-#endif
-	int origpriority = origpkt->priority;
 
 	if(!n->status.reachable) {
 		logger(DEBUG_TRAFFIC, LOG_INFO, "Trying to send UDP packet to unreachable node %s (%s)", n->name, n->hostname);
@@ -535,9 +521,12 @@ bool receive_sptps_record(void *handle, uint8_t type, const char *data, uint16_t
 
 	if(type == PKT_PROBE) {
 		inpkt.len = len;
+		inpkt.probe = true;
 		memcpy(inpkt.data, data, len);
 		mtu_probe_h(from, &inpkt, len);
 		return true;
+	} else {
+		inpkt.probe = false;
 	}
 
 	if(type & ~(PKT_COMPRESSED)) {
@@ -645,7 +634,7 @@ void handle_incoming_vpn_data(void *data, int flags) {
 	node_t *n;
 	int len;
 
-	len = recvfrom(ls->udp.fd, (char *) &pkt.seqno, MAXSIZE, 0, &from.sa, &fromlen);
+	len = recvfrom(ls->udp.fd, pkt.data, MAXSIZE, 0, &from.sa, &fromlen);
 
 	if(len <= 0 || len > MAXSIZE) {
 		if(!sockwouldblock(sockerrno))

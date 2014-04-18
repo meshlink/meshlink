@@ -411,21 +411,19 @@ bool tinc_stop();
 bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 
 	vpn_packet_t packet;
-	tincpackethdr* hdr = malloc(sizeof(tincpackethdr));
+	tincpackethdr* hdr = (tincpackethdr *)packet.data;
 	if (sizeof(tincpackethdr) + len > MAXSIZE) {
 
 	//log something
 	return false;
 	}
 
-	memset(hdr->legacymtu,1,sizeof(hdr->legacymtu));
+	packet.probe = false;
+	memset(hdr, 0, sizeof *hdr);
 	memcpy(hdr->destination,receiver->name,sizeof(hdr->destination));
 	memcpy(hdr->source,myself->name,sizeof(hdr->source));
 
-	packet.priority = 0;
 	packet.len = sizeof(tincpackethdr) + len;
-
-	memcpy(packet.data,hdr,sizeof(tincpackethdr));
 	memcpy(packet.data+sizeof(tincpackethdr),buf,len);
 
         myself->in_packets++;

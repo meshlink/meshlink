@@ -46,7 +46,6 @@ bool tinc_start(const char* path);
 bool tinc_stop();
 
 typedef struct tincpackethdr {
-  u_int8_t legacymtu[14];
   u_int8_t destination[16];
   u_int8_t source[16];
 } __attribute__ ((__packed__)) tincpackethdr;
