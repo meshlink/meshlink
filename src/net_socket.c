@@ -129,25 +129,6 @@ int setup_listen_socket(const sockaddr_t *sa) {
 		setsockopt(nfd, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof option);
 #endif
 
-	if(get_config_string
-	   (lookup_config(config_tree, "BindToInterface"), &iface)) {
-#if defined(SOL_SOCKET) && defined(SO_BINDTODEVICE)
-		struct ifreq ifr;
-
-		memset(&ifr, 0, sizeof ifr);
-		strncpy(ifr.ifr_ifrn.ifrn_name, iface, IFNAMSIZ);
-
-		if(setsockopt(nfd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof ifr)) {
-			closesocket(nfd);
-			logger(DEBUG_ALWAYS, LOG_ERR, "Can't bind to interface %s: %s", iface,
-				   strerror(sockerrno));
-			return -1;
-		}
-#else
-		logger(DEBUG_ALWAYS, LOG_WARNING, "%s not supported on this platform", "BindToInterface");
-#endif
-	}
-
 	if(bind(nfd, &sa->sa, SALEN(sa->sa))) {
 		closesocket(nfd);
 		addrstr = sockaddr2hostname(sa);
@@ -394,6 +375,7 @@ begin:
 			port = xstrdup(space + 1);
 			*space = 0;
 		} else {
+			// TODO: Only allow Address statements?
 			if(!get_config_string(lookup_config(outgoing->config_tree, "Port"), &port))
 				port = xstrdup("655");
 		}
@@ -671,6 +653,7 @@ void try_outgoing_connections(void) {
 
 	/* Make sure there is one outgoing_t in the list for each ConnectTo. */
 
+	// TODO: Drop support for ConnectTo since AutoConnect is now always on?
 	for(config_t *cfg = lookup_config(config_tree, "ConnectTo"); cfg; cfg = lookup_config_next(config_tree, cfg)) {
 		char *name;
 		get_config_string(cfg, &name);

@@ -372,22 +372,8 @@ bool send_ack(connection_t *c) {
 
 	/* Check some options */
 
-	if((get_config_bool(lookup_config(c->config_tree, "IndirectData"), &choice) && choice) || myself->options & OPTION_INDIRECT)
-		c->options |= OPTION_INDIRECT;
-
-	if((get_config_bool(lookup_config(c->config_tree, "TCPOnly"), &choice) && choice) || myself->options & OPTION_TCPONLY)
-		c->options |= OPTION_TCPONLY | OPTION_INDIRECT;
-
 	if(myself->options & OPTION_PMTU_DISCOVERY)
 		c->options |= OPTION_PMTU_DISCOVERY;
-
-	choice = myself->options & OPTION_CLAMP_MSS;
-	get_config_bool(lookup_config(c->config_tree, "ClampMSS"), &choice);
-	if(choice)
-		c->options |= OPTION_CLAMP_MSS;
-
-	if(!get_config_int(lookup_config(c->config_tree, "Weight"), &c->estimated_weight))
-		get_config_int(lookup_config(config_tree, "Weight"), &c->estimated_weight);
 
 	return send_request(c, "%d %s %d %x", ACK, myport, c->estimated_weight, (c->options & 0xffffff) | (PROT_MINOR << 24));
 }
@@ -462,19 +448,6 @@ bool ack_h(connection_t *c, const char *request) {
 		options &= ~OPTION_PMTU_DISCOVERY;
 	}
 	c->options |= options;
-
-	if(get_config_int(lookup_config(c->config_tree, "PMTU"), &mtu) && mtu < n->mtu)
-		n->mtu = mtu;
-
-	if(get_config_int(lookup_config(config_tree, "PMTU"), &mtu) && mtu < n->mtu)
-		n->mtu = mtu;
-
-	if(get_config_bool(lookup_config(c->config_tree, "ClampMSS"), &choice)) {
-		if(choice)
-			c->options |= OPTION_CLAMP_MSS;
-		else
-			c->options &= ~OPTION_CLAMP_MSS;
-	}
 
 	/* Activate this connection */
 

@@ -48,8 +48,6 @@ bool node_read_ecdsa_public_key(node_t *n) {
 		return true;
 
 	splay_tree_t *config_tree;
-	FILE *fp;
-	char *pubname = NULL;
 	char *p;
 
 	init_configuration(&config_tree);
@@ -61,25 +59,10 @@ bool node_read_ecdsa_public_key(node_t *n) {
 	if(get_config_string(lookup_config(config_tree, "ECDSAPublicKey"), &p)) {
 		n->ecdsa = ecdsa_set_base64_public_key(p);
 		free(p);
-		goto exit;
 	}
-
-	/* Else, check for ECDSAPublicKeyFile statement and read it */
-
-	if(!get_config_string(lookup_config(config_tree, "ECDSAPublicKeyFile"), &pubname))
-		xasprintf(&pubname, "%s" SLASH "hosts" SLASH "%s", confbase, n->name);
-
-	fp = fopen(pubname, "r");
-
-	if(!fp)
-		goto exit;
-
-	n->ecdsa = ecdsa_read_pem_public_key(fp);
-	fclose(fp);
 
 exit:
 	exit_configuration(&config_tree);
-	free(pubname);
 	return n->ecdsa;
 }
 
@@ -87,8 +70,6 @@ bool read_ecdsa_public_key(connection_t *c) {
 	if(ecdsa_active(c->ecdsa))
 		return true;
 
-	FILE *fp;
-	char *fname;
 	char *p;
 
 	if(!c->config_tree) {
@@ -105,67 +86,28 @@ bool read_ecdsa_public_key(connection_t *c) {
 		return c->ecdsa;
 	}
 
-	/* Else, check for ECDSAPublicKeyFile statement and read it */
-
-	if(!get_config_string(lookup_config(c->config_tree, "ECDSAPublicKeyFile"), &fname))
-		xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, c->name);
-
-	fp = fopen(fname, "r");
-
-	if(!fp) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error reading ECDSA public key file `%s': %s",
-			   fname, strerror(errno));
-		free(fname);
-		return false;
-	}
-
-	c->ecdsa = ecdsa_read_pem_public_key(fp);
-	fclose(fp);
-
-	if(!c->ecdsa)
-		logger(DEBUG_ALWAYS, LOG_ERR, "Parsing ECDSA public key file `%s' failed.", fname);
-	free(fname);
-	return c->ecdsa;
+	return false;
 }
 
 static bool read_ecdsa_private_key(void) {
 	FILE *fp;
 	char *fname;
 
-	/* Check for PrivateKeyFile statement and read it */
-
-	if(!get_config_string(lookup_config(config_tree, "ECDSAPrivateKeyFile"), &fname))
-		xasprintf(&fname, "%s" SLASH "ecdsa_key.priv", confbase);
-
+	xasprintf(&fname, "%s" SLASH "ecdsa_key.priv", confbase);
 	fp = fopen(fname, "r");
+	free(fname);
 
 	if(!fp) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error reading ECDSA private key file `%s': %s", fname, strerror(errno));
-		if(errno == ENOENT)
-			logger(DEBUG_ALWAYS, LOG_INFO, "Create an ECDSA keypair with `tinc generate-ecdsa-keys'.");
-		free(fname);
+		logger(DEBUG_ALWAYS, LOG_ERR, "Error reading ECDSA private key file: %s", strerror(errno));
 		return false;
 	}
-
-#if !defined(HAVE_MINGW) && !defined(HAVE_CYGWIN)
-	struct stat s;
-
-	if(fstat(fileno(fp), &s)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Could not stat ECDSA private key file `%s': %s'", fname, strerror(errno));
-		free(fname);
-		return false;
-	}
-
-	if(s.st_mode & ~0100700)
-		logger(DEBUG_ALWAYS, LOG_WARNING, "Warning: insecure file permissions for ECDSA private key file `%s'!", fname);
-#endif
 
 	myself->connection->ecdsa = ecdsa_read_pem_private_key(fp);
 	fclose(fp);
 
 	if(!myself->connection->ecdsa)
-		logger(DEBUG_ALWAYS, LOG_ERR, "Reading ECDSA private key file `%s' failed: %s", fname, strerror(errno));
-	free(fname);
+		logger(DEBUG_ALWAYS, LOG_ERR, "Reading ECDSA private key file failed: %s", strerror(errno));
+
 	return myself->connection->ecdsa;
 }
 
@@ -243,225 +185,22 @@ char *get_name(void) {
 	if(!name)
 		return NULL;
 
-	if(*name == '$') {
-		char *envname = getenv(name + 1);
-		char hostname[32] = "";
-		if(!envname) {
-			if(strcmp(name + 1, "HOST")) {
-				logger(DEBUG_ALWAYS, LOG_ERR, "Invalid Name: environment variable %s does not exist\n", name + 1);
-				return false;
-			}
-			if(gethostname(hostname, sizeof hostname) || !*hostname) {
-				logger(DEBUG_ALWAYS, LOG_ERR, "Could not get hostname: %s\n", strerror(errno));
-				return false;
-			}
-			hostname[31] = 0;
-			envname = hostname;
-		}
-		free(name);
-		name = xstrdup(envname);
-		for(char *c = name; *c; c++)
-			if(!isalnum(*c))
-				*c = '_';
-	}
-
 	if(!check_id(name)) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Invalid name for myself!");
 		free(name);
-		return false;
+		return NULL;
 	}
 
 	return name;
 }
 
 bool setup_myself_reloadable(void) {
-	char *proxy = NULL;
-	char *rmode = NULL;
-	char *fmode = NULL;
-	char *bmode = NULL;
-	char *afname = NULL;
-	char *address = NULL;
-	char *space;
-	bool choice;
-
-	get_config_string(lookup_config(config_tree, "Proxy"), &proxy);
-	if(proxy) {
-		if((space = strchr(proxy, ' ')))
-			*space++ = 0;
-
-		if(!strcasecmp(proxy, "none")) {
-			proxytype = PROXY_NONE;
-		} else if(!strcasecmp(proxy, "socks4")) {
-			proxytype = PROXY_SOCKS4;
-		} else if(!strcasecmp(proxy, "socks4a")) {
-			proxytype = PROXY_SOCKS4A;
-		} else if(!strcasecmp(proxy, "socks5")) {
-			proxytype = PROXY_SOCKS5;
-		} else if(!strcasecmp(proxy, "http")) {
-			proxytype = PROXY_HTTP;
-		} else if(!strcasecmp(proxy, "exec")) {
-			proxytype = PROXY_EXEC;
-		} else {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Unknown proxy type %s!", proxy);
-			return false;
-		}
-
-		switch(proxytype) {
-			case PROXY_NONE:
-			default:
-				break;
-
-			case PROXY_EXEC:
-				if(!space || !*space) {
-					logger(DEBUG_ALWAYS, LOG_ERR, "Argument expected for proxy type exec!");
-					return false;
-				}
-				proxyhost =  xstrdup(space);
-				break;
-
-			case PROXY_SOCKS4:
-			case PROXY_SOCKS4A:
-			case PROXY_SOCKS5:
-			case PROXY_HTTP:
-				proxyhost = space;
-				if(space && (space = strchr(space, ' ')))
-					*space++ = 0, proxyport = space;
-				if(space && (space = strchr(space, ' ')))
-					*space++ = 0, proxyuser = space;
-				if(space && (space = strchr(space, ' ')))
-					*space++ = 0, proxypass = space;
-				if(!proxyhost || !*proxyhost || !proxyport || !*proxyport) {
-					logger(DEBUG_ALWAYS, LOG_ERR, "Host and port argument expected for proxy!");
-					return false;
-				}
-				proxyhost = xstrdup(proxyhost);
-				proxyport = xstrdup(proxyport);
-				if(proxyuser && *proxyuser)
-					proxyuser = xstrdup(proxyuser);
-				if(proxypass && *proxypass)
-					proxypass = xstrdup(proxypass);
-				break;
-		}
-
-		free(proxy);
-	}
-
-	if(get_config_bool(lookup_config(config_tree, "IndirectData"), &choice) && choice)
-		myself->options |= OPTION_INDIRECT;
-
-	if(get_config_bool(lookup_config(config_tree, "TCPOnly"), &choice) && choice)
-		myself->options |= OPTION_TCPONLY;
-
-	if(myself->options & OPTION_TCPONLY)
-		myself->options |= OPTION_INDIRECT;
-
-	get_config_bool(lookup_config(config_tree, "DirectOnly"), &directonly);
-	get_config_bool(lookup_config(config_tree, "LocalDiscovery"), &localdiscovery);
-
-	memset(&localdiscovery_address, 0, sizeof localdiscovery_address);
-	if(get_config_string(lookup_config(config_tree, "LocalDiscoveryAddress"), &address)) {
-		struct addrinfo *ai = str2addrinfo(address, myport, SOCK_DGRAM);
-		free(address);
-		if(!ai)
-			return false;
-		memcpy(&localdiscovery_address, ai->ai_addr, ai->ai_addrlen);
-	}
-
-
-	if(get_config_string(lookup_config(config_tree, "Mode"), &rmode)) {
-		if(!strcasecmp(rmode, "router"))
-			routing_mode = RMODE_ROUTER;
-		else if(!strcasecmp(rmode, "switch"))
-			routing_mode = RMODE_SWITCH;
-		else if(!strcasecmp(rmode, "hub"))
-			routing_mode = RMODE_HUB;
-		else {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Invalid routing mode!");
-			return false;
-		}
-		free(rmode);
-	}
-
-	if(get_config_string(lookup_config(config_tree, "Forwarding"), &fmode)) {
-		if(!strcasecmp(fmode, "off"))
-			forwarding_mode = FMODE_OFF;
-		else if(!strcasecmp(fmode, "internal"))
-			forwarding_mode = FMODE_INTERNAL;
-		else if(!strcasecmp(fmode, "kernel"))
-			forwarding_mode = FMODE_KERNEL;
-		else {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Invalid forwarding mode!");
-			return false;
-		}
-		free(fmode);
-	}
-
-	choice = true;
-	get_config_bool(lookup_config(config_tree, "PMTUDiscovery"), &choice);
-	if(choice)
-		myself->options |= OPTION_PMTU_DISCOVERY;
-
-	choice = true;
-	get_config_bool(lookup_config(config_tree, "ClampMSS"), &choice);
-	if(choice)
-		myself->options |= OPTION_CLAMP_MSS;
-
-	get_config_bool(lookup_config(config_tree, "PriorityInheritance"), &priorityinheritance);
-	get_config_bool(lookup_config(config_tree, "DecrementTTL"), &decrement_ttl);
-	if(get_config_string(lookup_config(config_tree, "Broadcast"), &bmode)) {
-		if(!strcasecmp(bmode, "no"))
-			broadcast_mode = BMODE_NONE;
-		else if(!strcasecmp(bmode, "yes") || !strcasecmp(bmode, "mst"))
-			broadcast_mode = BMODE_MST;
-		else if(!strcasecmp(bmode, "direct"))
-			broadcast_mode = BMODE_DIRECT;
-		else {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Invalid broadcast mode!");
-			return false;
-		}
-		free(bmode);
-	}
-
-#if !defined(SOL_IP) || !defined(IP_TOS)
-	if(priorityinheritance)
-		logger(DEBUG_ALWAYS, LOG_WARNING, "%s not supported on this platform", "PriorityInheritance");
-#endif
-
-	if(!get_config_int(lookup_config(config_tree, "MACExpire"), &macexpire))
-		macexpire = 600;
-
-	if(get_config_int(lookup_config(config_tree, "MaxTimeout"), &maxtimeout)) {
-		if(maxtimeout <= 0) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Bogus maximum timeout!");
-			return false;
-		}
-	} else
-		maxtimeout = 900;
-
-	if(get_config_string(lookup_config(config_tree, "AddressFamily"), &afname)) {
-		if(!strcasecmp(afname, "IPv4"))
-			addressfamily = AF_INET;
-		else if(!strcasecmp(afname, "IPv6"))
-			addressfamily = AF_INET6;
-		else if(!strcasecmp(afname, "any"))
-			addressfamily = AF_UNSPEC;
-		else {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Invalid address family!");
-			return false;
-		}
-		free(afname);
-	}
-
-	get_config_bool(lookup_config(config_tree, "Hostnames"), &hostnames);
-
-	if(!get_config_int(lookup_config(config_tree, "KeyExpire"), &keylifetime))
-		keylifetime = 3600;
-
-	get_config_int(lookup_config(config_tree, "AutoConnect"), &autoconnect);
-	if(autoconnect < 0)
-		autoconnect = 0;
-
-	get_config_bool(lookup_config(config_tree, "DisableBuggyPeers"), &disablebuggypeers);
+	localdiscovery = true;
+	macexpire = 600; // TODO: remove
+	keylifetime = 3600; // TODO: check if this can be removed as well
+	maxtimeout = 900;
+	autoconnect = 3;
+	myself->options |= OPTION_PMTU_DISCOVERY;
 
 	read_invitation_key();
 
@@ -597,35 +336,13 @@ bool setup_myself(void) {
 	if(!setup_myself_reloadable())
 		return false;
 
-	if(get_config_int(lookup_config(config_tree, "MaxConnectionBurst"), &max_connection_burst)) {
-		if(max_connection_burst <= 0) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "MaxConnectionBurst cannot be negative!");
-			return false;
-		}
-	}
-
-	int replaywin_int;
-	if(get_config_int(lookup_config(config_tree, "ReplayWindow"), &replaywin_int)) {
-		if(replaywin_int < 0) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "ReplayWindow cannot be negative!");
-			return false;
-		}
-		replaywin = (unsigned)replaywin_int;
-		sptps_replaywin = replaywin;
-	}
-
+	// TODO: check whether this is used at all
 	timeout_add(&keyexpire_timeout, keyexpire_handler, &keyexpire_timeout, &(struct timeval){keylifetime, rand() % 100000});
 
 	/* Compression */
 
-	if(get_config_int(lookup_config(config_tree, "Compression"), &myself->incompression)) {
-		if(myself->incompression < 0 || myself->incompression > 11) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Bogus compression level!");
-			return false;
-		}
-	} else
-		myself->incompression = 0;
-
+	// TODO: drop compression in the packet layer?
+	myself->incompression = 0;
 	myself->connection->outcompression = 0;
 
 	/* Done */
@@ -646,41 +363,18 @@ bool setup_myself(void) {
 	listen_sockets = 0;
 	int cfgs = 0;
 
-	for(config_t *cfg = lookup_config(config_tree, "BindToAddress"); cfg; cfg = lookup_config_next(config_tree, cfg)) {
-		cfgs++;
-		get_config_string(cfg, &address);
-		if(!add_listen_address(address, true))
-			return false;
-	}
-
-	for(config_t *cfg = lookup_config(config_tree, "ListenAddress"); cfg; cfg = lookup_config_next(config_tree, cfg)) {
-		cfgs++;
-		get_config_string(cfg, &address);
-		if(!add_listen_address(address, false))
-			return false;
-	}
-
-	if(!cfgs)
-		if(!add_listen_address(address, NULL))
-			return false;
+	if(!add_listen_address(address, NULL))
+		return false;
 
 	if(!listen_sockets) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Unable to create any listening socket!");
 		return false;
 	}
 
-	/* If no Port option was specified, set myport to the port used by the first listening socket. */
+	// TODO: require Port to be set? Or use "0" and use getsockname()?
 
-	if(!port_specified) {
-		sockaddr_t sa;
-		socklen_t salen = sizeof sa;
-		if(!getsockname(listen_socket[0].udp.fd, &sa.sa, &salen)) {
-			free(myport);
-			sockaddr2str(&sa, NULL, &myport);
-			if(!myport)
-				myport = xstrdup("655");
-		}
-	}
+	if(!myport)
+		myport = xstrdup("655");
 
 	xasprintf(&myself->hostname, "MYSELF port %s", myport);
 	myself->connection->hostname = xstrdup(myself->hostname);
@@ -701,20 +395,9 @@ bool setup_network(void) {
 	init_edges();
 	init_requests();
 
-	if(get_config_int(lookup_config(config_tree, "PingInterval"), &pinginterval)) {
-		if(pinginterval < 1) {
-			pinginterval = 86400;
-		}
-	} else
-		pinginterval = 60;
-
-	if(!get_config_int(lookup_config(config_tree, "PingTimeout"), &pingtimeout))
-		pingtimeout = 5;
-	if(pingtimeout < 1 || pingtimeout > pinginterval)
-		pingtimeout = pinginterval;
-
-	if(!get_config_int(lookup_config(config_tree, "MaxOutputBufferSize"), &maxoutbufsize))
-		maxoutbufsize = 10 * MTU;
+	pinginterval = 60;
+	pingtimeout = 5;
+	maxoutbufsize = 10 * MTU;
 
 	if(!setup_myself())
 		return false;
