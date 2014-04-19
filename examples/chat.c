@@ -3,18 +3,20 @@
 #include <string.h>
 #include "../src/meshlink.h"
 
-static void log(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+static void log_message(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
 	const char *levelstr[] = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"};
 	fprintf(stderr, "%s: %s\n", levelstr[level], text);
 }
 
-static void receive(meshlink_handle_t *mesh, meshlink_node_t *source, const char *data, size_t len) {
-	if(!len || data[len - 1]) {
+static void receive(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
+	const char *msg = data;
+
+	if(!len || msg[len - 1]) {
 		fprintf(stderr, "Received invalid data from %s\n", source->name);
 		return;
 	}
 
-	printf("%s says: %s\n", source->name, data);
+	printf("%s says: %s\n", source->name, msg);
 }
 
 static void node_status(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
@@ -154,8 +156,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	meshlink_set_receive_cb(mesh, receive);
-	meshlink_set_node_status_cb(mesh, node_changed);
-	meshlink_set_log_cb(mesh, MESHLINK_INFO, log);
+	meshlink_set_node_status_cb(mesh, node_status);
+	meshlink_set_log_cb(mesh, MESHLINK_INFO, log_message);
 
 	if(!meshlink_start(mesh)) {
 		fprintf(stderr, "Could not start MeshLink: %s\n", mesh->errstr);

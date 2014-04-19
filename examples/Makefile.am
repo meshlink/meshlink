@@ -5,5 +5,5 @@ AM_CPPFLAGS = -I../src
 meshlinkapp_SOURCES = meshlinkapp.c
 meshlinkapp_LDADD = ../src/libmeshlink.la
 
-meshlinkapp_SOURCES = chat.c
-meshlinkapp_LDADD = ../src/libmeshlink.la
+chat_SOURCES = chat.c
+chat_LDADD = ../src/libmeshlink.la

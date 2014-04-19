@@ -57,7 +57,7 @@ sptps_speed_SOURCES = \
 lib_LTLIBRARIES = libmeshlink.la
 
 libmeshlink_la_SOURCES = \
-	libmeshlink.c libmeshlink.h \
+	meshlink.c meshlink.h \
 	buffer.c buffer.h \
 	cipher.h \
 	conf.c conf.h \
