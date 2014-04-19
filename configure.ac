@@ -32,64 +32,15 @@ case $host_os in
     linux=true
     AC_DEFINE(HAVE_LINUX, 1, [Linux])
   ;;
-  *freebsd*)
-    bsd=true
-    AC_DEFINE(HAVE_FREEBSD, 1, [FreeBSD])
-  ;;
-  *darwin*)
-    bsd=true
-    AC_DEFINE(HAVE_DARWIN, 1, [Darwin (MacOS/X)])
-  ;;
-  *solaris*)
-    solaris=true
-    AC_DEFINE(HAVE_SOLARIS, 1, [Solaris/SunOS])
-  ;;
-  *openbsd*)
-    bsd=true
-    AC_DEFINE(HAVE_OPENBSD, 1, [OpenBSD])
-  ;;
-  *netbsd*)
-    bsd=true
-    AC_DEFINE(HAVE_NETBSD, 1, [NetBSD])
-  ;;
-  *dragonfly*)
-    bsd=true
-    AC_DEFINE(HAVE_DRAGONFLY, 1, [DragonFly])
-  ;;
-  *bsd*)
-    bsd=true
-    AC_MSG_WARN("Unknown BSD variant, MeshLink might not compile or work!")
-    AC_DEFINE(HAVE_BSD, 1, [Unknown BSD variant])
-  ;;
-  *cygwin*)
-    cygwin=true
-    AC_DEFINE(HAVE_CYGWIN, 1, [Cygwin])
-  ;;
   *mingw*)
     mingw=true
     AC_DEFINE(HAVE_MINGW, 1, [MinGW])
     LIBS="$LIBS -lws2_32 -lgdi32 -lcrypt32"
   ;;
-  *)
-    AC_MSG_ERROR("Unknown operating system.")
-  ;;
 esac
 
-AC_ARG_WITH(windows2000,
-  AS_HELP_STRING([--with-windows2000], [compile with support for Windows 2000. This disables support for tunneling over existing IPv6 networks.]),
-  [ AS_IF([test "x$with_windows2000" = "xyes"],
-      [AC_DEFINE(WITH_WINDOWS2000, 1, [Compile with support for Windows 2000])])
-  ]
-)
-
 AM_CONDITIONAL(LINUX, test "$linux" = true)
-AM_CONDITIONAL(BSD, test "$bsd" = true)
-AM_CONDITIONAL(SOLARIS, test "$solaris" = true)
 AM_CONDITIONAL(MINGW, test "$mingw" = true)
-AM_CONDITIONAL(CYGWIN, test "$cygwin" = true)
-AM_CONDITIONAL(UML, test "$uml" = true)
-AM_CONDITIONAL(VDE, test "$vde" = true)
-AM_CONDITIONAL(TUNEMU, test "$tunemu" = true)
 
 AC_CACHE_SAVE
 
