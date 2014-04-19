@@ -22,11 +22,38 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifndef MESHLINK_INTERNAL_H
+
 /// A handle for an instance of MeshLink.
 typedef struct meshlink_handle meshlink_handle_t;
 
 /// A handle for a MeshLink node.
-typedef struct meshlink_node meshlink_node_t;
+typedef struct meshlink_node {
+	const char *name;
+} meshlink_node_t;
+
+#endif // MESHLINK_INTERNAL_H
+
+/// Code of most recent error encountered.
+typedef enum {
+	MESHLINK_OK,     // Everything is fine
+	MESHLINK_ENOMEM, // Out of memory
+	MESHLINK_ENOENT, // Node is not known
+} meshlink_errno_t;
+
+extern meshlink_errno_t meshlink_errno;
+
+/// Textual representation of most recent error encountered.
+const char *meshlink_errstr;
+
+/// Get the text for the given MeshLink error code.
+/** This function returns a pointer to the string containing the description of the given error code.
+ *
+ *  @param errno    An error code returned by MeshLink.
+ *
+ *  @return         A pointer to a string containing the description of the error code.
+ */
+extern const char *meshlink_strerror(meshlink_errno_t errno);
 
 /// Initialize MeshLink's configuration directory.
 /** This function causes MeshLink to initialize its configuration directory,
@@ -37,28 +64,37 @@ typedef struct meshlink_node meshlink_node_t;
  *
  *  @param confbase The directory in which MeshLink will store its configuration files.
  *  @param name     The name which this instance of the application will use in the mesh.
+ *
  *  @return         This function will return true if MeshLink has succesfully set up its configuration files, false otherwise.
  */
-extern bool meshlink_setup(const char *confbase, const char *name);
+extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name);
 
 /// Start MeshLink.
 /** This function causes MeshLink to create a new thread, which will
  *  handle all network I/O.
  *
  *  @param confbase The directory in which MeshLink will store its configuration files.
- *  @return         A handle which represents this instance of MeshLink,
- *                  or NULL in case of an error.
+ *
+ *  @return         This function will return true if MeshLink has succesfully started its thread, false otherwise.
  */
-extern meshlink_handle_t *meshlink_start(const char *confbase);
+extern bool meshlink_start(meshlink_handle_t *handle);
 
 /// Stop MeshLink.
 /** This function causes MeshLink to disconnect from all other nodes,
- *  and shuts down its own thread. Afterwards, the handle and any
- *  pointers to a struct meshlink_node are invalid.
+ *  and shuts down its own thread.
  *
  * @param handle    A handle which represents an instance of MeshLink.
  */
-extern void meshlink_stop(meshlink_handle *handle);
+extern void meshlink_stop(meshlink_handle_t *handle);
+
+/// Close the MeshLink handle.
+/** This function calls meshlink_stop() if necessary,
+ *  and frees all memory allocated by MeshLink.
+ *  Afterwards, the handle and any pointers to a struct meshlink_node are invalid.
+ *
+ * @param handle    A handle which represents an instance of MeshLink.
+ */
+extern void meshlink_close(meshlink_handle_t *handle);
 
 /// A callback for receiving data from the mesh.
 /** @param handle    A handle which represents an instance of MeshLink.
