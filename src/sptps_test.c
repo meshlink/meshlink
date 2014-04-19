@@ -20,6 +20,8 @@
 #include "system.h"
 
 #ifdef HAVE_LINUX
+#include <sys/ioctl.h>
+#include <linux/if.h>
 #include <linux/if_tun.h>
 #endif
 

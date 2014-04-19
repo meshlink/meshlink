@@ -23,10 +23,6 @@
 #include "fake-getaddrinfo.h"
 #include "fake-getnameinfo.h"
 
-#ifndef HAVE_DAEMON
-extern int daemon(int, int);
-#endif
-
 #ifndef HAVE_GET_CURRENT_DIR_NAME
 extern char *get_current_dir_name(void);
 #endif
