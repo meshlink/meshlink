@@ -26,17 +26,8 @@
 /// A handle for an instance of MeshLink.
 typedef struct meshlink_handle meshlink_handle_t;
 
-typedef struct meshlink_node meshlink_node_t;
-
-#ifndef MESHLINK_INTERNAL_H
-
 /// A handle for a MeshLink node.
-typedef struct meshlink_node {
-	const char *name; // Textual name of this node.
-	void *priv;       // Private pointer which the application can set at will.
-} meshlink_node_t;
-
-#endif // MESHLINK_INTERNAL_H
+typedef struct meshlink_node meshlink_node_t;
 
 /// Code of most recent error encountered.
 typedef enum {
@@ -45,10 +36,19 @@ typedef enum {
 	MESHLINK_ENOENT, // Node is not known
 } meshlink_errno_t;
 
-extern meshlink_errno_t meshlink_errno;
+#ifndef MESHLINK_INTERNAL_H
 
-/// Textual representation of most recent error encountered.
-const char *meshlink_errstr;
+struct meshlink_handle {
+	meshlink_errno_t errno; /// Code of the last encountered error.
+	const char *errstr;     /// Textual representation of most recent error encountered.
+};
+
+struct meshlink_node {
+	const char *name; // Textual name of this node.
+	void *priv;       // Private pointer which the application can set at will.
+};
+
+#endif // MESHLINK_INTERNAL_H
 
 /// Get the text for the given MeshLink error code.
 /** This function returns a pointer to the string containing the description of the given error code.

@@ -39,7 +39,7 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 
 		invitation = meshlink_invite(mesh, arg);
 		if(!invitation) {
-			fprintf(stderr, "Could not invite '%s': %s\n", arg, meshlink_errstr);
+			fprintf(stderr, "Could not invite '%s': %s\n", arg, mesh->errstr);
 			return;
 		}
 
@@ -52,7 +52,7 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 		}
 
 		if(!meshlink_join(mesh, arg))
-			fprintf(stderr, "Could not join using invitation: %s\n", meshlink_errstr);
+			fprintf(stderr, "Could not join using invitation: %s\n", mesh->errstr);
 		else
 			fprintf(stderr, "Invitation accepted!\n");
 	} else if(!strcasecmp(buf, "kick")) {
@@ -129,7 +129,7 @@ static void parse_input(meshlink_handle_t *mesh, char *buf) {
 	}
 
 	if(!meshlink_send(mesh, destination, msg, strlen(msg) + 1)) {
-		fprintf(stderr, "Could not send message to '%s': %s\n", destination->name, meshlink_errstr);
+		fprintf(stderr, "Could not send message to '%s': %s\n", destination->name, mesh->errstr);
 		return;
 	}
 
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
 
 	meshlink_handle_t *mesh = meshlink_open(confbase, nick);
 	if(!mesh) {
-		fprintf(stderr, "Could not open MeshLink: %s\n", meshlink_errstr);
+		fprintf(stderr, "Could not open MeshLink: %s\n", mesh->errstr);
 		return 1;
 	}
 
@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
 	meshlink_set_log_cb(mesh, MESHLINK_INFO, log);
 
 	if(!meshlink_start(mesh)) {
-		fprintf(stderr, "Could not start MeshLink: %s\n", meshlink_errstr);
+		fprintf(stderr, "Could not start MeshLink: %s\n", mesh->errstr);
 		return 1;
 	}
 
