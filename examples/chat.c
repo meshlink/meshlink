@@ -3,6 +3,11 @@
 #include <string.h>
 #include "../src/meshlink.h"
 
+static void log(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	const char *levelstr[] = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"};
+	fprintf(stderr, "%s: %s\n", levelstr[level], text);
+}
+
 static void receive(meshlink_handle_t *mesh, meshlink_node_t *source, const char *data, size_t len) {
 	if(!len || data[len - 1]) {
 		fprintf(stderr, "Received invalid data from %s\n", source->name);
@@ -142,14 +147,15 @@ int main(int argc, char *argv[]) {
 	if(argc > 2)
 		nick = argv[2];
 
-	mesh = meshlink_open(confbase, nick);
+	meshlink_handle_t *mesh = meshlink_open(confbase, nick);
 	if(!mesh) {
 		fprintf(stderr, "Could not open MeshLink: %s\n", meshlink_errstr);
 		return 1;
 	}
 
-	meshlink_set_receive_cb(receive);
-	meshlink_set_node_status_cb(node_changed);
+	meshlink_set_receive_cb(mesh, receive);
+	meshlink_set_node_status_cb(mesh, node_changed);
+	meshlink_set_log_cb(mesh, MESHLINK_INFO, log);
 
 	if(!meshlink_start(mesh)) {
 		fprintf(stderr, "Could not start MeshLink: %s\n", meshlink_errstr);
