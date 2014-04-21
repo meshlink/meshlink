@@ -29,18 +29,16 @@
 #include "utils.h"
 #include "xalloc.h"
 
-connection_t *everyone;
-
 void init_connections(void) {
 	mesh->connections = list_alloc((list_action_t) free_connection);
-	everyone = new_connection();
-	everyone->name = xstrdup("everyone");
-	everyone->hostname = xstrdup("BROADCAST");
+	mesh->everyone = new_connection();
+	mesh->everyone->name = xstrdup("mesh->everyone");
+	mesh->everyone->hostname = xstrdup("BROADCAST");
 }
 
 void exit_connections(void) {
 	list_delete_list(mesh->connections);
-	free_connection(everyone);
+	free_connection(mesh->everyone);
 }
 
 connection_t *new_connection(void) {

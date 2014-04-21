@@ -229,7 +229,7 @@ bool del_edge_h(connection_t *c, const char *request) {
 	if(!to->status.reachable) {
 		e = lookup_edge(to, mesh->self);
 		if(e) {
-			send_del_edge(everyone, e);
+			send_del_edge(mesh->everyone, e);
 			edge_del(e);
 		}
 	}

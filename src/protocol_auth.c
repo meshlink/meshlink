@@ -40,8 +40,6 @@
 #include "xalloc.h"
 #include "ed25519/sha512.h"
 
-ecdsa_t *invitation_key = NULL;
-
 static bool send_proxyrequest(connection_t *c) {
 	switch(mesh->proxytype) {
 		case PROXY_HTTP: {
@@ -184,7 +182,7 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const char *dat
 		return false;
 
 	// Recover the filename from the cookie and the key
-	char *fingerprint = ecdsa_get_base64_public_key(invitation_key);
+	char *fingerprint = ecdsa_get_base64_public_key(mesh->invitation_key);
 	char hash[64];
 	char hashbuf[18 + strlen(fingerprint)];
 	char cookie[25];
@@ -265,7 +263,7 @@ bool id_h(connection_t *c, const char *request) {
 	/* Check if this is an invitation  */
 
 	if(name[0] == '?') {
-		if(!invitation_key) {
+		if(!mesh->invitation_key) {
 			logger(DEBUG_ALWAYS, LOG_ERR, "Got invitation from %s but we don't have an invitation key", c->hostname);
 			return false;
 		}
@@ -277,7 +275,7 @@ bool id_h(connection_t *c, const char *request) {
 		}
 
 		c->status.invitation = true;
-		char *mykey = ecdsa_get_base64_public_key(invitation_key);
+		char *mykey = ecdsa_get_base64_public_key(mesh->invitation_key);
 		if(!mykey)
 			return false;
 		if(!send_request(c, "%d %s", ACK, mykey))
@@ -286,7 +284,7 @@ bool id_h(connection_t *c, const char *request) {
 
 		c->protocol_minor = 2;
 
-		return sptps_start(&c->sptps, c, false, false, invitation_key, c->ecdsa, "tinc invitation", 15, send_meta_sptps, receive_invitation_sptps);
+		return sptps_start(&c->sptps, c, false, false, mesh->invitation_key, c->ecdsa, "tinc invitation", 15, send_meta_sptps, receive_invitation_sptps);
 	}
 
 	/* Check if identity is a valid name */
@@ -466,7 +464,7 @@ bool ack_h(connection_t *c, const char *request) {
 
 	/* Notify everyone of the new edge */
 
-	send_add_edge(everyone, c->edge);
+	send_add_edge(mesh->everyone, c->edge);
 
 	/* Run MST and SSSP algorithms */
 

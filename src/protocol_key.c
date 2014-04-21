@@ -36,7 +36,7 @@
 static bool mykeyused = false;
 
 void send_key_changed(void) {
-	send_request(everyone, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
+	send_request(mesh->everyone, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
 
 	/* Force key exchange for connections using SPTPS */
 

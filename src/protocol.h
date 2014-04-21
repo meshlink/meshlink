@@ -56,8 +56,6 @@ typedef struct past_request_t {
 	time_t firstseen;
 } past_request_t;
 
-extern ecdsa_t *invitation_key;
-
 /* Maximum size of strings in a request.
  * scanf terminates %2048s with a NUL character,
  * but the NUL character can be written after the 2048th non-NUL character.

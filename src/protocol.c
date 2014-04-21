@@ -88,7 +88,7 @@ bool send_request(connection_t *c, const char *format, ...) {
 
 	request[len++] = '\n';
 
-	if(c == everyone) {
+	if(c == mesh->everyone) {
 		broadcast_meta(NULL, request, len);
 		return true;
 	} else

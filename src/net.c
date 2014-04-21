@@ -44,7 +44,7 @@ void purge(void) {
 			logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Purging node %s (%s)", n->name, n->hostname);
 
 			for splay_each(edge_t, e, n->edge_tree) {
-				send_del_edge(everyone, e);
+				send_del_edge(mesh->everyone, e);
 				edge_del(e);
 			}
 		}
@@ -78,7 +78,7 @@ void terminate_connection(connection_t *c, bool report) {
 
 	if(c->edge) {
 		if(report)
-			send_del_edge(everyone, c->edge);
+			send_del_edge(mesh->everyone, c->edge);
 
 		edge_del(c->edge);
 		c->edge = NULL;
@@ -93,7 +93,7 @@ void terminate_connection(connection_t *c, bool report) {
 			edge_t *e;
 			e = lookup_edge(c->node, mesh->self);
 			if(e) {
-				send_del_edge(everyone, e);
+				send_del_edge(mesh->everyone, e);
 				edge_del(e);
 			}
 		}

@@ -108,9 +108,9 @@ static bool read_invitation_key(void) {
 	FILE *fp;
 	char *fname;
 
-	if(invitation_key) {
-		ecdsa_free(invitation_key);
-		invitation_key = NULL;
+	if(mesh->invitation_key) {
+		ecdsa_free(mesh->invitation_key);
+		mesh->invitation_key = NULL;
 	}
 
 	xasprintf(&fname, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
@@ -118,14 +118,14 @@ static bool read_invitation_key(void) {
 	fp = fopen(fname, "r");
 
 	if(fp) {
-		invitation_key = ecdsa_read_pem_private_key(fp);
+		mesh->invitation_key = ecdsa_read_pem_private_key(fp);
 		fclose(fp);
-		if(!invitation_key)
+		if(!mesh->invitation_key)
 			logger(DEBUG_ALWAYS, LOG_ERR, "Reading ECDSA private key file `%s' failed: %s", fname, strerror(errno));
 	}
 
 	free(fname);
-	return invitation_key;
+	return mesh->invitation_key;
 }
 
 void load_all_nodes(void) {

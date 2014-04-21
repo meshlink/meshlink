@@ -23,6 +23,7 @@
 #include "system.h"
 
 #include "event.h"
+#include "hash.h"
 #include "meshlink.h"
 #include "sockaddr.h"
 
@@ -84,6 +85,10 @@ struct meshlink_handle {
 
 	bool localdiscovery;
 	sockaddr_t localdiscovery_address;
+
+	hash_t *node_udp_cache;
+	struct connection_t *everyone;
+	struct ecdsa *invitation_key;
 };
 
 /// A handle for a MeshLink node.
