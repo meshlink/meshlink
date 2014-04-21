@@ -66,6 +66,9 @@ extern const char *meshlink_strerror(meshlink_errno_t errno);
  *  but it is not a problem if it is run more than once, as long as
  *  the arguments given are the same.
  *
+ *  This function does not start any network I/O yet. The application should
+ *  first set callbacks, and then call meshlink_start().
+ *
  *  @param confbase The directory in which MeshLink will store its configuration files.
  *  @param name     The name which this instance of the application will use in the mesh.
  *
@@ -74,8 +77,8 @@ extern const char *meshlink_strerror(meshlink_errno_t errno);
 extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name);
 
 /// Start MeshLink.
-/** This function causes MeshLink to create a new thread, which will
- *  handle all network I/O.
+/** This function causes MeshLink to open network sockets, make outgoing connections, and
+ *  create a new thread, which will handle all network I/O.
  *
  *  @param confbase The directory in which MeshLink will store its configuration files.
  *
@@ -85,7 +88,7 @@ extern bool meshlink_start(meshlink_handle_t *mesh);
 
 /// Stop MeshLink.
 /** This function causes MeshLink to disconnect from all other nodes,
- *  and shuts down its own thread.
+ *  close all sockets, and shut down its own thread.
  *
  * @param handle    A handle which represents an instance of MeshLink.
  */
