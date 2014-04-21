@@ -48,6 +48,7 @@
 #include "graph.h"
 #include "list.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "netutl.h"
 #include "node.h"
 #include "protocol.h"
@@ -125,15 +126,15 @@ static void sssp_bfs(void) {
 		n->distance = -1;
 	}
 
-	/* Begin with myself */
+	/* Begin with mesh->self */
 
-	myself->status.visited = true;
-	myself->status.indirect = false;
-	myself->nexthop = myself;
-	myself->prevedge = NULL;
-	myself->via = myself;
-	myself->distance = 0;
-	list_insert_head(todo_list, myself);
+	mesh->self->status.visited = true;
+	mesh->self->status.indirect = false;
+	mesh->self->nexthop = mesh->self;
+	mesh->self->prevedge = NULL;
+	mesh->self->via = mesh->self;
+	mesh->self->distance = 0;
+	list_insert_head(todo_list, mesh->self);
 
 	/* Loop while todo_list is filled */
 
@@ -173,7 +174,7 @@ static void sssp_bfs(void) {
 
 			e->to->status.visited = true;
 			e->to->status.indirect = indirect;
-			e->to->nexthop = (n->nexthop == myself) ? e->to : n->nexthop;
+			e->to->nexthop = (n->nexthop == mesh->self) ? e->to : n->nexthop;
 			e->to->prevedge = e;
 			e->to->via = indirect ? n->via : e->to;
 			e->to->options = e->options;

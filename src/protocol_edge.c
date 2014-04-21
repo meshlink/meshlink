@@ -24,6 +24,7 @@
 #include "edge.h"
 #include "graph.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "meta.h"
 #include "net.h"
 #include "netutl.h"
@@ -104,7 +105,7 @@ bool add_edge_h(connection_t *c, const char *request) {
 
 	if(e) {
 		if(e->weight != weight || e->options != options || sockaddrcmp(&e->address, &address)) {
-			if(from == myself) {
+			if(from == mesh->self) {
 				logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) for ourself which does not match existing entry",
 						   "ADD_EDGE", c->name, c->hostname);
 				send_add_edge(c, e);
@@ -117,7 +118,7 @@ bool add_edge_h(connection_t *c, const char *request) {
 			}
 		} else
 			return true;
-	} else if(from == myself) {
+	} else if(from == mesh->self) {
 		logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) for ourself which does not exist",
 				   "ADD_EDGE", c->name, c->hostname);
 		contradicting_add_edge++;
@@ -203,7 +204,7 @@ bool del_edge_h(connection_t *c, const char *request) {
 		return true;
 	}
 
-	if(e->from == myself) {
+	if(e->from == mesh->self) {
 		logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) for ourself",
 				   "DEL_EDGE", c->name, c->hostname);
 		contradicting_del_edge++;
@@ -226,7 +227,7 @@ bool del_edge_h(connection_t *c, const char *request) {
 	/* If the node is not reachable anymore but we remember it had an edge to us, clean it up */
 
 	if(!to->status.reachable) {
-		e = lookup_edge(to, myself);
+		e = lookup_edge(to, mesh->self);
 		if(e) {
 			send_del_edge(everyone, e);
 			edge_del(e);

@@ -30,6 +30,7 @@
 #include "digest.h"
 #include "graph.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "net.h"
 #include "netutl.h"
 #include "protocol.h"
@@ -462,16 +463,16 @@ bool send_sptps_data(void *handle, uint8_t type, const char *data, size_t len) {
 
 	/* Send it via TCP if it is a handshake packet, TCPOnly is in use, or this packet is larger than the MTU. */
 
-	if(type >= SPTPS_HANDSHAKE || ((myself->options | to->options) & OPTION_TCPONLY) || (type != PKT_PROBE && len > to->minmtu)) {
+	if(type >= SPTPS_HANDSHAKE || ((mesh->self->options | to->options) & OPTION_TCPONLY) || (type != PKT_PROBE && len > to->minmtu)) {
 		char buf[len * 4 / 3 + 5];
 		b64encode(data, buf, len);
 		/* If no valid key is known yet, send the packets using ANS_KEY requests,
 		   to ensure we get to learn the reflexive UDP address. */
 		if(!to->status.validkey) {
-			to->incompression = myself->incompression;
-			return send_request(to->nexthop->connection, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, myself->name, to->name, buf, to->incompression);
+			to->incompression = mesh->self->incompression;
+			return send_request(to->nexthop->connection, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, to->incompression);
 		} else {
-			return send_request(to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, myself->name, to->name, REQ_SPTPS, buf);
+			return send_request(to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_SPTPS, buf);
 		}
 	}
 
@@ -558,7 +559,7 @@ bool receive_sptps_record(void *handle, uint8_t type, const char *data, uint16_t
 void send_packet(node_t *n, vpn_packet_t *packet) {
 	node_t *via;
 
-	if(n == myself) {
+	if(n == mesh->self) {
 		n->out_packets++;
 		n->out_bytes += packet->len;
 		// TODO: send to application
@@ -585,8 +586,8 @@ void send_packet(node_t *n, vpn_packet_t *packet) {
 
 void broadcast_packet(const node_t *from, vpn_packet_t *packet) {
 	// Always give ourself a copy of the packet.
-	if(from != myself)
-		send_packet(myself, packet);
+	if(from != mesh->self)
+		send_packet(mesh->self, packet);
 
 	logger(DEBUG_TRAFFIC, LOG_INFO, "Broadcasting packet of %d bytes from %s (%s)",
 			   packet->len, from->name, from->hostname);
@@ -602,7 +603,7 @@ static node_t *try_harder(const sockaddr_t *from, const vpn_packet_t *pkt) {
 	static time_t last_hard_try = 0;
 
 	for splay_each(edge_t, e, edge_weight_tree) {
-		if(!e->to->status.reachable || e->to == myself)
+		if(!e->to->status.reachable || e->to == mesh->self)
 			continue;
 
 		if(sockaddrcmp_noport(from, &e->address)) {

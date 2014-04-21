@@ -28,6 +28,7 @@
 #include "edge.h"
 #include "graph.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "meta.h"
 #include "net.h"
 #include "netutl.h"
@@ -130,13 +131,13 @@ static bool send_proxyrequest(connection_t *c) {
 bool send_id(connection_t *c) {
 	gettimeofday(&c->start, NULL);
 
-	int minor = myself->connection->protocol_minor;
+	int minor = mesh->self->connection->protocol_minor;
 
 	if(proxytype && c->outgoing)
 		if(!send_proxyrequest(c))
 			return false;
 
-	return send_request(c, "%d %s %d.%d", ID, myself->connection->name, myself->connection->protocol_major, minor);
+	return send_request(c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
 }
 
 static bool finalize_invitation(connection_t *c, const char *data, uint16_t len) {
@@ -312,7 +313,7 @@ bool id_h(connection_t *c, const char *request) {
 
 	/* Check if version matches */
 
-	if(c->protocol_major != myself->connection->protocol_major) {
+	if(c->protocol_major != mesh->self->connection->protocol_major) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Peer %s (%s) uses incompatible version %d.%d",
 			c->name, c->hostname, c->protocol_major, c->protocol_minor);
 		return false;
@@ -348,14 +349,14 @@ bool id_h(connection_t *c, const char *request) {
 	}
 
 	c->allow_request = ACK;
-	char label[25 + strlen(myself->name) + strlen(c->name)];
+	char label[25 + strlen(mesh->self->name) + strlen(c->name)];
 
 	if(c->outgoing)
-		snprintf(label, sizeof label, "tinc TCP key expansion %s %s", myself->name, c->name);
+		snprintf(label, sizeof label, "tinc TCP key expansion %s %s", mesh->self->name, c->name);
 	else
-		snprintf(label, sizeof label, "tinc TCP key expansion %s %s", c->name, myself->name);
+		snprintf(label, sizeof label, "tinc TCP key expansion %s %s", c->name, mesh->self->name);
 
-	return sptps_start(&c->sptps, c, c->outgoing, false, myself->connection->ecdsa, c->ecdsa, label, sizeof label, send_meta_sptps, receive_meta_sptps);
+	return sptps_start(&c->sptps, c, c->outgoing, false, mesh->self->connection->ecdsa, c->ecdsa, label, sizeof label, send_meta_sptps, receive_meta_sptps);
 }
 
 bool send_ack(connection_t *c) {
@@ -372,7 +373,7 @@ bool send_ack(connection_t *c) {
 
 	/* Check some options */
 
-	if(myself->options & OPTION_PMTU_DISCOVERY)
+	if(mesh->self->options & OPTION_PMTU_DISCOVERY)
 		c->options |= OPTION_PMTU_DISCOVERY;
 
 	return send_request(c, "%d %s %d %x", ACK, myport, c->estimated_weight, (c->options & 0xffffff) | (PROT_MINOR << 24));
@@ -464,7 +465,7 @@ bool ack_h(connection_t *c, const char *request) {
 	/* Create an edge_t for this connection */
 
 	c->edge = new_edge();
-	c->edge->from = myself;
+	c->edge->from = mesh->self;
 	c->edge->to = n;
 	sockaddr2str(&c->address, &hisaddress, NULL);
 	c->edge->address = str2sockaddr(hisaddress, hisport);

@@ -20,6 +20,7 @@
 #include "system.h"
 
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "net.h"
 #include "route.h"
 #include "utils.h"
@@ -71,7 +72,7 @@ void route(node_t *source,vpn_packet_t *packet) {
     return;
     }
 
-    if (owner == myself ) {
+    if (owner == mesh->self ) {
     //TODO: implement sending received data from meshlink library to the application
     logger(DEBUG_TRAFFIC, LOG_WARNING, "I received a packet for me with payload: %s \n", packet->data + sizeof *hdr);
     (recv_callback)(packet->data + sizeof *hdr);
@@ -84,7 +85,7 @@ void route(node_t *source,vpn_packet_t *packet) {
     return;
     }
 
-    via = (owner->via == myself) ? owner->nexthop : owner->via;
+    via = (owner->via == mesh->self) ? owner->nexthop : owner->via;
     if(via == source) {
 	logger(DEBUG_TRAFFIC, LOG_ERR, "Routing loop for packet from %s (%s)!", source->name, source->hostname);
 	return;

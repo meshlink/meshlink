@@ -26,6 +26,7 @@
 #include "ecdsa.h"
 #include "graph.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "net.h"
 #include "netutl.h"
 #include "protocol.h"
@@ -102,13 +103,13 @@ static bool read_ecdsa_private_key(void) {
 		return false;
 	}
 
-	myself->connection->ecdsa = ecdsa_read_pem_private_key(fp);
+	mesh->self->connection->ecdsa = ecdsa_read_pem_private_key(fp);
 	fclose(fp);
 
-	if(!myself->connection->ecdsa)
+	if(!mesh->self->connection->ecdsa)
 		logger(DEBUG_ALWAYS, LOG_ERR, "Reading ECDSA private key file failed: %s", strerror(errno));
 
-	return myself->connection->ecdsa;
+	return mesh->self->connection->ecdsa;
 }
 
 static bool read_invitation_key(void) {
@@ -186,7 +187,7 @@ char *get_name(void) {
 		return NULL;
 
 	if(!check_id(name)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Invalid name for myself!");
+		logger(DEBUG_ALWAYS, LOG_ERR, "Invalid name for mesh->self!");
 		free(name);
 		return NULL;
 	}
@@ -199,7 +200,7 @@ bool setup_myself_reloadable(void) {
 	keylifetime = 3600; // TODO: check if this can be removed as well
 	maxtimeout = 900;
 	autoconnect = 3;
-	myself->options |= OPTION_PMTU_DISCOVERY;
+	mesh->self->options |= OPTION_PMTU_DISCOVERY;
 
 	read_invitation_key();
 
@@ -286,7 +287,7 @@ static bool add_listen_address(char *address, bool bindto) {
 }
 
 /*
-  Configure node_t myself and set up the local sockets (listen only)
+  Configure node_t mesh->self and set up the local sockets (listen only)
 */
 bool setup_myself(void) {
 	char *name, *hostname, *cipher, *digest, *type;
@@ -298,10 +299,10 @@ bool setup_myself(void) {
 		return false;
 	}
 
-	myself = new_node();
-	myself->connection = new_connection();
-	myself->name = name;
-	myself->connection->name = xstrdup(name);
+	mesh->self = new_node();
+	mesh->self->connection = new_connection();
+	mesh->self->name = name;
+	mesh->self->connection->name = xstrdup(name);
 	read_host_config(config_tree, name);
 
 	if(!get_config_string(lookup_config(config_tree, "Port"), &myport))
@@ -309,11 +310,11 @@ bool setup_myself(void) {
 	else
 		port_specified = true;
 
-	myself->connection->options = 0;
-	myself->connection->protocol_major = PROT_MAJOR;
-	myself->connection->protocol_minor = PROT_MINOR;
+	mesh->self->connection->options = 0;
+	mesh->self->connection->protocol_major = PROT_MAJOR;
+	mesh->self->connection->protocol_minor = PROT_MINOR;
 
-	myself->options |= PROT_MINOR << 24;
+	mesh->self->options |= PROT_MINOR << 24;
 
 	if(!read_ecdsa_private_key())
 		return false;
@@ -341,16 +342,16 @@ bool setup_myself(void) {
 	/* Compression */
 
 	// TODO: drop compression in the packet layer?
-	myself->incompression = 0;
-	myself->connection->outcompression = 0;
+	mesh->self->incompression = 0;
+	mesh->self->connection->outcompression = 0;
 
 	/* Done */
 
-	myself->nexthop = myself;
-	myself->via = myself;
-	myself->status.reachable = true;
-	myself->last_state_change = now.tv_sec;
-	node_add(myself);
+	mesh->self->nexthop = mesh->self;
+	mesh->self->via = mesh->self;
+	mesh->self->status.reachable = true;
+	mesh->self->last_state_change = now.tv_sec;
+	node_add(mesh->self);
 
 	graph();
 
@@ -375,8 +376,8 @@ bool setup_myself(void) {
 	if(!myport)
 		myport = xstrdup("655");
 
-	xasprintf(&myself->hostname, "MYSELF port %s", myport);
-	myself->connection->hostname = xstrdup(myself->hostname);
+	xasprintf(&mesh->self->hostname, "MYSELF port %s", myport);
+	mesh->self->connection->hostname = xstrdup(mesh->self->hostname);
 
 	/* Done. */
 
@@ -418,9 +419,9 @@ void close_network_connections(void) {
 	if(outgoing_list)
 		list_delete_list(outgoing_list);
 
-	if(myself && myself->connection) {
-		terminate_connection(myself->connection, false);
-		free_connection(myself->connection);
+	if(mesh->self && mesh->self->connection) {
+		terminate_connection(mesh->self->connection, false);
+		free_connection(mesh->self->connection);
 	}
 
 	for(int i = 0; i < listen_sockets; i++) {

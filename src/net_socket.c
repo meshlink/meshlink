@@ -23,6 +23,7 @@
 #include "connection.h"
 #include "list.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "meta.h"
 #include "net.h"
 #include "netutl.h"
@@ -198,12 +199,12 @@ int setup_vpn_in_socket(const sockaddr_t *sa) {
 #endif
 
 #if defined(SOL_IP) && defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DO)
-	if(myself->options & OPTION_PMTU_DISCOVERY) {
+	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = IP_PMTUDISC_DO;
 		setsockopt(nfd, SOL_IP, IP_MTU_DISCOVER, (void *)&option, sizeof(option));
 	}
 #elif defined(IPPROTO_IP) && defined(IP_DONTFRAGMENT)
-	if(myself->options & OPTION_PMTU_DISCOVERY) {
+	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = 1;
 		setsockopt(nfd, IPPROTO_IP, IP_DONTFRAGMENT, (void *)&option, sizeof(option));
 	}
@@ -212,12 +213,12 @@ int setup_vpn_in_socket(const sockaddr_t *sa) {
 #endif
 
 #if defined(SOL_IPV6) && defined(IPV6_MTU_DISCOVER) && defined(IPV6_PMTUDISC_DO)
-	if(myself->options & OPTION_PMTU_DISCOVERY) {
+	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = IPV6_PMTUDISC_DO;
 		setsockopt(nfd, SOL_IPV6, IPV6_MTU_DISCOVER, (void *)&option, sizeof(option));
 	}
 #elif defined(IPPROTO_IPV6) && defined(IPV6_DONTFRAG)
-	if(myself->options & OPTION_PMTU_DISCOVERY) {
+	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = 1;
 		setsockopt(nfd, IPPROTO_IPV6, IPV6_DONTFRAG, (void *)&option, sizeof(option));
 	}
@@ -292,7 +293,7 @@ static void do_outgoing_pipe(connection_t *c, char *command) {
 	setenv("REMOTEADDRESS", host, true);
 	setenv("REMOTEPORT", port, true);
 	setenv("NODE", c->name, true);
-	setenv("NAME", myself->name, true);
+	setenv("NAME", mesh->self->name, true);
 
 	int result = system(command);
 	if(result < 0)
@@ -463,7 +464,7 @@ begin:
 
 	c->status.connecting = true;
 	c->name = xstrdup(outgoing->name);
-	c->outcompression = myself->connection->outcompression;
+	c->outcompression = mesh->self->connection->outcompression;
 	c->last_ping_time = now.tv_sec;
 
 	connection_add(c);
@@ -607,7 +608,7 @@ void handle_new_meta_connection(void *data, int flags) {
 
 	c = new_connection();
 	c->name = xstrdup("<unknown>");
-	c->outcompression = myself->connection->outcompression;
+	c->outcompression = mesh->self->connection->outcompression;
 
 	c->address = sa;
 	c->hostname = sockaddr2hostname(&sa);

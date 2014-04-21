@@ -421,14 +421,14 @@ bool tinc_send_packet(node_t *receiver, const char* buf, unsigned int len) {
 	packet.probe = false;
 	memset(hdr, 0, sizeof *hdr);
 	memcpy(hdr->destination,receiver->name,sizeof(hdr->destination));
-	memcpy(hdr->source,myself->name,sizeof(hdr->source));
+	memcpy(hdr->source,mesh->self->name,sizeof(hdr->source));
 
 	packet.len = sizeof(tincpackethdr) + len;
 	memcpy(packet.data+sizeof(tincpackethdr),buf,len);
 
-        myself->in_packets++;
-        myself->in_bytes += packet.len;
-        route(myself, &packet);
+        mesh->self->in_packets++;
+        mesh->self->in_bytes += packet.len;
+        route(mesh->self, &packet);
 
 return true;
 }

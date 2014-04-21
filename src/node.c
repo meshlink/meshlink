@@ -21,6 +21,7 @@
 
 #include "hash.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "net.h"
 #include "netutl.h"
 #include "node.h"
@@ -30,8 +31,6 @@
 
 splay_tree_t *node_tree;
 static hash_t *node_udp_cache;
-
-node_t *myself;
 
 static int node_compare(const node_t *a, const node_t *b) {
 	return strcmp(a->name, b->name);
@@ -105,8 +104,8 @@ node_t *lookup_node_udp(const sockaddr_t *sa) {
 }
 
 void update_node_udp(node_t *n, const sockaddr_t *sa) {
-	if(n == myself) {
-		logger(DEBUG_ALWAYS, LOG_WARNING, "Trying to update UDP address of myself!");
+	if(n == mesh->self) {
+		logger(DEBUG_ALWAYS, LOG_WARNING, "Trying to update UDP address of mesh->self!");
 		return;
 	}
 

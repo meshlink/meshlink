@@ -24,6 +24,7 @@
 #include "connection.h"
 #include "graph.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "meta.h"
 #include "net.h"
 #include "netutl.h"
@@ -100,7 +101,7 @@ void terminate_connection(connection_t *c, bool report) {
 
 		if(report && !c->node->status.reachable) {
 			edge_t *e;
-			e = lookup_edge(c->node, myself);
+			e = lookup_edge(c->node, mesh->self);
 			if(e) {
 				send_del_edge(everyone, e);
 				edge_del(e);
@@ -290,7 +291,7 @@ int reload_configuration(void) {
 		return EINVAL;
 	}
 
-	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, myself->name);
+	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, mesh->self->name);
 	read_config_file(config_tree, fname);
 	free(fname);
 

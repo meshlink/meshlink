@@ -23,6 +23,7 @@
 #include "connection.h"
 #include "crypto.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "net.h"
 #include "netutl.h"
 #include "node.h"
@@ -35,7 +36,7 @@
 static bool mykeyused = false;
 
 void send_key_changed(void) {
-	send_request(everyone, "%d %x %s", KEY_CHANGED, rand(), myself->name);
+	send_request(everyone, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
 
 	/* Force key exchange for connections using SPTPS */
 
@@ -77,27 +78,27 @@ static bool send_initial_sptps_data(void *handle, uint8_t type, const char *data
 	to->sptps.send_data = send_sptps_data;
 	char buf[len * 4 / 3 + 5];
 	b64encode(data, buf, len);
-	return send_request(to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, myself->name, to->name, REQ_KEY, buf);
+	return send_request(to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_KEY, buf);
 }
 
 bool send_req_key(node_t *to) {
 	if(!node_read_ecdsa_public_key(to)) {
 		logger(DEBUG_PROTOCOL, LOG_DEBUG, "No ECDSA key known for %s (%s)", to->name, to->hostname);
-		send_request(to->nexthop->connection, "%d %s %s %d", REQ_KEY, myself->name, to->name, REQ_PUBKEY);
+		send_request(to->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY);
 		return true;
 	}
 
 	if(to->sptps.label)
 		logger(DEBUG_ALWAYS, LOG_DEBUG, "send_req_key(%s) called while sptps->label != NULL!", to->name);
 
-	char label[25 + strlen(myself->name) + strlen(to->name)];
-	snprintf(label, sizeof label, "tinc UDP key expansion %s %s", myself->name, to->name);
+	char label[25 + strlen(mesh->self->name) + strlen(to->name)];
+	snprintf(label, sizeof label, "tinc UDP key expansion %s %s", mesh->self->name, to->name);
 	sptps_stop(&to->sptps);
 	to->status.validkey = false;
 	to->status.waitingforkey = true;
 	to->last_req_key = now.tv_sec;
-	to->incompression = myself->incompression;
-	return sptps_start(&to->sptps, to, true, true, myself->connection->ecdsa, to->ecdsa, label, sizeof label, send_initial_sptps_data, receive_sptps_record);
+	to->incompression = mesh->self->incompression;
+	return sptps_start(&to->sptps, to, true, true, mesh->self->connection->ecdsa, to->ecdsa, label, sizeof label, send_initial_sptps_data, receive_sptps_record);
 }
 
 /* REQ_KEY is overloaded to allow arbitrary requests to be routed between two nodes. */
@@ -105,8 +106,8 @@ bool send_req_key(node_t *to) {
 static bool req_key_ext_h(connection_t *c, const char *request, node_t *from, int reqno) {
 	switch(reqno) {
 		case REQ_PUBKEY: {
-			char *pubkey = ecdsa_get_base64_public_key(myself->connection->ecdsa);
-			send_request(from->nexthop->connection, "%d %s %s %d %s", REQ_KEY, myself->name, from->name, ANS_PUBKEY, pubkey);
+			char *pubkey = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
+			send_request(from->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, from->name, ANS_PUBKEY, pubkey);
 			free(pubkey);
 			return true;
 		}
@@ -131,7 +132,7 @@ static bool req_key_ext_h(connection_t *c, const char *request, node_t *from, in
 		case REQ_KEY: {
 			if(!node_read_ecdsa_public_key(from)) {
 				logger(DEBUG_PROTOCOL, LOG_DEBUG, "No ECDSA key known for %s (%s)", from->name, from->hostname);
-				send_request(from->nexthop->connection, "%d %s %s %d", REQ_KEY, myself->name, from->name, REQ_PUBKEY);
+				send_request(from->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, from->name, REQ_PUBKEY);
 				return true;
 			}
 
@@ -146,13 +147,13 @@ static bool req_key_ext_h(connection_t *c, const char *request, node_t *from, in
 				return true;
 			}
 
-			char label[25 + strlen(from->name) + strlen(myself->name)];
-			snprintf(label, sizeof label, "tinc UDP key expansion %s %s", from->name, myself->name);
+			char label[25 + strlen(from->name) + strlen(mesh->self->name)];
+			snprintf(label, sizeof label, "tinc UDP key expansion %s %s", from->name, mesh->self->name);
 			sptps_stop(&from->sptps);
 			from->status.validkey = false;
 			from->status.waitingforkey = true;
 			from->last_req_key = now.tv_sec;
-			sptps_start(&from->sptps, from, false, true, myself->connection->ecdsa, from->ecdsa, label, sizeof label, send_sptps_data, receive_sptps_record);
+			sptps_start(&from->sptps, from, false, true, mesh->self->connection->ecdsa, from->ecdsa, label, sizeof label, send_sptps_data, receive_sptps_record);
 			sptps_receive_data(&from->sptps, buf, len);
 			return true;
 		}
@@ -214,7 +215,7 @@ bool req_key_h(connection_t *c, const char *request) {
 
 	/* Check if this key request is for us */
 
-	if(to == myself) {                      /* Yes */
+	if(to == mesh->self) {                      /* Yes */
 		/* Is this an extended REQ_KEY message? */
 		if(reqno)
 			return req_key_ext_h(c, request, from, reqno);
@@ -278,7 +279,7 @@ bool ans_key_h(connection_t *c, const char *request) {
 
 	/* Forward it if necessary */
 
-	if(to != myself) {
+	if(to != mesh->self) {
 		if(!to->status.reachable) {
 			logger(DEBUG_ALWAYS, LOG_WARNING, "Got %s from %s (%s) destination %s which is not reachable",
 				   "ANS_KEY", c->name, c->hostname, to_name);

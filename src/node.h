@@ -88,7 +88,6 @@ typedef struct node_t {
 	uint64_t out_bytes;
 } node_t;
 
-extern struct node_t *myself;
 extern struct splay_tree_t *node_tree;
 
 extern void init_nodes(void);
