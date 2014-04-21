@@ -249,7 +249,7 @@ static bool add_listen_address(char *address, bool bindto) {
 		io_add(&mesh->listen_socket[mesh->listen_sockets].tcp, handle_new_meta_connection, &mesh->listen_socket[mesh->listen_sockets], tcp_fd, IO_READ);
 		io_add(&mesh->listen_socket[mesh->listen_sockets].udp, handle_incoming_vpn_data, &mesh->listen_socket[mesh->listen_sockets], udp_fd, IO_READ);
 
-		if(debug_level >= DEBUG_CONNECTIONS) {
+		if(mesh->debug_level >= DEBUG_CONNECTIONS) {
 			char *hostname = sockaddr2hostname((sockaddr_t *) aip->ai_addr);
 			logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Listening on %s", hostname);
 			free(hostname);

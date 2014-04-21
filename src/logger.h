@@ -63,7 +63,6 @@ enum {
 #endif
 #endif
 
-extern debug_t debug_level;
 extern void logger(int, int, const char *, ...) __attribute__ ((__format__(printf, 3, 4)));
 
 #endif /* __TINC_LOGGER_H__ */

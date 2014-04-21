@@ -649,7 +649,7 @@ void handle_incoming_vpn_data(void *data, int flags) {
 		n = try_harder(&from, &pkt);
 		if(n)
 			update_node_udp(n, &from);
-		else if(debug_level >= DEBUG_PROTOCOL) {
+		else if(mesh->debug_level >= DEBUG_PROTOCOL) {
 			hostname = sockaddr2hostname(&from);
 			logger(DEBUG_PROTOCOL, LOG_WARNING, "Received UDP packet from unknown source %s", hostname);
 			free(hostname);

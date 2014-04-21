@@ -112,9 +112,9 @@ static bool parse_options(int argc, char **argv) {
 				if(!optarg && optind < argc && *argv[optind] != '-')
 					optarg = argv[optind++];
 				if(optarg)
-					debug_level = atoi(optarg);
+					mesh->debug_level = atoi(optarg);
 				else
-					debug_level++;
+					mesh->debug_level++;
 				break;
 
 			case 1:   /* show help */

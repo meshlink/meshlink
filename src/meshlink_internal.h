@@ -24,6 +24,7 @@
 
 #include "event.h"
 #include "hash.h"
+#include "logger.h"
 #include "meshlink.h"
 #include "sockaddr.h"
 
@@ -89,6 +90,8 @@ struct meshlink_handle {
 	hash_t *node_udp_cache;
 	struct connection_t *everyone;
 	struct ecdsa *invitation_key;
+
+	debug_t debug_level;
 };
 
 /// A handle for a MeshLink node.

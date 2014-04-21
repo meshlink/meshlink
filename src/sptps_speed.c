@@ -29,6 +29,7 @@
 
 // Symbols necessary to link with logger.o
 bool send_request(void *c, const char *msg, ...) { return false; }
+void *mesh;
 bool send_meta(void *c, const char *msg , int len) { return false; }
 char *logfilename = NULL;
 struct timeval now;

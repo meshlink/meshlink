@@ -20,11 +20,11 @@
 #include "system.h"
 
 #include "logger.h"
-
-debug_t debug_level = DEBUG_NOTHING;
+#include "meshlink_internal.h"
+#include "sptps.h"
 
 void logger(int level, int priority, const char *format, ...) {
-	if(level > debug_level)
+	if(level > mesh->debug_level)
 		return;
 
 	va_list ap;
@@ -41,7 +41,7 @@ void logger(int level, int priority, const char *format, ...) {
 }
 
 // TODO: make sure this gets used somewhere
-static void sptps_logger(struct sptps *s, int s_errno, const char *format, va_list ap) {
+static void sptps_logger(sptps_t *s, int s_errno, const char *format, va_list ap) {
 	char message[1024] = "";
 	int len = vsnprintf(message, sizeof message, format, ap);
 	if(len > 0 && len < sizeof message && message[len - 1] == '\n')
