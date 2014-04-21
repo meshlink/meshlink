@@ -49,7 +49,7 @@ typedef struct node_t {
 	time_t last_state_change;
 	time_t last_req_key;
 
-	struct ecdsa_t *ecdsa;                         /* His public ECDSA key */
+	struct ecdsa *ecdsa;                    /* His public ECDSA key */
 	sptps_t sptps;
 
 	int incompression;                      /* Compressionlevel, 0 = no compression */
