@@ -88,8 +88,6 @@ typedef struct node_t {
 	uint64_t out_bytes;
 } node_t;
 
-extern struct splay_tree_t *node_tree;
-
 extern void init_nodes(void);
 extern void exit_nodes(void);
 extern node_t *new_node(void) __attribute__ ((__malloc__));

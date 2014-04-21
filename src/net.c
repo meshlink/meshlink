@@ -49,7 +49,7 @@ void purge(void) {
 
 	/* Remove all edges owned by unreachable nodes. */
 
-	for splay_each(node_t, n, node_tree) {
+	for splay_each(node_t, n, mesh->nodes) {
 		if(!n->status.reachable) {
 			logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Purging node %s (%s)", n->name, n->hostname);
 
@@ -62,7 +62,7 @@ void purge(void) {
 
 	/* Check if anyone else claims to have an edge to an unreachable node. If not, delete node. */
 
-	for splay_each(node_t, n, node_tree) {
+	for splay_each(node_t, n, mesh->nodes) {
 		if(!n->status.reachable) {
 			for splay_each(edge_t, e, mesh->edges)
 				if(e->to == n)
@@ -180,7 +180,7 @@ static void periodic_handler(void *data) {
 
 	/* If AutoConnect is set, check if we need to make or break connections. */
 
-	if(autoconnect && node_tree->count > 1) {
+	if(autoconnect && mesh->nodes->count > 1) {
 		/* Count number of active connections */
 		int nc = 0;
 		for list_each(connection_t, c, connection_list) {
@@ -194,10 +194,10 @@ static void periodic_handler(void *data) {
 			   and we are not already trying to make one, create an
 			   outgoing connection to this node.
 			*/
-			int r = rand() % node_tree->count;
+			int r = rand() % mesh->nodes->count;
 			int i = 0;
 
-			for splay_each(node_t, n, node_tree) {
+			for splay_each(node_t, n, mesh->nodes) {
 				if(i++ != r)
 					continue;
 

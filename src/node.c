@@ -29,7 +29,6 @@
 #include "utils.h"
 #include "xalloc.h"
 
-splay_tree_t *node_tree;
 static hash_t *node_udp_cache;
 
 static int node_compare(const node_t *a, const node_t *b) {
@@ -37,13 +36,13 @@ static int node_compare(const node_t *a, const node_t *b) {
 }
 
 void init_nodes(void) {
-	node_tree = splay_alloc_tree((splay_compare_t) node_compare, (splay_action_t) free_node);
+	mesh->nodes = splay_alloc_tree((splay_compare_t) node_compare, (splay_action_t) free_node);
 	node_udp_cache = hash_alloc(0x100, sizeof(sockaddr_t));
 }
 
 void exit_nodes(void) {
 	hash_free(node_udp_cache);
-	splay_delete_tree(node_tree);
+	splay_delete_tree(mesh->nodes);
 }
 
 node_t *new_node(void) {
@@ -81,14 +80,14 @@ void free_node(node_t *n) {
 }
 
 void node_add(node_t *n) {
-	splay_insert(node_tree, n);
+	splay_insert(mesh->nodes, n);
 }
 
 void node_del(node_t *n) {
 	for splay_each(edge_t, e, n->edge_tree)
 		edge_del(e);
 
-	splay_delete(node_tree, n);
+	splay_delete(mesh->nodes, n);
 }
 
 node_t *lookup_node(char *name) {
@@ -96,7 +95,7 @@ node_t *lookup_node(char *name) {
 
 	n.name = name;
 
-	return splay_search(node_tree, &n);
+	return splay_search(mesh->nodes, &n);
 }
 
 node_t *lookup_node_udp(const sockaddr_t *sa) {

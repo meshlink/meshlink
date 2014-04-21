@@ -71,7 +71,7 @@ static void mst_kruskal(void) {
 
 	/* Clear visited status on nodes */
 
-	for splay_each(node_t, n, node_tree)
+	for splay_each(node_t, n, mesh->nodes)
 		n->status.visited = false;
 
 	/* Starting point */
@@ -120,7 +120,7 @@ static void sssp_bfs(void) {
 
 	/* Clear visited status on nodes */
 
-	for splay_each(node_t, n, node_tree) {
+	for splay_each(node_t, n, mesh->nodes) {
 		n->status.visited = false;
 		n->status.indirect = true;
 		n->distance = -1;
@@ -196,7 +196,7 @@ static void sssp_bfs(void) {
 static void check_reachability(void) {
 	/* Check reachability status. */
 
-	for splay_each(node_t, n, node_tree) {
+	for splay_each(node_t, n, mesh->nodes) {
 		if(n->status.visited != n->status.reachable) {
 			n->status.reachable = !n->status.reachable;
 			n->last_state_change = now.tv_sec;

@@ -394,7 +394,7 @@ static void send_everything(connection_t *c) {
 		send_tcppacket(c, &zeropkt.pkt);
 	}
 
-	for splay_each(node_t, n, node_tree) {
+	for splay_each(node_t, n, mesh->nodes) {
 		for splay_each(edge_t, e, n->edge_tree)
 			send_add_edge(c, e);
 	}

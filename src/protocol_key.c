@@ -40,7 +40,7 @@ void send_key_changed(void) {
 
 	/* Force key exchange for connections using SPTPS */
 
-	for splay_each(node_t, n, node_tree)
+	for splay_each(node_t, n, mesh->nodes)
 		if(n->status.reachable && n->status.validkey)
 			sptps_force_kex(&n->sptps);
 }
