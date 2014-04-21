@@ -22,12 +22,11 @@
 #include "splay_tree.h"
 #include "edge.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "netutl.h"
 #include "node.h"
 #include "utils.h"
 #include "xalloc.h"
-
-splay_tree_t *edge_weight_tree;
 
 static int edge_compare(const edge_t *a, const edge_t *b) {
 	return strcmp(a->to->name, b->to->name);
@@ -50,7 +49,7 @@ static int edge_weight_compare(const edge_t *a, const edge_t *b) {
 }
 
 void init_edges(void) {
-	edge_weight_tree = splay_alloc_tree((splay_compare_t) edge_weight_compare, NULL);
+	mesh->edges = splay_alloc_tree((splay_compare_t) edge_weight_compare, NULL);
 }
 
 splay_tree_t *new_edge_tree(void) {
@@ -62,7 +61,7 @@ void free_edge_tree(splay_tree_t *edge_tree) {
 }
 
 void exit_edges(void) {
-	splay_delete_tree(edge_weight_tree);
+	splay_delete_tree(mesh->edges);
 }
 
 /* Creation and deletion of connection elements */
@@ -78,7 +77,7 @@ void free_edge(edge_t *e) {
 }
 
 void edge_add(edge_t *e) {
-	splay_insert(edge_weight_tree, e);
+	splay_insert(mesh->edges, e);
 	splay_insert(e->from->edge_tree, e);
 
 	e->reverse = lookup_edge(e->to, e->from);
@@ -91,7 +90,7 @@ void edge_del(edge_t *e) {
 	if(e->reverse)
 		e->reverse->reverse = NULL;
 
-	splay_delete(edge_weight_tree, e);
+	splay_delete(mesh->edges, e);
 	splay_delete(e->from->edge_tree, e);
 }
 

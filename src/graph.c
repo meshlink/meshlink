@@ -76,7 +76,7 @@ static void mst_kruskal(void) {
 
 	/* Starting point */
 
-	for splay_each(edge_t, e, edge_weight_tree) {
+	for splay_each(edge_t, e, mesh->edges) {
 		if(e->from->status.reachable) {
 			e->from->status.visited = true;
 			break;
@@ -87,7 +87,7 @@ static void mst_kruskal(void) {
 
 	bool skipped = false;
 
-	for splay_each(edge_t, e, edge_weight_tree) {
+	for splay_each(edge_t, e, mesh->edges) {
 		if(!e->reverse || (e->from->status.visited == e->to->status.visited)) {
 			skipped = true;
 			continue;
@@ -106,7 +106,7 @@ static void mst_kruskal(void) {
 
 		if(skipped) {
 			skipped = false;
-			next = edge_weight_tree->head;
+			next = mesh->edges->head;
 		}
 	}
 }

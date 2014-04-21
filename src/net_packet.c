@@ -602,7 +602,7 @@ static node_t *try_harder(const sockaddr_t *from, const vpn_packet_t *pkt) {
 	bool hard = false;
 	static time_t last_hard_try = 0;
 
-	for splay_each(edge_t, e, edge_weight_tree) {
+	for splay_each(edge_t, e, mesh->edges) {
 		if(!e->to->status.reachable || e->to == mesh->self)
 			continue;
 

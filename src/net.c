@@ -64,7 +64,7 @@ void purge(void) {
 
 	for splay_each(node_t, n, node_tree) {
 		if(!n->status.reachable) {
-			for splay_each(edge_t, e, edge_weight_tree)
+			for splay_each(edge_t, e, mesh->edges)
 				if(e->to == n)
 					return;
 		}
