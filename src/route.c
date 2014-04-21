@@ -43,7 +43,7 @@ static bool ratelimit(int frequency) {
 	return false;
 }
 
-static bool checklength(node_t *source, vpn_packet_t *packet, length_t length) {
+static bool checklength(node_t *source, vpn_packet_t *packet, uint16_t length) {
 	if(packet->len < length) {
 		logger(DEBUG_TRAFFIC, LOG_WARNING, "Got too short packet from %s (%s)", source->name, source->hostname);
 		return false;

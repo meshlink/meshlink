@@ -23,6 +23,7 @@
 #include "cipher.h"
 #include "digest.h"
 #include "event.h"
+#include "sockaddr.h"
 
 #ifdef ENABLE_JUMBOGRAMS
 #define MTU 9018        /* 9000 bytes payload + 14 bytes ethernet header + 4 bytes VLAN tag */
@@ -38,40 +39,12 @@
 
 #define MAXSOCKETS 8    /* Probably overkill... */
 
-typedef short length_t;
-
-#define AF_UNKNOWN 255
-
-struct sockaddr_unknown {
-	uint16_t family;
-	uint16_t pad1;
-	uint32_t pad2;
-	char *address;
-	char *port;
-};
-
-typedef union sockaddr_t {
-	struct sockaddr sa;
-	struct sockaddr_in in;
-	struct sockaddr_in6 in6;
-	struct sockaddr_unknown unknown;
-#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
-	struct sockaddr_storage storage;
-#endif
-} sockaddr_t;
-
-#ifdef SA_LEN
-#define SALEN(s) SA_LEN(&s)
-#else
-#define SALEN(s) (s.sa_family==AF_INET?sizeof(struct sockaddr_in):sizeof(struct sockaddr_in6))
-#endif
-
 typedef struct vpn_packet_t {
 	struct {
 		unsigned int probe:1;
 		unsigned int tcp:1;
 	};
-	length_t len;           /* the actual number of bytes in the `data' field */
+	uint16_t len;           /* the actual number of bytes in the `data' field */
 	uint8_t data[MAXSIZE];
 } vpn_packet_t;
 

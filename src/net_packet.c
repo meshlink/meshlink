@@ -163,7 +163,7 @@ void send_mtu_probe(node_t *n) {
 	send_mtu_probe_handler(n);
 }
 
-static void mtu_probe_h(node_t *n, vpn_packet_t *packet, length_t len) {
+static void mtu_probe_h(node_t *n, vpn_packet_t *packet, uint16_t len) {
 	logger(DEBUG_TRAFFIC, LOG_INFO, "Got MTU probe length %d from %s (%s)", packet->len, n->name, n->hostname);
 
 	if(!packet->data[0]) {
@@ -230,7 +230,7 @@ static void mtu_probe_h(node_t *n, vpn_packet_t *packet, length_t len) {
 	}
 }
 
-static length_t compress_packet(uint8_t *dest, const uint8_t *source, length_t len, int level) {
+static uint16_t compress_packet(uint8_t *dest, const uint8_t *source, uint16_t len, int level) {
 	if(level == 0) {
 		memcpy(dest, source, len);
 		return len;
@@ -251,7 +251,7 @@ static length_t compress_packet(uint8_t *dest, const uint8_t *source, length_t l
 	return -1;
 }
 
-static length_t uncompress_packet(uint8_t *dest, const uint8_t *source, length_t len, int level) {
+static uint16_t uncompress_packet(uint8_t *dest, const uint8_t *source, uint16_t len, int level) {
 	if(level == 0) {
 		memcpy(dest, source, len);
 		return len;
@@ -535,7 +535,7 @@ bool receive_sptps_record(void *handle, uint8_t type, const char *data, uint16_t
 	}
 
 	if(type & PKT_COMPRESSED) {
-		length_t ulen = uncompress_packet(inpkt.data, (const uint8_t *)data, len, from->incompression);
+		uint16_t ulen = uncompress_packet(inpkt.data, (const uint8_t *)data, len, from->incompression);
 		if(ulen < 0) {
 			return false;
 		} else {

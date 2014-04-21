@@ -20,11 +20,9 @@
 #ifndef __TINC_NODE_H__
 #define __TINC_NODE_H__
 
-#include "splay_tree.h"
-#include "cipher.h"
-#include "connection.h"
-#include "digest.h"
 #include "event.h"
+#include "sockaddr.h"
+#include "sptps.h"
 
 typedef struct node_status_t {
 	unsigned int unused_active:1;           /* 1 if active (not used for nodes) */
@@ -51,7 +49,7 @@ typedef struct node_t {
 	time_t last_state_change;
 	time_t last_req_key;
 
-	ecdsa_t *ecdsa;                         /* His public ECDSA key */
+	struct ecdsa_t *ecdsa;                         /* His public ECDSA key */
 	sptps_t sptps;
 
 	int incompression;                      /* Compressionlevel, 0 = no compression */
@@ -73,9 +71,9 @@ typedef struct node_t {
 	uint32_t prev_received;
 	unsigned char* late;                    /* Bitfield marking late packets */
 
-	length_t mtu;                           /* Maximum size of packets to send to this node */
-	length_t minmtu;                        /* Probed minimum MTU */
-	length_t maxmtu;                        /* Probed maximum MTU */
+	uint16_t mtu;                           /* Maximum size of packets to send to this node */
+	uint16_t minmtu;                        /* Probed minimum MTU */
+	uint16_t maxmtu;                        /* Probed maximum MTU */
 	int mtuprobes;                          /* Number of probes */
 	timeout_t mtutimeout;                   /* Probe event */
 	struct timeval probe_time;              /* Time the last probe was sent or received */
