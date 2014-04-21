@@ -206,7 +206,7 @@ static void periodic_handler(void *data) {
 
 				bool found = false;
 
-				for list_each(outgoing_t, outgoing, outgoing_list) {
+				for list_each(outgoing_t, outgoing, mesh->outgoings) {
 					if(!strcmp(outgoing->name, n->name)) {
 						found = true;
 						break;
@@ -217,7 +217,7 @@ static void periodic_handler(void *data) {
 					logger(DEBUG_CONNECTIONS, LOG_INFO, "Autoconnecting to %s", n->name);
 					outgoing_t *outgoing = xzalloc(sizeof *outgoing);
 					outgoing->name = xstrdup(n->name);
-					list_insert_tail(outgoing_list, outgoing);
+					list_insert_tail(mesh->outgoings, outgoing);
 					setup_outgoing_connection(outgoing);
 				}
 				break;
@@ -241,7 +241,7 @@ static void periodic_handler(void *data) {
 					break;
 
 				logger(DEBUG_CONNECTIONS, LOG_INFO, "Autodisconnecting from %s", c->name);
-				list_delete(outgoing_list, c->outgoing);
+				list_delete(mesh->outgoings, c->outgoing);
 				c->outgoing = NULL;
 				terminate_connection(c, c->status.active);
 				break;
@@ -252,7 +252,7 @@ static void periodic_handler(void *data) {
 			/* If we have enough active connections,
 			   remove any pending outgoing connections.
 			*/
-			for list_each(outgoing_t, o, outgoing_list) {
+			for list_each(outgoing_t, o, mesh->outgoings) {
 				bool found = false;
 				for list_each(connection_t, c, mesh->connections) {
 					if(c->outgoing == o) {
@@ -262,7 +262,7 @@ static void periodic_handler(void *data) {
 				}
 				if(!found) {
 					logger(DEBUG_CONNECTIONS, LOG_INFO, "Cancelled outgoing connection to %s", o->name);
-					list_delete_node(outgoing_list, node);
+					list_delete_node(mesh->outgoings, node);
 				}
 			}
 		}
@@ -322,7 +322,7 @@ int reload_configuration(void) {
 
 void retry(void) {
 	/* Reset the reconnection timers for all outgoing connections */
-	for list_each(outgoing_t, outgoing, outgoing_list) {
+	for list_each(outgoing_t, outgoing, mesh->outgoings) {
 		outgoing->timeout = 0;
 		if(outgoing->ev.cb)
 			timeout_set(&outgoing->ev, &(struct timeval){0, 0});

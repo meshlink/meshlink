@@ -79,8 +79,6 @@ typedef struct outgoing_t {
 	timeout_t ev;
 } outgoing_t;
 
-extern list_t *outgoing_list;
-
 extern int maxoutbufsize;
 extern int seconds_till_retry;
 extern int addressfamily;

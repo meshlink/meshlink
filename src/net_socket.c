@@ -43,7 +43,6 @@ int max_connection_burst = 100;
 
 listen_socket_t listen_socket[MAXSOCKETS];
 int listen_sockets;
-list_t *outgoing_list = NULL;
 
 /* Setup sockets */
 
@@ -645,10 +644,10 @@ static void free_outgoing(outgoing_t *outgoing) {
 void try_outgoing_connections(void) {
 	/* If there is no outgoing list yet, create one. Otherwise, mark all outgoings as deleted. */
 
-	if(!outgoing_list) {
-		outgoing_list = list_alloc((list_action_t)free_outgoing);
+	if(!mesh->outgoings) {
+		mesh->outgoings = list_alloc((list_action_t)free_outgoing);
 	} else {
-		for list_each(outgoing_t, outgoing, outgoing_list)
+		for list_each(outgoing_t, outgoing, mesh->outgoings)
 			outgoing->timeout = -1;
 	}
 
@@ -669,7 +668,7 @@ void try_outgoing_connections(void) {
 
 		bool found = false;
 
-		for list_each(outgoing_t, outgoing, outgoing_list) {
+		for list_each(outgoing_t, outgoing, mesh->outgoings) {
 			if(!strcmp(outgoing->name, name)) {
 				found = true;
 				outgoing->timeout = 0;
@@ -680,7 +679,7 @@ void try_outgoing_connections(void) {
 		if(!found) {
 			outgoing_t *outgoing = xzalloc(sizeof *outgoing);
 			outgoing->name = name;
-			list_insert_tail(outgoing_list, outgoing);
+			list_insert_tail(mesh->outgoings, outgoing);
 			setup_outgoing_connection(outgoing);
 		}
 	}
@@ -697,7 +696,7 @@ void try_outgoing_connections(void) {
 
 	/* Delete outgoing_ts for which there is no ConnectTo. */
 
-	for list_each(outgoing_t, outgoing, outgoing_list)
+	for list_each(outgoing_t, outgoing, mesh->outgoings)
 		if(outgoing->timeout == -1)
-			list_delete_node(outgoing_list, node);
+			list_delete_node(mesh->outgoings, node);
 }

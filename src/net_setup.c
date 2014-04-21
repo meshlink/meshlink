@@ -416,8 +416,8 @@ void close_network_connections(void) {
 		terminate_connection(c, false);
 	}
 
-	if(outgoing_list)
-		list_delete_list(outgoing_list);
+	if(mesh->outgoings)
+		list_delete_list(mesh->outgoings);
 
 	if(mesh->self && mesh->self->connection) {
 		terminate_connection(mesh->self->connection, false);

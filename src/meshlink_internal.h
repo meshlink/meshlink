@@ -44,7 +44,7 @@ struct meshlink_handle {
 	struct splay_tree_t *nodes;
 
 	struct list_t *connections;
-	struct list_t *outgoing_connections;
+	struct list_t *outgoings;
 };
 
 /// A handle for a MeshLink node.
