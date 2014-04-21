@@ -21,9 +21,6 @@
 
 #include "conf.h"
 #include "connection.h"
-#include "cipher.h"
-#include "crypto.h"
-#include "digest.h"
 #include "ecdsa.h"
 #include "edge.h"
 #include "graph.h"

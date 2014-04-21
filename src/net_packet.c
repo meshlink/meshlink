@@ -23,11 +23,9 @@
 #include <zlib.h>
 #endif
 
-#include "cipher.h"
 #include "conf.h"
 #include "connection.h"
 #include "crypto.h"
-#include "digest.h"
 #include "graph.h"
 #include "logger.h"
 #include "meshlink_internal.h"

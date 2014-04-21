@@ -20,8 +20,6 @@
 #ifndef __TINC_NET_H__
 #define __TINC_NET_H__
 
-#include "cipher.h"
-#include "digest.h"
 #include "event.h"
 #include "sockaddr.h"
 
@@ -31,8 +29,8 @@
 #define MTU 1518        /* 1500 bytes payload + 14 bytes ethernet header + 4 bytes VLAN tag */
 #endif
 
-/* MAXSIZE is the maximum size of an encapsulated packet: MTU + seqno + padding + HMAC + compressor overhead */
-#define MAXSIZE (MTU + 4 + CIPHER_MAX_BLOCK_SIZE + DIGEST_MAX_SIZE + MTU/64 + 20)
+/* MAXSIZE is the maximum size of an encapsulated packet: MTU + seqno + HMAC + compressor overhead */
+#define MAXSIZE (MTU + 4 + 32 + MTU/64 + 20)
 
 /* MAXBUFSIZE is the maximum size of a request: enough for a MAXSIZEd packet or a 8192 bits RSA key */
 #define MAXBUFSIZE ((MAXSIZE > 2048 ? MAXSIZE : 2048) + 128)

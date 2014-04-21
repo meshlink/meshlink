@@ -19,10 +19,8 @@
 
 #include "system.h"
 
-#include "cipher.h"
 #include "conf.h"
 #include "connection.h"
-#include "digest.h"
 #include "ecdsa.h"
 #include "graph.h"
 #include "logger.h"

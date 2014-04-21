@@ -1,6 +1,5 @@
 #include "../system.h"
 
-#include "../cipher.h"
 #include "../xalloc.h"
 
 #include "chacha.h"

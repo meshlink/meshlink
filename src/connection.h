@@ -21,8 +21,6 @@
 #define __TINC_CONNECTION_H__
 
 #include "buffer.h"
-#include "cipher.h"
-#include "digest.h"
 #include "list.h"
 #include "sptps.h"
 

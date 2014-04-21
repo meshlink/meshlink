@@ -19,9 +19,7 @@
 
 #include "system.h"
 
-#include "cipher.h"
 #include "connection.h"
-#include "crypto.h"
 #include "logger.h"
 #include "meshlink_internal.h"
 #include "net.h"

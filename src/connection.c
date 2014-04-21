@@ -20,7 +20,6 @@
 #include "system.h"
 
 #include "list.h"
-#include "cipher.h"
 #include "conf.h"
 #include "connection.h"
 #include "list.h"

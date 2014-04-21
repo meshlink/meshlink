@@ -19,7 +19,6 @@
 
 #include "system.h"
 
-#include "cipher.h"
 #include "connection.h"
 #include "logger.h"
 #include "meshlink_internal.h"
