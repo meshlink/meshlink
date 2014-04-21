@@ -94,7 +94,7 @@ static bool read_ecdsa_private_key(void) {
 	FILE *fp;
 	char *fname;
 
-	xasprintf(&fname, "%s" SLASH "ecdsa_key.priv", confbase);
+	xasprintf(&fname, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
 	fp = fopen(fname, "r");
 	free(fname);
 
@@ -121,7 +121,7 @@ static bool read_invitation_key(void) {
 		invitation_key = NULL;
 	}
 
-	xasprintf(&fname, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", confbase);
+	xasprintf(&fname, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
 
 	fp = fopen(fname, "r");
 
@@ -153,7 +153,7 @@ void load_all_nodes(void) {
 	struct dirent *ent;
 	char *dname;
 
-	xasprintf(&dname, "%s" SLASH "hosts", confbase);
+	xasprintf(&dname, "%s" SLASH "hosts", mesh->confbase);
 	dir = opendir(dname);
 	if(!dir) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Could not open %s: %s", dname, strerror(errno));
@@ -381,7 +381,7 @@ bool setup_myself(void) {
 
 	/* Done. */
 
-	last_config_check = now.tv_sec;
+	mesh->last_config_check = now.tv_sec;
 
 	return true;
 }

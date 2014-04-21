@@ -31,16 +31,6 @@
 #include "protocol.h"
 #include "xalloc.h"
 
-int contradicting_add_edge = 0;
-int contradicting_del_edge = 0;
-static int sleeptime = 10;
-time_t last_config_check = 0;
-static timeout_t pingtimer;
-static timeout_t periodictimer;
-
-//TODO: move this to a better place
-char *confbase;
-
 /* Purge edges of unreachable nodes. Use carefully. */
 
 // TODO: remove
@@ -163,20 +153,20 @@ static void periodic_handler(void *data) {
 	   If so, sleep for a short while to prevent a storm of contradicting messages.
 	*/
 
-	if(contradicting_del_edge > 100 && contradicting_add_edge > 100) {
-		logger(DEBUG_ALWAYS, LOG_WARNING, "Possible node with same Name as us! Sleeping %d seconds.", sleeptime);
-		usleep(sleeptime * 1000000LL);
-		sleeptime *= 2;
-		if(sleeptime < 0)
-			sleeptime = 3600;
+	if(mesh->contradicting_del_edge > 100 && mesh->contradicting_add_edge > 100) {
+		logger(DEBUG_ALWAYS, LOG_WARNING, "Possible node with same Name as us! Sleeping %d seconds.", mesh->sleeptime);
+		usleep(mesh->sleeptime * 1000000LL);
+		mesh->sleeptime *= 2;
+		if(mesh->sleeptime < 0)
+			mesh->sleeptime = 3600;
 	} else {
-		sleeptime /= 2;
-		if(sleeptime < 10)
-			sleeptime = 10;
+		mesh->sleeptime /= 2;
+		if(mesh->sleeptime < 10)
+			mesh->sleeptime = 10;
 	}
 
-	contradicting_add_edge = 0;
-	contradicting_del_edge = 0;
+	mesh->contradicting_add_edge = 0;
+	mesh->contradicting_del_edge = 0;
 
 	/* If AutoConnect is set, check if we need to make or break connections. */
 
@@ -291,7 +281,7 @@ int reload_configuration(void) {
 		return EINVAL;
 	}
 
-	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, mesh->self->name);
+	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
 	read_config_file(mesh->config, fname);
 	free(fname);
 
@@ -306,16 +296,16 @@ int reload_configuration(void) {
 	/* Close connections to hosts that have a changed or deleted host config file */
 
 	for list_each(connection_t, c, mesh->connections) {
-		xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, c->name);
+		xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, c->name);
 		struct stat s;
-		if(stat(fname, &s) || s.st_mtime > last_config_check) {
+		if(stat(fname, &s) || s.st_mtime > mesh->last_config_check) {
 			logger(DEBUG_CONNECTIONS, LOG_INFO, "Host config file of %s has been changed", c->name);
 			terminate_connection(c, c->status.active);
 		}
 		free(fname);
 	}
 
-	last_config_check = now.tv_sec;
+	mesh->last_config_check = now.tv_sec;
 
 	return 0;
 }
@@ -335,23 +325,23 @@ void retry(void) {
 	}
 
 	/* Kick the ping timeout handler */
-	timeout_set(&pingtimer, &(struct timeval){0, 0});
+	timeout_set(&mesh->pingtimer, &(struct timeval){0, 0});
 }
 
 /*
   this is where it all happens...
 */
 int main_loop(void) {
-	timeout_add(&pingtimer, timeout_handler, &pingtimer, &(struct timeval){pingtimeout, rand() % 100000});
-	timeout_add(&periodictimer, periodic_handler, &periodictimer, &(struct timeval){pingtimeout, rand() % 100000});
+	timeout_add(&mesh->pingtimer, timeout_handler, &mesh->pingtimer, &(struct timeval){pingtimeout, rand() % 100000});
+	timeout_add(&mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval){pingtimeout, rand() % 100000});
 
 	if(!event_loop()) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Error while waiting for input: %s", strerror(errno));
 		return 1;
 	}
 
-	timeout_del(&periodictimer);
-	timeout_del(&pingtimer);
+	timeout_del(&mesh->periodictimer);
+	timeout_del(&mesh->pingtimer);
 
 	return 0;
 }

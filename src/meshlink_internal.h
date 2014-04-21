@@ -22,6 +22,7 @@
 
 #include "system.h"
 
+#include "event.h"
 #include "meshlink.h"
 
 /// A handle for an instance of MeshLink.
@@ -45,6 +46,13 @@ struct meshlink_handle {
 
 	struct list_t *connections;
 	struct list_t *outgoings;
+
+	int contradicting_add_edge;
+	int contradicting_del_edge;
+	int sleeptime;
+	time_t last_config_check;
+	timeout_t pingtimer;
+	timeout_t periodictimer;
 };
 
 /// A handle for a MeshLink node.

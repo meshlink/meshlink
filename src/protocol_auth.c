@@ -148,7 +148,7 @@ static bool finalize_invitation(connection_t *c, const char *data, uint16_t len)
 
 	// Create a new host config file
 	char filename[PATH_MAX];
-	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", confbase, c->name);
+	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, c->name);
 	if(!access(filename, F_OK)) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Host config file for %s (%s) already exists!\n", c->name, c->hostname);
 		return false;
@@ -195,8 +195,8 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const char *dat
 	free(fingerprint);
 
 	char filename[PATH_MAX], usedname[PATH_MAX];
-	snprintf(filename, sizeof filename, "%s" SLASH "invitations" SLASH "%s", confbase, cookie);
-	snprintf(usedname, sizeof usedname, "%s" SLASH "invitations" SLASH "%s.used", confbase, cookie);
+	snprintf(filename, sizeof filename, "%s" SLASH "invitations" SLASH "%s", mesh->confbase, cookie);
+	snprintf(usedname, sizeof usedname, "%s" SLASH "invitations" SLASH "%s.used", mesh->confbase, cookie);
 
 	// Atomically rename the invitation file
 	if(rename(filename, usedname)) {

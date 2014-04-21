@@ -297,7 +297,7 @@ bool read_server_config(void) {
 	char *fname;
 	bool x;
 
-	xasprintf(&fname, "%s" SLASH "tinc.conf", confbase);
+	xasprintf(&fname, "%s" SLASH "tinc.conf", mesh->confbase);
 	errno = 0;
 	x = read_config_file(mesh->config, fname);
 
@@ -313,7 +313,7 @@ bool read_host_config(splay_tree_t *config_tree, const char *name) {
 	char *fname;
 	bool x;
 
-	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, name);
+	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 	x = read_config_file(config_tree, fname);
 	free(fname);
 
@@ -322,7 +322,7 @@ bool read_host_config(splay_tree_t *config_tree, const char *name) {
 
 bool append_config_file(const char *name, const char *key, const char *value) {
 	char *fname;
-	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, name);
+	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 
 	FILE *fp = fopen(fname, "a");
 

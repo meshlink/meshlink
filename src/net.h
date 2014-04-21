@@ -94,9 +94,6 @@ extern bool do_prune;
 extern char *myport;
 extern int autoconnect;
 extern bool disablebuggypeers;
-extern int contradicting_add_edge;
-extern int contradicting_del_edge;
-extern time_t last_config_check;
 
 extern char *proxyhost;
 extern char *proxyport;
@@ -111,9 +108,6 @@ typedef enum proxytype_t {
 	PROXY_EXEC,
 } proxytype_t;
 extern proxytype_t proxytype;
-
-extern char *scriptinterpreter;
-extern char *scriptextension;
 
 /* Yes, very strange placement indeed, but otherwise the typedefs get all tangled up */
 #include "connection.h"
@@ -156,8 +150,5 @@ extern void load_all_nodes(void);
 #else
 extern CRITICAL_SECTION mutex;
 #endif
-
-//TODO: move this to a better place
-extern char *confbase;
 
 #endif /* __TINC_NET_H__ */
