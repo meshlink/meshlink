@@ -23,10 +23,6 @@
 #include "system.h"
 
 #include "meshlink.h"
-#include "list.h"
-#include "splay_tree.h"
-
-#define MAXSOCKETS 16
 
 /// A handle for an instance of MeshLink.
 struct meshlink_handle {
@@ -41,7 +37,7 @@ struct meshlink_handle {
 	pthread_t thread;
 	struct list_t *sockets;
 
-	struct node_t *myself;
+	struct node_t *self;
 
 	struct splay_tree_t *config;
 	struct splay_tree_t *edges;
