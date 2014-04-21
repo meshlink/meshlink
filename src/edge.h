@@ -37,14 +37,14 @@ typedef struct edge_t {
 	struct edge_t *reverse;                 /* edge in the opposite direction, if available */
 } edge_t;
 
-extern splay_tree_t *edge_weight_tree;          /* Tree with all known edges sorted on weight */
+extern struct splay_tree_t *edge_weight_tree;          /* Tree with all known edges sorted on weight */
 
 extern void init_edges(void);
 extern void exit_edges(void);
 extern edge_t *new_edge(void) __attribute__ ((__malloc__));
 extern void free_edge(edge_t *);
-extern splay_tree_t *new_edge_tree(void) __attribute__ ((__malloc__));
-extern void free_edge_tree(splay_tree_t *);
+extern struct splay_tree_t *new_edge_tree(void) __attribute__ ((__malloc__));
+extern void free_edge_tree(struct splay_tree_t *);
 extern void edge_add(edge_t *);
 extern void edge_del(edge_t *);
 extern edge_t *lookup_edge(struct node_t *, struct node_t *);

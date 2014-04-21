@@ -41,13 +41,13 @@ struct meshlink_handle {
 	pthread_t thread;
 	listen_socket_t listen_socket[MAXSOCKETS];
 
-	node_t *myself;
+	struct node_t *myself;
 
-	splay_tree_t *config;
-	splay_tree_t *edges;
-	splay_tree_t *nodes;
+	struct splay_tree_t *config;
+	struct splay_tree_t *edges;
+	struct splay_tree_t *nodes;
 
-	list_t *outgoing_connections;
+	struct list_t *outgoing_connections;
 };
 
 /// A handle for a MeshLink node.

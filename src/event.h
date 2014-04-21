@@ -34,21 +34,21 @@ typedef struct io_t {
 	int flags;
 	io_cb_t cb;
 	void *data;
-	splay_node_t node;
+	struct splay_node_t node;
 } io_t;
 
 typedef struct timeout_t {
 	struct timeval tv;
 	timeout_cb_t cb;
 	void *data;
-	splay_node_t node;
+	struct splay_node_t node;
 } timeout_t;
 
 typedef struct signal_t {
 	int signum;
 	signal_cb_t cb;
 	void *data;
-	splay_node_t node;
+	struct splay_node_t node;
 } signal_t;
 
 extern struct timeval now;

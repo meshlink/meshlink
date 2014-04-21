@@ -87,8 +87,8 @@ typedef enum packet_type_t {
 } packet_type_t;
 
 typedef struct listen_socket_t {
-	io_t tcp;
-	io_t udp;
+	struct io_t tcp;
+	struct io_t udp;
 	sockaddr_t sa;
 	bool bindto;
 } listen_socket_t;
@@ -99,7 +99,7 @@ typedef struct listen_socket_t {
 typedef struct outgoing_t {
 	char *name;
 	int timeout;
-	splay_tree_t *config_tree;
+	struct splay_tree_t *config_tree;
 	struct config_t *cfg;
 	struct addrinfo *ai;
 	struct addrinfo *aip;
@@ -157,9 +157,9 @@ extern int setup_listen_socket(const sockaddr_t *);
 extern int setup_vpn_in_socket(const sockaddr_t *);
 extern bool send_sptps_data(void *handle, uint8_t type, const char *data, size_t len);
 extern bool receive_sptps_record(void *handle, uint8_t type, const char *data, uint16_t len);
-extern void send_packet(struct node_t *, vpn_packet_t *);
+extern void send_packet(struct node_t *, struct vpn_packet_t *);
 extern void receive_tcppacket(struct connection_t *, const char *, int);
-extern void broadcast_packet(const struct node_t *, vpn_packet_t *);
+extern void broadcast_packet(const struct node_t *, struct vpn_packet_t *);
 extern char *get_name(void);
 extern bool setup_myself_reloadable(void);
 extern bool setup_network(void);

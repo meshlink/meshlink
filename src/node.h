@@ -62,7 +62,7 @@ typedef struct node_t {
 	struct edge_t *prevedge;                /* nearest node from him to us */
 	struct node_t *via;                     /* next hop for UDP packets */
 
-	splay_tree_t *edge_tree;                /* Edges with this node as one of the endpoints */
+	struct splay_tree_t *edge_tree;                /* Edges with this node as one of the endpoints */
 
 	struct connection_t *connection;        /* Connection associated with this node (if a direct connection exists) */
 
@@ -91,7 +91,7 @@ typedef struct node_t {
 } node_t;
 
 extern struct node_t *myself;
-extern splay_tree_t *node_tree;
+extern struct splay_tree_t *node_tree;
 
 extern void init_nodes(void);
 extern void exit_nodes(void);
