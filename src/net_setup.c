@@ -222,8 +222,8 @@ static bool add_listen_address(char *address, bool bindto) {
 		// Ignore duplicate addresses
 		bool found = false;
 
-		for(int i = 0; i < listen_sockets; i++)
-			if(!memcmp(&listen_socket[i].sa, aip->ai_addr, aip->ai_addrlen)) {
+		for(int i = 0; i < mesh->listen_sockets; i++)
+			if(!memcmp(&mesh->listen_socket[i].sa, aip->ai_addr, aip->ai_addrlen)) {
 				found = true;
 				break;
 			}
@@ -231,7 +231,7 @@ static bool add_listen_address(char *address, bool bindto) {
 		if(found)
 			continue;
 
-		if(listen_sockets >= MAXSOCKETS) {
+		if(mesh->listen_sockets >= MAXSOCKETS) {
 			logger(DEBUG_ALWAYS, LOG_ERR, "Too many listening sockets");
 			return false;
 		}
@@ -248,8 +248,8 @@ static bool add_listen_address(char *address, bool bindto) {
 			continue;
 		}
 
-		io_add(&listen_socket[listen_sockets].tcp, handle_new_meta_connection, &listen_socket[listen_sockets], tcp_fd, IO_READ);
-		io_add(&listen_socket[listen_sockets].udp, handle_incoming_vpn_data, &listen_socket[listen_sockets], udp_fd, IO_READ);
+		io_add(&mesh->listen_socket[mesh->listen_sockets].tcp, handle_new_meta_connection, &mesh->listen_socket[mesh->listen_sockets], tcp_fd, IO_READ);
+		io_add(&mesh->listen_socket[mesh->listen_sockets].udp, handle_incoming_vpn_data, &mesh->listen_socket[mesh->listen_sockets], udp_fd, IO_READ);
 
 		if(debug_level >= DEBUG_CONNECTIONS) {
 			char *hostname = sockaddr2hostname((sockaddr_t *) aip->ai_addr);
@@ -257,9 +257,9 @@ static bool add_listen_address(char *address, bool bindto) {
 			free(hostname);
 		}
 
-		listen_socket[listen_sockets].bindto = bindto;
-		memcpy(&listen_socket[listen_sockets].sa, aip->ai_addr, aip->ai_addrlen);
-		listen_sockets++;
+		mesh->listen_socket[mesh->listen_sockets].bindto = bindto;
+		memcpy(&mesh->listen_socket[mesh->listen_sockets].sa, aip->ai_addr, aip->ai_addrlen);
+		mesh->listen_sockets++;
 	}
 
 	freeaddrinfo(ai);
@@ -337,13 +337,13 @@ bool setup_myself(void) {
 
 	/* Open sockets */
 
-	listen_sockets = 0;
+	mesh->listen_sockets = 0;
 	int cfgs = 0;
 
 	if(!add_listen_address(address, NULL))
 		return false;
 
-	if(!listen_sockets) {
+	if(!mesh->listen_sockets) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Unable to create any listening socket!");
 		return false;
 	}
@@ -401,11 +401,11 @@ void close_network_connections(void) {
 		free_connection(mesh->self->connection);
 	}
 
-	for(int i = 0; i < listen_sockets; i++) {
-		io_del(&listen_socket[i].tcp);
-		io_del(&listen_socket[i].udp);
-		close(listen_socket[i].tcp.fd);
-		close(listen_socket[i].udp.fd);
+	for(int i = 0; i < mesh->listen_sockets; i++) {
+		io_del(&mesh->listen_socket[i].tcp);
+		io_del(&mesh->listen_socket[i].udp);
+		close(mesh->listen_socket[i].tcp.fd);
+		close(mesh->listen_socket[i].udp.fd);
 	}
 
 	exit_requests();

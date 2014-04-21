@@ -386,13 +386,13 @@ static void choose_udp_address(const node_t *n, const sockaddr_t **sa, int *sock
 
 	if(candidate) {
 		*sa = &candidate->address;
-		*sock = rand() % listen_sockets;
+		*sock = rand() % mesh->listen_sockets;
 	}
 
 	/* Make sure we have a suitable socket for the chosen address */
-	if(listen_socket[*sock].sa.sa.sa_family != (*sa)->sa.sa_family) {
-		for(int i = 0; i < listen_sockets; i++) {
-			if(listen_socket[i].sa.sa.sa_family == (*sa)->sa.sa_family) {
+	if(mesh->listen_socket[*sock].sa.sa.sa_family != (*sa)->sa.sa_family) {
+		for(int i = 0; i < mesh->listen_sockets; i++) {
+			if(mesh->listen_socket[i].sa.sa.sa_family == (*sa)->sa.sa_family) {
 				*sock = i;
 				break;
 			}
@@ -417,15 +417,15 @@ static void choose_broadcast_address(const node_t *n, const sockaddr_t **sa, int
 		}
 	};
 
-	*sock = rand() % listen_sockets;
+	*sock = rand() % mesh->listen_sockets;
 
-	if(listen_socket[*sock].sa.sa.sa_family == AF_INET6) {
+	if(mesh->listen_socket[*sock].sa.sa.sa_family == AF_INET6) {
 		if(mesh->localdiscovery_address.sa.sa_family == AF_INET6) {
 			mesh->localdiscovery_address.in6.sin6_port = n->prevedge->address.in.sin_port;
 			*sa = &mesh->localdiscovery_address;
 		} else {
 			broadcast_ipv6.in6.sin6_port = n->prevedge->address.in.sin_port;
-			broadcast_ipv6.in6.sin6_scope_id = listen_socket[*sock].sa.in6.sin6_scope_id;
+			broadcast_ipv6.in6.sin6_scope_id = mesh->listen_socket[*sock].sa.in6.sin6_scope_id;
 			*sa = &broadcast_ipv6;
 		}
 	} else {
@@ -484,7 +484,7 @@ bool send_sptps_data(void *handle, uint8_t type, const char *data, size_t len) {
 	else
 		choose_udp_address(to, &sa, &sock);
 
-	if(sendto(listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
+	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
 		if(sockmsgsize(sockerrno)) {
 			if(to->maxmtu >= len)
 				to->maxmtu = len - 1;
@@ -661,7 +661,7 @@ void handle_incoming_vpn_data(void *data, int flags) {
 			return;
 	}
 
-	n->sock = ls - listen_socket;
+	n->sock = ls - mesh->listen_socket;
 
 	receive_udppacket(n, &pkt);
 }

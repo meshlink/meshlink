@@ -26,6 +26,15 @@
 #include "meshlink.h"
 #include "sockaddr.h"
 
+#define MAXSOCKETS 8    /* Probably overkill... */
+
+typedef struct listen_socket_t {
+	struct io_t tcp;
+	struct io_t udp;
+	sockaddr_t sa;
+	bool bindto;
+} listen_socket_t;
+
 typedef enum proxytype_t {
 	PROXY_NONE = 0,
 	PROXY_SOCKS4,
@@ -46,7 +55,8 @@ struct meshlink_handle {
 	meshlink_log_level_t log_level;
 
 	pthread_t thread;
-	struct list_t *sockets;
+	listen_socket_t listen_socket[MAXSOCKETS];
+	int listen_sockets;
 
 	struct node_t *self;
 

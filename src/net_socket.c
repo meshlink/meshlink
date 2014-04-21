@@ -41,9 +41,6 @@ int maxtimeout = 900;
 int seconds_till_retry = 5;
 int max_connection_burst = 100;
 
-listen_socket_t listen_socket[MAXSOCKETS];
-int listen_sockets;
-
 /* Setup sockets */
 
 static void configure_tcp(connection_t *c) {
@@ -77,8 +74,8 @@ static void configure_tcp(connection_t *c) {
 static bool bind_to_address(connection_t *c) {
 	int s = -1;
 
-	for(int i = 0; i < listen_sockets && listen_socket[i].bindto; i++) {
-		if(listen_socket[i].sa.sa.sa_family != c->address.sa.sa_family)
+	for(int i = 0; i < mesh->listen_sockets && mesh->listen_socket[i].bindto; i++) {
+		if(mesh->listen_socket[i].sa.sa.sa_family != c->address.sa.sa_family)
 			continue;
 		if(s >= 0)
 			return false;
@@ -88,7 +85,7 @@ static bool bind_to_address(connection_t *c) {
 	if(s < 0)
 		return false;
 
-	sockaddr_t sa = listen_socket[s].sa;
+	sockaddr_t sa = mesh->listen_socket[s].sa;
 	if(sa.sa.sa_family == AF_INET)
 		sa.in.sin_port = 0;
 	else if(sa.sa.sa_family == AF_INET6)

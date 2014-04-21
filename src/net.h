@@ -37,8 +37,6 @@
 /* MAXBUFSIZE is the maximum size of a request: enough for a MAXSIZEd packet or a 8192 bits RSA key */
 #define MAXBUFSIZE ((MAXSIZE > 2048 ? MAXSIZE : 2048) + 128)
 
-#define MAXSOCKETS 8    /* Probably overkill... */
-
 typedef struct vpn_packet_t {
 	struct {
 		unsigned int probe:1;
@@ -59,13 +57,6 @@ typedef enum packet_type_t {
 	PACKET_PROBE
 } packet_type_t;
 
-typedef struct listen_socket_t {
-	struct io_t tcp;
-	struct io_t udp;
-	sockaddr_t sa;
-	bool bindto;
-} listen_socket_t;
-
 #include "conf.h"
 #include "list.h"
 
@@ -83,8 +74,6 @@ extern int maxoutbufsize;
 extern int addressfamily;
 extern unsigned replaywin;
 
-extern listen_socket_t listen_socket[MAXSOCKETS];
-extern int listen_sockets;
 extern int keylifetime;
 extern int max_connection_burst;
 extern bool do_prune;
