@@ -52,4 +52,10 @@ struct meshlink_node {
 	void *priv;
 };
 
+// This is a *temporary* global variable which will keep the compiler happy
+// while refactoring the code to get rid of global variables.
+// TODO: remove this when no other global variables remain.
+
+extern meshlink_handle_t *mesh;
+
 #endif // MESHLINK_INTERNAL_H

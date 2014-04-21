@@ -33,7 +33,13 @@ const char *meshlink_strerror(meshlink_errno_t errno) {
 	return errstr[errno];
 }
 
+// TODO: hack, remove once all global variables are gone.
+static void set_mesh(meshlink_handle_t *localmesh) {
+	mesh = localmesh;
+}
+
 static meshlink_handle_t *meshlink_setup(meshlink_handle_t *mesh) {
+	set_mesh(mesh);
 	return mesh;
 }
 
@@ -111,6 +117,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 		return meshlink_close(mesh), NULL;
 	}
 
+	set_mesh(mesh);
 	return mesh;
 }
 
