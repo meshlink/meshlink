@@ -22,8 +22,8 @@
 
 #include "system.h"
 
-#include "node.h"
 #include "meshlink.h"
+#include "list.h"
 #include "splay_tree.h"
 
 #define MAXSOCKETS 16
@@ -39,7 +39,7 @@ struct meshlink_handle {
 	meshlink_log_level_t log_level;
 
 	pthread_t thread;
-	listen_socket_t listen_socket[MAXSOCKETS];
+	struct list_t *sockets;
 
 	struct node_t *myself;
 

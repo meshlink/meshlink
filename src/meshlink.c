@@ -35,61 +35,65 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	return NULL;
 }
 
-bool meshlink_start(meshlink_handle_t *handle) {
+bool meshlink_start(meshlink_handle_t *mesh) {
 	return false;
 }
 
-void meshlink_stop(meshlink_handle_t *handle) {
+void meshlink_stop(meshlink_handle_t *mesh) {
 }
 
-void meshlink_close(meshlink_handle_t *handle) {
+void meshlink_close(meshlink_handle_t *mesh) {
 }
 
-void meshlink_set_receive_cb(meshlink_handle_t *handle, meshlink_receive_cb_t cb) {
+void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) {
+	mesh->receive_cb = cb;
 }
 
-void meshlink_set_node_status_cb(meshlink_handle_t *handle, meshlink_node_status_cb_t cb) {
+void meshlink_set_node_status_cb(meshlink_handle_t *mesh, meshlink_node_status_cb_t cb) {
+	mesh->node_status_cb = cb;
 }
 
-void meshlink_set_log_cb(meshlink_handle_t *handle, meshlink_log_level_t level, meshlink_log_cb_t cb) {
+void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, meshlink_log_cb_t cb) {
+	mesh->log_cb = cb;
+	mesh->log_level = level;
 }
 
-bool meshlink_send(meshlink_handle_t *handle, meshlink_node_t *destination, const void *data, unsigned int len) {
+bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, unsigned int len) {
 	return false;
 }
 
-meshlink_node_t *meshlink_get_node(meshlink_handle_t *handle, const char *name) {
+meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
 	return NULL;
 }
 
-size_t meshlink_get_all_nodes(meshlink_handle_t *handle, meshlink_node_t **nodes, size_t nmemb) {
+size_t meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, size_t nmemb) {
 	return 0;
 }
 
-char *meshlink_sign(meshlink_handle_t *handle, const char *data, size_t len) {
+char *meshlink_sign(meshlink_handle_t *mesh, const char *data, size_t len) {
 	return NULL;
 }
 
-bool meshlink_verify(meshlink_handle_t *handle, meshlink_node_t *source, const char *data, size_t len, const char *signature) {
+bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const char *data, size_t len, const char *signature) {
 	return false;
 }
 
-char *meshlink_invite(meshlink_handle_t *handle, const char *name) {
+char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	return NULL;
 }
 
-bool meshlink_join(meshlink_handle_t *handle, const char *invitation) {
+bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	return false;
 }
 
-char *meshlink_export(meshlink_handle_t *handle) {
+char *meshlink_export(meshlink_handle_t *mesh) {
 	return NULL;
 }
 
-bool meshlink_import(meshlink_handle_t *handle, const char *data) {
+bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 	return false;
 }
 
-void meshlink_blacklist(meshlink_handle_t *handle, meshlink_node_t *node) {
+void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 }
 
