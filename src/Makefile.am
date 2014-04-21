@@ -94,7 +94,6 @@ libmeshlink_la_SOURCES = \
 	splay_tree.c splay_tree.h \
 	sptps.c sptps.h \
 	system.h \
-	tincd.c \
 	utils.c utils.h \
 	xalloc.h \
 	$(ed25519_SOURCES) \

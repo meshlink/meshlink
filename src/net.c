@@ -283,8 +283,8 @@ int reload_configuration(void) {
 
 	/* Reread our own configuration file */
 
-	exit_configuration(&config_tree);
-	init_configuration(&config_tree);
+	exit_configuration(&mesh->config);
+	init_configuration(&mesh->config);
 
 	if(!read_server_config()) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Unable to reread configuration file.");
@@ -292,7 +292,7 @@ int reload_configuration(void) {
 	}
 
 	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, mesh->self->name);
-	read_config_file(config_tree, fname);
+	read_config_file(mesh->config, fname);
 	free(fname);
 
 	/* Parse some options that are allowed to be changed while tinc is running */

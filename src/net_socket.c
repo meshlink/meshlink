@@ -654,7 +654,7 @@ void try_outgoing_connections(void) {
 	/* Make sure there is one outgoing_t in the list for each ConnectTo. */
 
 	// TODO: Drop support for ConnectTo since AutoConnect is now always on?
-	for(config_t *cfg = lookup_config(config_tree, "ConnectTo"); cfg; cfg = lookup_config_next(config_tree, cfg)) {
+	for(config_t *cfg = lookup_config(mesh->config, "ConnectTo"); cfg; cfg = lookup_config_next(mesh->config, cfg)) {
 		char *name;
 		get_config_string(cfg, &name);
 

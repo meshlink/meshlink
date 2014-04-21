@@ -181,7 +181,7 @@ void load_all_nodes(void) {
 char *get_name(void) {
 	char *name = NULL;
 
-	get_config_string(lookup_config(config_tree, "Name"), &name);
+	get_config_string(lookup_config(mesh->config, "Name"), &name);
 
 	if(!name)
 		return NULL;
@@ -303,9 +303,9 @@ bool setup_myself(void) {
 	mesh->self->connection = new_connection();
 	mesh->self->name = name;
 	mesh->self->connection->name = xstrdup(name);
-	read_host_config(config_tree, name);
+	read_host_config(mesh->config, name);
 
-	if(!get_config_string(lookup_config(config_tree, "Port"), &myport))
+	if(!get_config_string(lookup_config(mesh->config, "Port"), &myport))
 		myport = xstrdup("655");
 	else
 		port_specified = true;

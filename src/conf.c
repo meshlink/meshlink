@@ -24,12 +24,11 @@
 #include "conf.h"
 #include "list.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "netutl.h"             /* for str2address */
 #include "protocol.h"
 #include "utils.h"              /* for cp */
 #include "xalloc.h"
-
-splay_tree_t *config_tree;
 
 int pinginterval = 0;           /* seconds between pings */
 int pingtimeout = 0;            /* seconds to wait for response */
@@ -50,11 +49,11 @@ static int config_compare(const config_t *a, const config_t *b) {
 		return a->file ? strcmp(a->file, b->file) : 0;
 }
 
-void init_configuration(splay_tree_t ** config_tree) {
+void init_configuration(splay_tree_t **config_tree) {
 	*config_tree = splay_alloc_tree((splay_compare_t) config_compare, (splay_action_t) free_config);
 }
 
-void exit_configuration(splay_tree_t ** config_tree) {
+void exit_configuration(splay_tree_t **config_tree) {
 	splay_delete_tree(*config_tree);
 	*config_tree = NULL;
 }
@@ -300,7 +299,7 @@ bool read_server_config(void) {
 
 	xasprintf(&fname, "%s" SLASH "tinc.conf", confbase);
 	errno = 0;
-	x = read_config_file(config_tree, fname);
+	x = read_config_file(mesh->config, fname);
 
 	if(!x && errno)
 		logger(DEBUG_ALWAYS, LOG_ERR, "Failed to read `%s': %s", fname, strerror(errno));

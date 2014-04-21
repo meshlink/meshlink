@@ -30,8 +30,6 @@ typedef struct config_t {
 	int line;
 } config_t;
 
-extern struct splay_tree_t *config_tree;
-
 extern int pinginterval;
 extern int pingtimeout;
 extern int maxtimeout;
