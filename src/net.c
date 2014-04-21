@@ -133,7 +133,7 @@ void terminate_connection(connection_t *c, bool report) {
   and close the connection.
 */
 static void timeout_handler(void *data) {
-	for list_each(connection_t, c, connection_list) {
+	for list_each(connection_t, c, mesh->connections) {
 		if(c->last_ping_time + pingtimeout <= now.tv_sec) {
 			if(c->status.active) {
 				if(c->status.pinged) {
@@ -183,7 +183,7 @@ static void periodic_handler(void *data) {
 	if(autoconnect && mesh->nodes->count > 1) {
 		/* Count number of active connections */
 		int nc = 0;
-		for list_each(connection_t, c, connection_list) {
+		for list_each(connection_t, c, mesh->connections) {
 			if(c->status.active)
 				nc++;
 		}
@@ -230,7 +230,7 @@ static void periodic_handler(void *data) {
 			int r = rand() % nc;
 			int i = 0;
 
-			for list_each(connection_t, c, connection_list) {
+			for list_each(connection_t, c, mesh->connections) {
 				if(!c->status.active)
 					continue;
 
@@ -254,7 +254,7 @@ static void periodic_handler(void *data) {
 			*/
 			for list_each(outgoing_t, o, outgoing_list) {
 				bool found = false;
-				for list_each(connection_t, c, connection_list) {
+				for list_each(connection_t, c, mesh->connections) {
 					if(c->outgoing == o) {
 						found = true;
 						break;
@@ -305,7 +305,7 @@ int reload_configuration(void) {
 
 	/* Close connections to hosts that have a changed or deleted host config file */
 
-	for list_each(connection_t, c, connection_list) {
+	for list_each(connection_t, c, mesh->connections) {
 		xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", confbase, c->name);
 		struct stat s;
 		if(stat(fname, &s) || s.st_mtime > last_config_check) {
@@ -329,7 +329,7 @@ void retry(void) {
 	}
 
 	/* Check for outgoing connections that are in progress, and reset their ping timers */
-	for list_each(connection_t, c, connection_list) {
+	for list_each(connection_t, c, mesh->connections) {
 		if(c->outgoing && !c->node)
 			c->last_ping_time = 0;
 	}

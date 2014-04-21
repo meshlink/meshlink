@@ -64,7 +64,7 @@
 static void mst_kruskal(void) {
 	/* Clear MST status on connections */
 
-	for list_each(connection_t, c, connection_list)
+	for list_each(connection_t, c, mesh->connections)
 		c->status.mst = false;
 
 	logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Running Kruskal's algorithm:");

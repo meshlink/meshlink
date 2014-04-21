@@ -43,6 +43,7 @@ struct meshlink_handle {
 	struct splay_tree_t *edges;
 	struct splay_tree_t *nodes;
 
+	struct list_t *connections;
 	struct list_t *outgoing_connections;
 };
 

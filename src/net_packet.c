@@ -592,7 +592,7 @@ void broadcast_packet(const node_t *from, vpn_packet_t *packet) {
 	logger(DEBUG_TRAFFIC, LOG_INFO, "Broadcasting packet of %d bytes from %s (%s)",
 			   packet->len, from->name, from->hostname);
 
-	for list_each(connection_t, c, connection_list)
+	for list_each(connection_t, c, mesh->connections)
 		if(c->status.active && c->status.mst && c != from->nexthop->connection)
 			send_packet(c->node, packet);
 }

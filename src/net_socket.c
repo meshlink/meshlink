@@ -687,7 +687,7 @@ void try_outgoing_connections(void) {
 
 	/* Terminate any connections whose outgoing_t is to be deleted. */
 
-	for list_each(connection_t, c, connection_list) {
+	for list_each(connection_t, c, mesh->connections) {
 		if(c->outgoing && c->outgoing->timeout == -1) {
 			c->outgoing = NULL;
 			logger(DEBUG_CONNECTIONS, LOG_INFO, "No more outgoing connection to %s", c->name);

@@ -25,21 +25,21 @@
 #include "connection.h"
 #include "list.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "utils.h"
 #include "xalloc.h"
 
-list_t *connection_list;
 connection_t *everyone;
 
 void init_connections(void) {
-	connection_list = list_alloc((list_action_t) free_connection);
+	mesh->connections = list_alloc((list_action_t) free_connection);
 	everyone = new_connection();
 	everyone->name = xstrdup("everyone");
 	everyone->hostname = xstrdup("BROADCAST");
 }
 
 void exit_connections(void) {
-	list_delete_list(connection_list);
+	list_delete_list(mesh->connections);
 	free_connection(everyone);
 }
 
@@ -72,9 +72,9 @@ void free_connection(connection_t *c) {
 }
 
 void connection_add(connection_t *c) {
-	list_insert_tail(connection_list, c);
+	list_insert_tail(mesh->connections, c);
 }
 
 void connection_del(connection_t *c) {
-	list_delete(connection_list, c);
+	list_delete(mesh->connections, c);
 }
