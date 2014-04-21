@@ -24,6 +24,7 @@
 
 #include "event.h"
 #include "meshlink.h"
+#include "sockaddr.h"
 
 typedef enum proxytype_t {
 	PROXY_NONE = 0,
@@ -70,6 +71,9 @@ struct meshlink_handle {
 	char *proxyuser;
 	char *proxypass;
 	proxytype_t proxytype;
+
+	bool localdiscovery;
+	sockaddr_t localdiscovery_address;
 };
 
 /// A handle for a MeshLink node.

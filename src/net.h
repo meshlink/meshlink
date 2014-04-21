@@ -80,11 +80,8 @@ typedef struct outgoing_t {
 } outgoing_t;
 
 extern int maxoutbufsize;
-extern int seconds_till_retry;
 extern int addressfamily;
 extern unsigned replaywin;
-extern bool localdiscovery;
-extern sockaddr_t localdiscovery_address;
 
 extern listen_socket_t listen_socket[MAXSOCKETS];
 extern int listen_sockets;

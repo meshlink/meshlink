@@ -43,8 +43,6 @@ int keylifetime = 0;
 static void send_udppacket(node_t *, vpn_packet_t *);
 
 unsigned replaywin = 16;
-bool localdiscovery = false;
-sockaddr_t localdiscovery_address;
 
 #define MAX_SEQNO 1073741824
 
@@ -112,7 +110,7 @@ static void send_mtu_probe_handler(void *data) {
 		timeout = pingtimeout;
 	}
 
-	for(int i = 0; i < 4 + localdiscovery; i++) {
+	for(int i = 0; i < 4 + mesh->localdiscovery; i++) {
 		int len;
 
 		if(i == 0) {
@@ -422,18 +420,18 @@ static void choose_broadcast_address(const node_t *n, const sockaddr_t **sa, int
 	*sock = rand() % listen_sockets;
 
 	if(listen_socket[*sock].sa.sa.sa_family == AF_INET6) {
-		if(localdiscovery_address.sa.sa_family == AF_INET6) {
-			localdiscovery_address.in6.sin6_port = n->prevedge->address.in.sin_port;
-			*sa = &localdiscovery_address;
+		if(mesh->localdiscovery_address.sa.sa_family == AF_INET6) {
+			mesh->localdiscovery_address.in6.sin6_port = n->prevedge->address.in.sin_port;
+			*sa = &mesh->localdiscovery_address;
 		} else {
 			broadcast_ipv6.in6.sin6_port = n->prevedge->address.in.sin_port;
 			broadcast_ipv6.in6.sin6_scope_id = listen_socket[*sock].sa.in6.sin6_scope_id;
 			*sa = &broadcast_ipv6;
 		}
 	} else {
-		if(localdiscovery_address.sa.sa_family == AF_INET) {
-			localdiscovery_address.in.sin_port = n->prevedge->address.in.sin_port;
-			*sa = &localdiscovery_address;
+		if(mesh->localdiscovery_address.sa.sa_family == AF_INET) {
+			mesh->localdiscovery_address.in.sin_port = n->prevedge->address.in.sin_port;
+			*sa = &mesh->localdiscovery_address;
 		} else {
 			broadcast_ipv4.in.sin_port = n->prevedge->address.in.sin_port;
 			*sa = &broadcast_ipv4;
