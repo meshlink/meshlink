@@ -128,18 +128,6 @@ static bool read_invitation_key(void) {
 	return invitation_key;
 }
 
-static timeout_t keyexpire_timeout;
-
-static void keyexpire_handler(void *data) {
-	regenerate_key();
-	timeout_set(data, &(struct timeval){keylifetime, rand() % 100000});
-}
-
-void regenerate_key(void) {
-	logger(DEBUG_STATUS, LOG_INFO, "Expiring symmetric keys");
-	send_key_changed();
-}
-
 void load_all_nodes(void) {
 	DIR *dir;
 	struct dirent *ent;
@@ -327,9 +315,6 @@ bool setup_myself(void) {
 
 	if(!setup_myself_reloadable())
 		return false;
-
-	// TODO: check whether this is used at all
-	timeout_add(&keyexpire_timeout, keyexpire_handler, &keyexpire_timeout, &(struct timeval){keylifetime, rand() % 100000});
 
 	/* Compression */
 
