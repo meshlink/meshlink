@@ -405,18 +405,18 @@ begin:
 
 	logger(DEBUG_CONNECTIONS, LOG_INFO, "Trying to connect to %s (%s)", outgoing->name, c->hostname);
 
-	if(!proxytype) {
+	if(!mesh->proxytype) {
 		c->socket = socket(c->address.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 		configure_tcp(c);
-	} else if(proxytype == PROXY_EXEC) {
-		do_outgoing_pipe(c, proxyhost);
+	} else if(mesh->proxytype == PROXY_EXEC) {
+		do_outgoing_pipe(c, mesh->proxyhost);
 	} else {
-		proxyai = str2addrinfo(proxyhost, proxyport, SOCK_STREAM);
+		proxyai = str2addrinfo(mesh->proxyhost, mesh->proxyport, SOCK_STREAM);
 		if(!proxyai) {
 			free_connection(c);
 			goto begin;
 		}
-		logger(DEBUG_CONNECTIONS, LOG_INFO, "Using proxy at %s port %s", proxyhost, proxyport);
+		logger(DEBUG_CONNECTIONS, LOG_INFO, "Using proxy at %s port %s", mesh->proxyhost, mesh->proxyport);
 		c->socket = socket(proxyai->ai_family, SOCK_STREAM, IPPROTO_TCP);
 		configure_tcp(c);
 	}
@@ -431,7 +431,7 @@ begin:
 	fcntl(c->socket, F_SETFD, FD_CLOEXEC);
 #endif
 
-	if(proxytype != PROXY_EXEC) {
+	if(mesh->proxytype != PROXY_EXEC) {
 #if defined(SOL_IPV6) && defined(IPV6_V6ONLY)
 		int option = 1;
 		if(c->address.sa.sa_family == AF_INET6)
@@ -443,9 +443,9 @@ begin:
 
 	/* Connect */
 
-	if(!proxytype) {
+	if(!mesh->proxytype) {
 		result = connect(c->socket, &c->address.sa, SALEN(c->address.sa));
-	} else if(proxytype == PROXY_EXEC) {
+	} else if(mesh->proxytype == PROXY_EXEC) {
 		result = 0;
 	} else {
 		result = connect(c->socket, proxyai->ai_addr, proxyai->ai_addrlen);

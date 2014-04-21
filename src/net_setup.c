@@ -34,15 +34,7 @@
 #include "utils.h"
 #include "xalloc.h"
 
-char *myport;
-
-char *proxyhost;
-char *proxyport;
-char *proxyuser;
-char *proxypass;
-proxytype_t proxytype;
-int autoconnect;
-bool disablebuggypeers;
+int autoconnect = 3;
 
 bool node_read_ecdsa_public_key(node_t *n) {
 	if(ecdsa_active(n->ecdsa))
@@ -211,7 +203,7 @@ bool setup_myself_reloadable(void) {
   Add listening sockets.
 */
 static bool add_listen_address(char *address, bool bindto) {
-	char *port = myport;
+	char *port = mesh->myport;
 
 	if(address) {
 		char *space = strchr(address, ' ');
@@ -305,8 +297,8 @@ bool setup_myself(void) {
 	mesh->self->connection->name = xstrdup(name);
 	read_host_config(mesh->config, name);
 
-	if(!get_config_string(lookup_config(mesh->config, "Port"), &myport))
-		myport = xstrdup("655");
+	if(!get_config_string(lookup_config(mesh->config, "Port"), &mesh->myport))
+		mesh->myport = xstrdup("655");
 	else
 		port_specified = true;
 
@@ -319,16 +311,16 @@ bool setup_myself(void) {
 	if(!read_ecdsa_private_key())
 		return false;
 
-	/* Ensure myport is numeric */
+	/* Ensure mesh->myport is numeric */
 
-	if(!atoi(myport)) {
-		struct addrinfo *ai = str2addrinfo("localhost", myport, SOCK_DGRAM);
+	if(!atoi(mesh->myport)) {
+		struct addrinfo *ai = str2addrinfo("localhost", mesh->myport, SOCK_DGRAM);
 		sockaddr_t sa;
 		if(!ai || !ai->ai_addr)
 			return false;
-		free(myport);
+		free(mesh->myport);
 		memcpy(&sa, ai->ai_addr, ai->ai_addrlen);
-		sockaddr2str(&sa, NULL, &myport);
+		sockaddr2str(&sa, NULL, &mesh->myport);
 	}
 
 	/* Check some options */
@@ -373,10 +365,10 @@ bool setup_myself(void) {
 
 	// TODO: require Port to be set? Or use "0" and use getsockname()?
 
-	if(!myport)
-		myport = xstrdup("655");
+	if(!mesh->myport)
+		mesh->myport = xstrdup("655");
 
-	xasprintf(&mesh->self->hostname, "MYSELF port %s", myport);
+	xasprintf(&mesh->self->hostname, "MYSELF port %s", mesh->myport);
 	mesh->self->connection->hostname = xstrdup(mesh->self->hostname);
 
 	/* Done. */
@@ -436,7 +428,7 @@ void close_network_connections(void) {
 	exit_nodes();
 	exit_connections();
 
-	if(myport) free(myport);
+	if(mesh->myport) free(mesh->myport);
 
 	return;
 }

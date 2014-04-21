@@ -91,23 +91,7 @@ extern int listen_sockets;
 extern int keylifetime;
 extern int max_connection_burst;
 extern bool do_prune;
-extern char *myport;
 extern int autoconnect;
-extern bool disablebuggypeers;
-
-extern char *proxyhost;
-extern char *proxyport;
-extern char *proxyuser;
-extern char *proxypass;
-typedef enum proxytype_t {
-	PROXY_NONE = 0,
-	PROXY_SOCKS4,
-	PROXY_SOCKS4A,
-	PROXY_SOCKS5,
-	PROXY_HTTP,
-	PROXY_EXEC,
-} proxytype_t;
-extern proxytype_t proxytype;
 
 /* Yes, very strange placement indeed, but otherwise the typedefs get all tangled up */
 #include "connection.h"

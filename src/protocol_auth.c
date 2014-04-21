@@ -43,7 +43,7 @@
 ecdsa_t *invitation_key = NULL;
 
 static bool send_proxyrequest(connection_t *c) {
-	switch(proxytype) {
+	switch(mesh->proxytype) {
 		case PROXY_HTTP: {
 			char *host;
 			char *port;
@@ -59,13 +59,13 @@ static bool send_proxyrequest(connection_t *c) {
 				logger(DEBUG_ALWAYS, LOG_ERR, "Cannot connect to an IPv6 host through a SOCKS 4 proxy!");
 				return false;
 			}
-			char s4req[9 + (proxyuser ? strlen(proxyuser) : 0)];
+			char s4req[9 + (mesh->proxyuser ? strlen(mesh->proxyuser) : 0)];
 			s4req[0] = 4;
 			s4req[1] = 1;
 			memcpy(s4req + 2, &c->address.in.sin_port, 2);
 			memcpy(s4req + 4, &c->address.in.sin_addr, 4);
-			if(proxyuser)
-				memcpy(s4req + 8, proxyuser, strlen(proxyuser));
+			if(mesh->proxyuser)
+				memcpy(s4req + 8, mesh->proxyuser, strlen(mesh->proxyuser));
 			s4req[sizeof s4req - 1] = 0;
 			c->tcplen = 8;
 			return send_meta(c, s4req, sizeof s4req);
@@ -73,21 +73,21 @@ static bool send_proxyrequest(connection_t *c) {
 		case PROXY_SOCKS5: {
 			int len = 3 + 6 + (c->address.sa.sa_family == AF_INET ? 4 : 16);
 			c->tcplen = 2;
-			if(proxypass)
-				len += 3 + strlen(proxyuser) + strlen(proxypass);
+			if(mesh->proxypass)
+				len += 3 + strlen(mesh->proxyuser) + strlen(mesh->proxypass);
 			char s5req[len];
 			int i = 0;
 			s5req[i++] = 5;
 			s5req[i++] = 1;
-			if(proxypass) {
+			if(mesh->proxypass) {
 				s5req[i++] = 2;
 				s5req[i++] = 1;
-				s5req[i++] = strlen(proxyuser);
-				memcpy(s5req + i, proxyuser, strlen(proxyuser));
-				i += strlen(proxyuser);
-				s5req[i++] = strlen(proxypass);
-				memcpy(s5req + i, proxypass, strlen(proxypass));
-				i += strlen(proxypass);
+				s5req[i++] = strlen(mesh->proxyuser);
+				memcpy(s5req + i, mesh->proxyuser, strlen(mesh->proxyuser));
+				i += strlen(mesh->proxyuser);
+				s5req[i++] = strlen(mesh->proxypass);
+				memcpy(s5req + i, mesh->proxypass, strlen(mesh->proxypass));
+				i += strlen(mesh->proxypass);
 				c->tcplen += 2;
 			} else {
 				s5req[i++] = 0;
@@ -133,7 +133,7 @@ bool send_id(connection_t *c) {
 
 	int minor = mesh->self->connection->protocol_minor;
 
-	if(proxytype && c->outgoing)
+	if(mesh->proxytype && c->outgoing)
 		if(!send_proxyrequest(c))
 			return false;
 
@@ -376,23 +376,11 @@ bool send_ack(connection_t *c) {
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY)
 		c->options |= OPTION_PMTU_DISCOVERY;
 
-	return send_request(c, "%d %s %d %x", ACK, myport, c->estimated_weight, (c->options & 0xffffff) | (PROT_MINOR << 24));
+	return send_request(c, "%d %s %d %x", ACK, mesh->myport, c->estimated_weight, (c->options & 0xffffff) | (PROT_MINOR << 24));
 }
 
 static void send_everything(connection_t *c) {
 	/* Send all known subnets and edges */
-
-	// TODO: remove this
-	if(disablebuggypeers) {
-		static struct {
-			vpn_packet_t pkt;
-			char pad[MAXBUFSIZE - MAXSIZE];
-		} zeropkt;
-
-		memset(&zeropkt, 0, sizeof zeropkt);
-		zeropkt.pkt.len = MAXBUFSIZE;
-		send_tcppacket(c, &zeropkt.pkt);
-	}
 
 	for splay_each(node_t, n, mesh->nodes) {
 		for splay_each(edge_t, e, n->edge_tree)

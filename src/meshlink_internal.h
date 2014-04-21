@@ -25,6 +25,15 @@
 #include "event.h"
 #include "meshlink.h"
 
+typedef enum proxytype_t {
+	PROXY_NONE = 0,
+	PROXY_SOCKS4,
+	PROXY_SOCKS4A,
+	PROXY_SOCKS5,
+	PROXY_HTTP,
+	PROXY_EXEC,
+} proxytype_t;
+
 /// A handle for an instance of MeshLink.
 struct meshlink_handle {
 	char *confbase;
@@ -53,6 +62,14 @@ struct meshlink_handle {
 	time_t last_config_check;
 	timeout_t pingtimer;
 	timeout_t periodictimer;
+
+	char *myport;
+
+	char *proxyhost;
+	char *proxyport;
+	char *proxyuser;
+	char *proxypass;
+	proxytype_t proxytype;
 };
 
 /// A handle for a MeshLink node.
