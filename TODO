@@ -1,0 +1,24 @@
+TODO list for MeshLink
+----------------------
+
+Refactoring: getting rid of global variables. Ultimately, no global variables
+should be used by the library (if possible). Tinc uses quite a lot of global
+variables. Refactoring this should go into steps:
+
+* Temporarily create a global meshlink_handle_t *mesh (done)
+* Move global variables to meshlink_handle_t (partially done)
+  - This means moving the declaration from the old .h file to meshlink_internal.h inside meshlink_handle_t
+  - Then doing sed 's/variable/mesh->&/g' *.c -i, and running make to check for any errors
+
+After that is completed:
+
+* Add meshlink_handle_t *mesh as the first argument to functions that need it
+
+Then:
+
+* Write code for all the functions in meshlink.c (some can be moved from libmeshlink.c)
+
+Other tasks:
+
+* Use snprintf() instead of xasprintf() when generating filenames
+  - Use char filename[PATH_MAX] on the stack. No more need to free().
