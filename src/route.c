@@ -75,7 +75,7 @@ void route(node_t *source,vpn_packet_t *packet) {
     if (owner == mesh->self ) {
     //TODO: implement sending received data from meshlink library to the application
     logger(DEBUG_TRAFFIC, LOG_WARNING, "I received a packet for me with payload: %s \n", packet->data + sizeof *hdr);
-    (recv_callback)(packet->data + sizeof *hdr);
+    (meshlink_receive_cb_t)(packet->data + sizeof *hdr);
     return;
     }
 
