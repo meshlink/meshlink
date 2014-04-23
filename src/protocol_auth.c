@@ -314,7 +314,7 @@ bool id_h(connection_t *c, const char *request) {
 		return false;
 	}
 
-	if(bypass_security) {
+	if(mesh->bypass_security) {
 		if(!c->config_tree)
 			init_configuration(&c->config_tree);
 		c->allow_request = ACK;

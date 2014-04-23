@@ -51,9 +51,6 @@ static bool show_help = false;
 /* If nonzero, print the version on standard output and exit.  */
 static bool show_version = false;
 
-/* If nonzero, use null ciphers and skip all key exchanges. */
-bool bypass_security = false;
-
 char **g_argv;                  /* a copy of the cmdline arguments */
 
 static int status = 1;
