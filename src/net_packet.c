@@ -125,6 +125,7 @@ static void send_mtu_probe_handler(void *data) {
 			len = 64;
 
 		vpn_packet_t packet;
+		packet.probe = true;
 		memset(packet.data, 0, 14);
 		randomize(packet.data + 14, len - 14);
 		packet.len = len;
