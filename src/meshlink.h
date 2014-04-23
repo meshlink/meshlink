@@ -39,7 +39,7 @@ typedef enum {
 #ifndef MESHLINK_INTERNAL_H
 
 struct meshlink_handle {
-	meshlink_errno_t errno; /// Code of the last encountered error.
+	meshlink_errno_t meshlink_errno; /// Code of the last encountered error.
 	const char *errstr;     /// Textual representation of most recent error encountered.
 };
 
