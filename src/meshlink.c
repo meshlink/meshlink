@@ -23,6 +23,8 @@
 #include "protocol.h"
 #include "xalloc.h"
 
+meshlink_handle_t *mesh;
+
 static const char *errstr[] = {
 	[MESHLINK_OK] = "No error",
 	[MESHLINK_ENOMEM] = "Out of memory",
