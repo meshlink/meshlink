@@ -18,9 +18,12 @@
 */
 
 #include "system.h"
+#include <pthread.h>
 
 #include "meshlink_internal.h"
+#include "node.h"
 #include "protocol.h"
+#include "route.h"
 #include "xalloc.h"
 
 meshlink_handle_t *mesh;
@@ -46,6 +49,8 @@ static meshlink_handle_t *meshlink_setup(meshlink_handle_t *mesh) {
 }
 
 meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
+	// Validate arguments provided by the application
+
 	if(!confbase || !*confbase) {
 		fprintf(stderr, "No confbase given!\n");
 		return NULL;
@@ -65,72 +70,79 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	mesh->confbase = xstrdup(confbase);
 	mesh->name = xstrdup(name);
 
+	// Check whether meshlink.conf already exists
+
 	char filename[PATH_MAX];
 	snprintf(filename, sizeof filename, "%s" SLASH "meshlink.conf", confbase);
 
-	FILE *f = fopen(filename, "r");
+	if(access(filename, R_OK)) {
+		if(errno == ENOENT) {
+			// If not, create it
+			meshlink_setup(mesh);
+		} else {
+			fprintf(stderr, "Cannot not read from %s: %s\n", filename, strerror(errno));
+			return meshlink_close(mesh), NULL;
+		}
+	}
 
-	if(!f && errno == ENOENT)
-		return meshlink_setup(mesh);
+	// Read the configuration
 
-	if(!f) {
-		fprintf(stderr, "Could not open %s: %s\n", filename, strerror(errno));
+	init_configuration(&mesh->config);
+
+	if(!read_server_config())
 		return meshlink_close(mesh), NULL;
-	}
 
-	char buf[1024] = "";
-	if(!fgets(buf, sizeof buf, f)) {
-		fprintf(stderr, "Could not read line from %s: %s\n", filename, strerror(errno));
-		fclose(f);
+	// Setup up everything
+	// TODO: we should not open listening sockets yet
+
+	if(!setup_network())
 		return meshlink_close(mesh), NULL;
-	}
-
-	fclose(f);
-
-	size_t len = strlen(buf);
-	if(len && buf[len - 1] == '\n')
-		buf[--len] = 0;
-	if(len && buf[len - 1] == '\r')
-		buf[--len] = 0;
-
-	if(strncmp(buf, "Name = ", 7) || !check_id(buf + 7)) {
-		fprintf(stderr, "Could not read Name from %s\n", filename);
-		return meshlink_close(mesh), NULL;
-	}
-
-	if(strcmp(buf + 7, name)) {
-		fprintf(stderr, "Name in %s is %s, not the same as %s\n", filename, buf + 7, name);
-		free(mesh->name);
-		mesh->name = xstrdup(buf + 7);
-	}
-
-	snprintf(filename, sizeof filename, "%s" SLASH "ed25519_key.priv", mesh->confbase);
-	f = fopen(filename, "r");
-	if(!f) {
-		fprintf(stderr, "Could not open %s: %s\n", filename, strerror(errno));
-		return meshlink_close(mesh), NULL;
-	}
-
-	mesh->self->ecdsa = ecdsa_read_pem_private_key(f);
-	fclose(f);
-
-	if(!mesh->self->ecdsa) {
-		fprintf(stderr, "Could not read keypair!\n");
-		return meshlink_close(mesh), NULL;
-	}
 
 	set_mesh(mesh);
 	return mesh;
 }
 
+void *meshlink_main_loop(void *arg) {
+	meshlink_handle_t *mesh = arg;
+
+	try_outgoing_connections();
+
+	main_loop();
+
+	return NULL;
+}
+
 bool meshlink_start(meshlink_handle_t *mesh) {
-	return false;
+	// TODO: open listening sockets first
+
+	// Start the main thread
+
+	if(pthread_create(&mesh->thread, NULL, meshlink_main_loop, mesh) != 0) {
+		fprintf(stderr, "Could not start thread: %s\n", strerror(errno));
+		memset(&mesh->thread, 0, sizeof mesh->thread);
+		return false;
+	}
+
+	return true;
 }
 
 void meshlink_stop(meshlink_handle_t *mesh) {
+	// TODO: close the listening sockets to signal the main thread to shut down
+
+	// Wait for the main thread to finish
+
+	pthread_join(mesh->thread, NULL);
 }
 
 void meshlink_close(meshlink_handle_t *mesh) {
+	// Close and free all resources used.
+
+	close_network_connections();
+
+	logger(DEBUG_ALWAYS, LOG_NOTICE, "Terminating");
+
+	exit_configuration(&mesh->config);
+
 }
 
 void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) {
@@ -147,10 +159,29 @@ void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, me
 }
 
 bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, unsigned int len) {
+	vpn_packet_t packet;
+	meshlink_packethdr_t *hdr = (meshlink_packethdr_t *)packet.data;
+	if (sizeof(meshlink_packethdr_t) + len > MAXSIZE) {
+		//log something
+		return false;
+	}
+
+	packet.probe = false;
+	memset(hdr, 0, sizeof *hdr);
+	memcpy(hdr->destination, destination->name, sizeof hdr->destination);
+	memcpy(hdr->source, mesh->self->name, sizeof hdr->source);
+
+	packet.len = sizeof *hdr + len;
+	memcpy(packet.data + sizeof *hdr, data, len);
+
+        mesh->self->in_packets++;
+        mesh->self->in_bytes += packet.len;
+        route(mesh->self, &packet);
 	return false;
 }
 
 meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
+	return (meshlink_node_t *)lookup_node(name);
 	return NULL;
 }
 

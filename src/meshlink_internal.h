@@ -106,4 +106,10 @@ struct meshlink_node {
 
 extern meshlink_handle_t *mesh;
 
+/// Header for data packets routed between nodes
+typedef struct meshlink_packethdr {
+	uint8_t destination[16];
+	uint8_t source[16];
+} __attribute__ ((__packed__)) meshlink_packethdr_t;
+
 #endif // MESHLINK_INTERNAL_H
