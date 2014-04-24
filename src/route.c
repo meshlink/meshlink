@@ -24,7 +24,6 @@
 #include "net.h"
 #include "route.h"
 #include "utils.h"
-#include "libmeshlink.h"
 
 bool decrement_ttl = false;
 
@@ -57,12 +56,12 @@ void route(node_t *source,vpn_packet_t *packet) {
 
     node_t* owner = NULL;
     node_t* via = NULL;
-    tincpackethdr* hdr = (tincpackethdr*)packet->data;
+    meshlink_packethdr_t* hdr = (meshlink_packethdr_t*)packet->data;
     owner = lookup_node(hdr->destination);
     logger(DEBUG_TRAFFIC, LOG_WARNING, "Routing packet from: %s . To: %s \n",hdr->source,hdr->destination);
 
     //Check Lenght
-    if(!checklength(source, packet, (sizeof(tincpackethdr))))
+    if(!checklength(source, packet, (sizeof(meshlink_packethdr_t))))
         return;
 
     if (owner == NULL) {
