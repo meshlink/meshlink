@@ -291,46 +291,42 @@ bool read_config_file(splay_tree_t *config_tree, const char *fname) {
 }
 
 bool read_server_config(void) {
-	char *fname;
+	char filename[PATH_MAX];
 	bool x;
 
-	xasprintf(&fname, "%s" SLASH "meshlink.conf", mesh->confbase);
+	snprintf(filename, PATH_MAX,"%s" SLASH "meshlink.conf", mesh->confbase);
 	errno = 0;
-	x = read_config_file(mesh->config, fname);
+	x = read_config_file(mesh->config, filename);
 
 	if(!x && errno)
-		logger(DEBUG_ALWAYS, LOG_ERR, "Failed to read `%s': %s", fname, strerror(errno));
-
-	free(fname);
+		logger(DEBUG_ALWAYS, LOG_ERR, "Failed to read `%s': %s", filename, strerror(errno));
 
 	return x;
 }
 
 bool read_host_config(splay_tree_t *config_tree, const char *name) {
-	char *fname;
+	char filename[PATH_MAX];
 	bool x;
 
-	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
-	x = read_config_file(config_tree, fname);
-	free(fname);
+	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	x = read_config_file(config_tree, filename);
 
 	return x;
 }
 
 bool append_config_file(const char *name, const char *key, const char *value) {
-	char *fname;
-	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	char filename[PATH_MAX];
+	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 
-	FILE *fp = fopen(fname, "a");
+	FILE *fp = fopen(filename, "a");
 
 	if(!fp) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Cannot open config file %s: %s", fname, strerror(errno));
+		logger(DEBUG_ALWAYS, LOG_ERR, "Cannot open config file %s: %s", filename, strerror(errno));
 	} else {
 		fprintf(fp, "\n# The following line was automatically added by tinc\n%s = %s\n", key, value);
 		fclose(fp);
 	}
 
-	free(fname);
 
 	return fp != NULL;
 }

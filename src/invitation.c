@@ -79,11 +79,11 @@ char *get_my_hostname() {
 	char *port = NULL;
 	char *hostport = NULL;
 	char *name = get_my_name(false);
-	char *filename = NULL;
+	char filename[PATH_MAX];
 
 	// Use first Address statement in own host config file
 	if(check_id(name)) {
-		xasprintf(&filename, "%s" SLASH "hosts" SLASH "%s", confbase, name);
+		snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", confbase, name);
 		scan_for_hostname(filename, &hostname, &port);
 		scan_for_hostname(tinc_conf, &hostname, &port);
 	}
@@ -200,7 +200,6 @@ done:
 
 	free(hostname);
 	free(port);
-	free(filename);
 	return hostport;
 }
 
@@ -236,14 +235,12 @@ int cmd_invite(int argc, char *argv[]) {
 		return 1;
 
 	// Ensure no host configuration file with that name exists
-	char *filename = NULL;
-	xasprintf(&filename, "%s" SLASH "hosts" SLASH "%s", confbase, argv[1]);
+	char filename [PATH_MAX];
+	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", confbase, argv[1]);
 	if(!access(filename, F_OK)) {
-		free(filename);
 		fprintf(stderr, "A host config file for %s already exists!\n", argv[1]);
 		return 1;
 	}
-	free(filename);
 
 	// If a daemon is running, ensure no other nodes now about this name
 	bool found = false;
@@ -267,10 +264,9 @@ int cmd_invite(int argc, char *argv[]) {
 
 	char hash[64];
 
-	xasprintf(&filename, "%s" SLASH "invitations", confbase);
+	snprintf(filename,PATH_MAX, "%s" SLASH "invitations", confbase);
 	if(mkdir(filename, 0700) && errno != EEXIST) {
 		fprintf(stderr, "Could not create directory %s: %s\n", filename, strerror(errno));
-		free(filename);
 		return 1;
 	}
 
@@ -278,7 +274,6 @@ int cmd_invite(int argc, char *argv[]) {
 	DIR *dir = opendir(filename);
 	if(!dir) {
 		fprintf(stderr, "Could not read directory %s: %s\n", filename, strerror(errno));
-		free(filename);
 		return 1;
 	}
 
@@ -290,9 +285,9 @@ int cmd_invite(int argc, char *argv[]) {
 	while((ent = readdir(dir))) {
 		if(strlen(ent->d_name) != 24)
 			continue;
-		char *invname;
+		char invname[PATH_MAX];
 		struct stat st;
-		xasprintf(&invname, "%s" SLASH "%s", filename, ent->d_name);
+		snprintf(invname,PATH_MAX, "%s" SLASH "%s", filename, ent->d_name);
 		if(!stat(invname, &st)) {
 			if(deadline < st.st_mtime)
 				count++;
@@ -302,21 +297,18 @@ int cmd_invite(int argc, char *argv[]) {
 			fprintf(stderr, "Could not stat %s: %s\n", invname, strerror(errno));
 			errno = 0;
 		}
-		free(invname);
 	}
 
 	if(errno) {
 		fprintf(stderr, "Error while reading directory %s: %s\n", filename, strerror(errno));
 		closedir(dir);
-		free(filename);
 		return 1;
 	}
 		
 	closedir(dir);
-	free(filename);
 
 	ecdsa_t *key;
-	xasprintf(&filename, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", confbase);
+	snprintf(filename,PATH_MAX, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", confbase);
 
 	// Remove the key if there are no outstanding invitations.
 	if(!count)
@@ -327,19 +319,16 @@ int cmd_invite(int argc, char *argv[]) {
 	if(!f) {
 		if(errno != ENOENT) {
 			fprintf(stderr, "Could not read %s: %s\n", filename, strerror(errno));
-			free(filename);
 			return 1;
 		}
 
 		key = ecdsa_generate();
 		if(!key) {
-			free(filename);
 			return 1;
 		}
 		f = fopen(filename, "w");
 		if(!f) {
 			fprintf(stderr, "Could not write %s: %s\n", filename, strerror(errno));
-			free(filename);
 			return 1;
 		}
 		chmod(filename, 0600);
@@ -355,7 +344,6 @@ int cmd_invite(int argc, char *argv[]) {
 			fprintf(stderr, "Could not read private key from %s\n", filename);
 	}
 
-	free(filename);
 	if(!key)
 		return 1;
 
@@ -379,11 +367,10 @@ int cmd_invite(int argc, char *argv[]) {
 	b64encode_urlsafe(cookie, cookie, 18);
 
 	// Create a file containing the details of the invitation.
-	xasprintf(&filename, "%s" SLASH "invitations" SLASH "%s", confbase, cookiehash);
+	snprintf(filename,PATH_MAX, "%s" SLASH "invitations" SLASH "%s", confbase, cookiehash);
 	int ifd = open(filename, O_RDWR | O_CREAT | O_EXCL, 0600);
 	if(!ifd) {
 		fprintf(stderr, "Could not create invitation file %s: %s\n", filename, strerror(errno));
-		free(filename);
 		return 1;
 	}
 	f = fdopen(ifd, "w");
@@ -418,11 +405,10 @@ int cmd_invite(int argc, char *argv[]) {
 	fprintf(f, "#---------------------------------------------------------------#\n");
 	fprintf(f, "Name = %s\n", myname);
 
-	char *filename2;
-	xasprintf(&filename2, "%s" SLASH "hosts" SLASH "%s", confbase, myname);
+	char filename2[PATH_MAX];
+	snsprintf(filename2,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", confbase, myname);
 	fcopy(f, filename2);
 	fclose(f);
-	free(filename2);
 
 	// Create an URL from the local address, key hash and cookie
 	char *url;

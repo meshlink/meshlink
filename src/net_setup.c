@@ -82,11 +82,10 @@ bool read_ecdsa_public_key(connection_t *c) {
 
 static bool read_ecdsa_private_key(void) {
 	FILE *fp;
-	char *fname;
+	char filename[PATH_MAX];
 
-	xasprintf(&fname, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
-	fp = fopen(fname, "r");
-	free(fname);
+	snprintf(filename,PATH_MAX, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
+	fp = fopen(filename, "r");
 
 	if(!fp) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Error reading ECDSA private key file: %s", strerror(errno));
@@ -104,38 +103,36 @@ static bool read_ecdsa_private_key(void) {
 
 static bool read_invitation_key(void) {
 	FILE *fp;
-	char *fname;
+	char filename[PATH_MAX];
 
 	if(mesh->invitation_key) {
 		ecdsa_free(mesh->invitation_key);
 		mesh->invitation_key = NULL;
 	}
 
-	xasprintf(&fname, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
+	snprintf(filename,PATH_MAX, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
 
-	fp = fopen(fname, "r");
+	fp = fopen(filename, "r");
 
 	if(fp) {
 		mesh->invitation_key = ecdsa_read_pem_private_key(fp);
 		fclose(fp);
 		if(!mesh->invitation_key)
-			logger(DEBUG_ALWAYS, LOG_ERR, "Reading ECDSA private key file `%s' failed: %s", fname, strerror(errno));
+			logger(DEBUG_ALWAYS, LOG_ERR, "Reading ECDSA private key file `%s' failed: %s", filename, strerror(errno));
 	}
 
-	free(fname);
 	return mesh->invitation_key;
 }
 
 void load_all_nodes(void) {
 	DIR *dir;
 	struct dirent *ent;
-	char *dname;
+	char dname[PATH_MAX];
 
-	xasprintf(&dname, "%s" SLASH "hosts", mesh->confbase);
+	snprintf(dname,PATH_MAX, "%s" SLASH "hosts", mesh->confbase);
 	dir = opendir(dname);
 	if(!dir) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Could not open %s: %s", dname, strerror(errno));
-		free(dname);
 		return;
 	}
 

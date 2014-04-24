@@ -269,7 +269,7 @@ void handle_meta_connection_data(connection_t *c) {
 }
 
 int reload_configuration(void) {
-	char *fname = NULL;
+	char filename[PATH_MAX];
 
 	/* Reread our own configuration file */
 
@@ -281,9 +281,8 @@ int reload_configuration(void) {
 		return EINVAL;
 	}
 
-	xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
-	read_config_file(mesh->config, fname);
-	free(fname);
+	snprintf(filename, PATH_MAX,"%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
+	read_config_file(mesh->config, filename);
 
 	/* Parse some options that are allowed to be changed while tinc is running */
 
@@ -296,13 +295,12 @@ int reload_configuration(void) {
 	/* Close connections to hosts that have a changed or deleted host config file */
 
 	for list_each(connection_t, c, mesh->connections) {
-		xasprintf(&fname, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, c->name);
+		snprintf(filename, PATH_MAX,"%s" SLASH "hosts" SLASH "%s", mesh->confbase, c->name);
 		struct stat s;
-		if(stat(fname, &s) || s.st_mtime > mesh->last_config_check) {
+		if(stat(filename, &s) || s.st_mtime > mesh->last_config_check) {
 			logger(DEBUG_CONNECTIONS, LOG_INFO, "Host config file of %s has been changed", c->name);
 			terminate_connection(c, c->status.active);
 		}
-		free(fname);
 	}
 
 	mesh->last_config_check = now.tv_sec;

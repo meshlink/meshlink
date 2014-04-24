@@ -360,7 +360,7 @@ static FILE *ask_and_open(const char *filename, const char *what, const char *mo
 static bool ecdsa_keygen(bool ask) {
 	ecdsa_t *key;
 	FILE *f;
-	char *pubname, *privname;
+	char pubname[PATH_MAX], privname[PATH_MAX];
 
 	fprintf(stderr, "Generating ECDSA keypair:\n");
 
@@ -370,9 +370,8 @@ static bool ecdsa_keygen(bool ask) {
 	} else
 		fprintf(stderr, "Done.\n");
 
-	xasprintf(&privname, "%s" SLASH "ecdsa_key.priv", confbase);
+	snprintf(privname,PATH_MAX, "%s" SLASH "ecdsa_key.priv", confbase);
 	f = ask_and_open(privname, "private ECDSA key", "a", ask, 0600);
-	free(privname);
 
 	if(!f)
 		return false;
@@ -387,19 +386,17 @@ static bool ecdsa_keygen(bool ask) {
 	fclose(f);
 
 	if(name)
-		xasprintf(&pubname, "%s" SLASH "hosts" SLASH "%s", confbase, name);
+		snprintf(pubname, PATH_MAX,"%s" SLASH "hosts" SLASH "%s", confbase, name);
 	else
-		xasprintf(&pubname, "%s" SLASH "ecdsa_key.pub", confbase);
+		snprintf(pubname, PATH_MAX,"%s" SLASH "ecdsa_key.pub", confbase);
 
 	f = ask_and_open(pubname, "public ECDSA key", "a", ask, 0666);
-	free(pubname);
 
 	if(!f)
 		return false;
 
 	char *pubkey = ecdsa_get_base64_public_key(key);
 	fprintf(f, "ECDSAPublicKey = %s\n", pubkey);
-	free(pubkey);
 
 	fclose(f);
 	ecdsa_free(key);
@@ -414,7 +411,7 @@ static bool ecdsa_keygen(bool ask) {
 static bool rsa_keygen(int bits, bool ask) {
 	rsa_t *key;
 	FILE *f;
-	char *pubname, *privname;
+	char pubname[PATH_MAX], privname[PATH_MAX];
 
 	fprintf(stderr, "Generating %d bits keys:\n", bits);
 
@@ -424,9 +421,8 @@ static bool rsa_keygen(int bits, bool ask) {
 	} else
 		fprintf(stderr, "Done.\n");
 
-	xasprintf(&privname, "%s" SLASH "rsa_key.priv", confbase);
+	snprintf(privname,PATH_MAX, "%s" SLASH "rsa_key.priv", confbase);
 	f = ask_and_open(privname, "private RSA key", "a", ask, 0600);
-	free(privname);
 
 	if(!f)
 		return false;
@@ -441,12 +437,11 @@ static bool rsa_keygen(int bits, bool ask) {
 	fclose(f);
 
 	if(name)
-		xasprintf(&pubname, "%s" SLASH "hosts" SLASH "%s", confbase, name);
+		snprintf(pubname,PATH_MAX,"%s" SLASH "hosts" SLASH "%s", confbase, name);
 	else
-		xasprintf(&pubname, "%s" SLASH "rsa_key.pub", confbase);
+		snprintf(pubname,PATH_MAX,"%s" SLASH "rsa_key.pub", confbase);
 
 	f = ask_and_open(pubname, "public RSA key", "a", ask, 0666);
-	free(pubname);
 
 	if(!f)
 		return false;
@@ -1480,9 +1475,9 @@ static int cmd_config(int argc, char *argv[]) {
 	}
 
 	// Open the right configuration file.
-	char *filename;
+	char filename[PATH_MAX];
 	if(node)
-		xasprintf(&filename, "%s" SLASH "%s", hosts_dir, node);
+		snprintf(filename,PATH_MAX "%s" SLASH "%s", hosts_dir, node);
 	else
 		filename = tinc_conf;
 
@@ -1492,11 +1487,11 @@ static int cmd_config(int argc, char *argv[]) {
 		return 1;
 	}
 
-	char *tmpfile = NULL;
+	char tmpfile[PATH_MAX];
 	FILE *tf = NULL;
 
 	if(action >= -1) {
-		xasprintf(&tmpfile, "%s.config.tmp", filename);
+		snprintf(tmpfile,PATH_MAX, "%s.config.tmp", filename);
 		tf = fopen(tmpfile, "w");
 		if(!tf) {
 			fprintf(stderr, "Could not open temporary file %s: %s\n", tmpfile, strerror(errno));
@@ -1686,10 +1681,9 @@ int check_port(char *name) {
 	for(int i = 0; i < 100; i++) {
 		int port = 0x1000 + (rand() & 0x7fff);
 		if(try_bind(port)) {
-			char *filename;
-			xasprintf(&filename, "%s" SLASH "hosts" SLASH "%s", confbase, name);
+			char filename[PATH_MAX];
+			snprintf(filename,PATH_MAX "%s" SLASH "hosts" SLASH "%s", confbase, name);
 			FILE *f = fopen(filename, "a");
-			free(filename);
 			if(!f) {
 				fprintf(stderr, "Please change tinc's Port manually.\n");
 				return 0;
