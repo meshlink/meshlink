@@ -75,7 +75,7 @@ static void send_mtu_probe_handler(void *data) {
 	if(n->mtuprobes > 32) {
 		if(!n->minmtu) {
 			n->mtuprobes = 31;
-			timeout = pinginterval;
+			timeout = mesh->pinginterval;
 			goto end;
 		}
 
@@ -102,10 +102,10 @@ static void send_mtu_probe_handler(void *data) {
 	}
 
 	if(n->mtuprobes == 31) {
-		timeout = pinginterval;
+		timeout = mesh->pinginterval;
 		goto end;
 	} else if(n->mtuprobes == 32) {
-		timeout = pingtimeout;
+		timeout = mesh->pingtimeout;
 	}
 
 	for(int i = 0; i < 4 + mesh->localdiscovery; i++) {

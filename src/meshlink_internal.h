@@ -92,6 +92,9 @@ struct meshlink_handle {
 	struct ecdsa *invitation_key;
 
 	debug_t debug_level;
+	int pinginterval;	/* seconds between pings */
+	int pingtimeout;	/* seconds to wait for response */
+	int maxtimeout;
 };
 
 /// A handle for a MeshLink node.

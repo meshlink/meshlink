@@ -176,7 +176,7 @@ char *get_name(void) {
 bool setup_myself_reloadable(void) {
 	mesh->localdiscovery = true;
 	keylifetime = 3600; // TODO: check if this can be removed as well
-	maxtimeout = 900;
+	mesh->maxtimeout = 900;
 	autoconnect = 3;
 	mesh->self->options |= OPTION_PMTU_DISCOVERY;
 
@@ -370,8 +370,8 @@ bool setup_network(void) {
 	init_edges();
 	init_requests();
 
-	pinginterval = 60;
-	pingtimeout = 5;
+	mesh->pinginterval = 60;
+	mesh->pingtimeout = 5;
 	maxoutbufsize = 10 * MTU;
 
 	if(!setup_myself())

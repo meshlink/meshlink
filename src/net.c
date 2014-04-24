@@ -124,11 +124,11 @@ void terminate_connection(connection_t *c, bool report) {
 */
 static void timeout_handler(void *data) {
 	for list_each(connection_t, c, mesh->connections) {
-		if(c->last_ping_time + pingtimeout <= now.tv_sec) {
+		if(c->last_ping_time + mesh->pingtimeout <= now.tv_sec) {
 			if(c->status.active) {
 				if(c->status.pinged) {
 					logger(DEBUG_CONNECTIONS, LOG_INFO, "%s (%s) didn't respond to PING in %ld seconds", c->name, c->hostname, (long)now.tv_sec - c->last_ping_time);
-				} else if(c->last_ping_time + pinginterval <= now.tv_sec) {
+				} else if(c->last_ping_time + mesh->pinginterval <= now.tv_sec) {
 					send_ping(c);
 					continue;
 				} else {
@@ -144,7 +144,7 @@ static void timeout_handler(void *data) {
 		}
 	}
 
-	timeout_set(data, &(struct timeval){pingtimeout, rand() % 100000});
+	timeout_set(data, &(struct timeval){mesh->pingtimeout, rand() % 100000});
 }
 
 static void periodic_handler(void *data) {
@@ -332,8 +332,8 @@ void retry(void) {
   this is where it all happens...
 */
 int main_loop(void) {
-	timeout_add(&mesh->pingtimer, timeout_handler, &mesh->pingtimer, &(struct timeval){pingtimeout, rand() % 100000});
-	timeout_add(&mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval){pingtimeout, rand() % 100000});
+	timeout_add(&mesh->pingtimer, timeout_handler, &mesh->pingtimer, &(struct timeval){mesh->pingtimeout, rand() % 100000});
+	timeout_add(&mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval){mesh->pingtimeout, rand() % 100000});
 
 	if(!event_loop()) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Error while waiting for input: %s", strerror(errno));

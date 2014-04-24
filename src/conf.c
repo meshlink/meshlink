@@ -30,9 +30,6 @@
 #include "utils.h"              /* for cp */
 #include "xalloc.h"
 
-int pinginterval = 0;           /* seconds between pings */
-int pingtimeout = 0;            /* seconds to wait for response */
-
 static int config_compare(const config_t *a, const config_t *b) {
 	int result;
 

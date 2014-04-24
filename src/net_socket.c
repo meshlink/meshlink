@@ -37,7 +37,6 @@
 #endif
 
 int addressfamily = AF_UNSPEC;
-int maxtimeout = 900;
 int seconds_till_retry = 5;
 int max_connection_burst = 100;
 
@@ -240,8 +239,8 @@ static void retry_outgoing_handler(void *data) {
 void retry_outgoing(outgoing_t *outgoing) {
 	outgoing->timeout += 5;
 
-	if(outgoing->timeout > maxtimeout)
-		outgoing->timeout = maxtimeout;
+	if(outgoing->timeout > mesh->maxtimeout)
+		outgoing->timeout = mesh->maxtimeout;
 
 	timeout_add(&outgoing->ev, retry_outgoing_handler, outgoing, &(struct timeval){outgoing->timeout, rand() % 100000});
 

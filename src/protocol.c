@@ -167,7 +167,7 @@ static void age_past_requests(void *data) {
 	int left = 0, deleted = 0;
 
 	for splay_each(past_request_t, p, past_request_tree) {
-		if(p->firstseen + pinginterval <= now.tv_sec)
+		if(p->firstseen + mesh->pinginterval <= now.tv_sec)
 			splay_delete_node(past_request_tree, node), deleted++;
 		else
 			left++;
