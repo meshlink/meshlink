@@ -92,7 +92,6 @@ struct meshlink_handle {
 	struct ecdsa *invitation_key;
 
 	debug_t debug_level;
-	bool bypass_security;
 };
 
 /// A handle for a MeshLink node.
