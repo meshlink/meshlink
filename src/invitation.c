@@ -563,8 +563,8 @@ make_names:
 
 	fprintf(f, "Name = %s\n", name);
 
-	char *filename;
-	xasprintf(&filename, "%s" SLASH "%s", hosts_dir, name);
+	char filename[PATH_MAX];
+	snprintf(filename,PATH_MAX, "%s" SLASH "%s", hosts_dir, name);
 	FILE *fh = fopen(filename, "w");
 	if(!fh) {
 		fprintf(stderr, "Could not create file %s: %s\n", filename, strerror(errno));
@@ -624,7 +624,6 @@ make_names:
 	}
 
 	fclose(f);
-	free(filename);
 
 	while(l && !strcasecmp(l, "Name")) {
 		if(!check_id(value)) {
@@ -637,7 +636,7 @@ make_names:
 			return false;
 		}
 
-		xasprintf(&filename, "%s" SLASH "%s", hosts_dir, value);
+		snprintf(filename,PATH_MAX, "%s" SLASH "%s", hosts_dir, value);
 		f = fopen(filename, "w");
 
 		if(!f) {
@@ -665,7 +664,6 @@ make_names:
 		}
 
 		fclose(f);
-		free(filename);
 	}
 
 	// Generate our key and send a copy to the server
@@ -677,7 +675,7 @@ make_names:
 	if(!b64key)
 		return false;
 
-	xasprintf(&filename, "%s" SLASH "ecdsa_key.priv", confbase);
+	snprintf(filename,PATH_MAX, "%s" SLASH "ecdsa_key.priv", confbase);
 	f = fopenmask(filename, "w", 0600);
 
 	if(!ecdsa_write_pem_private_key(key, f)) {
