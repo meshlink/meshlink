@@ -297,7 +297,7 @@ bool read_server_config(void) {
 	char *fname;
 	bool x;
 
-	xasprintf(&fname, "%s" SLASH "tinc.conf", mesh->confbase);
+	xasprintf(&fname, "%s" SLASH "meshlink.conf", mesh->confbase);
 	errno = 0;
 	x = read_config_file(mesh->config, fname);
 

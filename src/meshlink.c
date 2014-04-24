@@ -20,6 +20,8 @@
 #include "system.h"
 #include <pthread.h>
 
+#include "crypto.h"
+#include "ecdsagen.h"
 #include "meshlink_internal.h"
 #include "node.h"
 #include "protocol.h"
@@ -43,9 +45,150 @@ static void set_mesh(meshlink_handle_t *localmesh) {
 	mesh = localmesh;
 }
 
-static meshlink_handle_t *meshlink_setup(meshlink_handle_t *mesh) {
-	set_mesh(mesh);
-	return mesh;
+static bool ecdsa_keygen(meshlink_handle_t *mesh) {
+	ecdsa_t *key;
+	FILE *f;
+	char pubname[PATH_MAX], privname[PATH_MAX];
+
+	fprintf(stderr, "Generating ECDSA keypair:\n");
+
+	if(!(key = ecdsa_generate())) {
+		fprintf(stderr, "Error during key generation!\n");
+		return false;
+	} else
+		fprintf(stderr, "Done.\n");
+
+	snprintf(privname, sizeof privname, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
+	f = fopen(privname, "w");
+
+	if(!f)
+		return false;
+
+#ifdef HAVE_FCHMOD
+	fchmod(fileno(f), 0600);
+#endif
+
+	if(!ecdsa_write_pem_private_key(key, f)) {
+		fprintf(stderr, "Error writing private key!\n");
+		ecdsa_free(key);
+		fclose(f);
+		return false;
+	}
+
+	fclose(f);
+
+
+	snprintf(pubname, sizeof pubname, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->name);
+	f = fopen(pubname, "a");
+
+	if(!f)
+		return false;
+
+	char *pubkey = ecdsa_get_base64_public_key(key);
+	fprintf(f, "ECDSAPublicKey = %s\n", pubkey);
+	free(pubkey);
+
+	fclose(f);
+	ecdsa_free(key);
+
+	return true;
+}
+
+static bool try_bind(int port) {
+	struct addrinfo *ai = NULL;
+	struct addrinfo hint = {
+		.ai_flags = AI_PASSIVE,
+		.ai_family = AF_UNSPEC,
+		.ai_socktype = SOCK_STREAM,
+		.ai_protocol = IPPROTO_TCP,
+	};
+
+	char portstr[16];
+	snprintf(portstr, sizeof portstr, "%d", port);
+
+	if(getaddrinfo(NULL, portstr, &hint, &ai) || !ai)
+		return false;
+
+	while(ai) {
+		int fd = socket(ai->ai_family, SOCK_STREAM, IPPROTO_TCP);
+		if(!fd)
+			return false;
+		int result = bind(fd, ai->ai_addr, ai->ai_addrlen);
+		closesocket(fd);
+		if(result)
+			return false;
+		ai = ai->ai_next;
+	}
+
+	return true;
+}
+
+static int check_port(meshlink_handle_t *mesh) {
+	if(try_bind(655))
+		return 655;
+
+	fprintf(stderr, "Warning: could not bind to port 655.\n");
+
+	for(int i = 0; i < 100; i++) {
+		int port = 0x1000 + (rand() & 0x7fff);
+		if(try_bind(port)) {
+			char filename[PATH_MAX];
+			snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->name);
+			FILE *f = fopen(filename, "a");
+			if(!f) {
+				fprintf(stderr, "Please change MeshLink's Port manually.\n");
+				return 0;
+			}
+
+			fprintf(f, "Port = %d\n", port);
+			fclose(f);
+			fprintf(stderr, "MeshLink will instead listen on port %d.\n", port);
+			return port;
+		}
+	}
+
+	fprintf(stderr, "Please change MeshLink's Port manually.\n");
+	return 0;
+}
+
+static bool meshlink_setup(meshlink_handle_t *mesh) {
+	char meshlink_conf[PATH_MAX];
+	char hosts_dir[PATH_MAX];
+
+	if(mkdir(mesh->confbase, 0777) && errno != EEXIST) {
+		fprintf(stderr, "Could not create directory %s: %s\n", mesh->confbase, strerror(errno));
+		return false;
+	}
+
+	snprintf(hosts_dir, sizeof hosts_dir, "%s" SLASH "hosts", mesh->confbase);
+
+	if(mkdir(hosts_dir, 0777) && errno != EEXIST) {
+		fprintf(stderr, "Could not create directory %s: %s\n", hosts_dir, strerror(errno));
+		return false;
+	}
+
+	snprintf(meshlink_conf, sizeof meshlink_conf, "%s" SLASH "meshlink.conf", mesh->confbase);
+
+	if(!access(meshlink_conf, F_OK)) {
+		fprintf(stderr, "Configuration file %s already exists!\n", meshlink_conf);
+		return false;
+	}
+
+	FILE *f = fopen(meshlink_conf, "w");
+	if(!f) {
+		fprintf(stderr, "Could not create file %s: %s\n", meshlink_conf, strerror(errno));
+		return 1;
+	}
+
+	fprintf(f, "Name = %s\n", mesh->name);
+	fclose(f);
+
+	if(!ecdsa_keygen(mesh))
+		return false;
+
+	check_port(mesh);
+
+	return true;
 }
 
 meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
@@ -69,6 +212,10 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	meshlink_handle_t *mesh = xzalloc(sizeof *mesh);
 	mesh->confbase = xstrdup(confbase);
 	mesh->name = xstrdup(name);
+	set_mesh(mesh);
+
+	// TODO: should be set by a function.
+	mesh->debug_level = 5;
 
 	// Check whether meshlink.conf already exists
 
@@ -98,7 +245,6 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	if(!setup_network())
 		return meshlink_close(mesh), NULL;
 
-	set_mesh(mesh);
 	return mesh;
 }
 
@@ -216,3 +362,12 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 }
 
+static void __attribute__((constructor)) meshlink_init(void) {
+	gettimeofday(&now, NULL);
+	srand(now.tv_sec + now.tv_usec);
+	crypto_init();
+}
+
+static void __attribute__((destructor)) meshlink_exit(void) {
+	crypto_exit();
+}

@@ -1,3 +1,4 @@
+#include "../src/logger.h"
 #include "../src/system.h"
 #include "../src/meshlink.h"
 
@@ -25,7 +26,7 @@ int main(int argc , char **argv){
 
 		meshlink_node_t *remotenode = meshlink_get_node(myhandle, remotename);
 		if(!remotenode) {
-			fprintf(stderr, "Node %s not known yet.\n", remotenode);
+			fprintf(stderr, "Node %s not known yet.\n", remotename);
 			continue;
 		}
 
