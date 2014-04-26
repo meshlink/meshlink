@@ -93,24 +93,22 @@ extern bool receive_sptps_record(void *handle, uint8_t type, const char *data, u
 extern void send_packet(struct node_t *, struct vpn_packet_t *);
 extern void receive_tcppacket(struct connection_t *, const char *, int);
 extern void broadcast_packet(const struct node_t *, struct vpn_packet_t *);
-extern char *get_name(void);
-extern bool setup_myself_reloadable(void);
-extern bool setup_network(void);
+extern char *get_name(struct meshlink_handle *mesh);
+extern bool setup_myself_reloadable(struct meshlink_handle *mesh);
+extern bool setup_network(struct meshlink_handle *mesh);
 extern void setup_outgoing_connection(struct outgoing_t *);
 extern void try_outgoing_connections(void);
 extern void close_network_connections(void);
 extern int main_loop(void);
 extern void terminate_connection(struct connection_t *, bool);
-extern bool node_read_ecdsa_public_key(struct node_t *);
-extern bool read_ecdsa_public_key(struct connection_t *);
+extern bool node_read_ecdsa_public_key(struct meshlink_handle *mesh, struct node_t *);
+extern bool read_ecdsa_public_key(struct meshlink_handle *mesh, struct connection_t *);
 extern void send_mtu_probe(struct node_t *);
 extern void handle_meta_connection_data(struct connection_t *);
 extern void regenerate_key(void);
 extern void purge(void);
 extern void retry(void);
 extern int reload_configuration(void);
-extern void load_all_subnets(void);
-extern void load_all_nodes(void);
 
 #ifndef HAVE_MINGW
 #define closesocket(s) close(s)

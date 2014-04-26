@@ -243,7 +243,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	// Setup up everything
 	// TODO: we should not open listening sockets yet
 
-	if(!setup_network())
+	if(!setup_network(mesh))
 		return meshlink_close(mesh), NULL;
 
 	return mesh;

@@ -34,7 +34,7 @@
 
 int autoconnect = 3;
 
-bool node_read_ecdsa_public_key(node_t *n) {
+bool node_read_ecdsa_public_key(meshlink_handle_t *mesh, node_t *n) {
 	if(ecdsa_active(n->ecdsa))
 		return true;
 
@@ -57,7 +57,7 @@ exit:
 	return n->ecdsa;
 }
 
-bool read_ecdsa_public_key(connection_t *c) {
+bool read_ecdsa_public_key(meshlink_handle_t *mesh, connection_t *c) {
 	if(ecdsa_active(c->ecdsa))
 		return true;
 
@@ -80,7 +80,7 @@ bool read_ecdsa_public_key(connection_t *c) {
 	return false;
 }
 
-static bool read_ecdsa_private_key(void) {
+static bool read_ecdsa_private_key(meshlink_handle_t *mesh) {
 	FILE *fp;
 	char filename[PATH_MAX];
 
@@ -101,7 +101,7 @@ static bool read_ecdsa_private_key(void) {
 	return mesh->self->connection->ecdsa;
 }
 
-static bool read_invitation_key(void) {
+static bool read_invitation_key(meshlink_handle_t *mesh) {
 	FILE *fp;
 	char filename[PATH_MAX];
 
@@ -124,7 +124,7 @@ static bool read_invitation_key(void) {
 	return mesh->invitation_key;
 }
 
-void load_all_nodes(void) {
+static void load_all_nodes(meshlink_handle_t *mesh) {
 	DIR *dir;
 	struct dirent *ent;
 	char dname[PATH_MAX];
@@ -153,7 +153,7 @@ void load_all_nodes(void) {
 }
 
 
-char *get_name(void) {
+char *get_name(meshlink_handle_t *mesh) {
 	char *name = NULL;
 
 	get_config_string(lookup_config(mesh->config, "Name"), &name);
@@ -170,14 +170,14 @@ char *get_name(void) {
 	return name;
 }
 
-bool setup_myself_reloadable(void) {
+bool setup_myself_reloadable(meshlink_handle_t *mesh) {
 	mesh->localdiscovery = true;
 	keylifetime = 3600; // TODO: check if this can be removed as well
 	mesh->maxtimeout = 900;
 	autoconnect = 3;
 	mesh->self->options |= OPTION_PMTU_DISCOVERY;
 
-	read_invitation_key();
+	read_invitation_key(mesh);
 
 	return true;
 }
@@ -185,7 +185,7 @@ bool setup_myself_reloadable(void) {
 /*
   Add listening sockets.
 */
-static bool add_listen_address(char *address, bool bindto) {
+static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bindto) {
 	char *port = mesh->myport;
 
 	if(address) {
@@ -264,12 +264,12 @@ static bool add_listen_address(char *address, bool bindto) {
 /*
   Configure node_t mesh->self and set up the local sockets (listen only)
 */
-bool setup_myself(void) {
+bool setup_myself(meshlink_handle_t *mesh) {
 	char *name, *hostname, *cipher, *digest, *type;
 	char *address = NULL;
 	bool port_specified = false;
 
-	if(!(name = get_name())) {
+	if(!(name = get_name(mesh))) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Name for tinc daemon required!");
 		return false;
 	}
@@ -291,7 +291,7 @@ bool setup_myself(void) {
 
 	mesh->self->options |= PROT_MINOR << 24;
 
-	if(!read_ecdsa_private_key())
+	if(!read_ecdsa_private_key(mesh))
 		return false;
 
 	/* Ensure mesh->myport is numeric */
@@ -308,7 +308,7 @@ bool setup_myself(void) {
 
 	/* Check some options */
 
-	if(!setup_myself_reloadable())
+	if(!setup_myself_reloadable(mesh))
 		return false;
 
 	/* Compression */
@@ -328,14 +328,14 @@ bool setup_myself(void) {
 	graph();
 
 	if(autoconnect)
-		load_all_nodes();
+		load_all_nodes(mesh);
 
 	/* Open sockets */
 
 	mesh->listen_sockets = 0;
 	int cfgs = 0;
 
-	if(!add_listen_address(address, NULL))
+	if(!add_listen_address(mesh, address, NULL))
 		return false;
 
 	if(!mesh->listen_sockets) {
@@ -361,7 +361,7 @@ bool setup_myself(void) {
 /*
   initialize network
 */
-bool setup_network(void) {
+bool setup_network(meshlink_handle_t *mesh) {
 	init_connections();
 	init_nodes();
 	init_edges();
@@ -371,7 +371,7 @@ bool setup_network(void) {
 	mesh->pingtimeout = 5;
 	maxoutbufsize = 10 * MTU;
 
-	if(!setup_myself())
+	if(!setup_myself(mesh))
 		return false;
 
 	return true;

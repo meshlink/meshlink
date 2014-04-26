@@ -80,7 +80,7 @@ static bool send_initial_sptps_data(void *handle, uint8_t type, const char *data
 }
 
 bool send_req_key(node_t *to) {
-	if(!node_read_ecdsa_public_key(to)) {
+	if(!node_read_ecdsa_public_key(mesh, to)) {
 		logger(DEBUG_PROTOCOL, LOG_DEBUG, "No ECDSA key known for %s (%s)", to->name, to->hostname);
 		send_request(to->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY);
 		return true;
@@ -111,7 +111,7 @@ static bool req_key_ext_h(connection_t *c, const char *request, node_t *from, in
 		}
 
 		case ANS_PUBKEY: {
-			if(node_read_ecdsa_public_key(from)) {
+			if(node_read_ecdsa_public_key(mesh, from)) {
 				logger(DEBUG_PROTOCOL, LOG_WARNING, "Got ANS_PUBKEY from %s (%s) even though we already have his pubkey", from->name, from->hostname);
 				return true;
 			}
@@ -128,7 +128,7 @@ static bool req_key_ext_h(connection_t *c, const char *request, node_t *from, in
 		}
 
 		case REQ_KEY: {
-			if(!node_read_ecdsa_public_key(from)) {
+			if(!node_read_ecdsa_public_key(mesh, from)) {
 				logger(DEBUG_PROTOCOL, LOG_DEBUG, "No ECDSA key known for %s (%s)", from->name, from->hostname);
 				send_request(from->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, from->name, REQ_PUBKEY);
 				return true;

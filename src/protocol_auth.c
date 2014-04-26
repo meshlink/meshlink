@@ -322,7 +322,7 @@ bool id_h(connection_t *c, const char *request) {
 			return false;
 		}
 
-		read_ecdsa_public_key(c);
+		read_ecdsa_public_key(mesh, c);
 	} else {
 		if(c->protocol_minor && !ecdsa_active(c->ecdsa))
 			c->protocol_minor = 1;

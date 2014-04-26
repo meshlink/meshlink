@@ -286,7 +286,7 @@ int reload_configuration(void) {
 
 	/* Parse some options that are allowed to be changed while tinc is running */
 
-	setup_myself_reloadable();
+	setup_myself_reloadable(mesh);
 
 	/* Try to make outgoing connections */
 
