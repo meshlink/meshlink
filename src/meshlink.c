@@ -255,7 +255,7 @@ void *meshlink_main_loop(void *arg) {
 
 	try_outgoing_connections(mesh);
 
-	main_loop();
+	main_loop(mesh);
 
 	return NULL;
 }
@@ -285,7 +285,7 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 void meshlink_close(meshlink_handle_t *mesh) {
 	// Close and free all resources used.
 
-	close_network_connections();
+	close_network_connections(mesh);
 
 	logger(DEBUG_ALWAYS, LOG_NOTICE, "Terminating");
 

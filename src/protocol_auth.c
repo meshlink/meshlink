@@ -412,7 +412,7 @@ bool ack_h(connection_t *c, const char *request) {
 				n->connection->outgoing = NULL;
 			}
 
-			terminate_connection(n->connection, false);
+			terminate_connection(mesh, n->connection, false);
 			/* Run graph algorithm to keep things in sync */
 			graph();
 		}

@@ -31,36 +31,6 @@
 #include "protocol.h"
 #include "xalloc.h"
 
-/* Purge edges of unreachable nodes. Use carefully. */
-
-// TODO: remove
-void purge(void) {
-	logger(DEBUG_PROTOCOL, LOG_DEBUG, "Purging unreachable nodes");
-
-	/* Remove all edges owned by unreachable nodes. */
-
-	for splay_each(node_t, n, mesh->nodes) {
-		if(!n->status.reachable) {
-			logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Purging node %s (%s)", n->name, n->hostname);
-
-			for splay_each(edge_t, e, n->edge_tree) {
-				send_del_edge(mesh->everyone, e);
-				edge_del(e);
-			}
-		}
-	}
-
-	/* Check if anyone else claims to have an edge to an unreachable node. If not, delete node. */
-
-	for splay_each(node_t, n, mesh->nodes) {
-		if(!n->status.reachable) {
-			for splay_each(edge_t, e, mesh->edges)
-				if(e->to == n)
-					return;
-		}
-	}
-}
-
 /*
   Terminate a connection:
   - Mark it as inactive
@@ -68,7 +38,7 @@ void purge(void) {
   - Kill it with fire
   - Check if we need to retry making an outgoing connection
 */
-void terminate_connection(connection_t *c, bool report) {
+void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report) {
 	logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Closing connection with %s (%s)", c->name, c->hostname);
 
 	c->status.active = false;
@@ -123,6 +93,8 @@ void terminate_connection(connection_t *c, bool report) {
   and close the connection.
 */
 static void timeout_handler(event_loop_t *loop, void *data) {
+	meshlink_handle_t *mesh = loop->data;
+
 	for list_each(connection_t, c, mesh->connections) {
 		if(c->last_ping_time + mesh->pingtimeout <= mesh->loop.now.tv_sec) {
 			if(c->status.active) {
@@ -140,7 +112,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 				else
 					logger(DEBUG_CONNECTIONS, LOG_WARNING, "Timeout from %s (%s) during authentication", c->name, c->hostname);
 			}
-			terminate_connection(c, c->status.active);
+			terminate_connection(mesh, c, c->status.active);
 		}
 	}
 
@@ -148,6 +120,8 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 }
 
 static void periodic_handler(event_loop_t *loop, void *data) {
+	meshlink_handle_t *mesh = loop->data;
+
 	/* Check if there are too many contradicting ADD_EDGE and DEL_EDGE messages.
 	   This usually only happens when another node has the same Name as this node.
 	   If so, sleep for a short while to prevent a storm of contradicting messages.
@@ -233,7 +207,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				logger(DEBUG_CONNECTIONS, LOG_INFO, "Autodisconnecting from %s", c->name);
 				list_delete(mesh->outgoings, c->outgoing);
 				c->outgoing = NULL;
-				terminate_connection(c, c->status.active);
+				terminate_connection(mesh, c, c->status.active);
 				break;
 			}
 		}
@@ -261,14 +235,14 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 	timeout_set(&mesh->loop, data, &(struct timeval){5, rand() % 100000});
 }
 
-void handle_meta_connection_data(connection_t *c) {
+void handle_meta_connection_data(meshlink_handle_t *mesh, connection_t *c) {
 	if (!receive_meta(c)) {
-		terminate_connection(c, c->status.active);
+		terminate_connection(mesh, c, c->status.active);
 		return;
 	}
 }
 
-void retry(void) {
+void retry(meshlink_handle_t *mesh) {
 	/* Reset the reconnection timers for all outgoing connections */
 	for list_each(outgoing_t, outgoing, mesh->outgoings) {
 		outgoing->timeout = 0;
@@ -289,7 +263,7 @@ void retry(void) {
 /*
   this is where it all happens...
 */
-int main_loop(void) {
+int main_loop(meshlink_handle_t *mesh) {
 	timeout_add(&mesh->loop, &mesh->pingtimer, timeout_handler, &mesh->pingtimer, &(struct timeval){mesh->pingtimeout, rand() % 100000});
 	timeout_add(&mesh->loop, &mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval){mesh->pingtimeout, rand() % 100000});
 

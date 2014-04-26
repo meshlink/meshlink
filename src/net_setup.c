@@ -380,19 +380,19 @@ bool setup_network(meshlink_handle_t *mesh) {
 /*
   close all open network connections
 */
-void close_network_connections(void) {
+void close_network_connections(meshlink_handle_t *mesh) {
 	for(list_node_t *node = mesh->connections->head, *next; node; node = next) {
 		next = node->next;
 		connection_t *c = node->data;
 		c->outgoing = NULL;
-		terminate_connection(c, false);
+		terminate_connection(mesh, c, false);
 	}
 
 	if(mesh->outgoings)
 		list_delete_list(mesh->outgoings);
 
 	if(mesh->self && mesh->self->connection) {
-		terminate_connection(mesh->self->connection, false);
+		terminate_connection(mesh, mesh->self->connection, false);
 		free_connection(mesh->self->connection);
 	}
 

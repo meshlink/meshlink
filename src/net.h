@@ -97,17 +97,15 @@ extern char *get_name(struct meshlink_handle *mesh);
 extern bool setup_myself_reloadable(struct meshlink_handle *mesh);
 extern bool setup_network(struct meshlink_handle *mesh);
 extern void setup_outgoing_connection(struct meshlink_handle *mesh, struct outgoing_t *);
-extern void try_outgoing_connections(struct meshlink_handle * mesh);
-extern void close_network_connections(void);
-extern int main_loop(void);
-extern void terminate_connection(struct connection_t *, bool);
+extern void try_outgoing_connections(struct meshlink_handle *mesh);
+extern void close_network_connections(struct meshlink_handle *mesh);
+extern int main_loop(struct meshlink_handle *mesh);
+extern void terminate_connection(struct meshlink_handle *mesh, struct connection_t *, bool);
 extern bool node_read_ecdsa_public_key(struct meshlink_handle *mesh, struct node_t *);
 extern bool read_ecdsa_public_key(struct meshlink_handle *mesh, struct connection_t *);
 extern void send_mtu_probe(struct node_t *);
-extern void handle_meta_connection_data(struct connection_t *);
-extern void regenerate_key(void);
-extern void purge(void);
-extern void retry(void);
+extern void handle_meta_connection_data(struct meshlink_handle *mesh, struct connection_t *);
+extern void retry(struct meshlink_handle *mesh);
 
 #ifndef HAVE_MINGW
 #define closesocket(s) close(s)

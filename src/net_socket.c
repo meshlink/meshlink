@@ -319,7 +319,7 @@ static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 			logger(DEBUG_CONNECTIONS, LOG_ERR, "Could not send %d bytes of data to %s (%s): %s", c->outbuf.len - c->outbuf.offset, c->name, c->hostname, strerror(errno));
 		}
 
-		terminate_connection(c, c->status.active);
+		terminate_connection(mesh, c, c->status.active);
 		return;
 	}
 
@@ -343,7 +343,7 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 			finish_connecting(mesh, c);
 		else {
 			logger(DEBUG_CONNECTIONS, LOG_DEBUG, "Error while connecting to %s (%s): %s", c->name, c->hostname, sockstrerror(result));
-			terminate_connection(c, false);
+			terminate_connection(mesh, c, false);
 			return;
 		}
 	}
@@ -351,7 +351,7 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 	if(flags & IO_WRITE)
 		handle_meta_write(mesh, c);
 	else
-		handle_meta_connection_data(c);
+		handle_meta_connection_data(mesh, c);
 }
 
 bool do_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
@@ -690,7 +690,7 @@ void try_outgoing_connections(meshlink_handle_t *mesh) {
 		if(c->outgoing && c->outgoing->timeout == -1) {
 			c->outgoing = NULL;
 			logger(DEBUG_CONNECTIONS, LOG_INFO, "No more outgoing connection to %s", c->name);
-			terminate_connection(c, c->status.active);
+			terminate_connection(mesh, c, c->status.active);
 		}
 	}
 
