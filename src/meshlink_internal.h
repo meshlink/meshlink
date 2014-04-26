@@ -57,6 +57,7 @@ struct meshlink_handle {
 	meshlink_log_level_t log_level;
 
 	pthread_t thread;
+	event_loop_t loop;
 	listen_socket_t listen_socket[MAXSOCKETS];
 	int listen_sockets;
 

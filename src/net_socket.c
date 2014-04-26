@@ -232,7 +232,7 @@ int setup_vpn_in_socket(const sockaddr_t *sa) {
 	return nfd;
 } /* int setup_vpn_in_socket */
 
-static void retry_outgoing_handler(void *data) {
+static void retry_outgoing_handler(event_loop_t *loop, void *data) {
 	setup_outgoing_connection(data);
 }
 
@@ -242,7 +242,7 @@ void retry_outgoing(outgoing_t *outgoing) {
 	if(outgoing->timeout > mesh->maxtimeout)
 		outgoing->timeout = mesh->maxtimeout;
 
-	timeout_add(&outgoing->ev, retry_outgoing_handler, outgoing, &(struct timeval){outgoing->timeout, rand() % 100000});
+	timeout_add(&mesh->loop, &outgoing->ev, retry_outgoing_handler, outgoing, &(struct timeval){outgoing->timeout, rand() % 100000});
 
 	logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Trying to re-establish outgoing connection in %d seconds", outgoing->timeout);
 }
@@ -323,10 +323,10 @@ static void handle_meta_write(connection_t *c) {
 
 	buffer_read(&c->outbuf, outlen);
 	if(!c->outbuf.len)
-		io_set(&c->io, IO_READ);
+		io_set(&mesh->loop, &c->io, IO_READ);
 }
 
-static void handle_meta_io(void *data, int flags) {
+static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 	connection_t *c = data;
 
 	if(c->status.connecting) {
@@ -464,7 +464,7 @@ begin:
 
 	connection_add(c);
 
-	io_add(&c->io, handle_meta_io, c, c->socket, IO_READ|IO_WRITE);
+	io_add(&mesh->loop, &c->io, handle_meta_io, c, c->socket, IO_READ|IO_WRITE);
 
 	return true;
 }
@@ -503,7 +503,7 @@ static struct addrinfo *get_known_addresses(node_t *n) {
 }
 
 void setup_outgoing_connection(outgoing_t *outgoing) {
-	timeout_del(&outgoing->ev);
+	timeout_del(&mesh->loop, &outgoing->ev);
 
 	node_t *n = lookup_node(outgoing->name);
 
@@ -534,7 +534,7 @@ void setup_outgoing_connection(outgoing_t *outgoing) {
   accept a new tcp connect and create a
   new connection
 */
-void handle_new_meta_connection(void *data, int flags) {
+void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	listen_socket_t *l = data;
 	connection_t *c;
 	sockaddr_t sa;
@@ -612,7 +612,7 @@ void handle_new_meta_connection(void *data, int flags) {
 
 	logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Connection from %s", c->hostname);
 
-	io_add(&c->io, handle_meta_io, c, c->socket, IO_READ);
+	io_add(&mesh->loop, &c->io, handle_meta_io, c, c->socket, IO_READ);
 
 	configure_tcp(c);
 
@@ -623,7 +623,7 @@ void handle_new_meta_connection(void *data, int flags) {
 }
 
 static void free_outgoing(outgoing_t *outgoing) {
-	timeout_del(&outgoing->ev);
+	timeout_del(&mesh->loop, &outgoing->ev);
 
 	if(outgoing->ai)
 		freeaddrinfo(outgoing->ai);

@@ -163,7 +163,7 @@ static void free_past_request(past_request_t *r) {
 
 static timeout_t past_request_timeout;
 
-static void age_past_requests(void *data) {
+static void age_past_requests(event_loop_t *loop, void *data) {
 	int left = 0, deleted = 0;
 
 	for splay_each(past_request_t, p, past_request_tree) {
@@ -177,7 +177,7 @@ static void age_past_requests(void *data) {
 		logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Aging past requests: deleted %d, left %d", deleted, left);
 
 	if(left)
-		timeout_set(&past_request_timeout, &(struct timeval){10, rand() % 100000});
+		timeout_set(&mesh->loop, &past_request_timeout, &(struct timeval){10, rand() % 100000});
 }
 
 bool seen_request(const char *request) {
@@ -193,7 +193,7 @@ bool seen_request(const char *request) {
 		new->request = xstrdup(request);
 		new->firstseen = now.tv_sec;
 		splay_insert(past_request_tree, new);
-		timeout_add(&past_request_timeout, age_past_requests, NULL, &(struct timeval){10, rand() % 100000});
+		timeout_add(&mesh->loop, &past_request_timeout, age_past_requests, NULL, &(struct timeval){10, rand() % 100000});
 		return false;
 	}
 }
@@ -205,5 +205,5 @@ void init_requests(void) {
 void exit_requests(void) {
 	splay_delete_tree(past_request_tree);
 
-	timeout_del(&past_request_timeout);
+	timeout_del(&mesh->loop, &past_request_timeout);
 }

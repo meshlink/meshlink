@@ -43,6 +43,7 @@ const char *meshlink_strerror(meshlink_errno_t errno) {
 // TODO: hack, remove once all global variables are gone.
 static void set_mesh(meshlink_handle_t *localmesh) {
 	mesh = localmesh;
+	loop = &mesh->loop;
 }
 
 static bool ecdsa_keygen(meshlink_handle_t *mesh) {
@@ -212,6 +213,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	meshlink_handle_t *mesh = xzalloc(sizeof *mesh);
 	mesh->confbase = xstrdup(confbase);
 	mesh->name = xstrdup(name);
+	event_loop_init(&mesh->loop);
 	set_mesh(mesh);
 
 	// TODO: should be set by a function.
@@ -288,7 +290,7 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	logger(DEBUG_ALWAYS, LOG_NOTICE, "Terminating");
 
 	exit_configuration(&mesh->config);
-
+	event_loop_exit(&mesh->loop);
 }
 
 void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) {

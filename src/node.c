@@ -65,7 +65,7 @@ void free_node(node_t *n) {
 	ecdsa_free(n->ecdsa);
 	sptps_stop(&n->sptps);
 
-	timeout_del(&n->mtutimeout);
+	timeout_del(&mesh->loop, &n->mtutimeout);
 
 	if(n->hostname)
 		free(n->hostname);

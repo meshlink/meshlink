@@ -54,7 +54,7 @@ void free_connection(connection_t *c) {
 	buffer_clear(&c->inbuf);
 	buffer_clear(&c->outbuf);
 
-	io_del(&c->io);
+	io_del(&mesh->loop, &c->io);
 
 	if(c->socket > 0)
 		closesocket(c->socket);

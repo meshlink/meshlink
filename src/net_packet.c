@@ -60,7 +60,7 @@ unsigned replaywin = 16;
 
 */
 
-static void send_mtu_probe_handler(void *data) {
+static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 	node_t *n = data;
 	int timeout = 1;
 
@@ -153,12 +153,12 @@ static void send_mtu_probe_handler(void *data) {
 	n->prev_received = n->received;
 
 end:
-	timeout_set(&n->mtutimeout, &(struct timeval){timeout, rand() % 100000});
+	timeout_set(&mesh->loop, &n->mtutimeout, &(struct timeval){timeout, rand() % 100000});
 }
 
 void send_mtu_probe(node_t *n) {
-	timeout_add(&n->mtutimeout, send_mtu_probe_handler, n, &(struct timeval){1, 0});
-	send_mtu_probe_handler(n);
+	timeout_add(&mesh->loop, &n->mtutimeout, send_mtu_probe_handler, n, &(struct timeval){1, 0});
+	send_mtu_probe_handler(&mesh->loop, n);
 }
 
 static void mtu_probe_h(node_t *n, vpn_packet_t *packet, uint16_t len) {
@@ -623,7 +623,7 @@ static node_t *try_harder(const sockaddr_t *from, const vpn_packet_t *pkt) {
 	return n;
 }
 
-void handle_incoming_vpn_data(void *data, int flags) {
+void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 	listen_socket_t *ls = data;
 	vpn_packet_t pkt;
 	char *hostname;

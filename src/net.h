@@ -82,10 +82,10 @@ extern int autoconnect;
 #include "node.h"
 
 extern void retry_outgoing(outgoing_t *);
-extern void handle_incoming_vpn_data(void *, int);
+extern void handle_incoming_vpn_data(struct event_loop_t *loop, void *, int);
 extern void finish_connecting(struct connection_t *);
 extern bool do_outgoing_connection(struct outgoing_t *);
-extern void handle_new_meta_connection(void *, int);
+extern void handle_new_meta_connection(struct event_loop_t *loop, void *, int);
 extern int setup_listen_socket(const sockaddr_t *);
 extern int setup_vpn_in_socket(const sockaddr_t *);
 extern bool send_sptps_data(void *handle, uint8_t type, const char *data, size_t len);
@@ -104,7 +104,6 @@ extern void terminate_connection(struct connection_t *, bool);
 extern bool node_read_ecdsa_public_key(struct node_t *);
 extern bool read_ecdsa_public_key(struct connection_t *);
 extern void send_mtu_probe(struct node_t *);
-extern void handle_device_data(void *, int);
 extern void handle_meta_connection_data(struct connection_t *);
 extern void regenerate_key(void);
 extern void purge(void);

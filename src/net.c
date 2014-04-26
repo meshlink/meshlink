@@ -122,7 +122,7 @@ void terminate_connection(connection_t *c, bool report) {
   end does not reply in time, we consider them dead
   and close the connection.
 */
-static void timeout_handler(void *data) {
+static void timeout_handler(event_loop_t *loop, void *data) {
 	for list_each(connection_t, c, mesh->connections) {
 		if(c->last_ping_time + mesh->pingtimeout <= now.tv_sec) {
 			if(c->status.active) {
@@ -144,10 +144,10 @@ static void timeout_handler(void *data) {
 		}
 	}
 
-	timeout_set(data, &(struct timeval){mesh->pingtimeout, rand() % 100000});
+	timeout_set(&mesh->loop, data, &(struct timeval){mesh->pingtimeout, rand() % 100000});
 }
 
-static void periodic_handler(void *data) {
+static void periodic_handler(event_loop_t *loop, void *data) {
 	/* Check if there are too many contradicting ADD_EDGE and DEL_EDGE messages.
 	   This usually only happens when another node has the same Name as this node.
 	   If so, sleep for a short while to prevent a storm of contradicting messages.
@@ -258,7 +258,7 @@ static void periodic_handler(void *data) {
 		}
 	}
 
-	timeout_set(data, &(struct timeval){5, rand() % 100000});
+	timeout_set(&mesh->loop, data, &(struct timeval){5, rand() % 100000});
 }
 
 void handle_meta_connection_data(connection_t *c) {
@@ -313,7 +313,7 @@ void retry(void) {
 	for list_each(outgoing_t, outgoing, mesh->outgoings) {
 		outgoing->timeout = 0;
 		if(outgoing->ev.cb)
-			timeout_set(&outgoing->ev, &(struct timeval){0, 0});
+			timeout_set(&mesh->loop, &outgoing->ev, &(struct timeval){0, 0});
 	}
 
 	/* Check for outgoing connections that are in progress, and reset their ping timers */
@@ -323,23 +323,23 @@ void retry(void) {
 	}
 
 	/* Kick the ping timeout handler */
-	timeout_set(&mesh->pingtimer, &(struct timeval){0, 0});
+	timeout_set(&mesh->loop, &mesh->pingtimer, &(struct timeval){0, 0});
 }
 
 /*
   this is where it all happens...
 */
 int main_loop(void) {
-	timeout_add(&mesh->pingtimer, timeout_handler, &mesh->pingtimer, &(struct timeval){mesh->pingtimeout, rand() % 100000});
-	timeout_add(&mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval){mesh->pingtimeout, rand() % 100000});
+	timeout_add(&mesh->loop, &mesh->pingtimer, timeout_handler, &mesh->pingtimer, &(struct timeval){mesh->pingtimeout, rand() % 100000});
+	timeout_add(&mesh->loop, &mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval){mesh->pingtimeout, rand() % 100000});
 
-	if(!event_loop()) {
+	if(!event_loop_run(&mesh->loop)) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Error while waiting for input: %s", strerror(errno));
 		return 1;
 	}
 
-	timeout_del(&mesh->periodictimer);
-	timeout_del(&mesh->pingtimer);
+	timeout_del(&mesh->loop, &mesh->periodictimer);
+	timeout_del(&mesh->loop, &mesh->pingtimer);
 
 	return 0;
 }

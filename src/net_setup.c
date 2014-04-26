@@ -243,8 +243,8 @@ static bool add_listen_address(char *address, bool bindto) {
 			continue;
 		}
 
-		io_add(&mesh->listen_socket[mesh->listen_sockets].tcp, handle_new_meta_connection, &mesh->listen_socket[mesh->listen_sockets], tcp_fd, IO_READ);
-		io_add(&mesh->listen_socket[mesh->listen_sockets].udp, handle_incoming_vpn_data, &mesh->listen_socket[mesh->listen_sockets], udp_fd, IO_READ);
+		io_add(&mesh->loop, &mesh->listen_socket[mesh->listen_sockets].tcp, handle_new_meta_connection, &mesh->listen_socket[mesh->listen_sockets], tcp_fd, IO_READ);
+		io_add(&mesh->loop, &mesh->listen_socket[mesh->listen_sockets].udp, handle_incoming_vpn_data, &mesh->listen_socket[mesh->listen_sockets], udp_fd, IO_READ);
 
 		if(mesh->debug_level >= DEBUG_CONNECTIONS) {
 			char *hostname = sockaddr2hostname((sockaddr_t *) aip->ai_addr);
@@ -397,8 +397,8 @@ void close_network_connections(void) {
 	}
 
 	for(int i = 0; i < mesh->listen_sockets; i++) {
-		io_del(&mesh->listen_socket[i].tcp);
-		io_del(&mesh->listen_socket[i].udp);
+		io_del(&mesh->loop, &mesh->listen_socket[i].tcp);
+		io_del(&mesh->loop, &mesh->listen_socket[i].udp);
 		close(mesh->listen_socket[i].tcp.fd);
 		close(mesh->listen_socket[i].udp.fd);
 	}

@@ -221,7 +221,7 @@ static void check_reachability(void) {
 			n->minmtu = 0;
 			n->mtuprobes = 0;
 
-			timeout_del(&n->mtutimeout);
+			timeout_del(&mesh->loop, &n->mtutimeout);
 
 			//TODO: callback to application to inform of this node going up/down
 

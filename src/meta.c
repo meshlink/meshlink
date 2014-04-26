@@ -37,7 +37,7 @@ bool send_meta_sptps(void *handle, uint8_t type, const char *buffer, size_t leng
 	}
 
 	buffer_add(&c->outbuf, buffer, length);
-	io_set(&c->io, IO_READ | IO_WRITE);
+	io_set(&mesh->loop, &c->io, IO_READ | IO_WRITE);
 
 	return true;
 }
@@ -53,7 +53,7 @@ bool send_meta(connection_t *c, const char *buffer, int length) {
 
 	if(c->allow_request == ID) {
 		buffer_add(&c->outbuf, buffer, length);
-		io_set(&c->io, IO_READ | IO_WRITE);
+		io_set(&mesh->loop, &c->io, IO_READ | IO_WRITE);
 		return true;
 	}
 

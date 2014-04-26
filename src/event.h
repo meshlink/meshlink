@@ -25,9 +25,11 @@
 #define IO_READ 1
 #define IO_WRITE 2
 
-typedef void (*io_cb_t)(void *data, int flags);
-typedef void (*timeout_cb_t)(void *data);
-typedef void (*signal_cb_t)(void *data);
+typedef struct event_loop_t event_loop_t;
+
+typedef void (*io_cb_t)(event_loop_t *loop, void *data, int flags);
+typedef void (*timeout_cb_t)(event_loop_t *loop, void *data);
+typedef void (*signal_cb_t)(event_loop_t *loop, void *data);
 
 typedef struct io_t {
 	int fd;
@@ -51,21 +53,42 @@ typedef struct signal_t {
 	struct splay_node_t node;
 } signal_t;
 
+struct event_loop_t {
+	fd_set readfds;
+	fd_set writefds;
+
+	volatile bool running;
+	struct timeval now;
+	
+	splay_tree_t ios;
+	splay_tree_t timeouts;
+	splay_tree_t signals;
+
+	io_t signalio;
+	int pipefd[2];
+
+	void *data;
+};
+
+extern event_loop_t *loop;
 extern struct timeval now;
 
-extern void io_add(io_t *io, io_cb_t cb, void *data, int fd, int flags);
-extern void io_del(io_t *io);
-extern void io_set(io_t *io, int flags);
+extern void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int flags);
+extern void io_del(event_loop_t *loop, io_t *io);
+extern void io_set(event_loop_t *loop, io_t *io, int flags);
 
-extern void timeout_add(timeout_t *timeout, timeout_cb_t cb, void *data, struct timeval *tv);
-extern void timeout_del(timeout_t *timeout);
-extern void timeout_set(timeout_t *timeout, struct timeval *tv);
+extern void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *data, struct timeval *tv);
+extern void timeout_del(event_loop_t *loop, timeout_t *timeout);
+extern void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv);
 
-extern void signal_add(signal_t *sig, signal_cb_t cb, void *data, int signum);
-extern void signal_del(signal_t *sig);
+extern void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum);
+extern void signal_trigger(event_loop_t *loop, signal_t *sig);
+extern void signal_del(event_loop_t *loop, signal_t *sig);
 
-extern bool event_loop(void);
-extern void event_flush_output(void);
-extern void event_exit(void);
+extern void event_loop_init(event_loop_t *loop);
+extern void event_loop_exit(event_loop_t *loop);
+extern bool event_loop_run(event_loop_t *loop);
+extern void event_loop_flush_output(event_loop_t *loop);
+extern void event_loop_stop(event_loop_t *loop);
 
 #endif

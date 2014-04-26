@@ -22,13 +22,12 @@
 #include "dropin.h"
 #include "event.h"
 #include "net.h"
+#include "splay_tree.h"
 #include "utils.h"
+#include "xalloc.h"
 
+event_loop_t *loop;
 struct timeval now;
-
-static fd_set readfds;
-static fd_set writefds;
-static volatile bool running;
 
 static int io_compare(const io_t *a, const io_t *b) {
 	return a->fd - b->fd;
@@ -52,10 +51,7 @@ static int timeout_compare(const timeout_t *a, const timeout_t *b) {
 	return 0;
 }
 
-static splay_tree_t io_tree = {.compare = (splay_compare_t)io_compare};
-static splay_tree_t timeout_tree = {.compare = (splay_compare_t)timeout_compare};
-
-void io_add(io_t *io, io_cb_t cb, void *data, int fd, int flags) {
+void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int flags) {
 	if(io->cb)
 		return;
 
@@ -64,96 +60,86 @@ void io_add(io_t *io, io_cb_t cb, void *data, int fd, int flags) {
 	io->data = data;
 	io->node.data = io;
 
-	io_set(io, flags);
+	io_set(loop, io, flags);
 
-	if(!splay_insert_node(&io_tree, &io->node))
+	if(!splay_insert_node(&loop->ios, &io->node))
 		abort();
 }
 
-void io_set(io_t *io, int flags) {
+void io_set(event_loop_t *loop, io_t *io, int flags) {
 	io->flags = flags;
 
 	if(flags & IO_READ)
-		FD_SET(io->fd, &readfds);
+		FD_SET(io->fd, &loop->readfds);
 	else
-		FD_CLR(io->fd, &readfds);
+		FD_CLR(io->fd, &loop->readfds);
 
 	if(flags & IO_WRITE)
-		FD_SET(io->fd, &writefds);
+		FD_SET(io->fd, &loop->writefds);
 	else
-		FD_CLR(io->fd, &writefds);
+		FD_CLR(io->fd, &loop->writefds);
 }
 
-void io_del(io_t *io) {
+void io_del(event_loop_t *loop, io_t *io) {
 	if(!io->cb)
 		return;
 
-	io_set(io, 0);
+	io_set(loop, io, 0);
 
-	splay_unlink_node(&io_tree, &io->node);
+	splay_unlink_node(&loop->ios, &io->node);
 	io->cb = NULL;
 }
 
-void timeout_add(timeout_t *timeout, timeout_cb_t cb, void *data, struct timeval *tv) {
+void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *data, struct timeval *tv) {
 	timeout->cb = cb;
 	timeout->data = data;
 	timeout->node.data = timeout;
 
-	timeout_set(timeout, tv);
+	timeout_set(loop, timeout, tv);
 }
 
-void timeout_set(timeout_t *timeout, struct timeval *tv) {
+void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv) {
 	if(timerisset(&timeout->tv))
-		splay_unlink_node(&timeout_tree, &timeout->node);
+		splay_unlink_node(&loop->timeouts, &timeout->node);
 
-	if(!now.tv_sec)
-		gettimeofday(&now, NULL);
+	if(!loop->now.tv_sec)
+		gettimeofday(&loop->now, NULL);
 
-	timeradd(&now, tv, &timeout->tv);
+	timeradd(&loop->now, tv, &timeout->tv);
 
-	if(!splay_insert_node(&timeout_tree, &timeout->node))
+	if(!splay_insert_node(&loop->timeouts, &timeout->node))
 		abort();
 }
 
-void timeout_del(timeout_t *timeout) {
+void timeout_del(event_loop_t *loop, timeout_t *timeout) {
 	if(!timeout->cb)
 		return;
 
-	splay_unlink_node(&timeout_tree, &timeout->node);
+	splay_unlink_node(&loop->timeouts, &timeout->node);
 	timeout->cb = 0;
 	timeout->tv = (struct timeval){0, 0};
 }
 
-#ifndef HAVE_MINGW
 static int signal_compare(const signal_t *a, const signal_t *b) {
-	return a->signum - b->signum;
+	return (int)a->signum - (int)b->signum;
 }
 
-static io_t signalio;
-static int pipefd[2] = {-1, -1};
-static splay_tree_t signal_tree = {.compare = (splay_compare_t)signal_compare};
-
-static void signal_handler(int signum) {
-	unsigned char num = signum;
-	write(pipefd[1], &num, 1);
-}
-
-static void signalio_handler(void *data, int flags) {
+static void signalio_handler(event_loop_t *loop, void *data, int flags) {
 	unsigned char signum;
-	if(read(pipefd[0], &signum, 1) != 1)
+	if(read(loop->pipefd[0], &signum, 1) != 1)
 		return;
 
-	signal_t *sig = splay_search(&signal_tree, &((signal_t){.signum = signum}));
+	signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = signum}));
 	if(sig)
-		sig->cb(sig->data);
+		sig->cb(loop, sig->data);
 }
 
-static void pipe_init(void) {
-	if(!pipe(pipefd))
-		io_add(&signalio, signalio_handler, NULL, pipefd[0], IO_READ);
+static void pipe_init(event_loop_t *loop) {
+	if(!pipe(loop->pipefd))
+		io_add(loop, &loop->signalio, signalio_handler, NULL, loop->pipefd[0], IO_READ);
 }
 
-void signal_add(signal_t *sig, signal_cb_t cb, void *data, int signum) {
+void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum) {
 	if(sig->cb)
 		return;
 
@@ -162,67 +148,57 @@ void signal_add(signal_t *sig, signal_cb_t cb, void *data, int signum) {
 	sig->signum = signum;
 	sig->node.data = sig;
 
-	if(pipefd[0] == -1)
-		pipe_init();
+	if(loop->pipefd[0] == -1)
+		pipe_init(loop);
 
-	signal(sig->signum, signal_handler);
-
-	if(!splay_insert_node(&signal_tree, &sig->node))
+	if(!splay_insert_node(&loop->signals, &sig->node))
 		abort();
 }
 
-void signal_del(signal_t *sig) {
+void signal_del(event_loop_t *loop, signal_t *sig) {
 	if(!sig->cb)
 		return;
 
-	signal(sig->signum, SIG_DFL);
-
-	splay_unlink_node(&signal_tree, &sig->node);
+	splay_unlink_node(&loop->signals, &sig->node);
 	sig->cb = NULL;
 }
-#endif
 
-bool event_loop(void) {
-	running = true;
+bool event_loop_run(event_loop_t *loop) {
+	loop->running = true;
 
 	fd_set readable;
 	fd_set writable;
 
-	while(running) {
-		gettimeofday(&now, NULL);
+	while(loop->running) {
+		gettimeofday(&loop->now, NULL);
+		now = loop->now;
 		struct timeval diff, *tv = NULL;
 
-		while(timeout_tree.head) {
-			timeout_t *timeout = timeout_tree.head->data;
-			timersub(&timeout->tv, &now, &diff);
+		while(loop->timeouts.head) {
+			timeout_t *timeout = loop->timeouts.head->data;
+			timersub(&timeout->tv, &loop->now, &diff);
 
 			if(diff.tv_sec < 0) {
-				timeout->cb(timeout->data);
-				if(timercmp(&timeout->tv, &now, <))
-					timeout_del(timeout);
+				timeout->cb(loop, timeout->data);
+				if(timercmp(&timeout->tv, &loop->now, <))
+					timeout_del(loop, timeout);
 			} else {
 				tv = &diff;
 				break;
 			}
 		}
 
-		memcpy(&readable, &readfds, sizeof readable);
-		memcpy(&writable, &writefds, sizeof writable);
+		memcpy(&readable, &loop->readfds, sizeof readable);
+		memcpy(&writable, &loop->writefds, sizeof writable);
 
 		int fds = 0;
 
-		if(io_tree.tail) {
-			io_t *last = io_tree.tail->data;
+		if(loop->ios.tail) {
+			io_t *last = loop->ios.tail->data;
 			fds = last->fd + 1;
 		}
 
-#ifdef HAVE_MINGW
-		LeaveCriticalSection(&mutex);
-#endif
 		int n = select(fds, &readable, &writable, NULL, tv);
-#ifdef HAVE_MINGW
-		EnterCriticalSection(&mutex);
-#endif
 
 		if(n < 0) {
 			if(sockwouldblock(errno))
@@ -234,23 +210,40 @@ bool event_loop(void) {
 		if(!n)
 			continue;
 
-		for splay_each(io_t, io, &io_tree) {
+		for splay_each(io_t, io, &loop->ios) {
 			if(FD_ISSET(io->fd, &writable))
-				io->cb(io->data, IO_WRITE);
+				io->cb(loop, io->data, IO_WRITE);
 			else if(FD_ISSET(io->fd, &readable))
-				io->cb(io->data, IO_READ);
+				io->cb(loop, io->data, IO_READ);
 		}
 	}
 
 	return true;
 }
 
-void event_flush_output(void) {
-	for splay_each(io_t, io, &io_tree)
-		if(FD_ISSET(io->fd, &writefds))
-			io->cb(io->data, IO_WRITE);
+void event_flush_output(event_loop_t *loop) {
+	for splay_each(io_t, io, &loop->ios)
+		if(FD_ISSET(io->fd, &loop->writefds))
+			io->cb(loop, io->data, IO_WRITE);
 }
 
-void event_exit(void) {
-	running = false;
+void event_loop_stop(event_loop_t *loop) {
+	loop->running = false;
+}
+
+void event_loop_init(event_loop_t *loop) {
+	loop->ios.compare = (splay_compare_t)io_compare;
+	loop->timeouts.compare = (splay_compare_t)timeout_compare;
+	loop->signals.compare = (splay_compare_t)signal_compare;
+	loop->pipefd[0] = -1;
+	loop->pipefd[1] = -1;
+}
+
+void event_loop_exit(event_loop_t *loop) {
+	for splay_each(io_t, io, &loop->ios)
+		splay_free_node(&loop->ios, node);
+	for splay_each(timeout_t, timeout, &loop->timeouts)
+		splay_free_node(&loop->timeouts, node);
+	for splay_each(signal_t, signal, &loop->signals)
+		splay_free_node(&loop->signals, node);
 }
