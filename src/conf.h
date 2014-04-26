@@ -20,8 +20,9 @@
 #ifndef __TINC_CONF_H__
 #define __TINC_CONF_H__
 
-#include "splay_tree.h"
 #include "list.h"
+#include "meshlink_internal.h"
+#include "splay_tree.h"
 
 typedef struct config_t {
 	char *variable;
@@ -29,7 +30,6 @@ typedef struct config_t {
 	char *file;
 	int line;
 } config_t;
-
 
 extern void init_configuration(struct splay_tree_t **);
 extern void exit_configuration(struct splay_tree_t **);
@@ -45,9 +45,9 @@ extern bool get_config_address(const config_t *, struct addrinfo **);
 
 extern config_t *parse_config_line(char *, const char *, int);
 extern bool read_config_file(struct splay_tree_t *, const char *);
-extern void read_config_options(struct splay_tree_t *, const char *);
-extern bool read_server_config(void);
-extern bool read_host_config(struct splay_tree_t *, const char *);
-extern bool append_config_file(const char *, const char *, const char *);
+
+extern bool read_server_config(struct meshlink_handle *mesh);
+extern bool read_host_config(struct meshlink_handle *mesh, struct splay_tree_t *, const char *);
+extern bool append_config_file(struct meshlink_handle *mesh, const char *, const char *, const char *);
 
 #endif /* __TINC_CONF_H__ */

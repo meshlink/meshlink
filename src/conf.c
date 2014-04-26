@@ -290,7 +290,7 @@ bool read_config_file(splay_tree_t *config_tree, const char *fname) {
 	return result;
 }
 
-bool read_server_config(void) {
+bool read_server_config(meshlink_handle_t *mesh) {
 	char filename[PATH_MAX];
 	bool x;
 
@@ -304,7 +304,7 @@ bool read_server_config(void) {
 	return x;
 }
 
-bool read_host_config(splay_tree_t *config_tree, const char *name) {
+bool read_host_config(meshlink_handle_t *mesh, splay_tree_t *config_tree, const char *name) {
 	char filename[PATH_MAX];
 	bool x;
 
@@ -314,7 +314,7 @@ bool read_host_config(splay_tree_t *config_tree, const char *name) {
 	return x;
 }
 
-bool append_config_file(const char *name, const char *key, const char *value) {
+bool append_config_file(meshlink_handle_t *mesh, const char *name, const char *key, const char *value) {
 	char filename[PATH_MAX];
 	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 

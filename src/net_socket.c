@@ -515,7 +515,7 @@ void setup_outgoing_connection(outgoing_t *outgoing) {
 	}
 
 	init_configuration(&outgoing->config_tree);
-	read_host_config(outgoing->config_tree, outgoing->name);
+	read_host_config(mesh, outgoing->config_tree, outgoing->name);
 	outgoing->cfg = lookup_config(outgoing->config_tree, "Address");
 
 	if(!outgoing->cfg) {

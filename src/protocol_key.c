@@ -123,7 +123,7 @@ static bool req_key_ext_h(connection_t *c, const char *request, node_t *from, in
 			}
 
 			logger(DEBUG_PROTOCOL, LOG_INFO, "Learned ECDSA public key from %s (%s)", from->name, from->hostname);
-			append_config_file(from->name, "ECDSAPublicKey", pubkey);
+			append_config_file(mesh, from->name, "ECDSAPublicKey", pubkey);
 			return true;
 		}
 

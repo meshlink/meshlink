@@ -237,7 +237,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 
 	init_configuration(&mesh->config);
 
-	if(!read_server_config())
+	if(!read_server_config(mesh))
 		return meshlink_close(mesh), NULL;
 
 	// Setup up everything

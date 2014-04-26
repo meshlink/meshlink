@@ -42,7 +42,7 @@ bool node_read_ecdsa_public_key(node_t *n) {
 	char *p;
 
 	init_configuration(&config_tree);
-	if(!read_host_config(config_tree, n->name))
+	if(!read_host_config(mesh, config_tree, n->name))
 		goto exit;
 
 	/* First, check for simple ECDSAPublicKey statement */
@@ -65,7 +65,7 @@ bool read_ecdsa_public_key(connection_t *c) {
 
 	if(!c->config_tree) {
 		init_configuration(&c->config_tree);
-		if(!read_host_config(c->config_tree, c->name))
+		if(!read_host_config(mesh, c->config_tree, c->name))
 			return false;
 	}
 
@@ -278,7 +278,7 @@ bool setup_myself(void) {
 	mesh->self->connection = new_connection();
 	mesh->self->name = name;
 	mesh->self->connection->name = xstrdup(name);
-	read_host_config(mesh->config, name);
+	read_host_config(mesh, mesh->config, name);
 
 	if(!get_config_string(lookup_config(mesh->config, "Port"), &mesh->myport))
 		mesh->myport = xstrdup("655");

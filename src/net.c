@@ -276,7 +276,7 @@ int reload_configuration(void) {
 	exit_configuration(&mesh->config);
 	init_configuration(&mesh->config);
 
-	if(!read_server_config()) {
+	if(!read_server_config(mesh)) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Unable to reread configuration file.");
 		return EINVAL;
 	}
