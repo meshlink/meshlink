@@ -213,6 +213,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	mesh->confbase = xstrdup(confbase);
 	mesh->name = xstrdup(name);
 	event_loop_init(&mesh->loop);
+	mesh->loop.data = mesh;
 	set_mesh(mesh);
 
 	// TODO: should be set by a function.
@@ -252,7 +253,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 void *meshlink_main_loop(void *arg) {
 	meshlink_handle_t *mesh = arg;
 
-	try_outgoing_connections();
+	try_outgoing_connections(mesh);
 
 	main_loop();
 

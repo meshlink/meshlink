@@ -105,7 +105,7 @@ void terminate_connection(connection_t *c, bool report) {
 	/* Check if this was our outgoing connection */
 
 	if(outgoing)
-		do_outgoing_connection(outgoing);
+		do_outgoing_connection(mesh, outgoing);
 
 #ifndef HAVE_MINGW
 	/* Clean up dead proxy processes */
@@ -208,7 +208,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 					outgoing_t *outgoing = xzalloc(sizeof *outgoing);
 					outgoing->name = xstrdup(n->name);
 					list_insert_tail(mesh->outgoings, outgoing);
-					setup_outgoing_connection(outgoing);
+					setup_outgoing_connection(mesh, outgoing);
 				}
 				break;
 			}
@@ -290,7 +290,7 @@ int reload_configuration(void) {
 
 	/* Try to make outgoing connections */
 
-	try_outgoing_connections();
+	try_outgoing_connections(mesh);
 
 	/* Close connections to hosts that have a changed or deleted host config file */
 

@@ -70,7 +70,7 @@ static void configure_tcp(connection_t *c) {
 #endif
 }
 
-static bool bind_to_address(connection_t *c) {
+static bool bind_to_address(meshlink_handle_t *mesh, connection_t *c) {
 	int s = -1;
 
 	for(int i = 0; i < mesh->listen_sockets && mesh->listen_socket[i].bindto; i++) {
@@ -142,7 +142,7 @@ int setup_listen_socket(const sockaddr_t *sa) {
 	return nfd;
 }
 
-int setup_vpn_in_socket(const sockaddr_t *sa) {
+int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	int nfd;
 	char *addrstr;
 	int option;
@@ -233,10 +233,12 @@ int setup_vpn_in_socket(const sockaddr_t *sa) {
 } /* int setup_vpn_in_socket */
 
 static void retry_outgoing_handler(event_loop_t *loop, void *data) {
-	setup_outgoing_connection(data);
+	meshlink_handle_t *mesh = loop->data;
+	outgoing_t *outgoing = data;
+	setup_outgoing_connection(mesh, outgoing);
 }
 
-void retry_outgoing(outgoing_t *outgoing) {
+void retry_outgoing(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	outgoing->timeout += 5;
 
 	if(outgoing->timeout > mesh->maxtimeout)
@@ -247,7 +249,7 @@ void retry_outgoing(outgoing_t *outgoing) {
 	logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Trying to re-establish outgoing connection in %d seconds", outgoing->timeout);
 }
 
-void finish_connecting(connection_t *c) {
+void finish_connecting(meshlink_handle_t *mesh, connection_t *c) {
 	logger(DEBUG_CONNECTIONS, LOG_INFO, "Connected to %s (%s)", c->name, c->hostname);
 
 	c->last_ping_time = mesh->loop.now.tv_sec;
@@ -256,7 +258,7 @@ void finish_connecting(connection_t *c) {
 	send_id(c);
 }
 
-static void do_outgoing_pipe(connection_t *c, char *command) {
+static void do_outgoing_pipe(meshlink_handle_t *mesh, connection_t *c, char *command) {
 #ifndef HAVE_MINGW
 	int fd[2];
 
@@ -302,7 +304,7 @@ static void do_outgoing_pipe(connection_t *c, char *command) {
 #endif
 }
 
-static void handle_meta_write(connection_t *c) {
+static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 	if(c->outbuf.len <= c->outbuf.offset)
 		return;
 
@@ -327,6 +329,7 @@ static void handle_meta_write(connection_t *c) {
 }
 
 static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
+	meshlink_handle_t *mesh = loop->data;
 	connection_t *c = data;
 
 	if(c->status.connecting) {
@@ -337,7 +340,7 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 		getsockopt(c->socket, SOL_SOCKET, SO_ERROR, (void *)&result, &len);
 
 		if(!result)
-			finish_connecting(c);
+			finish_connecting(mesh, c);
 		else {
 			logger(DEBUG_CONNECTIONS, LOG_DEBUG, "Error while connecting to %s (%s): %s", c->name, c->hostname, sockstrerror(result));
 			terminate_connection(c, false);
@@ -346,12 +349,12 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 	}
 
 	if(flags & IO_WRITE)
-		handle_meta_write(c);
+		handle_meta_write(mesh, c);
 	else
 		handle_meta_connection_data(c);
 }
 
-bool do_outgoing_connection(outgoing_t *outgoing) {
+bool do_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	char *address, *port, *space;
 	struct addrinfo *proxyai = NULL;
 	int result;
@@ -360,7 +363,7 @@ begin:
 	if(!outgoing->ai) {
 		if(!outgoing->cfg) {
 			logger(DEBUG_CONNECTIONS, LOG_ERR, "Could not set up a meta connection to %s", outgoing->name);
-			retry_outgoing(outgoing);
+			retry_outgoing(mesh, outgoing);
 			return false;
 		}
 
@@ -405,7 +408,7 @@ begin:
 		c->socket = socket(c->address.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 		configure_tcp(c);
 	} else if(mesh->proxytype == PROXY_EXEC) {
-		do_outgoing_pipe(c, mesh->proxyhost);
+		do_outgoing_pipe(mesh, c, mesh->proxyhost);
 	} else {
 		proxyai = str2addrinfo(mesh->proxyhost, mesh->proxyport, SOCK_STREAM);
 		if(!proxyai) {
@@ -434,7 +437,7 @@ begin:
 			setsockopt(c->socket, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof option);
 #endif
 
-		bind_to_address(c);
+		bind_to_address(mesh, c);
 	}
 
 	/* Connect */
@@ -502,7 +505,7 @@ static struct addrinfo *get_known_addresses(node_t *n) {
 	return ai;
 }
 
-void setup_outgoing_connection(outgoing_t *outgoing) {
+void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	timeout_del(&mesh->loop, &outgoing->ev);
 
 	node_t *n = lookup_node(outgoing->name);
@@ -527,7 +530,7 @@ void setup_outgoing_connection(outgoing_t *outgoing) {
 		}
 	}
 
-	do_outgoing_connection(outgoing);
+	do_outgoing_connection(mesh, outgoing);
 }
 
 /*
@@ -535,6 +538,7 @@ void setup_outgoing_connection(outgoing_t *outgoing) {
   new connection
 */
 void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
+	meshlink_handle_t *mesh = loop->data;
 	listen_socket_t *l = data;
 	connection_t *c;
 	sockaddr_t sa;
@@ -622,7 +626,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	send_id(c);
 }
 
-static void free_outgoing(outgoing_t *outgoing) {
+static void free_outgoing(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	timeout_del(&mesh->loop, &outgoing->ev);
 
 	if(outgoing->ai)
@@ -637,7 +641,7 @@ static void free_outgoing(outgoing_t *outgoing) {
 	free(outgoing);
 }
 
-void try_outgoing_connections(void) {
+void try_outgoing_connections(meshlink_handle_t *mesh) {
 	/* If there is no outgoing list yet, create one. Otherwise, mark all outgoings as deleted. */
 
 	if(!mesh->outgoings) {
@@ -676,7 +680,7 @@ void try_outgoing_connections(void) {
 			outgoing_t *outgoing = xzalloc(sizeof *outgoing);
 			outgoing->name = name;
 			list_insert_tail(mesh->outgoings, outgoing);
-			setup_outgoing_connection(outgoing);
+			setup_outgoing_connection(mesh, outgoing);
 		}
 	}
 
