@@ -322,7 +322,7 @@ bool setup_myself(void) {
 	mesh->self->nexthop = mesh->self;
 	mesh->self->via = mesh->self;
 	mesh->self->status.reachable = true;
-	mesh->self->last_state_change = now.tv_sec;
+	mesh->self->last_state_change = mesh->loop.now.tv_sec;
 	node_add(mesh->self);
 
 	graph();
@@ -353,7 +353,7 @@ bool setup_myself(void) {
 
 	/* Done. */
 
-	mesh->last_config_check = now.tv_sec;
+	mesh->last_config_check = mesh->loop.now.tv_sec;
 
 	return true;
 }

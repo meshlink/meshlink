@@ -316,7 +316,7 @@ static void send_sptps_packet(node_t *n, vpn_packet_t *origpkt) {
 		logger(DEBUG_TRAFFIC, LOG_INFO, "No valid key known yet for %s (%s)", n->name, n->hostname);
 		if(!n->status.waitingforkey)
 			send_req_key(n);
-		else if(n->last_req_key + 10 < now.tv_sec) {
+		else if(n->last_req_key + 10 < mesh->loop.now.tv_sec) {
 			logger(DEBUG_ALWAYS, LOG_DEBUG, "No key from %s after 10 seconds, restarting SPTPS", n->name);
 			sptps_stop(&n->sptps);
 			n->status.waitingforkey = false;
@@ -604,7 +604,7 @@ static node_t *try_harder(const sockaddr_t *from, const vpn_packet_t *pkt) {
 			continue;
 
 		if(sockaddrcmp_noport(from, &e->address)) {
-			if(last_hard_try == now.tv_sec)
+			if(last_hard_try == mesh->loop.now.tv_sec)
 				continue;
 			hard = true;
 		}
@@ -617,9 +617,9 @@ static node_t *try_harder(const sockaddr_t *from, const vpn_packet_t *pkt) {
 	}
 
 	if(hard)
-		last_hard_try = now.tv_sec;
+		last_hard_try = mesh->loop.now.tv_sec;
 
-	last_hard_try = now.tv_sec;
+	last_hard_try = mesh->loop.now.tv_sec;
 	return n;
 }
 

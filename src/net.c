@@ -124,11 +124,11 @@ void terminate_connection(connection_t *c, bool report) {
 */
 static void timeout_handler(event_loop_t *loop, void *data) {
 	for list_each(connection_t, c, mesh->connections) {
-		if(c->last_ping_time + mesh->pingtimeout <= now.tv_sec) {
+		if(c->last_ping_time + mesh->pingtimeout <= mesh->loop.now.tv_sec) {
 			if(c->status.active) {
 				if(c->status.pinged) {
-					logger(DEBUG_CONNECTIONS, LOG_INFO, "%s (%s) didn't respond to PING in %ld seconds", c->name, c->hostname, (long)now.tv_sec - c->last_ping_time);
-				} else if(c->last_ping_time + mesh->pinginterval <= now.tv_sec) {
+					logger(DEBUG_CONNECTIONS, LOG_INFO, "%s (%s) didn't respond to PING in %ld seconds", c->name, c->hostname, (long)mesh->loop.now.tv_sec - c->last_ping_time);
+				} else if(c->last_ping_time + mesh->pinginterval <= mesh->loop.now.tv_sec) {
 					send_ping(c);
 					continue;
 				} else {
@@ -303,7 +303,7 @@ int reload_configuration(void) {
 		}
 	}
 
-	mesh->last_config_check = now.tv_sec;
+	mesh->last_config_check = mesh->loop.now.tv_sec;
 
 	return 0;
 }

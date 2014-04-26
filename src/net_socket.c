@@ -250,7 +250,7 @@ void retry_outgoing(outgoing_t *outgoing) {
 void finish_connecting(connection_t *c) {
 	logger(DEBUG_CONNECTIONS, LOG_INFO, "Connected to %s (%s)", c->name, c->hostname);
 
-	c->last_ping_time = now.tv_sec;
+	c->last_ping_time = mesh->loop.now.tv_sec;
 	c->status.connecting = false;
 
 	send_id(c);
@@ -460,7 +460,7 @@ begin:
 	c->status.connecting = true;
 	c->name = xstrdup(outgoing->name);
 	c->outcompression = mesh->self->connection->outcompression;
-	c->last_ping_time = now.tv_sec;
+	c->last_ping_time = mesh->loop.now.tv_sec;
 
 	connection_add(c);
 
@@ -564,12 +564,12 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 		static int samehost_burst;
 		static int samehost_burst_time;
 
-		if(now.tv_sec - samehost_burst_time > samehost_burst)
+		if(mesh->loop.now.tv_sec - samehost_burst_time > samehost_burst)
 			samehost_burst = 0;
 		else
-			samehost_burst -= now.tv_sec - samehost_burst_time;
+			samehost_burst -= mesh->loop.now.tv_sec - samehost_burst_time;
 
-		samehost_burst_time = now.tv_sec;
+		samehost_burst_time = mesh->loop.now.tv_sec;
 		samehost_burst++;
 
 		if(samehost_burst > max_connection_burst) {
@@ -585,12 +585,12 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	static int connection_burst;
 	static int connection_burst_time;
 
-	if(now.tv_sec - connection_burst_time > connection_burst)
+	if(mesh->loop.now.tv_sec - connection_burst_time > connection_burst)
 		connection_burst = 0;
 	else
-		connection_burst -= now.tv_sec - connection_burst_time;
+		connection_burst -= mesh->loop.now.tv_sec - connection_burst_time;
 
-	connection_burst_time = now.tv_sec;
+	connection_burst_time = mesh->loop.now.tv_sec;
 	connection_burst++;
 
 	if(connection_burst >= max_connection_burst) {
@@ -608,7 +608,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	c->address = sa;
 	c->hostname = sockaddr2hostname(&sa);
 	c->socket = fd;
-	c->last_ping_time = now.tv_sec;
+	c->last_ping_time = mesh->loop.now.tv_sec;
 
 	logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Connection from %s", c->hostname);
 

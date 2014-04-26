@@ -27,7 +27,6 @@
 #include "xalloc.h"
 
 event_loop_t *loop;
-struct timeval now;
 
 static int io_compare(const io_t *a, const io_t *b) {
 	return a->fd - b->fd;
@@ -171,7 +170,6 @@ bool event_loop_run(event_loop_t *loop) {
 
 	while(loop->running) {
 		gettimeofday(&loop->now, NULL);
-		now = loop->now;
 		struct timeval diff, *tv = NULL;
 
 		while(loop->timeouts.head) {
@@ -237,6 +235,7 @@ void event_loop_init(event_loop_t *loop) {
 	loop->signals.compare = (splay_compare_t)signal_compare;
 	loop->pipefd[0] = -1;
 	loop->pipefd[1] = -1;
+	gettimeofday(&loop->now, NULL);
 }
 
 void event_loop_exit(event_loop_t *loop) {

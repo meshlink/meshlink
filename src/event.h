@@ -71,7 +71,6 @@ struct event_loop_t {
 };
 
 extern event_loop_t *loop;
-extern struct timeval now;
 
 extern void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int flags);
 extern void io_del(event_loop_t *loop, io_t *io);

@@ -199,7 +199,7 @@ static void check_reachability(void) {
 	for splay_each(node_t, n, mesh->nodes) {
 		if(n->status.visited != n->status.reachable) {
 			n->status.reachable = !n->status.reachable;
-			n->last_state_change = now.tv_sec;
+			n->last_state_change = mesh->loop.now.tv_sec;
 
 			if(n->status.reachable) {
 				logger(DEBUG_TRAFFIC, LOG_DEBUG, "Node %s (%s) became reachable",

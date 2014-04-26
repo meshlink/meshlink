@@ -31,11 +31,11 @@ static bool ratelimit(int frequency) {
 	static time_t lasttime = 0;
 	static int count = 0;
 
-	if(lasttime == now.tv_sec) {
+	if(lasttime == mesh->loop.now.tv_sec) {
 		if(count >= frequency)
 			return true;
 	} else {
-		lasttime = now.tv_sec;
+		lasttime = mesh->loop.now.tv_sec;
 		count = 0;
 	}
 

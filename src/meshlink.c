@@ -365,8 +365,6 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 }
 
 static void __attribute__((constructor)) meshlink_init(void) {
-	gettimeofday(&now, NULL);
-	srand(now.tv_sec + now.tv_usec);
 	crypto_init();
 }
 

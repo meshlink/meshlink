@@ -22,6 +22,7 @@
 #include "conf.h"
 #include "connection.h"
 #include "logger.h"
+#include "meshlink_internal.h"
 #include "meta.h"
 #include "net.h"
 #include "netutl.h"
@@ -88,7 +89,7 @@ bool termreq_h(connection_t *c, const char *request) {
 
 bool send_ping(connection_t *c) {
 	c->status.pinged = true;
-	c->last_ping_time = now.tv_sec;
+	c->last_ping_time = mesh->loop.now.tv_sec;
 
 	return send_request(c, "%d", PING);
 }

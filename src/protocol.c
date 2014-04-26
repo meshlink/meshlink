@@ -167,7 +167,7 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 	int left = 0, deleted = 0;
 
 	for splay_each(past_request_t, p, past_request_tree) {
-		if(p->firstseen + mesh->pinginterval <= now.tv_sec)
+		if(p->firstseen + mesh->pinginterval <= mesh->loop.now.tv_sec)
 			splay_delete_node(past_request_tree, node), deleted++;
 		else
 			left++;
@@ -191,7 +191,7 @@ bool seen_request(const char *request) {
 	} else {
 		new = xmalloc(sizeof *new);
 		new->request = xstrdup(request);
-		new->firstseen = now.tv_sec;
+		new->firstseen = mesh->loop.now.tv_sec;
 		splay_insert(past_request_tree, new);
 		timeout_add(&mesh->loop, &past_request_timeout, age_past_requests, NULL, &(struct timeval){10, rand() % 100000});
 		return false;
