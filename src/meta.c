@@ -89,7 +89,7 @@ bool receive_meta_sptps(void *handle, uint8_t type, const char *data, uint16_t l
 	if(c->tcplen) {
 		if(length != c->tcplen)
 			return false;
-		receive_tcppacket(c, data, length);
+		receive_tcppacket(mesh, c, data, length);
 		c->tcplen = 0;
 		return true;
 	}

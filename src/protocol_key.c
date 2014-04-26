@@ -323,7 +323,7 @@ bool ans_key_h(connection_t *c, const char *request) {
 		}
 
 		if(from->options & OPTION_PMTU_DISCOVERY && !(from->options & OPTION_TCPONLY))
-			send_mtu_probe(from);
+			send_mtu_probe(mesh, from);
 	}
 
 	return true;

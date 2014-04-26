@@ -38,7 +38,7 @@
 
 int keylifetime = 0;
 
-static void send_udppacket(node_t *, vpn_packet_t *);
+static void send_udppacket(meshlink_handle_t *mesh, node_t *, vpn_packet_t *);
 
 unsigned replaywin = 16;
 
@@ -61,6 +61,7 @@ unsigned replaywin = 16;
 */
 
 static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
+	meshlink_handle_t *mesh = loop->data;
 	node_t *n = data;
 	int timeout = 1;
 
@@ -133,7 +134,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 
 		logger(DEBUG_TRAFFIC, LOG_INFO, "Sending MTU probe length %d to %s (%s)", len, n->name, n->hostname);
 
-		send_udppacket(n, &packet);
+		send_udppacket(mesh, n, &packet);
 	}
 
 	n->status.broadcast = false;
@@ -156,12 +157,12 @@ end:
 	timeout_set(&mesh->loop, &n->mtutimeout, &(struct timeval){timeout, rand() % 100000});
 }
 
-void send_mtu_probe(node_t *n) {
+void send_mtu_probe(meshlink_handle_t *mesh, node_t *n) {
 	timeout_add(&mesh->loop, &n->mtutimeout, send_mtu_probe_handler, n, &(struct timeval){1, 0});
 	send_mtu_probe_handler(&mesh->loop, n);
 }
 
-static void mtu_probe_h(node_t *n, vpn_packet_t *packet, uint16_t len) {
+static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet, uint16_t len) {
 	logger(DEBUG_TRAFFIC, LOG_INFO, "Got MTU probe length %d from %s (%s)", packet->len, n->name, n->hostname);
 
 	if(!packet->data[0]) {
@@ -174,7 +175,7 @@ static void mtu_probe_h(node_t *n, vpn_packet_t *packet, uint16_t len) {
 
 		bool udp_confirmed = n->status.udp_confirmed;
 		n->status.udp_confirmed = true;
-		send_udppacket(n, packet);
+		send_udppacket(mesh, n, packet);
 		n->status.udp_confirmed = udp_confirmed;
 	} else {
 		/* It's a valid reply: now we know bidirectional communication
@@ -271,7 +272,7 @@ static uint16_t uncompress_packet(uint8_t *dest, const uint8_t *source, uint16_t
 
 /* VPN packet I/O */
 
-static void receive_packet(node_t *n, vpn_packet_t *packet) {
+static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	logger(DEBUG_TRAFFIC, LOG_DEBUG, "Received packet of %d bytes from %s (%s)",
 			   packet->len, n->name, n->hostname);
 
@@ -281,11 +282,11 @@ static void receive_packet(node_t *n, vpn_packet_t *packet) {
 	route(n, packet);
 }
 
-static bool try_mac(node_t *n, const vpn_packet_t *inpkt) {
+static bool try_mac(meshlink_handle_t *mesh, node_t *n, const vpn_packet_t *inpkt) {
 	return sptps_verify_datagram(&n->sptps, inpkt->data, inpkt->len);
 }
 
-static void receive_udppacket(node_t *n, vpn_packet_t *inpkt) {
+static void receive_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *inpkt) {
 	if(!n->sptps.state) {
 		if(!n->status.waitingforkey) {
 			logger(DEBUG_TRAFFIC, LOG_DEBUG, "Got packet from %s (%s) but we haven't exchanged keys yet", n->name, n->hostname);
@@ -298,7 +299,7 @@ static void receive_udppacket(node_t *n, vpn_packet_t *inpkt) {
 	sptps_receive_data(&n->sptps, inpkt->data, inpkt->len);
 }
 
-void receive_tcppacket(connection_t *c, const char *buffer, int len) {
+void receive_tcppacket(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int len) {
 	vpn_packet_t outpkt;
 
 	if(len > sizeof outpkt.data)
@@ -308,10 +309,10 @@ void receive_tcppacket(connection_t *c, const char *buffer, int len) {
 	outpkt.tcp = true;
 	memcpy(outpkt.data, buffer, len);
 
-	receive_packet(c->node, &outpkt);
+	receive_packet(mesh, c->node, &outpkt);
 }
 
-static void send_sptps_packet(node_t *n, vpn_packet_t *origpkt) {
+static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
 	if(!n->status.validkey) {
 		logger(DEBUG_TRAFFIC, LOG_INFO, "No valid key known yet for %s (%s)", n->name, n->hostname);
 		if(!n->status.waitingforkey)
@@ -350,7 +351,7 @@ static void send_sptps_packet(node_t *n, vpn_packet_t *origpkt) {
 	return;
 }
 
-static void choose_udp_address(const node_t *n, const sockaddr_t **sa, int *sock) {
+static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const sockaddr_t **sa, int *sock) {
 	/* Latest guess */
 	*sa = &n->address;
 	*sock = n->sock;
@@ -399,7 +400,7 @@ static void choose_udp_address(const node_t *n, const sockaddr_t **sa, int *sock
 	}
 }
 
-static void choose_broadcast_address(const node_t *n, const sockaddr_t **sa, int *sock) {
+static void choose_broadcast_address(meshlink_handle_t *mesh, const node_t *n, const sockaddr_t **sa, int *sock) {
 	static sockaddr_t broadcast_ipv4 = {
 		.in = {
 			.sin_family = AF_INET,
@@ -438,7 +439,7 @@ static void choose_broadcast_address(const node_t *n, const sockaddr_t **sa, int
 	}
 }
 
-static void send_udppacket(node_t *n, vpn_packet_t *origpkt) {
+static void send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
 	vpn_packet_t pkt1, pkt2;
 	vpn_packet_t *pkt[] = { &pkt1, &pkt2, &pkt1, &pkt2 };
 	vpn_packet_t *inpkt = origpkt;
@@ -452,7 +453,7 @@ static void send_udppacket(node_t *n, vpn_packet_t *origpkt) {
 		return;
 	}
 
-	return send_sptps_packet(n, origpkt);
+	return send_sptps_packet(mesh, n, origpkt);
 }
 
 bool send_sptps_data(void *handle, uint8_t type, const char *data, size_t len) {
@@ -479,9 +480,9 @@ bool send_sptps_data(void *handle, uint8_t type, const char *data, size_t len) {
 	int sock;
 
 	if(to->status.broadcast)
-		choose_broadcast_address(to, &sa, &sock);
+		choose_broadcast_address(mesh, to, &sa, &sock);
 	else
-		choose_udp_address(to, &sa, &sock);
+		choose_udp_address(mesh, to, &sa, &sock);
 
 	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
 		if(sockmsgsize(sockerrno)) {
@@ -521,7 +522,7 @@ bool receive_sptps_record(void *handle, uint8_t type, const char *data, uint16_t
 		inpkt.len = len;
 		inpkt.probe = true;
 		memcpy(inpkt.data, data, len);
-		mtu_probe_h(from, &inpkt, len);
+		mtu_probe_h(mesh, from, &inpkt, len);
 		return true;
 	} else {
 		inpkt.probe = false;
@@ -546,14 +547,14 @@ bool receive_sptps_record(void *handle, uint8_t type, const char *data, uint16_t
 		inpkt.len = len;
 	}
 
-	receive_packet(from, &inpkt);
+	receive_packet(mesh, from, &inpkt);
 	return true;
 }
 
 /*
   send a packet to the given vpn ip.
 */
-void send_packet(node_t *n, vpn_packet_t *packet) {
+void send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	node_t *via;
 
 	if(n == mesh->self) {
@@ -575,26 +576,26 @@ void send_packet(node_t *n, vpn_packet_t *packet) {
 	n->out_packets++;
 	n->out_bytes += packet->len;
 
-	send_sptps_packet(n, packet);
+	send_sptps_packet(mesh, n, packet);
 	return;
 }
 
 /* Broadcast a packet using the minimum spanning tree */
 
-void broadcast_packet(const node_t *from, vpn_packet_t *packet) {
+void broadcast_packet(meshlink_handle_t *mesh, const node_t *from, vpn_packet_t *packet) {
 	// Always give ourself a copy of the packet.
 	if(from != mesh->self)
-		send_packet(mesh->self, packet);
+		send_packet(mesh, mesh->self, packet);
 
 	logger(DEBUG_TRAFFIC, LOG_INFO, "Broadcasting packet of %d bytes from %s (%s)",
 			   packet->len, from->name, from->hostname);
 
 	for list_each(connection_t, c, mesh->connections)
 		if(c->status.active && c->status.mst && c != from->nexthop->connection)
-			send_packet(c->node, packet);
+			send_packet(mesh, c->node, packet);
 }
 
-static node_t *try_harder(const sockaddr_t *from, const vpn_packet_t *pkt) {
+static node_t *try_harder(meshlink_handle_t *mesh, const sockaddr_t *from, const vpn_packet_t *pkt) {
 	node_t *n = NULL;
 	bool hard = false;
 	static time_t last_hard_try = 0;
@@ -609,7 +610,7 @@ static node_t *try_harder(const sockaddr_t *from, const vpn_packet_t *pkt) {
 			hard = true;
 		}
 
-		if(!try_mac(e->to, pkt))
+		if(!try_mac(mesh, e->to, pkt))
 			continue;
 
 		n = e->to;
@@ -624,6 +625,7 @@ static node_t *try_harder(const sockaddr_t *from, const vpn_packet_t *pkt) {
 }
 
 void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
+	meshlink_handle_t *mesh = loop->data;
 	listen_socket_t *ls = data;
 	vpn_packet_t pkt;
 	char *hostname;
@@ -647,7 +649,7 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 	n = lookup_node_udp(&from);
 
 	if(!n) {
-		n = try_harder(&from, &pkt);
+		n = try_harder(mesh, &from, &pkt);
 		if(n)
 			update_node_udp(n, &from);
 		else if(mesh->debug_level >= DEBUG_PROTOCOL) {
@@ -662,5 +664,5 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 
 	n->sock = ls - mesh->listen_socket;
 
-	receive_udppacket(n, &pkt);
+	receive_udppacket(mesh, n, &pkt);
 }

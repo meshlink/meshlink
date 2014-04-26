@@ -90,6 +90,6 @@ void route(node_t *source,vpn_packet_t *packet) {
 	return;
     }
 
-    send_packet(owner,packet);
+    send_packet(mesh, owner, packet);
     return;
 }
