@@ -140,13 +140,13 @@ static void load_all_nodes(meshlink_handle_t *mesh) {
 		if(!check_id(ent->d_name))
 			continue;
 
-		node_t *n = lookup_node(ent->d_name);
+		node_t *n = lookup_node(mesh, ent->d_name);
 		if(n)
 			continue;
 
 		n = new_node();
 		n->name = xstrdup(ent->d_name);
-		node_add(n);
+		node_add(mesh, n);
 	}
 
 	closedir(dir);
@@ -323,9 +323,9 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	mesh->self->via = mesh->self;
 	mesh->self->status.reachable = true;
 	mesh->self->last_state_change = mesh->loop.now.tv_sec;
-	node_add(mesh->self);
+	node_add(mesh, mesh->self);
 
-	graph();
+	graph(mesh);
 
 	if(autoconnect)
 		load_all_nodes(mesh);
@@ -362,10 +362,10 @@ bool setup_myself(meshlink_handle_t *mesh) {
   initialize network
 */
 bool setup_network(meshlink_handle_t *mesh) {
-	init_connections();
-	init_nodes();
-	init_edges();
-	init_requests();
+	init_connections(mesh);
+	init_nodes(mesh);
+	init_edges(mesh);
+	init_requests(mesh);
 
 	mesh->pinginterval = 60;
 	mesh->pingtimeout = 5;
@@ -403,10 +403,10 @@ void close_network_connections(meshlink_handle_t *mesh) {
 		close(mesh->listen_socket[i].udp.fd);
 	}
 
-	exit_requests();
-	exit_edges();
-	exit_nodes();
-	exit_connections();
+	exit_requests(mesh);
+	exit_edges(mesh);
+	exit_nodes(mesh);
+	exit_connections(mesh);
 
 	if(mesh->myport) free(mesh->myport);
 

@@ -35,12 +35,12 @@ static int node_compare(const node_t *a, const node_t *b) {
 	return strcmp(a->name, b->name);
 }
 
-void init_nodes(void) {
+void init_nodes(meshlink_handle_t *mesh) {
 	mesh->nodes = splay_alloc_tree((splay_compare_t) node_compare, (splay_action_t) free_node);
 	node_udp_cache = hash_alloc(0x100, sizeof(sockaddr_t));
 }
 
-void exit_nodes(void) {
+void exit_nodes(meshlink_handle_t *mesh) {
 	hash_free(node_udp_cache);
 	splay_delete_tree(mesh->nodes);
 }
@@ -65,7 +65,8 @@ void free_node(node_t *n) {
 	ecdsa_free(n->ecdsa);
 	sptps_stop(&n->sptps);
 
-	timeout_del(&mesh->loop, &n->mtutimeout);
+	if(n->mtutimeout.cb)
+		abort();
 
 	if(n->hostname)
 		free(n->hostname);
@@ -79,18 +80,21 @@ void free_node(node_t *n) {
 	free(n);
 }
 
-void node_add(node_t *n) {
+void node_add(meshlink_handle_t *mesh, node_t *n) {
+	n->mesh = mesh;
 	splay_insert(mesh->nodes, n);
 }
 
-void node_del(node_t *n) {
+void node_del(meshlink_handle_t *mesh, node_t *n) {
+	timeout_del(&mesh->loop, &n->mtutimeout);
+
 	for splay_each(edge_t, e, n->edge_tree)
-		edge_del(e);
+		edge_del(mesh, e);
 
 	splay_delete(mesh->nodes, n);
 }
 
-node_t *lookup_node(char *name) {
+node_t *lookup_node(meshlink_handle_t *mesh, char *name) {
 	node_t n = {NULL};
 
 	n.name = name;
@@ -98,11 +102,11 @@ node_t *lookup_node(char *name) {
 	return splay_search(mesh->nodes, &n);
 }
 
-node_t *lookup_node_udp(const sockaddr_t *sa) {
+node_t *lookup_node_udp(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	return hash_search(node_udp_cache, sa);
 }
 
-void update_node_udp(node_t *n, const sockaddr_t *sa) {
+void update_node_udp(meshlink_handle_t *mesh, node_t *n, const sockaddr_t *sa) {
 	if(n == mesh->self) {
 		logger(DEBUG_ALWAYS, LOG_WARNING, "Trying to update UDP address of mesh->self!");
 		return;

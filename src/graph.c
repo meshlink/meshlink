@@ -61,7 +61,7 @@
    Please note that sorting on weight is already done by add_edge().
 */
 
-static void mst_kruskal(void) {
+static void mst_kruskal(meshlink_handle_t *mesh) {
 	/* Clear MST status on connections */
 
 	for list_each(connection_t, c, mesh->connections)
@@ -115,7 +115,7 @@ static void mst_kruskal(void) {
    Running time: O(E)
 */
 
-static void sssp_bfs(void) {
+static void sssp_bfs(meshlink_handle_t *mesh) {
 	list_t *todo_list = list_alloc(NULL);
 
 	/* Clear visited status on nodes */
@@ -181,7 +181,7 @@ static void sssp_bfs(void) {
 			e->to->distance = n->distance + 1;
 
 			if(!e->to->status.reachable || (e->to->address.sa.sa_family == AF_UNSPEC && e->address.sa.sa_family != AF_UNKNOWN))
-				update_node_udp(e->to, &e->address);
+				update_node_udp(mesh, e->to, &e->address);
 
 			list_insert_tail(todo_list, e->to);
 		}
@@ -193,7 +193,7 @@ static void sssp_bfs(void) {
 	list_free(todo_list);
 }
 
-static void check_reachability(void) {
+static void check_reachability(meshlink_handle_t *mesh) {
 	/* Check reachability status. */
 
 	for splay_each(node_t, n, mesh->nodes) {
@@ -226,19 +226,19 @@ static void check_reachability(void) {
 			//TODO: callback to application to inform of this node going up/down
 
 			if(!n->status.reachable) {
-				update_node_udp(n, NULL);
+				update_node_udp(mesh, n, NULL);
 				memset(&n->status, 0, sizeof n->status);
 				n->options = 0;
 			} else if(n->connection) {
 				if(n->connection->outgoing)
-					send_req_key(n);
+					send_req_key(mesh, n);
 			}
 		}
 	}
 }
 
-void graph(void) {
-	sssp_bfs();
-	check_reachability();
-	mst_kruskal();
+void graph(meshlink_handle_t *mesh) {
+	sssp_bfs(mesh);
+	check_reachability(mesh);
+	mst_kruskal(mesh);
 }

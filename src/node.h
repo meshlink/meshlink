@@ -41,6 +41,8 @@ typedef struct node_t {
 	char *name;                             /* name of this node */
 	uint32_t options;                       /* options turned on for this node */
 
+	struct meshlink_handle *mesh;           /* The mesh this node belongs to */
+
 	int sock;                               /* Socket to use for outgoing UDP packets */
 	sockaddr_t address;                     /* his real (internet) ip to send UDP packets to */
 	char *hostname;                         /* the hostname of its real ip */
@@ -88,14 +90,14 @@ typedef struct node_t {
 	uint64_t out_bytes;
 } node_t;
 
-extern void init_nodes(void);
-extern void exit_nodes(void);
+extern void init_nodes(struct meshlink_handle *mesh);
+extern void exit_nodes(struct meshlink_handle *mesh);
 extern node_t *new_node(void) __attribute__ ((__malloc__));
 extern void free_node(node_t *);
-extern void node_add(node_t *);
-extern void node_del(node_t *);
-extern node_t *lookup_node(char *);
-extern node_t *lookup_node_udp(const sockaddr_t *);
-extern void update_node_udp(node_t *, const sockaddr_t *);
+extern void node_add(struct meshlink_handle *mesh, node_t *);
+extern void node_del(struct meshlink_handle *mesh, node_t *);
+extern node_t *lookup_node(struct meshlink_handle *mesh, char *);
+extern node_t *lookup_node_udp(struct meshlink_handle *mesh, const sockaddr_t *);
+extern void update_node_udp(struct meshlink_handle *mesh, node_t *, const sockaddr_t *);
 
 #endif /* __TINC_NODE_H__ */

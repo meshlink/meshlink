@@ -30,6 +30,7 @@
 
 bool send_meta_sptps(void *handle, uint8_t type, const char *buffer, size_t length) {
 	connection_t *c = handle;
+	meshlink_handle_t *mesh = c->mesh;
 
 	if(!c) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "send_meta_sptps() called with NULL pointer!");
@@ -42,7 +43,7 @@ bool send_meta_sptps(void *handle, uint8_t type, const char *buffer, size_t leng
 	return true;
 }
 
-bool send_meta(connection_t *c, const char *buffer, int length) {
+bool send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int length) {
 	if(!c) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "send_meta() called with NULL pointer!");
 		abort();
@@ -60,14 +61,15 @@ bool send_meta(connection_t *c, const char *buffer, int length) {
 	return sptps_send_record(&c->sptps, 0, buffer, length);
 }
 
-void broadcast_meta(connection_t *from, const char *buffer, int length) {
+void broadcast_meta(meshlink_handle_t *mesh, connection_t *from, const char *buffer, int length) {
 	for list_each(connection_t, c, mesh->connections)
 		if(c != from && c->status.active)
-			send_meta(c, buffer, length);
+			send_meta(mesh, c, buffer, length);
 }
 
 bool receive_meta_sptps(void *handle, uint8_t type, const char *data, uint16_t length) {
 	connection_t *c = handle;
+	meshlink_handle_t *mesh = c->mesh;
 
 	if(!c) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "receive_meta_sptps() called with NULL pointer!");
@@ -76,7 +78,7 @@ bool receive_meta_sptps(void *handle, uint8_t type, const char *data, uint16_t l
 
 	if(type == SPTPS_HANDSHAKE) {
 		if(c->allow_request == ACK)
-			return send_ack(c);
+			return send_ack(mesh, c);
 		else
 			return true;
 	}
@@ -101,10 +103,10 @@ bool receive_meta_sptps(void *handle, uint8_t type, const char *data, uint16_t l
 
 	/* Otherwise we are waiting for a request */
 
-	return receive_request(c, data);
+	return receive_request(mesh, c, data);
 }
 
-bool receive_meta(connection_t *c) {
+bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 	int inlen;
 	char inbuf[MAXBUFSIZE];
 	char *bufp = inbuf, *endp;
@@ -154,7 +156,7 @@ bool receive_meta(connection_t *c) {
 		while(c->inbuf.len) {
 			char *request = buffer_readline(&c->inbuf);
 			if(request) {
-				bool result = receive_request(c, request);
+				bool result = receive_request(mesh, c, request);
 				if(!result)
 					return false;
 				continue;

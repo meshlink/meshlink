@@ -23,9 +23,10 @@
 #include "meshlink_internal.h"
 #include "sptps.h"
 
+// TODO: refactor logging code to use a meshlink_handle_t *.
 void logger(int level, int priority, const char *format, ...) {
-	if(level > mesh->debug_level)
-		return;
+	//if(level > mesh->debug_level)
+	//	return;
 
 	va_list ap;
 	char message[1024] = "";

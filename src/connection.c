@@ -28,14 +28,14 @@
 #include "utils.h"
 #include "xalloc.h"
 
-void init_connections(void) {
+void init_connections(meshlink_handle_t *mesh) {
 	mesh->connections = list_alloc((list_action_t) free_connection);
 	mesh->everyone = new_connection();
 	mesh->everyone->name = xstrdup("mesh->everyone");
 	mesh->everyone->hostname = xstrdup("BROADCAST");
 }
 
-void exit_connections(void) {
+void exit_connections(meshlink_handle_t *mesh) {
 	list_delete_list(mesh->connections);
 	free_connection(mesh->everyone);
 }
@@ -54,7 +54,8 @@ void free_connection(connection_t *c) {
 	buffer_clear(&c->inbuf);
 	buffer_clear(&c->outbuf);
 
-	io_del(&mesh->loop, &c->io);
+	if(c->io.cb)
+		abort();
 
 	if(c->socket > 0)
 		closesocket(c->socket);
@@ -68,10 +69,12 @@ void free_connection(connection_t *c) {
 	free(c);
 }
 
-void connection_add(connection_t *c) {
+void connection_add(meshlink_handle_t *mesh, connection_t *c) {
+	c->mesh = mesh;
 	list_insert_tail(mesh->connections, c);
 }
 
-void connection_del(connection_t *c) {
+void connection_del(meshlink_handle_t *mesh, connection_t *c) {
+	io_del(&mesh->loop, &c->io);
 	list_delete(mesh->connections, c);
 }

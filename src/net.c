@@ -48,14 +48,14 @@ void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report)
 
 	if(c->edge) {
 		if(report)
-			send_del_edge(mesh->everyone, c->edge);
+			send_del_edge(mesh, mesh->everyone, c->edge);
 
-		edge_del(c->edge);
+		edge_del(mesh, c->edge);
 		c->edge = NULL;
 
 		/* Run MST and SSSP algorithms */
 
-		graph();
+		graph(mesh);
 
 		/* If the node is not reachable anymore but we remember it had an edge to us, clean it up */
 
@@ -63,14 +63,14 @@ void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report)
 			edge_t *e;
 			e = lookup_edge(c->node, mesh->self);
 			if(e) {
-				send_del_edge(mesh->everyone, e);
-				edge_del(e);
+				send_del_edge(mesh, mesh->everyone, e);
+				edge_del(mesh, e);
 			}
 		}
 	}
 
 	outgoing_t *outgoing = c->outgoing;
-	connection_del(c);
+	connection_del(mesh, c);
 
 	/* Check if this was our outgoing connection */
 
@@ -101,7 +101,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 				if(c->status.pinged) {
 					logger(DEBUG_CONNECTIONS, LOG_INFO, "%s (%s) didn't respond to PING in %ld seconds", c->name, c->hostname, (long)mesh->loop.now.tv_sec - c->last_ping_time);
 				} else if(c->last_ping_time + mesh->pinginterval <= mesh->loop.now.tv_sec) {
-					send_ping(c);
+					send_ping(mesh, c);
 					continue;
 				} else {
 					continue;
@@ -236,7 +236,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 }
 
 void handle_meta_connection_data(meshlink_handle_t *mesh, connection_t *c) {
-	if (!receive_meta(c)) {
+	if (!receive_meta(mesh, c)) {
 		terminate_connection(mesh, c, c->status.active);
 		return;
 	}

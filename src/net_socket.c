@@ -255,7 +255,7 @@ void finish_connecting(meshlink_handle_t *mesh, connection_t *c) {
 	c->last_ping_time = mesh->loop.now.tv_sec;
 	c->status.connecting = false;
 
-	send_id(c);
+	send_id(mesh, c);
 }
 
 static void do_outgoing_pipe(meshlink_handle_t *mesh, connection_t *c, char *command) {
@@ -465,7 +465,7 @@ begin:
 	c->outcompression = mesh->self->connection->outcompression;
 	c->last_ping_time = mesh->loop.now.tv_sec;
 
-	connection_add(c);
+	connection_add(mesh, c);
 
 	io_add(&mesh->loop, &c->io, handle_meta_io, c, c->socket, IO_READ|IO_WRITE);
 
@@ -508,7 +508,7 @@ static struct addrinfo *get_known_addresses(node_t *n) {
 void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	timeout_del(&mesh->loop, &outgoing->ev);
 
-	node_t *n = lookup_node(outgoing->name);
+	node_t *n = lookup_node(mesh, outgoing->name);
 
 	if(n && n->connection) {
 		logger(DEBUG_CONNECTIONS, LOG_INFO, "Already connected to %s", outgoing->name);
@@ -620,10 +620,10 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 
 	configure_tcp(c);
 
-	connection_add(c);
+	connection_add(mesh, c);
 
 	c->allow_request = ID;
-	send_id(c);
+	send_id(mesh, c);
 }
 
 static void free_outgoing(meshlink_handle_t *mesh, outgoing_t *outgoing) {

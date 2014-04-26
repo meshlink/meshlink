@@ -33,8 +33,8 @@
 
 static bool mykeyused = false;
 
-void send_key_changed(void) {
-	send_request(mesh->everyone, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
+void send_key_changed(meshlink_handle_t *mesh) {
+	send_request(mesh, mesh->everyone, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
 
 	/* Force key exchange for connections using SPTPS */
 
@@ -43,7 +43,7 @@ void send_key_changed(void) {
 			sptps_force_kex(&n->sptps);
 }
 
-bool key_changed_h(connection_t *c, const char *request) {
+bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char name[MAX_STRING_SIZE];
 	node_t *n;
 
@@ -53,10 +53,10 @@ bool key_changed_h(connection_t *c, const char *request) {
 		return false;
 	}
 
-	if(seen_request(request))
+	if(seen_request(mesh, request))
 		return true;
 
-	n = lookup_node(name);
+	n = lookup_node(mesh, name);
 
 	if(!n) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Got %s from %s (%s) origin %s which does not exist",
@@ -66,23 +66,24 @@ bool key_changed_h(connection_t *c, const char *request) {
 
 	/* Tell the others */
 
-	forward_request(c, request);
+	forward_request(mesh, c, request);
 
 	return true;
 }
 
 static bool send_initial_sptps_data(void *handle, uint8_t type, const char *data, size_t len) {
 	node_t *to = handle;
+	meshlink_handle_t *mesh = to->mesh;
 	to->sptps.send_data = send_sptps_data;
 	char buf[len * 4 / 3 + 5];
 	b64encode(data, buf, len);
-	return send_request(to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_KEY, buf);
+	return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_KEY, buf);
 }
 
-bool send_req_key(node_t *to) {
+bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 	if(!node_read_ecdsa_public_key(mesh, to)) {
 		logger(DEBUG_PROTOCOL, LOG_DEBUG, "No ECDSA key known for %s (%s)", to->name, to->hostname);
-		send_request(to->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY);
+		send_request(mesh, to->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY);
 		return true;
 	}
 
@@ -101,11 +102,11 @@ bool send_req_key(node_t *to) {
 
 /* REQ_KEY is overloaded to allow arbitrary requests to be routed between two nodes. */
 
-static bool req_key_ext_h(connection_t *c, const char *request, node_t *from, int reqno) {
+static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *request, node_t *from, int reqno) {
 	switch(reqno) {
 		case REQ_PUBKEY: {
 			char *pubkey = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
-			send_request(from->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, from->name, ANS_PUBKEY, pubkey);
+			send_request(mesh, from->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, from->name, ANS_PUBKEY, pubkey);
 			free(pubkey);
 			return true;
 		}
@@ -130,7 +131,7 @@ static bool req_key_ext_h(connection_t *c, const char *request, node_t *from, in
 		case REQ_KEY: {
 			if(!node_read_ecdsa_public_key(mesh, from)) {
 				logger(DEBUG_PROTOCOL, LOG_DEBUG, "No ECDSA key known for %s (%s)", from->name, from->hostname);
-				send_request(from->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, from->name, REQ_PUBKEY);
+				send_request(mesh, from->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, from->name, REQ_PUBKEY);
 				return true;
 			}
 
@@ -178,7 +179,7 @@ static bool req_key_ext_h(connection_t *c, const char *request, node_t *from, in
 	}
 }
 
-bool req_key_h(connection_t *c, const char *request) {
+bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char from_name[MAX_STRING_SIZE];
 	char to_name[MAX_STRING_SIZE];
 	node_t *from, *to;
@@ -195,7 +196,7 @@ bool req_key_h(connection_t *c, const char *request) {
 		return false;
 	}
 
-	from = lookup_node(from_name);
+	from = lookup_node(mesh, from_name);
 
 	if(!from) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Got %s from %s (%s) origin %s which does not exist in our connection list",
@@ -203,7 +204,7 @@ bool req_key_h(connection_t *c, const char *request) {
 		return true;
 	}
 
-	to = lookup_node(to_name);
+	to = lookup_node(mesh, to_name);
 
 	if(!to) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Got %s from %s (%s) destination %s which does not exist in our connection list",
@@ -216,10 +217,10 @@ bool req_key_h(connection_t *c, const char *request) {
 	if(to == mesh->self) {                      /* Yes */
 		/* Is this an extended REQ_KEY message? */
 		if(reqno)
-			return req_key_ext_h(c, request, from, reqno);
+			return req_key_ext_h(mesh, c, request, from, reqno);
 
 		/* No, just send our key back */
-		send_ans_key(from);
+		send_ans_key(mesh, from);
 	} else {
 		if(!to->status.reachable) {
 			logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) destination %s which is not reachable",
@@ -227,17 +228,17 @@ bool req_key_h(connection_t *c, const char *request) {
 			return true;
 		}
 
-		send_request(to->nexthop->connection, "%s", request);
+		send_request(mesh, to->nexthop->connection, "%s", request);
 	}
 
 	return true;
 }
 
-bool send_ans_key(node_t *to) {
+bool send_ans_key(meshlink_handle_t *mesh, node_t *to) {
 	abort();
 }
 
-bool ans_key_h(connection_t *c, const char *request) {
+bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char from_name[MAX_STRING_SIZE];
 	char to_name[MAX_STRING_SIZE];
 	char key[MAX_STRING_SIZE];
@@ -259,7 +260,7 @@ bool ans_key_h(connection_t *c, const char *request) {
 		return false;
 	}
 
-	from = lookup_node(from_name);
+	from = lookup_node(mesh, from_name);
 
 	if(!from) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Got %s from %s (%s) origin %s which does not exist in our connection list",
@@ -267,7 +268,7 @@ bool ans_key_h(connection_t *c, const char *request) {
 		return true;
 	}
 
-	to = lookup_node(to_name);
+	to = lookup_node(mesh, to_name);
 
 	if(!to) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Got %s from %s (%s) destination %s which does not exist in our connection list",
@@ -288,13 +289,13 @@ bool ans_key_h(connection_t *c, const char *request) {
 			char *address, *port;
 			logger(DEBUG_PROTOCOL, LOG_DEBUG, "Appending reflexive UDP address to ANS_KEY from %s to %s", from->name, to->name);
 			sockaddr2str(&from->address, &address, &port);
-			send_request(to->nexthop->connection, "%s %s %s", request, address, port);
+			send_request(mesh, to->nexthop->connection, "%s %s %s", request, address, port);
 			free(address);
 			free(port);
 			return true;
 		}
 
-		return send_request(to->nexthop->connection, "%s", request);
+		return send_request(mesh, to->nexthop->connection, "%s", request);
 	}
 
 	/* Don't use key material until every check has passed. */
@@ -319,7 +320,7 @@ bool ans_key_h(connection_t *c, const char *request) {
 		if(*address && *port) {
 			logger(DEBUG_PROTOCOL, LOG_DEBUG, "Using reflexive UDP address from %s: %s port %s", from->name, address, port);
 			sockaddr_t sa = str2sockaddr(address, port);
-			update_node_udp(from, &sa);
+			update_node_udp(mesh, from, &sa);
 		}
 
 		if(from->options & OPTION_PMTU_DISCOVERY && !(from->options & OPTION_TCPONLY))

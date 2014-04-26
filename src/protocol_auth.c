@@ -37,14 +37,14 @@
 #include "xalloc.h"
 #include "ed25519/sha512.h"
 
-static bool send_proxyrequest(connection_t *c) {
+static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 	switch(mesh->proxytype) {
 		case PROXY_HTTP: {
 			char *host;
 			char *port;
 
 			sockaddr2str(&c->address, &host, &port);
-			send_request(c, "CONNECT %s:%s HTTP/1.1\r\n\r", host, port);
+			send_request(mesh, c, "CONNECT %s:%s HTTP/1.1\r\n\r", host, port);
 			free(host);
 			free(port);
 			return true;
@@ -63,7 +63,7 @@ static bool send_proxyrequest(connection_t *c) {
 				memcpy(s4req + 8, mesh->proxyuser, strlen(mesh->proxyuser));
 			s4req[sizeof s4req - 1] = 0;
 			c->tcplen = 8;
-			return send_meta(c, s4req, sizeof s4req);
+			return send_meta(mesh, c, s4req, sizeof s4req);
 		}
 		case PROXY_SOCKS5: {
 			int len = 3 + 6 + (c->address.sa.sa_family == AF_INET ? 4 : 16);
@@ -110,7 +110,7 @@ static bool send_proxyrequest(connection_t *c) {
 			}
 			if(i > len)
 				abort();
-			return send_meta(c, s5req, sizeof s5req);
+			return send_meta(mesh, c, s5req, sizeof s5req);
 		}
 		case PROXY_SOCKS4A:
 			logger(DEBUG_ALWAYS, LOG_ERR, "Proxy type not implemented yet");
@@ -123,19 +123,19 @@ static bool send_proxyrequest(connection_t *c) {
 	}
 }
 
-bool send_id(connection_t *c) {
+bool send_id(meshlink_handle_t *mesh, connection_t *c) {
 	gettimeofday(&c->start, NULL);
 
 	int minor = mesh->self->connection->protocol_minor;
 
 	if(mesh->proxytype && c->outgoing)
-		if(!send_proxyrequest(c))
+		if(!send_proxyrequest(mesh, c))
 			return false;
 
-	return send_request(c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
+	return send_request(mesh, c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
 }
 
-static bool finalize_invitation(connection_t *c, const char *data, uint16_t len) {
+static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const char *data, uint16_t len) {
 	if(strchr(data, '\n')) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Received invalid key from invited node %s (%s)!\n", c->name, c->hostname);
 		return false;
@@ -168,12 +168,13 @@ static bool finalize_invitation(connection_t *c, const char *data, uint16_t len)
 
 static bool receive_invitation_sptps(void *handle, uint8_t type, const char *data, uint16_t len) {
 	connection_t *c = handle;
+	meshlink_handle_t *mesh = c->mesh;
 
 	if(type == 128)
 		return true;
 
 	if(type == 1 && c->status.invitation_used)
-		return finalize_invitation(c, data, len);
+		return finalize_invitation(mesh, c, data, len);
 
 	if(type != 0 || len != 18 || c->status.invitation_used)
 		return false;
@@ -248,7 +249,7 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const char *dat
 	return true;
 }
 
-bool id_h(connection_t *c, const char *request) {
+bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char name[MAX_STRING_SIZE];
 
 	if(sscanf(request, "%*d " MAX_STRING " %d.%d", name, &c->protocol_major, &c->protocol_minor) < 2) {
@@ -275,7 +276,7 @@ bool id_h(connection_t *c, const char *request) {
 		char *mykey = ecdsa_get_base64_public_key(mesh->invitation_key);
 		if(!mykey)
 			return false;
-		if(!send_request(c, "%d %s", ACK, mykey))
+		if(!send_request(mesh, c, "%d %s", ACK, mykey))
 			return false;
 		free(mykey);
 
@@ -347,7 +348,7 @@ bool id_h(connection_t *c, const char *request) {
 	return sptps_start(&c->sptps, c, c->outgoing, false, mesh->self->connection->ecdsa, c->ecdsa, label, sizeof label, send_meta_sptps, receive_meta_sptps);
 }
 
-bool send_ack(connection_t *c) {
+bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
 	/* ACK message contains rest of the information the other end needs
 	   to create node_t and edge_t structures. */
 
@@ -364,19 +365,19 @@ bool send_ack(connection_t *c) {
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY)
 		c->options |= OPTION_PMTU_DISCOVERY;
 
-	return send_request(c, "%d %s %d %x", ACK, mesh->myport, c->estimated_weight, (c->options & 0xffffff) | (PROT_MINOR << 24));
+	return send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, c->estimated_weight, (c->options & 0xffffff) | (PROT_MINOR << 24));
 }
 
-static void send_everything(connection_t *c) {
+static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
 	/* Send all known subnets and edges */
 
 	for splay_each(node_t, n, mesh->nodes) {
 		for splay_each(edge_t, e, n->edge_tree)
-			send_add_edge(c, e);
+			send_add_edge(mesh, c, e);
 	}
 }
 
-bool ack_h(connection_t *c, const char *request) {
+bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char hisport[MAX_STRING_SIZE];
 	char *hisaddress;
 	int weight, mtu;
@@ -392,12 +393,12 @@ bool ack_h(connection_t *c, const char *request) {
 
 	/* Check if we already have a node_t for him */
 
-	n = lookup_node(c->name);
+	n = lookup_node(mesh, c->name);
 
 	if(!n) {
 		n = new_node();
 		n->name = xstrdup(c->name);
-		node_add(n);
+		node_add(mesh, n);
 	} else {
 		if(n->connection) {
 			/* Oh dear, we already have a connection to this node. */
@@ -414,7 +415,7 @@ bool ack_h(connection_t *c, const char *request) {
 
 			terminate_connection(mesh, n->connection, false);
 			/* Run graph algorithm to keep things in sync */
-			graph();
+			graph(mesh);
 		}
 	}
 
@@ -436,7 +437,7 @@ bool ack_h(connection_t *c, const char *request) {
 
 	/* Send him everything we know */
 
-	send_everything(c);
+	send_everything(mesh, c);
 
 	/* Create an edge_t for this connection */
 
@@ -450,15 +451,15 @@ bool ack_h(connection_t *c, const char *request) {
 	c->edge->connection = c;
 	c->edge->options = c->options;
 
-	edge_add(c->edge);
+	edge_add(mesh, c->edge);
 
 	/* Notify everyone of the new edge */
 
-	send_add_edge(mesh->everyone, c->edge);
+	send_add_edge(mesh, mesh->everyone, c->edge);
 
 	/* Run MST and SSSP algorithms */
 
-	graph();
+	graph(mesh);
 
 	return true;
 }

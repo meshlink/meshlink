@@ -68,6 +68,7 @@ typedef struct connection_t {
 	struct timeval start;           /* time this connection was started, used for above estimation */
 	struct outgoing_t *outgoing;    /* used to keep track of outgoing connections */
 
+	struct meshlink_handle *mesh;   /* the mesh this connection belongs to */
 	struct node_t *node;            /* node associated with the other end */
 	struct edge_t *edge;            /* edge associated with this connection */
 
@@ -88,11 +89,11 @@ typedef struct connection_t {
 	splay_tree_t *config_tree;      /* Pointer to configuration tree belonging to him */
 } connection_t;
 
-extern void init_connections(void);
-extern void exit_connections(void);
+extern void init_connections(struct meshlink_handle *mesh);
+extern void exit_connections(struct meshlink_handle *mesh);
 extern connection_t *new_connection(void) __attribute__ ((__malloc__));
 extern void free_connection(connection_t *);
-extern void connection_add(connection_t *);
-extern void connection_del(connection_t *);
+extern void connection_add(struct meshlink_handle *mesh, connection_t *);
+extern void connection_del(struct meshlink_handle *mesh, connection_t *);
 
 #endif /* __TINC_CONNECTION_H__ */

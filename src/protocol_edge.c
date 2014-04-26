@@ -33,13 +33,13 @@
 #include "utils.h"
 #include "xalloc.h"
 
-bool send_add_edge(connection_t *c, const edge_t *e) {
+bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
 	bool x;
 	char *address, *port;
 
 	sockaddr2str(&e->address, &address, &port);
 
-	x = send_request(c, "%d %x %s %s %s %s %x %d", ADD_EDGE, rand(),
+	x = send_request(mesh, c, "%d %x %s %s %s %s %x %d", ADD_EDGE, rand(),
 					 e->from->name, e->to->name, address, port,
 					 e->options, e->weight);
 	free(address);
@@ -48,7 +48,7 @@ bool send_add_edge(connection_t *c, const edge_t *e) {
 	return x;
 }
 
-bool add_edge_h(connection_t *c, const char *request) {
+bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	edge_t *e;
 	node_t *from, *to;
 	char from_name[MAX_STRING_SIZE];
@@ -74,24 +74,24 @@ bool add_edge_h(connection_t *c, const char *request) {
 		return false;
 	}
 
-	if(seen_request(request))
+	if(seen_request(mesh, request))
 		return true;
 
 	/* Lookup nodes */
 
-	from = lookup_node(from_name);
-	to = lookup_node(to_name);
+	from = lookup_node(mesh, from_name);
+	to = lookup_node(mesh, to_name);
 
 	if(!from) {
 		from = new_node();
 		from->name = xstrdup(from_name);
-		node_add(from);
+		node_add(mesh, from);
 	}
 
 	if(!to) {
 		to = new_node();
 		to->name = xstrdup(to_name);
-		node_add(to);
+		node_add(mesh, to);
 	}
 
 
@@ -108,13 +108,13 @@ bool add_edge_h(connection_t *c, const char *request) {
 			if(from == mesh->self) {
 				logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) for ourself which does not match existing entry",
 						   "ADD_EDGE", c->name, c->hostname);
-				send_add_edge(c, e);
+				send_add_edge(mesh, c, e);
 				return true;
 			} else {
 				logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) which does not match existing entry",
 						   "ADD_EDGE", c->name, c->hostname);
-				edge_del(e);
-				graph();
+				edge_del(mesh, e);
+				graph(mesh);
 			}
 		} else
 			return true;
@@ -125,7 +125,7 @@ bool add_edge_h(connection_t *c, const char *request) {
 		e = new_edge();
 		e->from = from;
 		e->to = to;
-		send_del_edge(c, e);
+		send_del_edge(mesh, c, e);
 		free_edge(e);
 		return true;
 	}
@@ -136,25 +136,25 @@ bool add_edge_h(connection_t *c, const char *request) {
 	e->address = address;
 	e->options = options;
 	e->weight = weight;
-	edge_add(e);
+	edge_add(mesh, e);
 
 	/* Tell the rest about the new edge */
 
-	forward_request(c, request);
+	forward_request(mesh, c, request);
 
 	/* Run MST before or after we tell the rest? */
 
-	graph();
+	graph(mesh);
 
 	return true;
 }
 
-bool send_del_edge(connection_t *c, const edge_t *e) {
-	return send_request(c, "%d %x %s %s", DEL_EDGE, rand(),
+bool send_del_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
+	return send_request(mesh, c, "%d %x %s %s", DEL_EDGE, rand(),
 						e->from->name, e->to->name);
 }
 
-bool del_edge_h(connection_t *c, const char *request) {
+bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	edge_t *e;
 	char from_name[MAX_STRING_SIZE];
 	char to_name[MAX_STRING_SIZE];
@@ -174,13 +174,13 @@ bool del_edge_h(connection_t *c, const char *request) {
 		return false;
 	}
 
-	if(seen_request(request))
+	if(seen_request(mesh, request))
 		return true;
 
 	/* Lookup nodes */
 
-	from = lookup_node(from_name);
-	to = lookup_node(to_name);
+	from = lookup_node(mesh, from_name);
+	to = lookup_node(mesh, to_name);
 
 	if(!from) {
 		logger(DEBUG_PROTOCOL, LOG_ERR, "Got %s from %s (%s) which does not appear in the edge tree",
@@ -208,29 +208,29 @@ bool del_edge_h(connection_t *c, const char *request) {
 		logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) for ourself",
 				   "DEL_EDGE", c->name, c->hostname);
 		mesh->contradicting_del_edge++;
-		send_add_edge(c, e);    /* Send back a correction */
+		send_add_edge(mesh, c, e);    /* Send back a correction */
 		return true;
 	}
 
 	/* Tell the rest about the deleted edge */
 
-	forward_request(c, request);
+	forward_request(mesh, c, request);
 
 	/* Delete the edge */
 
-	edge_del(e);
+	edge_del(mesh, e);
 
 	/* Run MST before or after we tell the rest? */
 
-	graph();
+	graph(mesh);
 
 	/* If the node is not reachable anymore but we remember it had an edge to us, clean it up */
 
 	if(!to->status.reachable) {
 		e = lookup_edge(to, mesh->self);
 		if(e) {
-			send_del_edge(mesh->everyone, e);
-			edge_del(e);
+			send_del_edge(mesh, mesh->everyone, e);
+			edge_del(mesh, e);
 		}
 	}
 

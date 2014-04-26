@@ -27,22 +27,6 @@
 
 bool decrement_ttl = false;
 
-static bool ratelimit(int frequency) {
-	static time_t lasttime = 0;
-	static int count = 0;
-
-	if(lasttime == mesh->loop.now.tv_sec) {
-		if(count >= frequency)
-			return true;
-	} else {
-		lasttime = mesh->loop.now.tv_sec;
-		count = 0;
-	}
-
-	count++;
-	return false;
-}
-
 static bool checklength(node_t *source, vpn_packet_t *packet, uint16_t length) {
 	if(packet->len < length) {
 		logger(DEBUG_TRAFFIC, LOG_WARNING, "Got too short packet from %s (%s)", source->name, source->hostname);
@@ -51,13 +35,13 @@ static bool checklength(node_t *source, vpn_packet_t *packet, uint16_t length) {
 		return true;
 }
 
-void route(node_t *source,vpn_packet_t *packet) {
+void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
     // TODO: route on name or key
 
     node_t* owner = NULL;
     node_t* via = NULL;
     meshlink_packethdr_t* hdr = (meshlink_packethdr_t*)packet->data;
-    owner = lookup_node(hdr->destination);
+    owner = lookup_node(mesh, hdr->destination);
     logger(DEBUG_TRAFFIC, LOG_WARNING, "Routing packet from: %s . To: %s \n",hdr->source,hdr->destination);
 
     //Check Lenght

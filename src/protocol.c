@@ -30,7 +30,7 @@
 
 /* Jumptable for the request handlers */
 
-static bool (*request_handlers[])(connection_t *, const char *) = {
+static bool (*request_handlers[])(meshlink_handle_t *, connection_t *, const char *) = {
 		id_h, NULL, NULL, NULL /* metakey_h, challenge_h, chal_reply_h */, ack_h,
 		status_h, error_h, termreq_h,
 		ping_h, pong_h,
@@ -65,7 +65,7 @@ bool check_id(const char *id) {
 /* Generic request routines - takes care of logging and error
    detection as well */
 
-bool send_request(connection_t *c, const char *format, ...) {
+bool send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, ...) {
 	va_list args;
 	char request[MAXBUFSIZE];
 	int len;
@@ -89,13 +89,13 @@ bool send_request(connection_t *c, const char *format, ...) {
 	request[len++] = '\n';
 
 	if(c == mesh->everyone) {
-		broadcast_meta(NULL, request, len);
+		broadcast_meta(mesh, NULL, request, len);
 		return true;
 	} else
-		return send_meta(c, request, len);
+		return send_meta(mesh, c, request, len);
 }
 
-void forward_request(connection_t *from, const char *request) {
+void forward_request(meshlink_handle_t *mesh, connection_t *from, const char *request) {
 	logger(DEBUG_META, LOG_DEBUG, "Forwarding %s from %s (%s): %s", request_name[atoi(request)], from->name, from->hostname, request);
 
 	// Create a temporary newline-terminated copy of the request
@@ -103,10 +103,10 @@ void forward_request(connection_t *from, const char *request) {
 	char tmp[len + 1];
 	memcpy(tmp, request, len);
 	tmp[len] = '\n';
-	broadcast_meta(from, tmp, sizeof tmp);
+	broadcast_meta(mesh, from, tmp, sizeof tmp);
 }
 
-bool receive_request(connection_t *c, const char *request) {
+bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	if(c->outgoing && mesh->proxytype == PROXY_HTTP && c->allow_request == ID) {
 		if(!request[0] || request[0] == '\r')
 			return true;
@@ -136,7 +136,7 @@ bool receive_request(connection_t *c, const char *request) {
 			return false;
 		}
 
-		if(!request_handlers[reqno](c, request)) {
+		if(!request_handlers[reqno](mesh, c, request)) {
 			/* Something went wrong. Probably scriptkiddies. Terminate. */
 
 			logger(DEBUG_ALWAYS, LOG_ERR, "Error while processing %s from %s (%s)", request_name[reqno], c->name, c->hostname);
@@ -156,7 +156,7 @@ static int past_request_compare(const past_request_t *a, const past_request_t *b
 
 static void free_past_request(past_request_t *r) {
 	if(r->request)
-		free((char *)r->request);
+		free(r->request);
 
 	free(r);
 }
@@ -164,6 +164,7 @@ static void free_past_request(past_request_t *r) {
 static timeout_t past_request_timeout;
 
 static void age_past_requests(event_loop_t *loop, void *data) {
+	meshlink_handle_t *mesh = loop->data;
 	int left = 0, deleted = 0;
 
 	for splay_each(past_request_t, p, past_request_tree) {
@@ -180,7 +181,7 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 		timeout_set(&mesh->loop, &past_request_timeout, &(struct timeval){10, rand() % 100000});
 }
 
-bool seen_request(const char *request) {
+bool seen_request(meshlink_handle_t *mesh, const char *request) {
 	past_request_t *new, p = {NULL};
 
 	p.request = request;
@@ -198,11 +199,12 @@ bool seen_request(const char *request) {
 	}
 }
 
-void init_requests(void) {
+// TODO: move past_request_tree to meshlink_handle_t
+void init_requests(meshlink_handle_t *mesh) {
 	past_request_tree = splay_alloc_tree((splay_compare_t) past_request_compare, (splay_action_t) free_past_request);
 }
 
-void exit_requests(void) {
+void exit_requests(meshlink_handle_t *mesh) {
 	splay_delete_tree(past_request_tree);
 
 	timeout_del(&mesh->loop, &past_request_timeout);

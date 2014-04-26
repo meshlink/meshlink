@@ -279,7 +279,7 @@ static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *pac
 	n->in_packets++;
 	n->in_bytes += packet->len;
 
-	route(n, packet);
+	route(mesh, n, packet);
 }
 
 static bool try_mac(meshlink_handle_t *mesh, node_t *n, const vpn_packet_t *inpkt) {
@@ -290,7 +290,7 @@ static void receive_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 	if(!n->sptps.state) {
 		if(!n->status.waitingforkey) {
 			logger(DEBUG_TRAFFIC, LOG_DEBUG, "Got packet from %s (%s) but we haven't exchanged keys yet", n->name, n->hostname);
-			send_req_key(n);
+			send_req_key(mesh, n);
 		} else {
 			logger(DEBUG_TRAFFIC, LOG_DEBUG, "Got packet from %s (%s) but he hasn't got our key yet", n->name, n->hostname);
 		}
@@ -316,12 +316,12 @@ static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 	if(!n->status.validkey) {
 		logger(DEBUG_TRAFFIC, LOG_INFO, "No valid key known yet for %s (%s)", n->name, n->hostname);
 		if(!n->status.waitingforkey)
-			send_req_key(n);
+			send_req_key(mesh, n);
 		else if(n->last_req_key + 10 < mesh->loop.now.tv_sec) {
 			logger(DEBUG_ALWAYS, LOG_DEBUG, "No key from %s after 10 seconds, restarting SPTPS", n->name);
 			sptps_stop(&n->sptps);
 			n->status.waitingforkey = false;
-			send_req_key(n);
+			send_req_key(mesh, n);
 		}
 		return;
 	}
@@ -458,6 +458,7 @@ static void send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *ori
 
 bool send_sptps_data(void *handle, uint8_t type, const char *data, size_t len) {
 	node_t *to = handle;
+	meshlink_handle_t *mesh = to->mesh;
 
 	/* Send it via TCP if it is a handshake packet, TCPOnly is in use, or this packet is larger than the MTU. */
 
@@ -468,9 +469,9 @@ bool send_sptps_data(void *handle, uint8_t type, const char *data, size_t len) {
 		   to ensure we get to learn the reflexive UDP address. */
 		if(!to->status.validkey) {
 			to->incompression = mesh->self->incompression;
-			return send_request(to->nexthop->connection, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, to->incompression);
+			return send_request(mesh, to->nexthop->connection, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, to->incompression);
 		} else {
-			return send_request(to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_SPTPS, buf);
+			return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_SPTPS, buf);
 		}
 	}
 
@@ -501,6 +502,7 @@ bool send_sptps_data(void *handle, uint8_t type, const char *data, size_t len) {
 
 bool receive_sptps_record(void *handle, uint8_t type, const char *data, uint16_t len) {
 	node_t *from = handle;
+	meshlink_handle_t *mesh = from->mesh;
 
 	if(type == SPTPS_HANDSHAKE) {
 		if(!from->status.validkey) {
@@ -646,12 +648,12 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 
 	sockaddrunmap(&from); /* Some braindead IPv6 implementations do stupid things. */
 
-	n = lookup_node_udp(&from);
+	n = lookup_node_udp(mesh, &from);
 
 	if(!n) {
 		n = try_harder(mesh, &from, &pkt);
 		if(n)
-			update_node_udp(n, &from);
+			update_node_udp(mesh, n, &from);
 		else if(mesh->debug_level >= DEBUG_PROTOCOL) {
 			hostname = sockaddr2hostname(&from);
 			logger(DEBUG_PROTOCOL, LOG_WARNING, "Received UDP packet from unknown source %s", hostname);

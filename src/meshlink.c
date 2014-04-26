@@ -28,8 +28,6 @@
 #include "route.h"
 #include "xalloc.h"
 
-meshlink_handle_t *mesh;
-
 static const char *errstr[] = {
 	[MESHLINK_OK] = "No error",
 	[MESHLINK_ENOMEM] = "Out of memory",
@@ -38,11 +36,6 @@ static const char *errstr[] = {
 
 const char *meshlink_strerror(meshlink_errno_t errno) {
 	return errstr[errno];
-}
-
-// TODO: hack, remove once all global variables are gone.
-static void set_mesh(meshlink_handle_t *localmesh) {
-	mesh = localmesh;
 }
 
 static bool ecdsa_keygen(meshlink_handle_t *mesh) {
@@ -214,7 +207,6 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	mesh->name = xstrdup(name);
 	event_loop_init(&mesh->loop);
 	mesh->loop.data = mesh;
-	set_mesh(mesh);
 
 	// TODO: should be set by a function.
 	mesh->debug_level = 5;
@@ -324,12 +316,12 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 
         mesh->self->in_packets++;
         mesh->self->in_bytes += packet.len;
-        route(mesh->self, &packet);
+        route(mesh, mesh->self, &packet);
 	return false;
 }
 
 meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
-	return (meshlink_node_t *)lookup_node(name);
+	return (meshlink_node_t *)lookup_node(mesh, name);
 	return NULL;
 }
 
