@@ -26,8 +26,6 @@
 #include "utils.h"
 #include "xalloc.h"
 
-event_loop_t *loop;
-
 static int io_compare(const io_t *a, const io_t *b) {
 	return a->fd - b->fd;
 }

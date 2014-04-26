@@ -70,8 +70,6 @@ struct event_loop_t {
 	void *data;
 };
 
-extern event_loop_t *loop;
-
 extern void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int flags);
 extern void io_del(event_loop_t *loop, io_t *io);
 extern void io_set(event_loop_t *loop, io_t *io, int flags);

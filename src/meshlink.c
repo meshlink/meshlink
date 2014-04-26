@@ -43,7 +43,6 @@ const char *meshlink_strerror(meshlink_errno_t errno) {
 // TODO: hack, remove once all global variables are gone.
 static void set_mesh(meshlink_handle_t *localmesh) {
 	mesh = localmesh;
-	loop = &mesh->loop;
 }
 
 static bool ecdsa_keygen(meshlink_handle_t *mesh) {
