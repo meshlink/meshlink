@@ -108,7 +108,6 @@ extern void handle_meta_connection_data(struct connection_t *);
 extern void regenerate_key(void);
 extern void purge(void);
 extern void retry(void);
-extern int reload_configuration(void);
 
 #ifndef HAVE_MINGW
 #define closesocket(s) close(s)
