@@ -194,8 +194,10 @@ done:
 		else
 			xasprintf(&hostport, "%s:%s", hostname, port);
 	} else {
-		hostport = hostname;
-		hostname = NULL;
+		if(strchr(hostname, ':'))
+			xasprintf(&hostport, "[%s]", hostname);
+		else
+			hostport = xstrdup(hostname);
 	}
 
 	free(hostname);
