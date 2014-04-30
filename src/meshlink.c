@@ -16,6 +16,15 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+#define VAR_SERVER 1    /* Should be in tinc.conf */
+#define VAR_HOST 2      /* Can be in host config file */
+#define VAR_MULTIPLE 4  /* Multiple statements allowed */
+#define VAR_OBSOLETE 8  /* Should not be used anymore */
+#define VAR_SAFE 16     /* Variable is safe when accepting invitations */
+typedef struct {
+	const char *name;
+	int type;
+} var_t;
 
 #include "system.h"
 #include <pthread.h>
@@ -27,6 +36,412 @@
 #include "protocol.h"
 #include "route.h"
 #include "xalloc.h"
+#include "ed25519/sha512.h"
+
+static	char meshlink_conf[PATH_MAX];
+static	char hosts_dir[PATH_MAX];
+
+static	int sock;
+static	sptps_t sptps;
+static	char cookie[18], hash[18];
+static 	char *data = NULL;
+static 	size_t thedatalen = 0;
+static 	bool success = false;
+static 	char line[4096];
+static 	char buffer[4096];
+static 	size_t blen = 0;
+
+const var_t variables[] = {
+	/* Server configuration */
+	{"AddressFamily", VAR_SERVER},
+	{"AutoConnect", VAR_SERVER | VAR_SAFE},
+	{"BindToAddress", VAR_SERVER | VAR_MULTIPLE},
+	{"BindToInterface", VAR_SERVER},
+	{"Broadcast", VAR_SERVER | VAR_SAFE},
+	{"ConnectTo", VAR_SERVER | VAR_MULTIPLE | VAR_SAFE},
+	{"DecrementTTL", VAR_SERVER},
+	{"Device", VAR_SERVER},
+	{"DeviceType", VAR_SERVER},
+	{"DirectOnly", VAR_SERVER},
+	{"ECDSAPrivateKeyFile", VAR_SERVER},
+	{"ExperimentalProtocol", VAR_SERVER},
+	{"Forwarding", VAR_SERVER},
+	{"GraphDumpFile", VAR_SERVER | VAR_OBSOLETE},
+	{"Hostnames", VAR_SERVER},
+	{"IffOneQueue", VAR_SERVER},
+	{"Interface", VAR_SERVER},
+	{"KeyExpire", VAR_SERVER},
+	{"ListenAddress", VAR_SERVER | VAR_MULTIPLE},
+	{"LocalDiscovery", VAR_SERVER},
+	{"MACExpire", VAR_SERVER},
+	{"MaxConnectionBurst", VAR_SERVER},
+	{"MaxOutputBufferSize", VAR_SERVER},
+	{"MaxTimeout", VAR_SERVER},
+	{"Mode", VAR_SERVER | VAR_SAFE},
+	{"Name", VAR_SERVER},
+	{"PingInterval", VAR_SERVER},
+	{"PingTimeout", VAR_SERVER},
+	{"PriorityInheritance", VAR_SERVER},
+	{"PrivateKey", VAR_SERVER | VAR_OBSOLETE},
+	{"PrivateKeyFile", VAR_SERVER},
+	{"ProcessPriority", VAR_SERVER},
+	{"Proxy", VAR_SERVER},
+	{"ReplayWindow", VAR_SERVER},
+	{"ScriptsExtension", VAR_SERVER},
+	{"ScriptsInterpreter", VAR_SERVER},
+	{"StrictSubnets", VAR_SERVER},
+	{"TunnelServer", VAR_SERVER},
+	{"VDEGroup", VAR_SERVER},
+	{"VDEPort", VAR_SERVER},
+	/* Host configuration */
+	{"Address", VAR_HOST | VAR_MULTIPLE},
+	{"Cipher", VAR_SERVER | VAR_HOST},
+	{"ClampMSS", VAR_SERVER | VAR_HOST},
+	{"Compression", VAR_SERVER | VAR_HOST},
+	{"Digest", VAR_SERVER | VAR_HOST},
+	{"ECDSAPublicKey", VAR_HOST},
+	{"ECDSAPublicKeyFile", VAR_SERVER | VAR_HOST},
+	{"IndirectData", VAR_SERVER | VAR_HOST},
+	{"MACLength", VAR_SERVER | VAR_HOST},
+	{"PMTU", VAR_SERVER | VAR_HOST},
+	{"PMTUDiscovery", VAR_SERVER | VAR_HOST},
+	{"Port", VAR_HOST},
+	{"PublicKey", VAR_HOST | VAR_OBSOLETE},
+	{"PublicKeyFile", VAR_SERVER | VAR_HOST | VAR_OBSOLETE},
+	{"Subnet", VAR_HOST | VAR_MULTIPLE | VAR_SAFE},
+	{"TCPOnly", VAR_SERVER | VAR_HOST},
+	{"Weight", VAR_HOST | VAR_SAFE},
+	{NULL, 0}
+};
+
+static char *get_line(const char **data) {
+	if(!data || !*data)
+		return NULL;
+
+	if(!**data) {
+		*data = NULL;
+		return NULL;
+	}
+
+	static char line[1024];
+	const char *end = strchr(*data, '\n');
+	size_t len = end ? end - *data : strlen(*data);
+	if(len >= sizeof line) {
+		fprintf(stderr, "Maximum line length exceeded!\n");
+		return NULL;
+	}
+	if(len && !isprint(**data))
+		abort();
+
+	memcpy(line, *data, len);
+	line[len] = 0;
+
+	if(end)
+		*data = end + 1;
+	else
+		*data = NULL;
+
+	return line;
+}
+
+static char *get_value(const char *data, const char *var) {
+	char *line = get_line(&data);
+	if(!line)
+		return NULL;
+
+	char *sep = line + strcspn(line, " \t=");
+	char *val = sep + strspn(sep, " \t");
+	if(*val == '=')
+		val += 1 + strspn(val + 1, " \t");
+	*sep = 0;
+	if(strcasecmp(line, var))
+		return NULL;
+	return val;
+}
+static FILE *fopenmask(const char *filename, const char *mode, mode_t perms) {
+	mode_t mask = umask(0);
+	perms &= ~mask;
+	umask(~perms);
+	FILE *f = fopen(filename, mode);
+#ifdef HAVE_FCHMOD
+	if((perms & 0444) && f)
+		fchmod(fileno(f), perms);
+#endif
+	umask(mask);
+	return f;
+}
+
+static bool finalize_join(meshlink_handle_t *mesh) {
+	char *name = xstrdup(get_value(data, "Name"));
+	if(!name) {
+		fprintf(stderr, "No Name found in invitation!\n");
+		return false;
+	}
+
+	if(!check_id(name)) {
+		fprintf(stderr, "Invalid Name found in invitation: %s!\n", name);
+		return false;
+	}
+
+	if(mkdir(mesh->confbase, 0777) && errno != EEXIST) {
+		fprintf(stderr, "Could not create directory %s: %s\n", mesh->confbase, strerror(errno));
+		return false;
+	}
+
+	if(mkdir(hosts_dir, 0777) && errno != EEXIST) {
+		fprintf(stderr, "Could not create directory %s: %s\n", hosts_dir, strerror(errno));
+		return false;
+	}
+
+	FILE *f = fopen(meshlink_conf, "w");
+	if(!f) {
+		fprintf(stderr, "Could not create file %s: %s\n", meshlink_conf, strerror(errno));
+		return false;
+	}
+
+	fprintf(f, "Name = %s\n", name);
+
+	char filename[PATH_MAX];
+	snprintf(filename,PATH_MAX, "%s" SLASH "%s", hosts_dir, name);
+	FILE *fh = fopen(filename, "w");
+	if(!fh) {
+		fprintf(stderr, "Could not create file %s: %s\n", filename, strerror(errno));
+		return false;
+	}
+
+	// Filter first chunk on approved keywords, split between tinc.conf and hosts/Name
+	// Other chunks go unfiltered to their respective host config files
+	const char *p = data;
+	char *l, *value;
+
+	while((l = get_line(&p))) {
+		// Ignore comments
+		if(*l == '#')
+			continue;
+
+		// Split line into variable and value
+		int len = strcspn(l, "\t =");
+		value = l + len;
+		value += strspn(value, "\t ");
+		if(*value == '=') {
+			value++;
+			value += strspn(value, "\t ");
+		}
+		l[len] = 0;
+
+		// Is it a Name?
+		if(!strcasecmp(l, "Name"))
+			if(strcmp(value, name))
+				break;
+			else
+				continue;
+		else if(!strcasecmp(l, "NetName"))
+			continue;
+
+		// Check the list of known variables
+		bool found = false;
+		int i;
+		for(i = 0; variables[i].name; i++) {
+			if(strcasecmp(l, variables[i].name))
+				continue;
+			found = true;
+			break;
+		}
+
+		// Ignore unknown and unsafe variables
+		if(!found) {
+			fprintf(stderr, "Ignoring unknown variable '%s' in invitation.\n", l);
+			continue;
+		} else if(!(variables[i].type & VAR_SAFE)) {
+			fprintf(stderr, "Ignoring unsafe variable '%s' in invitation.\n", l);
+			continue;
+		}
+
+		// Copy the safe variable to the right config file
+		fprintf(variables[i].type & VAR_HOST ? fh : f, "%s = %s\n", l, value);
+	}
+
+	fclose(f);
+
+	while(l && !strcasecmp(l, "Name")) {
+		if(!check_id(value)) {
+			fprintf(stderr, "Invalid Name found in invitation.\n");
+			return false;
+		}
+
+		if(!strcmp(value, name)) {
+			fprintf(stderr, "Secondary chunk would overwrite our own host config file.\n");
+			return false;
+		}
+
+		snprintf(filename,PATH_MAX, "%s" SLASH "%s", hosts_dir, value);
+		f = fopen(filename, "w");
+
+		if(!f) {
+			fprintf(stderr, "Could not create file %s: %s\n", filename, strerror(errno));
+			return false;
+		}
+
+		while((l = get_line(&p))) {
+			if(!strcmp(l, "#---------------------------------------------------------------#"))
+				continue;
+			int len = strcspn(l, "\t =");
+			if(len == 4 && !strncasecmp(l, "Name", 4)) {
+				value = l + len;
+				value += strspn(value, "\t ");
+				if(*value == '=') {
+					value++;
+					value += strspn(value, "\t ");
+				}
+				l[len] = 0;
+				break;
+			}
+
+			fputs(l, f);
+			fputc('\n', f);
+		}
+
+		fclose(f);
+	}
+
+	// Generate our key and send a copy to the server
+	ecdsa_t *key = ecdsa_generate();
+	if(!key)
+		return false;
+
+	char *b64key = ecdsa_get_base64_public_key(key);
+	if(!b64key)
+		return false;
+
+	snprintf(filename,PATH_MAX, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
+	f = fopenmask(filename, "w", 0600);
+
+	if(!ecdsa_write_pem_private_key(key, f)) {
+		fprintf(stderr, "Error writing private key!\n");
+		ecdsa_free(key);
+		fclose(f);
+		return false;
+	}
+
+	fclose(f);
+
+	fprintf(fh, "ECDSAPublicKey = %s\n", b64key);
+
+	sptps_send_record(&sptps, 1, b64key, strlen(b64key));
+	free(b64key);
+
+	ecdsa_free(key);
+
+	check_port(name);
+
+	fprintf(stderr, "Configuration stored in: %s\n", mesh->confbase);
+
+	return true;
+}
+
+static bool invitation_send(void *handle, uint8_t type, const char *data, size_t len) {
+	while(len) {
+		int result = send(sock, data, len, 0);
+		if(result == -1 && errno == EINTR)
+			continue;
+		else if(result <= 0)
+			return false;
+		data += result;
+		len -= result;
+	}
+	return true;
+}
+
+static bool invitation_receive(void *handle, uint8_t type, const char *msg, uint16_t len) {
+	switch(type) {
+		case SPTPS_HANDSHAKE:
+			return sptps_send_record(&sptps, 0, cookie, sizeof cookie);
+
+		case 0:
+			data = xrealloc(data, thedatalen + len + 1);
+			memcpy(data + thedatalen, msg, len);
+			thedatalen += len;
+			data[thedatalen] = 0;
+			break;
+
+		case 1:
+			return finalize_join(NULL);//TODO: wrong, we have to pass the mesh handler here, but how ?
+
+		case 2:
+			fprintf(stderr, "Invitation succesfully accepted.\n");
+			shutdown(sock, SHUT_RDWR);
+			success = true;
+			break;
+
+		default:
+			return false;
+	}
+
+	return true;
+}
+
+static bool recvline(int fd, char *line, size_t len) {
+	char *newline = NULL;
+
+	if(!fd)
+		abort();
+
+	while(!(newline = memchr(buffer, '\n', blen))) {
+		int result = recv(fd, buffer + blen, sizeof buffer - blen, 0);
+		if(result == -1 && errno == EINTR)
+			continue;
+		else if(result <= 0)
+			return false;
+		blen += result;
+	}
+
+	if(newline - buffer >= len)
+		return false;
+
+	len = newline - buffer;
+
+	memcpy(line, buffer, len);
+	line[len] = 0;
+	memmove(buffer, newline + 1, blen - len - 1);
+	blen -= len + 1;
+
+	return true;
+}
+static bool sendline(int fd, char *format, ...) {
+	static char buffer[4096];
+	char *p = buffer;
+	int blen = 0;
+	va_list ap;
+
+	va_start(ap, format);
+	blen = vsnprintf(buffer, sizeof buffer, format, ap);
+	va_end(ap);
+
+	if(blen < 1 || blen >= sizeof buffer)
+		return false;
+
+	buffer[blen] = '\n';
+	blen++;
+
+	while(blen) {
+		int result = send(fd, p, blen, MSG_NOSIGNAL);
+		if(result == -1 && errno == EINTR)
+			continue;
+		else if(result <= 0)
+			return false;
+		p += result;
+		blen -= result;
+	}
+
+	return true;
+}
+int rstrip(char *value) {
+	int len = strlen(value);
+	while(len && strchr("\t\r\n ", value[len - 1]))
+		value[--len] = 0;
+	return len;
+}
+
 
 static const char *errstr[] = {
 	[MESHLINK_OK] = "No error",
@@ -116,7 +531,7 @@ static bool try_bind(int port) {
 	return true;
 }
 
-static int check_port(meshlink_handle_t *mesh) {
+int check_port(meshlink_handle_t *mesh) {
 	if(try_bind(655))
 		return 655;
 
@@ -145,8 +560,6 @@ static int check_port(meshlink_handle_t *mesh) {
 }
 
 static bool meshlink_setup(meshlink_handle_t *mesh) {
-	char meshlink_conf[PATH_MAX];
-	char hosts_dir[PATH_MAX];
 
 	if(mkdir(mesh->confbase, 0777) && errno != EEXIST) {
 		fprintf(stderr, "Could not create directory %s: %s\n", mesh->confbase, strerror(errno));
@@ -342,6 +755,154 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 }
 
 bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
+
+
+	// Make sure confbase exists and is accessible.
+	if(mkdir(mesh->confbase, 0777) && errno != EEXIST) {
+		fprintf(stderr, "Could not create directory %s: %s\n", mesh->confbase, strerror(errno));
+		return 1;
+	}
+
+	if(access(mesh->confbase, R_OK | W_OK | X_OK)) {
+		fprintf(stderr, "No permission to write in directory %s: %s\n", mesh->confbase, strerror(errno));
+		return 1;
+	}
+
+	// TODO: Either remove or reintroduce netname in meshlink
+	// If a netname or explicit configuration directory is specified, check for an existing meshlink.conf.
+	//if((mesh->netname || confbasegiven) && !access(meshlink_conf, F_OK)) {
+	//	fprintf(stderr, "Configuration file %s already exists!\n", meshlink_conf);
+	//	return 1;
+	//}
+
+	char *slash = strchr(invitation, '/');
+	if(!slash)
+		goto invalid;
+
+	*slash++ = 0;
+
+	if(strlen(slash) != 48)
+		goto invalid;
+
+	char *address = invitation;
+	char *port = NULL;
+	if(*address == '[') {
+		address++;
+		char *bracket = strchr(address, ']');
+		if(!bracket)
+			goto invalid;
+		*bracket = 0;
+		if(bracket[1] == ':')
+			port = bracket + 2;
+	} else {
+		port = strchr(address, ':');
+		if(port)
+			*port++ = 0;
+	}
+
+	if(!mesh->myport || !*port)
+		port = "655";
+
+	if(!b64decode(slash, hash, 18) || !b64decode(slash + 24, cookie, 18))
+		goto invalid;
+
+	// Generate a throw-away key for the invitation.
+	ecdsa_t *key = ecdsa_generate();
+	if(!key)
+		return 1;
+
+	char *b64key = ecdsa_get_base64_public_key(key);
+
+	// Connect to the meshlink daemon mentioned in the URL.
+	struct addrinfo *ai = str2addrinfo(address, port, SOCK_STREAM);
+	if(!ai)
+		return 1;
+
+	sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+	if(sock <= 0) {
+		fprintf(stderr, "Could not open socket: %s\n", strerror(errno));
+		return 1;
+	}
+
+	if(connect(sock, ai->ai_addr, ai->ai_addrlen)) {
+		fprintf(stderr, "Could not connect to %s port %s: %s\n", address, port, strerror(errno));
+		closesocket(sock);
+		return 1;
+	}
+
+	fprintf(stderr, "Connected to %s port %s...\n", address, port);
+
+	// Tell him we have an invitation, and give him our throw-away key.
+	int len = snprintf(invitation, sizeof invitation, "0 ?%s %d.%d\n", b64key, PROT_MAJOR, PROT_MINOR);
+	if(len <= 0 || len >= sizeof invitation)
+		abort();
+
+	if(!sendline(sock, "0 ?%s %d.%d", b64key, PROT_MAJOR, 1)) {
+		fprintf(stderr, "Error sending request to %s port %s: %s\n", address, port, strerror(errno));
+		closesocket(sock);
+		return 1;
+	}
+
+	char hisname[4096] = "";
+	int code, hismajor, hisminor = 0;
+
+	if(!recvline(sock, line, sizeof line) || sscanf(line, "%d %s %d.%d", &code, hisname, &hismajor, &hisminor) < 3 || code != 0 || hismajor != PROT_MAJOR || !check_id(hisname) || !recvline(sock, line, sizeof line) || !rstrip(line) || sscanf(line, "%d ", &code) != 1 || code != ACK || strlen(line) < 3) {
+		fprintf(stderr, "Cannot read greeting from peer\n");
+		closesocket(sock);
+		return 1;
+	}
+
+	// Check if the hash of the key he gave us matches the hash in the URL.
+	char *fingerprint = line + 2;
+	char hishash[64];
+	if(!sha512(fingerprint, strlen(fingerprint), hishash)) {
+		fprintf(stderr, "Could not create hash\n%s\n", line + 2);
+		return 1;
+	}
+	if(memcmp(hishash, hash, 18)) {
+		fprintf(stderr, "Peer has an invalid key!\n%s\n", line + 2);
+		return 1;
+
+	}
+
+	ecdsa_t *hiskey = ecdsa_set_base64_public_key(fingerprint);
+	if(!hiskey)
+		return 1;
+
+	// Start an SPTPS session
+	if(!sptps_start(&sptps, NULL, true, false, key, hiskey, "meshlink invitation", 15, invitation_send, invitation_receive))
+		return 1;
+
+	// Feed rest of input buffer to SPTPS
+	if(!sptps_receive_data(&sptps, buffer, blen))
+		return 1;
+
+	while((len = recv(sock, line, sizeof line, 0))) {
+		if(len < 0) {
+			if(errno == EINTR)
+				continue;
+			fprintf(stderr, "Error reading data from %s port %s: %s\n", address, port, strerror(errno));
+			return 1;
+		}
+
+		if(!sptps_receive_data(&sptps, line, len))
+			return 1;
+	}
+
+	sptps_stop(&sptps);
+	ecdsa_free(hiskey);
+	ecdsa_free(key);
+	closesocket(sock);
+
+	if(!success) {
+		fprintf(stderr, "Connection closed by peer, invitation cancelled.\n");
+		return false;
+	}
+
+	return true;
+
+invalid:
+	fprintf(stderr, "Invalid invitation URL.\n");
 	return false;
 }
 
