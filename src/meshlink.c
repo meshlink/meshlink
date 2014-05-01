@@ -38,6 +38,7 @@ typedef struct {
 #include "xalloc.h"
 #include "ed25519/sha512.h"
 
+//TODO: move all of this to meshlink_handle_t
 static	char meshlink_conf[PATH_MAX];
 static	char hosts_dir[PATH_MAX];
 
@@ -51,6 +52,7 @@ static 	char line[4096];
 static 	char buffer[4096];
 static 	size_t blen = 0;
 
+//TODO: this can go away completely
 const var_t variables[] = {
 	/* Server configuration */
 	{"AddressFamily", VAR_SERVER},
@@ -238,7 +240,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 		else if(!strcasecmp(l, "NetName"))
 			continue;
 
-		// Check the list of known variables
+		// Check the list of known variables //TODO: most variables will not be available in meshlink, only name and key will be absolutely necessary
 		bool found = false;
 		int i;
 		for(i = 0; variables[i].name; i++) {
