@@ -38,19 +38,6 @@ typedef struct {
 #include "xalloc.h"
 #include "ed25519/sha512.h"
 
-//TODO: move all of this to meshlink_handle_t
-static	char meshlink_conf[PATH_MAX];
-static	char hosts_dir[PATH_MAX];
-
-static	int sock;
-static	sptps_t sptps;
-static	char cookie[18], hash[18];
-static 	char *data = NULL;
-static 	size_t thedatalen = 0;
-static 	bool success = false;
-static 	char line[4096];
-static 	char buffer[4096];
-static 	size_t blen = 0;
 
 //TODO: this can go away completely
 const var_t variables[] = {
@@ -174,7 +161,7 @@ static FILE *fopenmask(const char *filename, const char *mode, mode_t perms) {
 }
 
 static bool finalize_join(meshlink_handle_t *mesh) {
-	char *name = xstrdup(get_value(data, "Name"));
+	char *name = xstrdup(get_value(mesh->data, "Name"));
 	if(!name) {
 		fprintf(stderr, "No Name found in invitation!\n");
 		return false;
@@ -190,21 +177,21 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 		return false;
 	}
 
-	if(mkdir(hosts_dir, 0777) && errno != EEXIST) {
-		fprintf(stderr, "Could not create directory %s: %s\n", hosts_dir, strerror(errno));
+	if(mkdir(mesh->hosts_dir, 0777) && errno != EEXIST) {
+		fprintf(stderr, "Could not create directory %s: %s\n", mesh->hosts_dir, strerror(errno));
 		return false;
 	}
 
-	FILE *f = fopen(meshlink_conf, "w");
+	FILE *f = fopen(mesh->meshlink_conf, "w");
 	if(!f) {
-		fprintf(stderr, "Could not create file %s: %s\n", meshlink_conf, strerror(errno));
+		fprintf(stderr, "Could not create file %s: %s\n", mesh->meshlink_conf, strerror(errno));
 		return false;
 	}
 
 	fprintf(f, "Name = %s\n", name);
 
 	char filename[PATH_MAX];
-	snprintf(filename,PATH_MAX, "%s" SLASH "%s", hosts_dir, name);
+	snprintf(filename,PATH_MAX, "%s" SLASH "%s", mesh->hosts_dir, name);
 	FILE *fh = fopen(filename, "w");
 	if(!fh) {
 		fprintf(stderr, "Could not create file %s: %s\n", filename, strerror(errno));
@@ -213,7 +200,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 
 	// Filter first chunk on approved keywords, split between tinc.conf and hosts/Name
 	// Other chunks go unfiltered to their respective host config files
-	const char *p = data;
+	const char *p = mesh->data;
 	char *l, *value;
 
 	while((l = get_line(&p))) {
@@ -276,7 +263,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 			return false;
 		}
 
-		snprintf(filename,PATH_MAX, "%s" SLASH "%s", hosts_dir, value);
+		snprintf(filename,PATH_MAX, "%s" SLASH "%s", mesh->hosts_dir, value);
 		f = fopen(filename, "w");
 
 		if(!f) {
@@ -329,7 +316,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 
 	fprintf(fh, "ECDSAPublicKey = %s\n", b64key);
 
-	sptps_send_record(&sptps, 1, b64key, strlen(b64key));
+	sptps_send_record(&(mesh->sptps), 1, b64key, strlen(b64key));
 	free(b64key);
 
 	ecdsa_free(key);
@@ -342,8 +329,9 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 }
 
 static bool invitation_send(void *handle, uint8_t type, const char *data, size_t len) {
+	meshlink_handle_t* mesh = handle;
 	while(len) {
-		int result = send(sock, data, len, 0);
+		int result = send(mesh->sock, data, len, 0);
 		if(result == -1 && errno == EINTR)
 			continue;
 		else if(result <= 0)
@@ -355,24 +343,25 @@ static bool invitation_send(void *handle, uint8_t type, const char *data, size_t
 }
 
 static bool invitation_receive(void *handle, uint8_t type, const char *msg, uint16_t len) {
+	meshlink_handle_t* mesh = handle;
 	switch(type) {
 		case SPTPS_HANDSHAKE:
-			return sptps_send_record(&sptps, 0, cookie, sizeof cookie);
+			return sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
 
 		case 0:
-			data = xrealloc(data, thedatalen + len + 1);
-			memcpy(data + thedatalen, msg, len);
-			thedatalen += len;
-			data[thedatalen] = 0;
+			mesh->data = xrealloc(mesh->data, mesh->thedatalen + len + 1);
+			memcpy(mesh->data + mesh->thedatalen, msg, len);
+			mesh->thedatalen += len;
+			mesh->data[mesh->thedatalen] = 0;
 			break;
 
 		case 1:
-			return finalize_join(NULL);//TODO: wrong, we have to pass the mesh handler here, but how ?
+			return finalize_join(mesh);
 
 		case 2:
 			fprintf(stderr, "Invitation succesfully accepted.\n");
-			shutdown(sock, SHUT_RDWR);
-			success = true;
+			shutdown(mesh->sock, SHUT_RDWR);
+			mesh->success = true;
 			break;
 
 		default:
@@ -382,30 +371,30 @@ static bool invitation_receive(void *handle, uint8_t type, const char *msg, uint
 	return true;
 }
 
-static bool recvline(int fd, char *line, size_t len) {
+static bool recvline(meshlink_handle_t* mesh, size_t len) {
 	char *newline = NULL;
 
-	if(!fd)
+	if(!mesh->sock)
 		abort();
 
-	while(!(newline = memchr(buffer, '\n', blen))) {
-		int result = recv(fd, buffer + blen, sizeof buffer - blen, 0);
+	while(!(newline = memchr(mesh->buffer, '\n', mesh->blen))) {
+		int result = recv(mesh->sock, mesh->buffer + mesh->blen, sizeof mesh->buffer - mesh->blen, 0);
 		if(result == -1 && errno == EINTR)
 			continue;
 		else if(result <= 0)
 			return false;
-		blen += result;
+		mesh->blen += result;
 	}
 
-	if(newline - buffer >= len)
+	if(newline - mesh->buffer >= len)
 		return false;
 
-	len = newline - buffer;
+	len = newline - mesh->buffer;
 
-	memcpy(line, buffer, len);
-	line[len] = 0;
-	memmove(buffer, newline + 1, blen - len - 1);
-	blen -= len + 1;
+	memcpy(mesh->line, mesh->buffer, len);
+	mesh->line[len] = 0;
+	memmove(mesh->buffer, newline + 1, mesh->blen - len - 1);
+	mesh->blen -= len + 1;
 
 	return true;
 }
@@ -568,23 +557,23 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 		return false;
 	}
 
-	snprintf(hosts_dir, sizeof hosts_dir, "%s" SLASH "hosts", mesh->confbase);
+	snprintf(mesh->hosts_dir, sizeof mesh->hosts_dir, "%s" SLASH "hosts", mesh->confbase);
 
-	if(mkdir(hosts_dir, 0777) && errno != EEXIST) {
-		fprintf(stderr, "Could not create directory %s: %s\n", hosts_dir, strerror(errno));
+	if(mkdir(mesh->hosts_dir, 0777) && errno != EEXIST) {
+		fprintf(stderr, "Could not create directory %s: %s\n", mesh->hosts_dir, strerror(errno));
 		return false;
 	}
 
-	snprintf(meshlink_conf, sizeof meshlink_conf, "%s" SLASH "meshlink.conf", mesh->confbase);
+	snprintf(mesh->meshlink_conf, sizeof mesh->meshlink_conf, "%s" SLASH "meshlink.conf", mesh->confbase);
 
-	if(!access(meshlink_conf, F_OK)) {
-		fprintf(stderr, "Configuration file %s already exists!\n", meshlink_conf);
+	if(!access(mesh->meshlink_conf, F_OK)) {
+		fprintf(stderr, "Configuration file %s already exists!\n", mesh->meshlink_conf);
 		return false;
 	}
 
-	FILE *f = fopen(meshlink_conf, "w");
+	FILE *f = fopen(mesh->meshlink_conf, "w");
 	if(!f) {
-		fprintf(stderr, "Could not create file %s: %s\n", meshlink_conf, strerror(errno));
+		fprintf(stderr, "Could not create file %s: %s\n", mesh->meshlink_conf, strerror(errno));
 		return 1;
 	}
 
@@ -805,7 +794,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	if(!mesh->myport || !*port)
 		port = "655";
 
-	if(!b64decode(slash, hash, 18) || !b64decode(slash + 24, cookie, 18))
+	if(!b64decode(slash, mesh->hash, 18) || !b64decode(slash + 24, mesh->cookie, 18))
 		goto invalid;
 
 	// Generate a throw-away key for the invitation.
@@ -820,15 +809,15 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	if(!ai)
 		return 1;
 
-	sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-	if(sock <= 0) {
+	mesh->sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+	if(mesh->sock <= 0) {
 		fprintf(stderr, "Could not open socket: %s\n", strerror(errno));
 		return 1;
 	}
 
-	if(connect(sock, ai->ai_addr, ai->ai_addrlen)) {
+	if(connect(mesh->sock, ai->ai_addr, ai->ai_addrlen)) {
 		fprintf(stderr, "Could not connect to %s port %s: %s\n", address, port, strerror(errno));
-		closesocket(sock);
+		closesocket(mesh->sock);
 		return 1;
 	}
 
@@ -839,30 +828,30 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	if(len <= 0 || len >= sizeof invitation)
 		abort();
 
-	if(!sendline(sock, "0 ?%s %d.%d", b64key, PROT_MAJOR, 1)) {
+	if(!sendline(mesh->sock, "0 ?%s %d.%d", b64key, PROT_MAJOR, 1)) {
 		fprintf(stderr, "Error sending request to %s port %s: %s\n", address, port, strerror(errno));
-		closesocket(sock);
+		closesocket(mesh->sock);
 		return 1;
 	}
 
 	char hisname[4096] = "";
 	int code, hismajor, hisminor = 0;
 
-	if(!recvline(sock, line, sizeof line) || sscanf(line, "%d %s %d.%d", &code, hisname, &hismajor, &hisminor) < 3 || code != 0 || hismajor != PROT_MAJOR || !check_id(hisname) || !recvline(sock, line, sizeof line) || !rstrip(line) || sscanf(line, "%d ", &code) != 1 || code != ACK || strlen(line) < 3) {
+	if(!recvline(mesh, sizeof mesh->line) || sscanf(mesh->line, "%d %s %d.%d", &code, hisname, &hismajor, &hisminor) < 3 || code != 0 || hismajor != PROT_MAJOR || !check_id(hisname) || !recvline(mesh, sizeof mesh->line) || !rstrip(mesh->line) || sscanf(mesh->line, "%d ", &code) != 1 || code != ACK || strlen(mesh->line) < 3) {
 		fprintf(stderr, "Cannot read greeting from peer\n");
-		closesocket(sock);
+		closesocket(mesh->sock);
 		return 1;
 	}
 
 	// Check if the hash of the key he gave us matches the hash in the URL.
-	char *fingerprint = line + 2;
+	char *fingerprint = mesh->line + 2;
 	char hishash[64];
 	if(!sha512(fingerprint, strlen(fingerprint), hishash)) {
-		fprintf(stderr, "Could not create hash\n%s\n", line + 2);
+		fprintf(stderr, "Could not create hash\n%s\n", mesh->line + 2);
 		return 1;
 	}
-	if(memcmp(hishash, hash, 18)) {
-		fprintf(stderr, "Peer has an invalid key!\n%s\n", line + 2);
+	if(memcmp(hishash, mesh->hash, 18)) {
+		fprintf(stderr, "Peer has an invalid key!\n%s\n", mesh->line + 2);
 		return 1;
 
 	}
@@ -872,14 +861,14 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 		return 1;
 
 	// Start an SPTPS session
-	if(!sptps_start(&sptps, NULL, true, false, key, hiskey, "meshlink invitation", 15, invitation_send, invitation_receive))
+	if(!sptps_start(&mesh->sptps, mesh, true, false, key, hiskey, "meshlink invitation", 15, invitation_send, invitation_receive))
 		return 1;
 
 	// Feed rest of input buffer to SPTPS
-	if(!sptps_receive_data(&sptps, buffer, blen))
+	if(!sptps_receive_data(&mesh->sptps, mesh->buffer, mesh->blen))
 		return 1;
 
-	while((len = recv(sock, line, sizeof line, 0))) {
+	while((len = recv(mesh->sock, mesh->line, sizeof mesh->line, 0))) {
 		if(len < 0) {
 			if(errno == EINTR)
 				continue;
@@ -887,16 +876,16 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 			return 1;
 		}
 
-		if(!sptps_receive_data(&sptps, line, len))
+		if(!sptps_receive_data(&mesh->sptps, mesh->line, len))
 			return 1;
 	}
 
-	sptps_stop(&sptps);
+	sptps_stop(&mesh->sptps);
 	ecdsa_free(hiskey);
 	ecdsa_free(key);
-	closesocket(sock);
+	closesocket(mesh->sock);
 
-	if(!success) {
+	if(!mesh->success) {
 		fprintf(stderr, "Connection closed by peer, invitation cancelled.\n");
 		return false;
 	}

@@ -27,6 +27,7 @@
 #include "logger.h"
 #include "meshlink.h"
 #include "sockaddr.h"
+#include "sptps.h"
 
 #define MAXSOCKETS 8    /* Probably overkill... */
 
@@ -96,6 +97,19 @@ struct meshlink_handle {
 	int pinginterval;	/* seconds between pings */
 	int pingtimeout;	/* seconds to wait for response */
 	int maxtimeout;
+
+	char meshlink_conf[PATH_MAX];
+	char hosts_dir[PATH_MAX];
+	
+	int sock;
+	sptps_t sptps;
+	char cookie[18], hash[18];
+	char *data;
+	size_t thedatalen;
+	bool success;
+	char line[4096];
+	char buffer[4096];
+	size_t blen;
 };
 
 /// A handle for a MeshLink node.
