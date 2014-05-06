@@ -103,6 +103,224 @@ const var_t variables[] = {
 	{NULL, 0}
 };
 
+static char *get_my_name(meshlink_handle_t* mesh) {
+	FILE *f = fopen(mesh->meshlink_conf, "r");
+	if(!f) {
+		return NULL;
+	}
+
+	char buf[4096];
+	char *value;
+	while(fgets(buf, sizeof buf, f)) {
+		int len = strcspn(buf, "\t =");
+		value = buf + len;
+		value += strspn(value, "\t ");
+		if(*value == '=') {
+			value++;
+			value += strspn(value, "\t ");
+		}
+		if(!rstrip(value))
+			continue;
+		buf[len] = 0;
+		if(strcasecmp(buf, "Name"))
+			continue;
+		if(*value) {
+			fclose(f);
+			return strdup(value);
+		}
+	}
+
+	fclose(f);
+	return NULL;
+}
+static bool fcopy(FILE *out, const char *filename) {
+	FILE *in = fopen(filename, "r");
+	if(!in) {
+		fprintf(stderr, "Could not open %s: %s\n", filename, strerror(errno));
+		return false;
+	}
+
+	char buf[1024];
+	size_t len;
+	while((len = fread(buf, 1, sizeof buf, in)))
+		fwrite(buf, len, 1, out);
+	fclose(in);
+	return true;
+}
+static void scan_for_hostname(const char *filename, char **hostname, char **port) {
+	char line[4096];
+	if(!filename || (*hostname && *port))
+		return;
+
+	FILE *f = fopen(filename, "r");
+	if(!f)
+		return;
+
+	while(fgets(line, sizeof line, f)) {
+		if(!rstrip(line))
+			continue;
+		char *p = line, *q;
+		p += strcspn(p, "\t =");
+		if(!*p)
+			continue;
+		q = p + strspn(p, "\t ");
+		if(*q == '=')
+			q += 1 + strspn(q + 1, "\t ");
+		*p = 0;
+		p = q + strcspn(q, "\t ");
+		if(*p)
+			*p++ = 0;
+		p += strspn(p, "\t ");
+		p[strcspn(p, "\t ")] = 0;
+
+		if(!*port && !strcasecmp(line, "Port")) {
+			*port = xstrdup(q);
+		} else if(!*hostname && !strcasecmp(line, "Address")) {
+			*hostname = xstrdup(q);
+			if(*p) {
+				free(*port);
+				*port = xstrdup(p);
+			}
+		}
+
+		if(*hostname && *port)
+			break;
+	}
+
+	fclose(f);
+}
+static char *get_my_hostname(meshlink_handle_t* mesh) {
+	char *hostname = NULL;
+	char *port = NULL;
+	char *hostport = NULL;
+	char *name = get_my_name(mesh);
+	char filename[PATH_MAX];
+	char line[4096];
+
+	// Use first Address statement in own host config file
+	if(check_id(name)) {
+		snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+		scan_for_hostname(filename, &hostname, &port);
+		scan_for_hostname(mesh->meshlink_conf, &hostname, &port);
+	}
+
+	if(hostname)
+		goto done;
+
+	// If that doesn't work, guess externally visible hostname
+	fprintf(stderr, "Trying to discover externally visible hostname...\n");
+	struct addrinfo *ai = str2addrinfo("tinc-vpn.org", "80", SOCK_STREAM);
+	struct addrinfo *aip = ai;
+	static const char request[] = "GET http://tinc-vpn.org/host.cgi HTTP/1.0\r\n\r\n";
+
+	while(aip) {
+		int s = socket(aip->ai_family, aip->ai_socktype, aip->ai_protocol);
+		if(s >= 0) {
+			if(connect(s, aip->ai_addr, aip->ai_addrlen)) {
+				closesocket(s);
+				s = -1;
+			}
+		}
+		if(s >= 0) {
+			send(s, request, sizeof request - 1, 0);
+			int len = recv(s, line, sizeof line - 1, MSG_WAITALL);
+			if(len > 0) {
+				line[len] = 0;
+				if(line[len - 1] == '\n')
+					line[--len] = 0;
+				char *p = strrchr(line, '\n');
+				if(p && p[1])
+					hostname = xstrdup(p + 1);
+			}
+			closesocket(s);
+			if(hostname)
+				break;
+		}
+		aip = aip->ai_next;
+		continue;
+	}
+
+	if(ai)
+		freeaddrinfo(ai);
+
+	// Check that the hostname is reasonable
+	if(hostname) {
+		for(char *p = hostname; *p; p++) {
+			if(isalnum(*p) || *p == '-' || *p == '.' || *p == ':')
+				continue;
+			// If not, forget it.
+			free(hostname);
+			hostname = NULL;
+			break;
+		}
+	}
+
+	//if(!tty) {
+	//	if(!hostname) {
+	//		fprintf(stderr, "Could not determine the external address or hostname. Please set Address manually.\n");
+	//		return NULL;
+	//	}
+	//	goto save;
+	//}
+
+again:
+	fprintf(stderr, "Please enter your host's external address or hostname");
+	if(hostname)
+		fprintf(stderr, " [%s]", hostname);
+	fprintf(stderr, ": ");
+
+	if(!fgets(line, sizeof line, stdin)) {
+		fprintf(stderr, "Error while reading stdin: %s\n", strerror(errno));
+		free(hostname);
+		return NULL;
+	}
+
+	if(!rstrip(line)) {
+		if(hostname)
+			goto save;
+		else
+			goto again;
+	}
+
+	for(char *p = line; *p; p++) {
+		if(isalnum(*p) || *p == '-' || *p == '.')
+			continue;
+		fprintf(stderr, "Invalid address or hostname.\n");
+		goto again;
+	}
+
+	free(hostname);
+	hostname = xstrdup(line);
+
+save:
+	if(filename) {
+		FILE *f = fopen(filename, "a");
+		if(f) {
+			fprintf(f, "\nAddress = %s\n", hostname);
+			fclose(f);
+		} else {
+			fprintf(stderr, "Could not append Address to %s: %s\n", filename, strerror(errno));
+		}
+	}
+
+done:
+	if(port) {
+		if(strchr(hostname, ':'))
+			xasprintf(&hostport, "[%s]:%s", hostname, port);
+		else
+			xasprintf(&hostport, "%s:%s", hostname, port);
+	} else {
+		if(strchr(hostname, ':'))
+			xasprintf(&hostport, "[%s]", hostname);
+		else
+			hostport = xstrdup(hostname);
+	}
+
+	free(hostname);
+	free(port);
+	return hostport;
+}
+
 static char *get_line(const char **data) {
 	if(!data || !*data)
 		return NULL;
@@ -742,7 +960,199 @@ bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const cha
 }
 
 char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
-	return NULL;
+	// Check validity of the new node's name
+	if(!check_id(name)) {
+		fprintf(stderr, "Invalid name for node.\n");
+		return 1;
+	}
+
+	char *myname = get_my_name(mesh);
+	if(!myname)
+		return 1;
+
+	// Ensure no host configuration file with that name exists
+	char filename [PATH_MAX];
+	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	if(!access(filename, F_OK)) {
+		fprintf(stderr, "A host config file for %s already exists!\n", name);
+		return 1;
+	}
+
+	// If a daemon is running, ensure no other nodes know about this name
+
+	//TODO: original tinc code connects to tincd cli and makes this check. How we want to implement this here ?
+	//bool found = false;
+	//if(connect_tincd(false)) {
+	//	sendline(fd, "%d %d", CONTROL, REQ_DUMP_NODES);
+
+	//	while(recvline(fd, line, sizeof line)) {
+	//		char node[4096];
+	//		int code, req;
+	//		if(sscanf(line, "%d %d %s", &code, &req, node) != 3)
+	//			break;
+	//		if(!strcmp(node, name))
+	//			found = true;
+	//	}
+
+	//	if(found) {
+	//		fprintf(stderr, "A node with name %s is already known!\n", name);
+	//		return 1;
+	//	}
+	//}
+
+	char hash[64];
+
+	snprintf(filename,PATH_MAX, "%s" SLASH "invitations", mesh->confbase);
+	if(mkdir(filename, 0700) && errno != EEXIST) {
+		fprintf(stderr, "Could not create directory %s: %s\n", filename, strerror(errno));
+		return 1;
+	}
+
+	// Count the number of valid invitations, clean up old ones
+	DIR *dir = opendir(filename);
+	if(!dir) {
+		fprintf(stderr, "Could not read directory %s: %s\n", filename, strerror(errno));
+		return 1;
+	}
+
+	errno = 0;
+	int count = 0;
+	struct dirent *ent;
+	time_t deadline = time(NULL) - 604800; // 1 week in the past
+
+	while((ent = readdir(dir))) {
+		if(strlen(ent->d_name) != 24)
+			continue;
+		char invname[PATH_MAX];
+		struct stat st;
+		snprintf(invname,PATH_MAX, "%s" SLASH "%s", filename, ent->d_name);
+		if(!stat(invname, &st)) {
+			if(deadline < st.st_mtime)
+				count++;
+			else
+				unlink(invname);
+		} else {
+			fprintf(stderr, "Could not stat %s: %s\n", invname, strerror(errno));
+			errno = 0;
+		}
+	}
+
+	if(errno) {
+		fprintf(stderr, "Error while reading directory %s: %s\n", filename, strerror(errno));
+		closedir(dir);
+		return 1;
+	}
+
+	closedir(dir);
+
+	ecdsa_t *key;
+	snprintf(filename,PATH_MAX, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
+
+	// Remove the key if there are no outstanding invitations.
+	if(!count)
+		unlink(filename);
+
+	// Create a new key if necessary.
+	FILE *f = fopen(filename, "r");
+	if(!f) {
+		if(errno != ENOENT) {
+			fprintf(stderr, "Could not read %s: %s\n", filename, strerror(errno));
+			return 1;
+		}
+
+		key = ecdsa_generate();
+		if(!key) {
+			return 1;
+		}
+		f = fopen(filename, "w");
+		if(!f) {
+			fprintf(stderr, "Could not write %s: %s\n", filename, strerror(errno));
+			return 1;
+		}
+		chmod(filename, 0600);
+		ecdsa_write_pem_private_key(key, f);
+		fclose(f);
+		//TODO: handle this in meshlink
+		//if(connect_tincd(false))
+		//	sendline(fd, "%d %d", CONTROL, REQ_RELOAD);
+	} else {
+		key = ecdsa_read_pem_private_key(f);
+		fclose(f);
+		if(!key)
+			fprintf(stderr, "Could not read private key from %s\n", filename);
+	}
+
+	if(!key)
+		return 1;
+
+	// Create a hash of the key.
+	char *fingerprint = ecdsa_get_base64_public_key(key);
+	sha512(fingerprint, strlen(fingerprint), hash);
+	b64encode_urlsafe(hash, hash, 18);
+
+	// Create a random cookie for this invitation.
+	char cookie[25];
+	randomize(cookie, 18);
+
+	// Create a filename that doesn't reveal the cookie itself
+	char buf[18 + strlen(fingerprint)];
+	char cookiehash[64];
+	memcpy(buf, cookie, 18);
+	memcpy(buf + 18, fingerprint, sizeof buf - 18);
+	sha512(buf, sizeof buf, cookiehash);
+	b64encode_urlsafe(cookiehash, cookiehash, 18);
+
+	b64encode_urlsafe(cookie, cookie, 18);
+
+	// Create a file containing the details of the invitation.
+	snprintf(filename,PATH_MAX, "%s" SLASH "invitations" SLASH "%s", mesh->confbase, cookiehash);
+	int ifd = open(filename, O_RDWR | O_CREAT | O_EXCL, 0600);
+	if(!ifd) {
+		fprintf(stderr, "Could not create invitation file %s: %s\n", filename, strerror(errno));
+		return 1;
+	}
+	f = fdopen(ifd, "w");
+	if(!f)
+		abort();
+
+	// Get the local address
+	char *address = get_my_hostname(mesh);
+
+	// Fill in the details.
+	fprintf(f, "Name = %s\n", name);
+	//if(netname)
+	//	fprintf(f, "NetName = %s\n", netname);
+	fprintf(f, "ConnectTo = %s\n", myname);
+
+	// Copy Broadcast and Mode
+	FILE *tc = fopen(mesh->meshlink_conf, "r");
+	if(tc) {
+		char buf[1024];
+		while(fgets(buf, sizeof buf, tc)) {
+			if((!strncasecmp(buf, "Mode", 4) && strchr(" \t=", buf[4]))
+					|| (!strncasecmp(buf, "Broadcast", 9) && strchr(" \t=", buf[9]))) {
+				fputs(buf, f);
+				// Make sure there is a newline character.
+				if(!strchr(buf, '\n'))
+					fputc('\n', f);
+			}
+		}
+		fclose(tc);
+	}
+
+	fprintf(f, "#---------------------------------------------------------------#\n");
+	fprintf(f, "Name = %s\n", myname);
+
+	char filename2[PATH_MAX];
+	snprintf(filename2,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, myname);
+	fcopy(f, filename2);
+	fclose(f);
+
+	// Create an URL from the local address, key hash and cookie
+	char *url;
+	xasprintf(&url, "%s/%s%s", address, hash, cookie);
+
+	return 0;
 }
 
 bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
