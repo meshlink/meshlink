@@ -1122,7 +1122,9 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 }
 
 bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
-
+	//TODO: think of a better name for this variable, or of a different way to tokenize the invitation URL.
+	char copy[strlen(invitation) + 1];
+	strcpy(copy, invitation);
 
 	// Make sure confbase exists and is accessible.
 	if(mkdir(mesh->confbase, 0777) && errno != EEXIST) {
@@ -1142,7 +1144,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	//	return 1;
 	//}
 
-	char *slash = strchr(invitation, '/');
+	char *slash = strchr(copy, '/');
 	if(!slash)
 		goto invalid;
 
@@ -1151,7 +1153,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	if(strlen(slash) != 48)
 		goto invalid;
 
-	char *address = invitation;
+	char *address = copy;
 	char *port = NULL;
 	if(*address == '[') {
 		address++;
@@ -1200,9 +1202,6 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	fprintf(stderr, "Connected to %s port %s...\n", address, port);
 
 	// Tell him we have an invitation, and give him our throw-away key.
-	int len = snprintf(invitation, sizeof invitation, "0 ?%s %d.%d\n", b64key, PROT_MAJOR, PROT_MINOR);
-	if(len <= 0 || len >= sizeof invitation)
-		abort();
 
 	if(!sendline(mesh->sock, "0 ?%s %d.%d", b64key, PROT_MAJOR, 1)) {
 		fprintf(stderr, "Error sending request to %s port %s: %s\n", address, port, strerror(errno));
@@ -1222,7 +1221,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	// Check if the hash of the key he gave us matches the hash in the URL.
 	char *fingerprint = mesh->line + 2;
 	char hishash[64];
-	if(!sha512(fingerprint, strlen(fingerprint), hishash)) {
+	if(sha512(fingerprint, strlen(fingerprint), hishash)) {
 		fprintf(stderr, "Could not create hash\n%s\n", mesh->line + 2);
 		return false;
 	}
@@ -1243,6 +1242,8 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	// Feed rest of input buffer to SPTPS
 	if(!sptps_receive_data(&mesh->sptps, mesh->buffer, mesh->blen))
 		return false;
+
+	int len;
 
 	while((len = recv(mesh->sock, mesh->line, sizeof mesh->line, 0))) {
 		if(len < 0) {
