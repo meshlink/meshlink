@@ -103,36 +103,6 @@ const var_t variables[] = {
 	{NULL, 0}
 };
 
-static char *get_my_name(meshlink_handle_t* mesh) {
-	FILE *f = fopen(mesh->meshlink_conf, "r");
-	if(!f) {
-		return NULL;
-	}
-
-	char buf[4096];
-	char *value;
-	while(fgets(buf, sizeof buf, f)) {
-		int len = strcspn(buf, "\t =");
-		value = buf + len;
-		value += strspn(value, "\t ");
-		if(*value == '=') {
-			value++;
-			value += strspn(value, "\t ");
-		}
-		if(!rstrip(value))
-			continue;
-		buf[len] = 0;
-		if(strcasecmp(buf, "Name"))
-			continue;
-		if(*value) {
-			fclose(f);
-			return strdup(value);
-		}
-	}
-
-	fclose(f);
-	return NULL;
-}
 static bool fcopy(FILE *out, const char *filename) {
 	FILE *in = fopen(filename, "r");
 	if(!in) {
@@ -193,16 +163,14 @@ static char *get_my_hostname(meshlink_handle_t* mesh) {
 	char *hostname = NULL;
 	char *port = NULL;
 	char *hostport = NULL;
-	char *name = get_my_name(mesh);
+	char *name = mesh->self->name;
 	char filename[PATH_MAX];
 	char line[4096];
 
 	// Use first Address statement in own host config file
-	if(check_id(name)) {
-		snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
-		scan_for_hostname(filename, &hostname, &port);
-		scan_for_hostname(mesh->meshlink_conf, &hostname, &port);
-	}
+	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	scan_for_hostname(filename, &hostname, &port);
+	scan_for_hostname(mesh->meshlink_conf, &hostname, &port);
 
 	if(hostname)
 		goto done;
@@ -966,12 +934,6 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 		return NULL;
 	}
 
-	char *myname = get_my_name(mesh);
-	if(!myname) {
-		fprintf(stderr, "Could not determine my own name.\n");
-		return NULL;
-	}
-
 	// Ensure no host configuration file with that name exists
 	char filename [PATH_MAX];
 	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
@@ -1125,7 +1087,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	fprintf(f, "Name = %s\n", name);
 	//if(netname)
 	//	fprintf(f, "NetName = %s\n", netname);
-	fprintf(f, "ConnectTo = %s\n", myname);
+	fprintf(f, "ConnectTo = %s\n", mesh->self->name);
 
 	// Copy Broadcast and Mode
 	FILE *tc = fopen(mesh->meshlink_conf, "r");
@@ -1144,10 +1106,10 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	}
 
 	fprintf(f, "#---------------------------------------------------------------#\n");
-	fprintf(f, "Name = %s\n", myname);
+	fprintf(f, "Name = %s\n", mesh->self->name);
 
 	char filename2[PATH_MAX];
-	snprintf(filename2,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, myname);
+	snprintf(filename2,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
 	fcopy(f, filename2);
 	fclose(f);
 
