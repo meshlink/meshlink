@@ -32,9 +32,11 @@ typedef struct {
 #include "crypto.h"
 #include "ecdsagen.h"
 #include "meshlink_internal.h"
+#include "netutl.h"
 #include "node.h"
 #include "protocol.h"
 #include "route.h"
+#include "utils.h"
 #include "xalloc.h"
 #include "ed25519/sha512.h"
 
@@ -117,6 +119,14 @@ static bool fcopy(FILE *out, const char *filename) {
 	fclose(in);
 	return true;
 }
+
+static int rstrip(char *value) {
+	int len = strlen(value);
+	while(len && strchr("\t\r\n ", value[len - 1]))
+		value[--len] = 0;
+	return len;
+}
+
 static void scan_for_hostname(const char *filename, char **hostname, char **port) {
 	char line[4096];
 	if(!filename || (*hostname && *port))
@@ -164,8 +174,9 @@ static char *get_my_hostname(meshlink_handle_t* mesh) {
 	char *port = NULL;
 	char *hostport = NULL;
 	char *name = mesh->self->name;
-	char filename[PATH_MAX];
+	char filename[PATH_MAX] = "";
 	char line[4096];
+	FILE *f;
 
 	// Use first Address statement in own host config file
 	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
@@ -261,14 +272,12 @@ again:
 	hostname = xstrdup(line);
 
 save:
-	if(filename) {
-		FILE *f = fopen(filename, "a");
-		if(f) {
-			fprintf(f, "\nAddress = %s\n", hostname);
-			fclose(f);
-		} else {
-			fprintf(stderr, "Could not append Address to %s: %s\n", filename, strerror(errno));
-		}
+	f = fopen(filename, "a");
+	if(f) {
+		fprintf(f, "\nAddress = %s\n", hostname);
+		fclose(f);
+	} else {
+		fprintf(stderr, "Could not append Address to %s: %s\n", filename, strerror(errno));
 	}
 
 done:
@@ -344,6 +353,63 @@ static FILE *fopenmask(const char *filename, const char *mode, mode_t perms) {
 #endif
 	umask(mask);
 	return f;
+}
+
+static bool try_bind(int port) {
+	struct addrinfo *ai = NULL;
+	struct addrinfo hint = {
+		.ai_flags = AI_PASSIVE,
+		.ai_family = AF_UNSPEC,
+		.ai_socktype = SOCK_STREAM,
+		.ai_protocol = IPPROTO_TCP,
+	};
+
+	char portstr[16];
+	snprintf(portstr, sizeof portstr, "%d", port);
+
+	if(getaddrinfo(NULL, portstr, &hint, &ai) || !ai)
+		return false;
+
+	while(ai) {
+		int fd = socket(ai->ai_family, SOCK_STREAM, IPPROTO_TCP);
+		if(!fd)
+			return false;
+		int result = bind(fd, ai->ai_addr, ai->ai_addrlen);
+		closesocket(fd);
+		if(result)
+			return false;
+		ai = ai->ai_next;
+	}
+
+	return true;
+}
+
+static int check_port(meshlink_handle_t *mesh) {
+	if(try_bind(655))
+		return 655;
+
+	fprintf(stderr, "Warning: could not bind to port 655.\n");
+
+	for(int i = 0; i < 100; i++) {
+		int port = 0x1000 + (rand() & 0x7fff);
+		if(try_bind(port)) {
+			char filename[PATH_MAX];
+			snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->name);
+			FILE *f = fopen(filename, "a");
+			if(!f) {
+				fprintf(stderr, "Please change MeshLink's Port manually.\n");
+				return 0;
+			}
+
+			fprintf(f, "Port = %d\n", port);
+			fclose(f);
+			fprintf(stderr, "MeshLink will instead listen on port %d.\n", port);
+			return port;
+		}
+	}
+
+	fprintf(stderr, "Please change MeshLink's Port manually.\n");
+	return 0;
 }
 
 static bool finalize_join(meshlink_handle_t *mesh) {
@@ -507,7 +573,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 
 	ecdsa_free(key);
 
-	check_port(name);
+	check_port(mesh);
 
 	fprintf(stderr, "Configuration stored in: %s\n", mesh->confbase);
 
@@ -612,13 +678,6 @@ static bool sendline(int fd, char *format, ...) {
 
 	return true;
 }
-int rstrip(char *value) {
-	int len = strlen(value);
-	while(len && strchr("\t\r\n ", value[len - 1]))
-		value[--len] = 0;
-	return len;
-}
-
 
 static const char *errstr[] = {
 	[MESHLINK_OK] = "No error",
@@ -677,63 +736,6 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 	ecdsa_free(key);
 
 	return true;
-}
-
-static bool try_bind(int port) {
-	struct addrinfo *ai = NULL;
-	struct addrinfo hint = {
-		.ai_flags = AI_PASSIVE,
-		.ai_family = AF_UNSPEC,
-		.ai_socktype = SOCK_STREAM,
-		.ai_protocol = IPPROTO_TCP,
-	};
-
-	char portstr[16];
-	snprintf(portstr, sizeof portstr, "%d", port);
-
-	if(getaddrinfo(NULL, portstr, &hint, &ai) || !ai)
-		return false;
-
-	while(ai) {
-		int fd = socket(ai->ai_family, SOCK_STREAM, IPPROTO_TCP);
-		if(!fd)
-			return false;
-		int result = bind(fd, ai->ai_addr, ai->ai_addrlen);
-		closesocket(fd);
-		if(result)
-			return false;
-		ai = ai->ai_next;
-	}
-
-	return true;
-}
-
-int check_port(meshlink_handle_t *mesh) {
-	if(try_bind(655))
-		return 655;
-
-	fprintf(stderr, "Warning: could not bind to port 655.\n");
-
-	for(int i = 0; i < 100; i++) {
-		int port = 0x1000 + (rand() & 0x7fff);
-		if(try_bind(port)) {
-			char filename[PATH_MAX];
-			snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->name);
-			FILE *f = fopen(filename, "a");
-			if(!f) {
-				fprintf(stderr, "Please change MeshLink's Port manually.\n");
-				return 0;
-			}
-
-			fprintf(f, "Port = %d\n", port);
-			fclose(f);
-			fprintf(stderr, "MeshLink will instead listen on port %d.\n", port);
-			return port;
-		}
-	}
-
-	fprintf(stderr, "Please change MeshLink's Port manually.\n");
-	return 0;
 }
 
 static bool meshlink_setup(meshlink_handle_t *mesh) {
@@ -911,8 +913,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 }
 
 meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
-	return (meshlink_node_t *)lookup_node(mesh, name);
-	return NULL;
+	return (meshlink_node_t *)lookup_node(mesh, (char *)name); // TODO: make lookup_node() use const
 }
 
 size_t meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, size_t nmemb) {
