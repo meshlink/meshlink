@@ -963,19 +963,21 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	// Check validity of the new node's name
 	if(!check_id(name)) {
 		fprintf(stderr, "Invalid name for node.\n");
-		return 1;
+		return NULL;
 	}
 
 	char *myname = get_my_name(mesh);
-	if(!myname)
-		return 1;
+	if(!myname) {
+		fprintf(stderr, "Could not determine my own name.\n");
+		return NULL;
+	}
 
 	// Ensure no host configuration file with that name exists
 	char filename [PATH_MAX];
 	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 	if(!access(filename, F_OK)) {
 		fprintf(stderr, "A host config file for %s already exists!\n", name);
-		return 1;
+		return NULL;
 	}
 
 	// If a daemon is running, ensure no other nodes know about this name
@@ -1005,14 +1007,14 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	snprintf(filename,PATH_MAX, "%s" SLASH "invitations", mesh->confbase);
 	if(mkdir(filename, 0700) && errno != EEXIST) {
 		fprintf(stderr, "Could not create directory %s: %s\n", filename, strerror(errno));
-		return 1;
+		return NULL;
 	}
 
 	// Count the number of valid invitations, clean up old ones
 	DIR *dir = opendir(filename);
 	if(!dir) {
 		fprintf(stderr, "Could not read directory %s: %s\n", filename, strerror(errno));
-		return 1;
+		return NULL;
 	}
 
 	errno = 0;
@@ -1040,7 +1042,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	if(errno) {
 		fprintf(stderr, "Error while reading directory %s: %s\n", filename, strerror(errno));
 		closedir(dir);
-		return 1;
+		return NULL;
 	}
 
 	closedir(dir);
@@ -1057,17 +1059,18 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	if(!f) {
 		if(errno != ENOENT) {
 			fprintf(stderr, "Could not read %s: %s\n", filename, strerror(errno));
-			return 1;
+			return NULL;
 		}
 
 		key = ecdsa_generate();
 		if(!key) {
-			return 1;
+			fprintf(stderr, "Could not generate a new key!\n");
+			return NULL;
 		}
 		f = fopen(filename, "w");
 		if(!f) {
 			fprintf(stderr, "Could not write %s: %s\n", filename, strerror(errno));
-			return 1;
+			return NULL;
 		}
 		chmod(filename, 0600);
 		ecdsa_write_pem_private_key(key, f);
@@ -1083,7 +1086,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	}
 
 	if(!key)
-		return 1;
+		return NULL;
 
 	// Create a hash of the key.
 	char *fingerprint = ecdsa_get_base64_public_key(key);
@@ -1109,7 +1112,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	int ifd = open(filename, O_RDWR | O_CREAT | O_EXCL, 0600);
 	if(!ifd) {
 		fprintf(stderr, "Could not create invitation file %s: %s\n", filename, strerror(errno));
-		return 1;
+		return NULL;
 	}
 	f = fdopen(ifd, "w");
 	if(!f)
@@ -1152,7 +1155,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	char *url;
 	xasprintf(&url, "%s/%s%s", address, hash, cookie);
 
-	return 0;
+	return url;
 }
 
 bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
