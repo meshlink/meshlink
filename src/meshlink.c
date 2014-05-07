@@ -1126,12 +1126,12 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	// Make sure confbase exists and is accessible.
 	if(mkdir(mesh->confbase, 0777) && errno != EEXIST) {
 		fprintf(stderr, "Could not create directory %s: %s\n", mesh->confbase, strerror(errno));
-		return 1;
+		return false;
 	}
 
 	if(access(mesh->confbase, R_OK | W_OK | X_OK)) {
 		fprintf(stderr, "No permission to write in directory %s: %s\n", mesh->confbase, strerror(errno));
-		return 1;
+		return false;
 	}
 
 	// TODO: Either remove or reintroduce netname in meshlink
@@ -1175,25 +1175,25 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	// Generate a throw-away key for the invitation.
 	ecdsa_t *key = ecdsa_generate();
 	if(!key)
-		return 1;
+		return false;
 
 	char *b64key = ecdsa_get_base64_public_key(key);
 
 	// Connect to the meshlink daemon mentioned in the URL.
 	struct addrinfo *ai = str2addrinfo(address, port, SOCK_STREAM);
 	if(!ai)
-		return 1;
+		return false;
 
 	mesh->sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 	if(mesh->sock <= 0) {
 		fprintf(stderr, "Could not open socket: %s\n", strerror(errno));
-		return 1;
+		return false;
 	}
 
 	if(connect(mesh->sock, ai->ai_addr, ai->ai_addrlen)) {
 		fprintf(stderr, "Could not connect to %s port %s: %s\n", address, port, strerror(errno));
 		closesocket(mesh->sock);
-		return 1;
+		return false;
 	}
 
 	fprintf(stderr, "Connected to %s port %s...\n", address, port);
@@ -1206,7 +1206,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	if(!sendline(mesh->sock, "0 ?%s %d.%d", b64key, PROT_MAJOR, 1)) {
 		fprintf(stderr, "Error sending request to %s port %s: %s\n", address, port, strerror(errno));
 		closesocket(mesh->sock);
-		return 1;
+		return false;
 	}
 
 	char hisname[4096] = "";
@@ -1215,7 +1215,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	if(!recvline(mesh, sizeof mesh->line) || sscanf(mesh->line, "%d %s %d.%d", &code, hisname, &hismajor, &hisminor) < 3 || code != 0 || hismajor != PROT_MAJOR || !check_id(hisname) || !recvline(mesh, sizeof mesh->line) || !rstrip(mesh->line) || sscanf(mesh->line, "%d ", &code) != 1 || code != ACK || strlen(mesh->line) < 3) {
 		fprintf(stderr, "Cannot read greeting from peer\n");
 		closesocket(mesh->sock);
-		return 1;
+		return false;
 	}
 
 	// Check if the hash of the key he gave us matches the hash in the URL.
@@ -1223,36 +1223,36 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	char hishash[64];
 	if(!sha512(fingerprint, strlen(fingerprint), hishash)) {
 		fprintf(stderr, "Could not create hash\n%s\n", mesh->line + 2);
-		return 1;
+		return false;
 	}
 	if(memcmp(hishash, mesh->hash, 18)) {
 		fprintf(stderr, "Peer has an invalid key!\n%s\n", mesh->line + 2);
-		return 1;
+		return false;
 
 	}
 
 	ecdsa_t *hiskey = ecdsa_set_base64_public_key(fingerprint);
 	if(!hiskey)
-		return 1;
+		return false;
 
 	// Start an SPTPS session
 	if(!sptps_start(&mesh->sptps, mesh, true, false, key, hiskey, "meshlink invitation", 15, invitation_send, invitation_receive))
-		return 1;
+		return false;
 
 	// Feed rest of input buffer to SPTPS
 	if(!sptps_receive_data(&mesh->sptps, mesh->buffer, mesh->blen))
-		return 1;
+		return false;
 
 	while((len = recv(mesh->sock, mesh->line, sizeof mesh->line, 0))) {
 		if(len < 0) {
 			if(errno == EINTR)
 				continue;
 			fprintf(stderr, "Error reading data from %s port %s: %s\n", address, port, strerror(errno));
-			return 1;
+			return false;
 		}
 
 		if(!sptps_receive_data(&mesh->sptps, mesh->line, len))
-			return 1;
+			return false;
 	}
 
 	sptps_stop(&mesh->sptps);
