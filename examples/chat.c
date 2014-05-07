@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
 
 	meshlink_handle_t *mesh = meshlink_open(confbase, nick);
 	if(!mesh) {
-		fprintf(stderr, "Could not open MeshLink: %s\n", mesh->errstr);
+		fprintf(stderr, "Could not open MeshLink!\n");
 		return 1;
 	}
 
