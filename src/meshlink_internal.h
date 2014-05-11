@@ -98,9 +98,6 @@ struct meshlink_handle {
 	int pingtimeout;	/* seconds to wait for response */
 	int maxtimeout;
 
-	char meshlink_conf[PATH_MAX];
-	char hosts_dir[PATH_MAX];
-	
 	int sock;
 	sptps_t sptps;
 	char cookie[18], hash[18];

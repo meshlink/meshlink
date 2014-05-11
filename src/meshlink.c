@@ -179,9 +179,8 @@ static char *get_my_hostname(meshlink_handle_t* mesh) {
 	FILE *f;
 
 	// Use first Address statement in own host config file
-	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 	scan_for_hostname(filename, &hostname, &port);
-	scan_for_hostname(mesh->meshlink_conf, &hostname, &port);
 
 	if(hostname)
 		goto done;
@@ -424,26 +423,18 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 		return false;
 	}
 
-	if(mkdir(mesh->confbase, 0777) && errno != EEXIST) {
-		fprintf(stderr, "Could not create directory %s: %s\n", mesh->confbase, strerror(errno));
-		return false;
-	}
+	char filename[PATH_MAX];
+	snprintf(filename, sizeof filename, "%s" SLASH "meshlink.conf", mesh->confbase);
 
-	if(mkdir(mesh->hosts_dir, 0777) && errno != EEXIST) {
-		fprintf(stderr, "Could not create directory %s: %s\n", mesh->hosts_dir, strerror(errno));
-		return false;
-	}
-
-	FILE *f = fopen(mesh->meshlink_conf, "w");
+	FILE *f = fopen(filename, "w");
 	if(!f) {
-		fprintf(stderr, "Could not create file %s: %s\n", mesh->meshlink_conf, strerror(errno));
+		fprintf(stderr, "Could not create file %s: %s\n", filename, strerror(errno));
 		return false;
 	}
 
 	fprintf(f, "Name = %s\n", name);
 
-	char filename[PATH_MAX];
-	snprintf(filename,PATH_MAX, "%s" SLASH "%s", mesh->hosts_dir, name);
+	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 	FILE *fh = fopen(filename, "w");
 	if(!fh) {
 		fprintf(stderr, "Could not create file %s: %s\n", filename, strerror(errno));
@@ -515,7 +506,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 			return false;
 		}
 
-		snprintf(filename,PATH_MAX, "%s" SLASH "%s", mesh->hosts_dir, value);
+		snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, value);
 		f = fopen(filename, "w");
 
 		if(!f) {
@@ -554,7 +545,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 	if(!b64key)
 		return false;
 
-	snprintf(filename,PATH_MAX, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
+	snprintf(filename, sizeof filename, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
 	f = fopenmask(filename, "w", 0600);
 
 	if(!ecdsa_write_pem_private_key(key, f)) {
@@ -739,29 +730,29 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 }
 
 static bool meshlink_setup(meshlink_handle_t *mesh) {
-
 	if(mkdir(mesh->confbase, 0777) && errno != EEXIST) {
 		fprintf(stderr, "Could not create directory %s: %s\n", mesh->confbase, strerror(errno));
 		return false;
 	}
 
-	snprintf(mesh->hosts_dir, sizeof mesh->hosts_dir, "%s" SLASH "hosts", mesh->confbase);
+	char filename[PATH_MAX];
+	snprintf(filename, sizeof filename, "%s" SLASH "hosts", mesh->confbase);
 
-	if(mkdir(mesh->hosts_dir, 0777) && errno != EEXIST) {
-		fprintf(stderr, "Could not create directory %s: %s\n", mesh->hosts_dir, strerror(errno));
+	if(mkdir(filename, 0777) && errno != EEXIST) {
+		fprintf(stderr, "Could not create directory %s: %s\n", filename, strerror(errno));
 		return false;
 	}
 
-	snprintf(mesh->meshlink_conf, sizeof mesh->meshlink_conf, "%s" SLASH "meshlink.conf", mesh->confbase);
+	snprintf(filename, sizeof filename, "%s" SLASH "meshlink.conf", mesh->confbase);
 
-	if(!access(mesh->meshlink_conf, F_OK)) {
-		fprintf(stderr, "Configuration file %s already exists!\n", mesh->meshlink_conf);
+	if(!access(filename, F_OK)) {
+		fprintf(stderr, "Configuration file %s already exists!\n", filename);
 		return false;
 	}
 
-	FILE *f = fopen(mesh->meshlink_conf, "w");
+	FILE *f = fopen(filename, "w");
 	if(!f) {
-		fprintf(stderr, "Could not create file %s: %s\n", mesh->meshlink_conf, strerror(errno));
+		fprintf(stderr, "Could not create file %s: %s\n", filename, strerror(errno));
 		return 1;
 	}
 
@@ -954,7 +945,7 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 			continue;
 		char invname[PATH_MAX];
 		struct stat st;
-		snprintf(invname,PATH_MAX, "%s" SLASH "%s", filename, ent->d_name);
+		snprintf(invname, sizeof invname, "%s" SLASH "%s", filename, ent->d_name);
 		if(!stat(invname, &st)) {
 			if(mesh->invitation_key && deadline < st.st_mtime)
 				count++;
@@ -1027,8 +1018,8 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	}
 
 	// Ensure no host configuration file with that name exists
-	char filename [PATH_MAX];
-	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	char filename[PATH_MAX];
+	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 	if(!access(filename, F_OK)) {
 		fprintf(stderr, "A host config file for %s already exists!\n", name);
 		return NULL;
@@ -1065,7 +1056,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	b64encode_urlsafe(cookie, cookie, 18);
 
 	// Create a file containing the details of the invitation.
-	snprintf(filename,PATH_MAX, "%s" SLASH "invitations" SLASH "%s", mesh->confbase, cookiehash);
+	snprintf(filename, sizeof filename, "%s" SLASH "invitations" SLASH "%s", mesh->confbase, cookiehash);
 	int ifd = open(filename, O_RDWR | O_CREAT | O_EXCL, 0600);
 	if(!ifd) {
 		fprintf(stderr, "Could not create invitation file %s: %s\n", filename, strerror(errno));
@@ -1085,7 +1076,8 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	fprintf(f, "ConnectTo = %s\n", mesh->self->name);
 
 	// Copy Broadcast and Mode
-	FILE *tc = fopen(mesh->meshlink_conf, "r");
+	snprintf(filename, sizeof filename, "%s" SLASH "meshlink.conf", mesh->confbase);
+	FILE *tc = fopen(filename,  "r");
 	if(tc) {
 		char buf[1024];
 		while(fgets(buf, sizeof buf, tc)) {
@@ -1098,14 +1090,16 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 			}
 		}
 		fclose(tc);
+	} else {
+		fprintf(stderr, "Could not create %s: %s\n", filename, strerror(errno));
+		return NULL;
 	}
 
 	fprintf(f, "#---------------------------------------------------------------#\n");
 	fprintf(f, "Name = %s\n", mesh->self->name);
 
-	char filename2[PATH_MAX];
-	snprintf(filename2,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
-	fcopy(f, filename2);
+	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
+	fcopy(f, filename);
 	fclose(f);
 
 	// Create an URL from the local address, key hash and cookie
