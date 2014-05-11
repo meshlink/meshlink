@@ -1120,23 +1120,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	char copy[strlen(invitation) + 1];
 	strcpy(copy, invitation);
 
-	// Make sure confbase exists and is accessible.
-	if(mkdir(mesh->confbase, 0777) && errno != EEXIST) {
-		fprintf(stderr, "Could not create directory %s: %s\n", mesh->confbase, strerror(errno));
-		return false;
-	}
-
-	if(access(mesh->confbase, R_OK | W_OK | X_OK)) {
-		fprintf(stderr, "No permission to write in directory %s: %s\n", mesh->confbase, strerror(errno));
-		return false;
-	}
-
-	// TODO: Either remove or reintroduce netname in meshlink
-	// If a netname or explicit configuration directory is specified, check for an existing meshlink.conf.
-	//if((mesh->netname || confbasegiven) && !access(meshlink_conf, F_OK)) {
-	//	fprintf(stderr, "Configuration file %s already exists!\n", meshlink_conf);
-	//	return 1;
-	//}
+	// Split the invitation URL into hostname, port, key hash and cookie.
 
 	char *slash = strchr(copy, '/');
 	if(!slash)
