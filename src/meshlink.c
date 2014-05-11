@@ -1181,6 +1181,8 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 
 	// Tell him we have an invitation, and give him our throw-away key.
 
+	mesh->blen = 0;
+
 	if(!sendline(mesh->sock, "0 ?%s %d.%d", b64key, PROT_MAJOR, 1)) {
 		fprintf(stderr, "Error sending request to %s port %s: %s\n", address, port, strerror(errno));
 		closesocket(mesh->sock);
