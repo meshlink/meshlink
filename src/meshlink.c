@@ -558,13 +558,14 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 	fclose(f);
 
 	fprintf(fh, "ECDSAPublicKey = %s\n", b64key);
+	fprintf(fh, "Port = %s\n", mesh->myport);
+
+	fclose(fh);
 
 	sptps_send_record(&(mesh->sptps), 1, b64key, strlen(b64key));
 	free(b64key);
 
 	ecdsa_free(key);
-
-	check_port(mesh);
 
 	fprintf(stderr, "Configuration stored in: %s\n", mesh->confbase);
 
@@ -1141,7 +1142,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 			*port++ = 0;
 	}
 
-	if(!mesh->myport || !*port)
+	if(!*port)
 		port = "655";
 
 	if(!b64decode(slash, mesh->hash, 18) || !b64decode(slash + 24, mesh->cookie, 18))
