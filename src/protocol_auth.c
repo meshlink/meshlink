@@ -163,6 +163,9 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 	//TODO: callback to application to inform of an accepted invitation
 
 	sptps_send_record(&c->sptps, 2, data, 0);
+
+	load_all_nodes(mesh);
+
 	return true;
 }
 

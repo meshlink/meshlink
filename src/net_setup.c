@@ -124,7 +124,7 @@ static bool read_invitation_key(meshlink_handle_t *mesh) {
 	return mesh->invitation_key;
 }
 
-static void load_all_nodes(meshlink_handle_t *mesh) {
+void load_all_nodes(meshlink_handle_t *mesh) {
 	DIR *dir;
 	struct dirent *ent;
 	char dname[PATH_MAX];

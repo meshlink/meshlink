@@ -94,6 +94,7 @@ extern void send_packet(struct meshlink_handle *mesh, struct node_t *, struct vp
 extern void receive_tcppacket(struct meshlink_handle *mesh, struct connection_t *, const char *, int);
 extern void broadcast_packet(struct meshlink_handle *mesh, const struct node_t *, struct vpn_packet_t *);
 extern char *get_name(struct meshlink_handle *mesh);
+extern void load_all_nodes(struct meshlink_handle *mesh);
 extern bool setup_myself_reloadable(struct meshlink_handle *mesh);
 extern bool setup_network(struct meshlink_handle *mesh);
 extern void setup_outgoing_connection(struct meshlink_handle *mesh, struct outgoing_t *);
