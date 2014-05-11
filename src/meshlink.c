@@ -341,18 +341,6 @@ static char *get_value(const char *data, const char *var) {
 		return NULL;
 	return val;
 }
-static FILE *fopenmask(const char *filename, const char *mode, mode_t perms) {
-	mode_t mask = umask(0);
-	perms &= ~mask;
-	umask(~perms);
-	FILE *f = fopen(filename, mode);
-#ifdef HAVE_FCHMOD
-	if((perms & 0444) && f)
-		fchmod(fileno(f), perms);
-#endif
-	umask(mask);
-	return f;
-}
 
 static bool try_bind(int port) {
 	struct addrinfo *ai = NULL;
@@ -536,26 +524,9 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 		fclose(f);
 	}
 
-	// Generate our key and send a copy to the server
-	ecdsa_t *key = ecdsa_generate();
-	if(!key)
-		return false;
-
-	char *b64key = ecdsa_get_base64_public_key(key);
+	char *b64key = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
 	if(!b64key)
 		return false;
-
-	snprintf(filename, sizeof filename, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
-	f = fopenmask(filename, "w", 0600);
-
-	if(!ecdsa_write_pem_private_key(key, f)) {
-		fprintf(stderr, "Error writing private key!\n");
-		ecdsa_free(key);
-		fclose(f);
-		return false;
-	}
-
-	fclose(f);
 
 	fprintf(fh, "ECDSAPublicKey = %s\n", b64key);
 	fprintf(fh, "Port = %s\n", mesh->myport);
@@ -564,8 +535,6 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 
 	sptps_send_record(&(mesh->sptps), 1, b64key, strlen(b64key));
 	free(b64key);
-
-	ecdsa_free(key);
 
 	fprintf(stderr, "Configuration stored in: %s\n", mesh->confbase);
 
