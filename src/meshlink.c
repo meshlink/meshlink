@@ -928,46 +928,10 @@ bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const cha
 	return false;
 }
 
-char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
-	// Check validity of the new node's name
-	if(!check_id(name)) {
-		fprintf(stderr, "Invalid name for node.\n");
-		return NULL;
-	}
+static bool refresh_invitation_key(meshlink_handle_t *mesh) {
+	char filename[PATH_MAX];
 
-	// Ensure no host configuration file with that name exists
-	char filename [PATH_MAX];
-	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
-	if(!access(filename, F_OK)) {
-		fprintf(stderr, "A host config file for %s already exists!\n", name);
-		return NULL;
-	}
-
-	// If a daemon is running, ensure no other nodes know about this name
-
-	//TODO: original tinc code connects to tincd cli and makes this check. How we want to implement this here ?
-	//bool found = false;
-	//if(connect_tincd(false)) {
-	//	sendline(fd, "%d %d", CONTROL, REQ_DUMP_NODES);
-
-	//	while(recvline(fd, line, sizeof line)) {
-	//		char node[4096];
-	//		int code, req;
-	//		if(sscanf(line, "%d %d %s", &code, &req, node) != 3)
-	//			break;
-	//		if(!strcmp(node, name))
-	//			found = true;
-	//	}
-
-	//	if(found) {
-	//		fprintf(stderr, "A node with name %s is already known!\n", name);
-	//		return 1;
-	//	}
-	//}
-
-	char hash[64];
-
-	snprintf(filename,PATH_MAX, "%s" SLASH "invitations", mesh->confbase);
+	snprintf(filename, sizeof filename, "%s" SLASH "invitations", mesh->confbase);
 	if(mkdir(filename, 0700) && errno != EEXIST) {
 		fprintf(stderr, "Could not create directory %s: %s\n", filename, strerror(errno));
 		return NULL;
@@ -992,7 +956,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 		struct stat st;
 		snprintf(invname,PATH_MAX, "%s" SLASH "%s", filename, ent->d_name);
 		if(!stat(invname, &st)) {
-			if(deadline < st.st_mtime)
+			if(mesh->invitation_key && deadline < st.st_mtime)
 				count++;
 			else
 				unlink(invname);
@@ -1005,17 +969,24 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	if(errno) {
 		fprintf(stderr, "Error while reading directory %s: %s\n", filename, strerror(errno));
 		closedir(dir);
-		return NULL;
+		return false;
 	}
 
 	closedir(dir);
 
-	ecdsa_t *key;
-	snprintf(filename,PATH_MAX, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
+	snprintf(filename, sizeof filename, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
 
 	// Remove the key if there are no outstanding invitations.
-	if(!count)
+	if(!count) {
 		unlink(filename);
+		if(mesh->invitation_key) {
+			ecdsa_free(mesh->invitation_key);
+			mesh->invitation_key = NULL;
+		}
+	}
+
+	if(mesh->invitation_key)
+		return true;
 
 	// Create a new key if necessary.
 	FILE *f = fopen(filename, "r");
@@ -1025,8 +996,8 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 			return NULL;
 		}
 
-		key = ecdsa_generate();
-		if(!key) {
+		mesh->invitation_key = ecdsa_generate();
+		if(!mesh->invitation_key) {
 			fprintf(stderr, "Could not generate a new key!\n");
 			return NULL;
 		}
@@ -1036,23 +1007,46 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 			return NULL;
 		}
 		chmod(filename, 0600);
-		ecdsa_write_pem_private_key(key, f);
+		ecdsa_write_pem_private_key(mesh->invitation_key, f);
 		fclose(f);
-		//TODO: handle this in meshlink
-		//if(connect_tincd(false))
-		//	sendline(fd, "%d %d", CONTROL, REQ_RELOAD);
 	} else {
-		key = ecdsa_read_pem_private_key(f);
+		mesh->invitation_key = ecdsa_read_pem_private_key(f);
 		fclose(f);
-		if(!key)
+		if(!mesh->invitation_key)
 			fprintf(stderr, "Could not read private key from %s\n", filename);
 	}
 
-	if(!key)
+	return mesh->invitation_key;
+}
+
+char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
+	// Check validity of the new node's name
+	if(!check_id(name)) {
+		fprintf(stderr, "Invalid name for node.\n");
+		return NULL;
+	}
+
+	// Ensure no host configuration file with that name exists
+	char filename [PATH_MAX];
+	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	if(!access(filename, F_OK)) {
+		fprintf(stderr, "A host config file for %s already exists!\n", name);
+		return NULL;
+	}
+
+	// Ensure no other nodes know about this name
+	if(meshlink_get_node(mesh, name)) {
+		fprintf(stderr, "A node with name %s is already known!\n", name);
+		return NULL;
+	}
+
+	if(!refresh_invitation_key(mesh))
 		return NULL;
 
+	char hash[64];
+
 	// Create a hash of the key.
-	char *fingerprint = ecdsa_get_base64_public_key(key);
+	char *fingerprint = ecdsa_get_base64_public_key(mesh->invitation_key);
 	sha512(fingerprint, strlen(fingerprint), hash);
 	b64encode_urlsafe(hash, hash, 18);
 
@@ -1077,7 +1071,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 		fprintf(stderr, "Could not create invitation file %s: %s\n", filename, strerror(errno));
 		return NULL;
 	}
-	f = fdopen(ifd, "w");
+	FILE *f = fdopen(ifd, "w");
 	if(!f)
 		abort();
 
