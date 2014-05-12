@@ -72,9 +72,41 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 		meshlink_blacklist(mesh, node);
 
 		printf("Node '%s' blacklisted.\n", arg);
+	} else if(!strcasecmp(buf, "who")) {
+		if(!arg) {
+			meshlink_node_t *nodes[100];
+			size_t n = meshlink_get_all_nodes(mesh, nodes, 100);
+			if(!n) {
+				fprintf(stderr, "No nodes known!\n");
+			} else {
+				printf("Known nodes:");
+				for(int i = 0; i < n && i < 100; i++)
+					printf(" %s", nodes[i]->name);
+				if(n > 100)
+					printf(" (and %zu more)", n - 100);
+				printf("\n");
+			}
+		} else {
+			meshlink_node_t *node = meshlink_get_node(mesh, arg);
+			if(!node) {
+				fprintf(stderr, "Unknown node '%s'\n", arg);
+			} else {
+				printf("Node %s found\n", arg);
+			}
+		}
 	} else if(!strcasecmp(buf, "quit")) {
 		printf("Bye!\n");
 		fclose(stdin);
+	} else if(!strcasecmp(buf, "help")) {
+		printf(
+			"<name>: <message>     Send a message to the given node.\n"
+			"                      Subsequent messages don't need the <name>: prefix.\n"
+			"/invite <name>        Create an invitation for a new node.\n"
+			"/join <invitation>    Join an existing mesh using an invitation.\n"
+			"/kick <name>          Blacklist the given node.\n"
+			"/who [<name>]         List all nodes or show information about the given node.\n"
+			"/quit                 Exit this program.\n"
+			);
 	} else {
 		fprintf(stderr, "Unknown command '/%s'\n", buf);
 	}
@@ -164,7 +196,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	printf("Chat started.\n");
+	printf("Chat started.\nType /help for a list of commands.\n");
 
 	while(fgets(buf, sizeof buf, stdin))
 		parse_input(mesh, buf);
