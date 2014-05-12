@@ -223,7 +223,8 @@ static void check_reachability(meshlink_handle_t *mesh) {
 
 			timeout_del(&mesh->loop, &n->mtutimeout);
 
-			//TODO: callback to application to inform of this node going up/down
+			if(mesh->node_status_cb)
+				mesh->node_status_cb(mesh, (meshlink_node_t *)n, n->status.reachable);
 
 			if(!n->status.reachable) {
 				update_node_udp(mesh, n, NULL);
