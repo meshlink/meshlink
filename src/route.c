@@ -29,51 +29,55 @@ bool decrement_ttl = false;
 
 static bool checklength(node_t *source, vpn_packet_t *packet, uint16_t length) {
 	if(packet->len < length) {
-		logger(DEBUG_TRAFFIC, LOG_WARNING, "Got too short packet from %s (%s)", source->name, source->hostname);
+		logger(DEBUG_TRAFFIC, LOG_WARNING,
+		       "Got too short packet from %s (%s)", source->name,
+		       source->hostname);
 		return false;
 	} else
 		return true;
 }
 
 void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
-    // TODO: route on name or key
+	// TODO: route on name or key
 
-    node_t* owner = NULL;
-    node_t* via = NULL;
-    meshlink_packethdr_t* hdr = (meshlink_packethdr_t*)packet->data;
-    owner = lookup_node(mesh, hdr->destination);
-    logger(DEBUG_TRAFFIC, LOG_WARNING, "Routing packet from: %s . To: %s \n",hdr->source,hdr->destination);
+	node_t *owner = NULL;
+	node_t *via = NULL;
+	meshlink_packethdr_t *hdr = (meshlink_packethdr_t *) packet->data;
+	owner = lookup_node(mesh, hdr->destination);
+	logger(DEBUG_TRAFFIC, LOG_WARNING,
+	       "Routing packet from: %s . To: %s \n", hdr->source,
+	       hdr->destination);
 
-    //Check Lenght
-    if(!checklength(source, packet, (sizeof(meshlink_packethdr_t))))
-        return;
+	//Check Lenght
+	if(!checklength(source, packet, (sizeof(meshlink_packethdr_t))))
+		return;
 
-    if (owner == NULL) {
-    //Lookup failed
-    logger(DEBUG_TRAFFIC, LOG_WARNING, "Cant lookup the owner of a packet in the route() function. This should never happen \n");
-    logger(DEBUG_TRAFFIC, LOG_WARNING, "Destination was: %s \n",hdr->destination);
-    return;
-    }
+	if(owner == NULL) {
+		//Lookup failed
+		logger(DEBUG_TRAFFIC, LOG_WARNING, "Cant lookup the owner of a packet in the route() function. This should never happen!\n");
+		logger(DEBUG_TRAFFIC, LOG_WARNING, "Destination was: %s\n", hdr->destination);
+		return;
+	}
 
-    if (owner == mesh->self ) {
-    //TODO: implement sending received data from meshlink library to the application
-    logger(DEBUG_TRAFFIC, LOG_WARNING, "I received a packet for me with payload: %s \n", packet->data + sizeof *hdr);
-    (meshlink_receive_cb_t)(packet->data + sizeof *hdr);
-    return;
-    }
+	if(owner == mesh->self) {
+		logger(DEBUG_TRAFFIC, LOG_WARNING, "I received a packet for me with payload: %s \n", packet->data + sizeof *hdr);
+		if(mesh->receive_cb)
+			mesh->receive_cb(mesh, (meshlink_node_t *)source, packet->data + sizeof *hdr, packet->len - sizeof *hdr);
+		return;
+	}
 
-    if(!owner->status.reachable) {
-    //TODO: check what to do here, not just print a warning
-    logger(DEBUG_TRAFFIC, LOG_WARNING, "The owner of a packet in the route() function is unreachable. Dropping packet. \n");
-    return;
-    }
+	if(!owner->status.reachable) {
+		//TODO: check what to do here, not just print a warning
+		logger(DEBUG_TRAFFIC, LOG_WARNING, "The owner of a packet in the route() function is unreachable. Dropping packet.\n");
+		return;
+	}
 
-    via = (owner->via == mesh->self) ? owner->nexthop : owner->via;
-    if(via == source) {
-	logger(DEBUG_TRAFFIC, LOG_ERR, "Routing loop for packet from %s (%s)!", source->name, source->hostname);
+	via = (owner->via == mesh->self) ? owner->nexthop : owner->via;
+	if(via == source) {
+		logger(DEBUG_TRAFFIC, LOG_ERR, "Routing loop for packet from %s (%s)!", source->name, source->hostname);
+		return;
+	}
+
+	send_packet(mesh, owner, packet);
 	return;
-    }
-
-    send_packet(mesh, owner, packet);
-    return;
 }
