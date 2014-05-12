@@ -885,7 +885,15 @@ meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
 }
 
 size_t meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, size_t nmemb) {
-	return 0;
+	size_t i = 0;
+
+	for splay_each(node_t, n, mesh->nodes) {
+		if(i < nmemb)
+			nodes[i] = (meshlink_node_t *)n;
+		i++;
+	}
+
+	return i;
 }
 
 char *meshlink_sign(meshlink_handle_t *mesh, const char *data, size_t len) {
