@@ -265,9 +265,8 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
   Configure node_t mesh->self and set up the local sockets (listen only)
 */
 bool setup_myself(meshlink_handle_t *mesh) {
-	char *name, *hostname, *cipher, *digest, *type;
+	char *name;
 	char *address = NULL;
-	bool port_specified = false;
 
 	if(!(name = get_name(mesh))) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Name for tinc daemon required!");
@@ -282,8 +281,6 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	if(!get_config_string(lookup_config(mesh->config, "Port"), &mesh->myport))
 		mesh->myport = xstrdup("655");
-	else
-		port_specified = true;
 
 	mesh->self->connection->options = 0;
 	mesh->self->connection->protocol_major = PROT_MAJOR;
@@ -333,7 +330,6 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	/* Open sockets */
 
 	mesh->listen_sockets = 0;
-	int cfgs = 0;
 
 	if(!add_listen_address(mesh, address, NULL))
 		return false;

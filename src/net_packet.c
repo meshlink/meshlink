@@ -440,14 +440,6 @@ static void choose_broadcast_address(meshlink_handle_t *mesh, const node_t *n, c
 }
 
 static void send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
-	vpn_packet_t pkt1, pkt2;
-	vpn_packet_t *pkt[] = { &pkt1, &pkt2, &pkt1, &pkt2 };
-	vpn_packet_t *inpkt = origpkt;
-	int nextpkt = 0;
-	vpn_packet_t *outpkt;
-	int origlen = origpkt->len;
-	size_t outlen;
-
 	if(!n->status.reachable) {
 		logger(DEBUG_TRAFFIC, LOG_INFO, "Trying to send UDP packet to unreachable node %s (%s)", n->name, n->hostname);
 		return;
@@ -456,7 +448,7 @@ static void send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *ori
 	return send_sptps_packet(mesh, n, origpkt);
 }
 
-bool send_sptps_data(void *handle, uint8_t type, const char *data, size_t len) {
+bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	node_t *to = handle;
 	meshlink_handle_t *mesh = to->mesh;
 
@@ -500,7 +492,7 @@ bool send_sptps_data(void *handle, uint8_t type, const char *data, size_t len) {
 	return true;
 }
 
-bool receive_sptps_record(void *handle, uint8_t type, const char *data, uint16_t len) {
+bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t len) {
 	node_t *from = handle;
 	meshlink_handle_t *mesh = from->mesh;
 
@@ -557,8 +549,6 @@ bool receive_sptps_record(void *handle, uint8_t type, const char *data, uint16_t
   send a packet to the given vpn ip.
 */
 void send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
-	node_t *via;
-
 	if(n == mesh->self) {
 		n->out_packets++;
 		n->out_bytes += packet->len;

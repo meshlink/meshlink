@@ -43,7 +43,7 @@ void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 	node_t *owner = NULL;
 	node_t *via = NULL;
 	meshlink_packethdr_t *hdr = (meshlink_packethdr_t *) packet->data;
-	owner = lookup_node(mesh, hdr->destination);
+	owner = lookup_node(mesh, (char *)hdr->destination);
 	logger(DEBUG_TRAFFIC, LOG_WARNING,
 	       "Routing packet from: %s . To: %s \n", hdr->source,
 	       hdr->destination);

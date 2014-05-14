@@ -28,7 +28,7 @@
 #include "utils.h"
 #include "xalloc.h"
 
-bool send_meta_sptps(void *handle, uint8_t type, const char *buffer, size_t length) {
+bool send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t length) {
 	connection_t *c = handle;
 	meshlink_handle_t *mesh = c->mesh;
 
@@ -37,7 +37,7 @@ bool send_meta_sptps(void *handle, uint8_t type, const char *buffer, size_t leng
 		abort();
 	}
 
-	buffer_add(&c->outbuf, buffer, length);
+	buffer_add(&c->outbuf, (const char *)buffer, length);
 	io_set(&mesh->loop, &c->io, IO_READ | IO_WRITE);
 
 	return true;
@@ -67,9 +67,10 @@ void broadcast_meta(meshlink_handle_t *mesh, connection_t *from, const char *buf
 			send_meta(mesh, c, buffer, length);
 }
 
-bool receive_meta_sptps(void *handle, uint8_t type, const char *data, uint16_t length) {
+bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t length) {
 	connection_t *c = handle;
 	meshlink_handle_t *mesh = c->mesh;
+	char *request = (char *)data;
 
 	if(!c) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "receive_meta_sptps() called with NULL pointer!");
@@ -83,7 +84,7 @@ bool receive_meta_sptps(void *handle, uint8_t type, const char *data, uint16_t l
 			return true;
 	}
 
-	if(!data)
+	if(!request)
 		return true;
 
 	/* Are we receiving a TCPpacket? */
@@ -91,19 +92,19 @@ bool receive_meta_sptps(void *handle, uint8_t type, const char *data, uint16_t l
 	if(c->tcplen) {
 		if(length != c->tcplen)
 			return false;
-		receive_tcppacket(mesh, c, data, length);
+		receive_tcppacket(mesh, c, request, length);
 		c->tcplen = 0;
 		return true;
 	}
 
 	/* Change newline to null byte, just like non-SPTPS requests */
 
-	if(data[length - 1] == '\n')
-		((char *)data)[length - 1] = 0;
+	if(request[length - 1] == '\n')
+		request[length - 1] = 0;
 
 	/* Otherwise we are waiting for a request */
 
-	return receive_request(mesh, c, data);
+	return receive_request(mesh, c, request);
 }
 
 bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {

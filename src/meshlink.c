@@ -549,7 +549,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 	return true;
 }
 
-static bool invitation_send(void *handle, uint8_t type, const char *data, size_t len) {
+static bool invitation_send(void *handle, uint8_t type, const void *data, size_t len) {
 	meshlink_handle_t* mesh = handle;
 	while(len) {
 		int result = send(mesh->sock, data, len, 0);
@@ -563,7 +563,7 @@ static bool invitation_send(void *handle, uint8_t type, const char *data, size_t
 	return true;
 }
 
-static bool invitation_receive(void *handle, uint8_t type, const char *msg, uint16_t len) {
+static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint16_t len) {
 	meshlink_handle_t* mesh = handle;
 	switch(type) {
 		case SPTPS_HANDSHAKE:

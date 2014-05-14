@@ -51,14 +51,16 @@ static int charhex2bin(char c) {
 		return toupper(c) - 'A' + 10;
 }
 
-int hex2bin(const char *src, char *dst, int length) {
+int hex2bin(const char *src, void *vdst, int length) {
+	uint8_t *dst = vdst;
 	int i;
 	for(i = 0; i < length && isxdigit(src[i * 2]) && isxdigit(src[i * 2 + 1]); i++)
 		dst[i] = charhex2bin(src[i * 2]) * 16 + charhex2bin(src[i * 2 + 1]);
 	return i;
 }
 
-int bin2hex(const char *src, char *dst, int length) {
+int bin2hex(const void *vsrc, char *dst, int length) {
+	const uint8_t *src = vsrc;
 	for(int i = length - 1; i >= 0; i--) {
 		dst[i * 2 + 1] = hexadecimals[(unsigned char) src[i] & 15];
 		dst[i * 2] = hexadecimals[(unsigned char) src[i] >> 4];
@@ -67,10 +69,10 @@ int bin2hex(const char *src, char *dst, int length) {
 	return length * 2;
 }
 
-int b64decode(const char *src, char *dst, int length) {
+int b64decode(const char *src, void *dst, int length) {
 	int i;
 	uint32_t triplet = 0;
-	unsigned char *udst = (unsigned char *)dst;
+	unsigned char *udst = dst;
 
 	for(i = 0; i < length / 3 * 4 && src[i]; i++) {
 		triplet |= base64_decode[src[i] & 0xff] << (6 * (i & 3));
@@ -98,9 +100,9 @@ int b64decode(const char *src, char *dst, int length) {
 	}
 }
 
-static int b64encode_internal(const char *src, char *dst, int length, const char *alphabet) {
+static int b64encode_internal(const void *src, char *dst, int length, const char *alphabet) {
 	uint32_t triplet;
-	const unsigned char *usrc = (unsigned char *)src;
+	const unsigned char *usrc = src;
 	int si = length / 3 * 3;
 	int di = length / 3 * 4;
 
@@ -139,11 +141,11 @@ static int b64encode_internal(const char *src, char *dst, int length, const char
 	return length;
 }
 
-int b64encode(const char *src, char *dst, int length) {
+int b64encode(const void *src, char *dst, int length) {
 	return b64encode_internal(src, dst, length, base64_original);
 }
 
-int b64encode_urlsafe(const char *src, char *dst, int length) {
+int b64encode_urlsafe(const void *src, char *dst, int length) {
 	return b64encode_internal(src, dst, length, base64_urlsafe);
 }
 

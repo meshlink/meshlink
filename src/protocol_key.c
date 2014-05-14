@@ -31,8 +31,6 @@
 #include "utils.h"
 #include "xalloc.h"
 
-static bool mykeyused = false;
-
 void send_key_changed(meshlink_handle_t *mesh) {
 	send_request(mesh, mesh->everyone, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
 
@@ -71,7 +69,7 @@ bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request
 	return true;
 }
 
-static bool send_initial_sptps_data(void *handle, uint8_t type, const char *data, size_t len) {
+static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	node_t *to = handle;
 	meshlink_handle_t *mesh = to->mesh;
 	to->sptps.send_data = send_sptps_data;
@@ -244,7 +242,7 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char key[MAX_STRING_SIZE];
 	char address[MAX_STRING_SIZE] = "";
 	char port[MAX_STRING_SIZE] = "";
-	int cipher, digest, maclength, compression, keylen;
+	int cipher, digest, maclength, compression;
 	node_t *from, *to;
 
 	if(sscanf(request, "%*d "MAX_STRING" "MAX_STRING" "MAX_STRING" %d %d %d %d "MAX_STRING" "MAX_STRING,

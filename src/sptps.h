@@ -39,8 +39,8 @@
 #define SPTPS_SIG 3           // Waiting for a SIGnature record
 #define SPTPS_ACK 4           // Waiting for an ACKnowledgement record
 
-typedef bool (*send_data_t)(void *handle, uint8_t type, const char *data, size_t len);
-typedef bool (*receive_record_t)(void *handle, uint8_t type, const char *data, uint16_t len);
+typedef bool (*send_data_t)(void *handle, uint8_t type, const void *data, size_t len);
+typedef bool (*receive_record_t)(void *handle, uint8_t type, const void *data, uint16_t len);
 
 typedef struct sptps {
 	bool initiator;
@@ -83,9 +83,9 @@ extern void sptps_log_stderr(sptps_t *s, int s_errno, const char *format, va_lis
 extern void (*sptps_log)(sptps_t *s, int s_errno, const char *format, va_list ap);
 extern bool sptps_start(sptps_t *s, void *handle, bool initiator, bool datagram, ecdsa_t *mykey, ecdsa_t *hiskey, const char *label, size_t labellen, send_data_t send_data, receive_record_t receive_record);
 extern bool sptps_stop(sptps_t *s);
-extern bool sptps_send_record(sptps_t *s, uint8_t type, const char *data, uint16_t len);
-extern bool sptps_receive_data(sptps_t *s, const char *data, size_t len);
+extern bool sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16_t len);
+extern bool sptps_receive_data(sptps_t *s, const void *data, size_t len);
 extern bool sptps_force_kex(sptps_t *s);
-extern bool sptps_verify_datagram(sptps_t *s, const char *data, size_t len);
+extern bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len);
 
 #endif

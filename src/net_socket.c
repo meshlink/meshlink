@@ -43,8 +43,6 @@ int max_connection_burst = 100;
 /* Setup sockets */
 
 static void configure_tcp(connection_t *c) {
-	int option;
-
 #ifdef O_NONBLOCK
 	int flags = fcntl(c->socket, F_GETFL);
 
@@ -102,7 +100,6 @@ int setup_listen_socket(const sockaddr_t *sa) {
 	int nfd;
 	char *addrstr;
 	int option;
-	char *iface;
 
 	nfd = socket(sa->sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 

@@ -40,13 +40,3 @@ void logger(int level, int priority, const char *format, ...) {
 
 	fprintf(stderr, "%s\n", message);
 }
-
-// TODO: make sure this gets used somewhere
-static void sptps_logger(sptps_t *s, int s_errno, const char *format, va_list ap) {
-	char message[1024] = "";
-	int len = vsnprintf(message, sizeof message, format, ap);
-	if(len > 0 && len < sizeof message && message[len - 1] == '\n')
-		message[len - 1] = 0;
-
-	fprintf(stderr, "%s\n", message);
-}

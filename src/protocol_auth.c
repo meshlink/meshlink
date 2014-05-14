@@ -135,7 +135,7 @@ bool send_id(meshlink_handle_t *mesh, connection_t *c) {
 	return send_request(mesh, c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
 }
 
-static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const char *data, uint16_t len) {
+static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data, uint16_t len) {
 	if(strchr(data, '\n')) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Received invalid key from invited node %s (%s)!\n", c->name, c->hostname);
 		return false;
@@ -155,7 +155,7 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 		return false;
 	}
 
-	fprintf(f, "ECDSAPublicKey = %s\n", data);
+	fprintf(f, "ECDSAPublicKey = %s\n", (const char *)data);
 	fclose(f);
 
 	logger(DEBUG_CONNECTIONS, LOG_INFO, "Key succesfully received from %s (%s)", c->name, c->hostname);
@@ -169,7 +169,7 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 	return true;
 }
 
-static bool receive_invitation_sptps(void *handle, uint8_t type, const char *data, uint16_t len) {
+static bool receive_invitation_sptps(void *handle, uint8_t type, const void *data, uint16_t len) {
 	connection_t *c = handle;
 	meshlink_handle_t *mesh = c->mesh;
 
@@ -357,7 +357,6 @@ bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
 	   to create node_t and edge_t structures. */
 
 	struct timeval now;
-	bool choice;
 
 	/* Estimate weight */
 
@@ -384,10 +383,9 @@ static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
 bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char hisport[MAX_STRING_SIZE];
 	char *hisaddress;
-	int weight, mtu;
+	int weight;
 	uint32_t options;
 	node_t *n;
-	bool choice;
 
 	if(sscanf(request, "%*d " MAX_STRING " %d %x", hisport, &weight, &options) != 3) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s)", "ACK", c->name,

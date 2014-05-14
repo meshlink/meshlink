@@ -80,7 +80,7 @@ static void warning(sptps_t *s, const char *format, ...) {
 }
 
 // Send a record (datagram version, accepts all record types, handles encryption and authentication).
-static bool send_record_priv_datagram(sptps_t *s, uint8_t type, const char *data, uint16_t len) {
+static bool send_record_priv_datagram(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
 	char buffer[len + 21UL];
 
 	// Create header with sequence number, length and record type
@@ -101,7 +101,7 @@ static bool send_record_priv_datagram(sptps_t *s, uint8_t type, const char *data
 	}
 }
 // Send a record (private version, accepts all record types, handles encryption and authentication).
-static bool send_record_priv(sptps_t *s, uint8_t type, const char *data, uint16_t len) {
+static bool send_record_priv(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
 	if(s->datagram)
 		return send_record_priv_datagram(s, type, data, len);
 
@@ -126,7 +126,7 @@ static bool send_record_priv(sptps_t *s, uint8_t type, const char *data, uint16_
 }
 
 // Send an application record.
-bool sptps_send_record(sptps_t *s, uint8_t type, const char *data, uint16_t len) {
+bool sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
 	// Sanity checks: application cannot send data before handshake is finished,
 	// and only record types 0..127 are allowed.
 	if(!s->outstate)
@@ -370,7 +370,7 @@ static bool receive_handshake(sptps_t *s, const char *data, uint16_t len) {
 }
 
 // Check datagram for valid HMAC
-bool sptps_verify_datagram(sptps_t *s, const char *data, size_t len) {
+bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len) {
 	if(!s->instate || len < 21)
 		return error(s, EIO, "Received short packet");
 
@@ -380,7 +380,9 @@ bool sptps_verify_datagram(sptps_t *s, const char *data, size_t len) {
 }
 
 // Receive incoming data, datagram version.
-static bool sptps_receive_data_datagram(sptps_t *s, const char *data, size_t len) {
+static bool sptps_receive_data_datagram(sptps_t *s, const void *vdata, size_t len) {
+	const char *data = vdata;
+
 	if(len < (s->instate ? 21 : 5))
 		return error(s, EIO, "Received short packet");
 
@@ -467,7 +469,7 @@ static bool sptps_receive_data_datagram(sptps_t *s, const char *data, size_t len
 }
 
 // Receive incoming data. Check if it contains a complete record, if so, handle it.
-bool sptps_receive_data(sptps_t *s, const char *data, size_t len) {
+bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 	if(!s->state)
 		return error(s, EIO, "Invalid session state zero");
 
