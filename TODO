@@ -49,3 +49,5 @@ TODO list for MeshLink
     - pipe() to signal an event loop of the application's choice
     - whatever equivalent(s) there are on Windows
 
+* Add a "channel" library to MeshLink.
+  - Support multiple TCP- and UDP-like streams between two nodes.
