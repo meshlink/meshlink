@@ -1,24 +1,51 @@
 TODO list for MeshLink
 ----------------------
 
-Refactoring: getting rid of global variables. Ultimately, no global variables
-should be used by the library (if possible). Tinc uses quite a lot of global
-variables. Refactoring this should go into steps:
-
-* Temporarily create a global meshlink_handle_t *mesh (done)
-* Move global variables to meshlink_handle_t (partially done)
-  - This means moving the declaration from the old .h file to meshlink_internal.h inside meshlink_handle_t
-  - Then doing sed 's/variable/mesh->&/g' *.c -i, and running make to check for any errors
-
-After that is completed:
-
-* Add meshlink_handle_t *mesh as the first argument to functions that need it
-
-Then:
+* Check for remaining global variables and get rid of them.
 
 * Write code for all the functions in meshlink.c (some can be moved from libmeshlink.c)
+  Current stubs that need implementation:
+  - meshlink_export()
+  - meshlink_import()
+  - meshlink_blacklist()
 
-Other tasks:
+* Implement a simple single producer, single consumer queue for communication
+  between the application and library threads. It is possible to do this without locks.
 
-* Use snprintf() instead of xasprintf() when generating filenames
-  - Use char filename[PATH_MAX] on the stack. No more need to free().
+* Provide thread-safety to functions that return pointers to meshlink_node_t.
+  - The mesh->nodes tree can be updated by the library thread at any time,
+    so it must be protected by a mutex or rwlock.
+  - Individial node_t's must never be freed or moved except in meshlink_close().
+
+* meshlink_join():
+  - add checks that we only join another mesh if we did not connect to any other node before.
+  - only allow meshlink_join() when the library thread is not running.
+
+* Allow meshlink_open() to be called with a NULL name, in anticipation of meshlink_join().
+  - Do not allow meshlink_start() if no Name is set.
+
+* Add a logging callback.
+  - One in a meshlink_handle_t for everything that happens after meshlink_open().
+  - Add a global one for library calls that don't involve a valid meshlink_handle_t *.
+  - Get rid of "priority".
+
+* Fill in mesh->errno whenever an error happens (= when a function returns false or NULL).
+
+* Make the headers work correctly in a C++ environment.
+
+* Add a header-only C++ wrapper API.
+
+* Add autoconf/automake stuff to call Doxygen.
+
+* Write a test suite for the library.
+
+* Write a manual
+  - Document API
+  - Explain what MeshLink does and how it should be used in the application
+  - Write simple examples for common operations
+  - List possible ways of synchronisation between application and library threads
+    - simple polling
+    - pthread_cond?
+    - pipe() to signal an event loop of the application's choice
+    - whatever equivalent(s) there are on Windows
+
