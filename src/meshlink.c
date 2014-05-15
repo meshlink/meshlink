@@ -828,7 +828,12 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 }
 
 void meshlink_stop(meshlink_handle_t *mesh) {
-	// TODO: close the listening sockets to signal the main thread to shut down
+	// Shut down the listening sockets to signal the main thread to shut down
+
+	for(int i = 0; i < mesh->listen_sockets; i++) {
+		shutdown(mesh->listen_socket[i].tcp.fd, SHUT_RDWR);
+		shutdown(mesh->listen_socket[i].udp.fd, SHUT_RDWR);
+	}
 
 	// Wait for the main thread to finish
 
