@@ -1248,6 +1248,15 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 }
 
 void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
+    node_t *n;
+    n = (node_t*)node;
+    n->status.blacklisted=true;
+	fprintf(stderr, "Blacklisted %s.\n",node->name);
+
+	//Make blacklisting persistent in the config file
+	append_config_file(mesh, n->name, "blacklisted", "yes");
+    return;
+
 }
 
 static void __attribute__((constructor)) meshlink_init(void) {

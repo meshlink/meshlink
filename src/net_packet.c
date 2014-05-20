@@ -276,10 +276,14 @@ static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *pac
 	logger(DEBUG_TRAFFIC, LOG_DEBUG, "Received packet of %d bytes from %s (%s)",
 			   packet->len, n->name, n->hostname);
 
+    if (n->status.blacklisted) {
+        logger(DEBUG_PROTOCOL, LOG_WARNING, "Dropping packet from blacklisted node %s", n->name);
+    } else {
 	n->in_packets++;
 	n->in_bytes += packet->len;
 
 	route(mesh, n, packet);
+    }
 }
 
 static bool try_mac(meshlink_handle_t *mesh, node_t *n, const vpn_packet_t *inpkt) {
@@ -654,6 +658,10 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 			return;
 	}
 
+    if (n->status.blacklisted) {
+			logger(DEBUG_PROTOCOL, LOG_WARNING, "Dropping packet from blacklisted node %s", n->name);
+            return;
+    }
 	n->sock = ls - mesh->listen_socket;
 
 	receive_udppacket(mesh, n, &pkt);

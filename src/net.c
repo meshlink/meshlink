@@ -178,6 +178,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				}
 
 				if(!found) {
+					//TODO: if the node is blacklisted the connection will not happen, but
+					//the user will read this debug message "Autoconnecting to %s" that is misleading
 					logger(DEBUG_CONNECTIONS, LOG_INFO, "Autoconnecting to %s", n->name);
 					outgoing_t *outgoing = xzalloc(sizeof *outgoing);
 					outgoing->name = xstrdup(n->name);

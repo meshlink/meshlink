@@ -503,6 +503,7 @@ static struct addrinfo *get_known_addresses(node_t *n) {
 }
 
 void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
+	bool blacklisted = false;
 	timeout_del(&mesh->loop, &outgoing->ev);
 
 	node_t *n = lookup_node(mesh, outgoing->name);
@@ -517,6 +518,9 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	init_configuration(&outgoing->config_tree);
 	read_host_config(mesh, outgoing->config_tree, outgoing->name);
 	outgoing->cfg = lookup_config(outgoing->config_tree, "Address");
+
+	get_config_bool(lookup_config(outgoing->config_tree, "blacklisted"), &blacklisted);
+	if (blacklisted) return;
 
 	if(!outgoing->cfg) {
 		if(n)
