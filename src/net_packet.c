@@ -654,6 +654,9 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 			return;
 	}
 
+    if (n->status.blacklisted)
+        return;
+
 	n->sock = ls - mesh->listen_socket;
 
 	receive_udppacket(mesh, n, &pkt);
