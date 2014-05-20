@@ -1251,6 +1251,7 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
     node_t *n;
     n = (node_t*)node;
     n->status.blacklisted=true;
+	fprintf(stderr, "Blacklisted %s.\n",node->name);
     return;
 
 }
