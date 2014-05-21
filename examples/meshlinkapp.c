@@ -3,7 +3,7 @@
 #include "../src/meshlink.h"
 
 void handle_recv_data(meshlink_handle_t *mesh, meshlink_node_t *source, void *data, size_t len) {
-	printf("Received %zu bytes from %s: %s\n", len, source->name, data);
+	printf("Received %zu bytes from %s: %s\n", len, source->name, (char*)data);
 }
 
 int main(int argc , char **argv){
@@ -17,7 +17,7 @@ int main(int argc , char **argv){
 	myhandle = meshlink_open(confbase, name);
 
 	//Register callback function for incoming data
-	meshlink_set_receive_cb(myhandle, handle_recv_data);
+	meshlink_set_receive_cb(myhandle, (meshlink_receive_cb_t)handle_recv_data);
 
 	meshlink_start(myhandle);
 
