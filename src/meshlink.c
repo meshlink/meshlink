@@ -1254,7 +1254,7 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	fprintf(stderr, "Blacklisted %s.\n",node->name);
 
 	//Make blacklisting persistent in the config file
-	append_config_file(mesh, n->name, "blacklisted", "1");
+	append_config_file(mesh, n->name, "blacklisted", "yes");
     return;
 
 }
