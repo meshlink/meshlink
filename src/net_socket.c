@@ -658,6 +658,7 @@ void try_outgoing_connections(meshlink_handle_t *mesh) {
 	// TODO: Drop support for ConnectTo since AutoConnect is now always on?
 	for(config_t *cfg = lookup_config(mesh->config, "ConnectTo"); cfg; cfg = lookup_config_next(mesh->config, cfg)) {
 		char *name;
+		bool blacklisted;
 		get_config_string(cfg, &name);
 
 		if(!check_id(name)) {
@@ -667,6 +668,10 @@ void try_outgoing_connections(meshlink_handle_t *mesh) {
 			free(name);
 			continue;
 		}
+
+		get_config_bool(lookup_config(mesh->config, "blacklisted"), &blacklisted);
+		if (blacklisted)
+			continue;
 
 		bool found = false;
 
