@@ -19,6 +19,7 @@
 
 #include "../system.h"
 
+#include "../crypto.h"
 #include "ed25519.h"
 
 #define __TINC_ECDSA_INTERNAL__
