@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_HASH_H__
-#define __TINC_HASH_H__
+#ifndef __MESHLINK_HASH_H__
+#define __MESHLINK_HASH_H__
 
 typedef struct hash_t {
 	size_t n;
@@ -38,4 +38,4 @@ extern void *hash_search_or_insert(hash_t *, const void *key, const void *value)
 extern void hash_clear(hash_t *);
 extern void hash_resize(hash_t *, size_t n);
 
-#endif /* __TINC_HASH_H__ */
+#endif /* __MESHLINK_HASH_H__ */

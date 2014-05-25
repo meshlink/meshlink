@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_UTILS_H__
-#define __TINC_UTILS_H__
+#ifndef __MESHLINK_UTILS_H__
+#define __MESHLINK_UTILS_H__
 
 extern int hex2bin(const char *src, void *dst, int length);
 extern int bin2hex(const void *src, char *dst, int length);
@@ -47,4 +47,4 @@ extern const char *winerror(int);
 
 extern unsigned int bitfield_to_int(const void *bitfield, size_t size);
 
-#endif /* __TINC_UTILS_H__ */
+#endif /* __MESHLINK_UTILS_H__ */

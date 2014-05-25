@@ -17,9 +17,9 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_GRAPH_H__
-#define __TINC_GRAPH_H__
+#ifndef __MESHLINK_GRAPH_H__
+#define __MESHLINK_GRAPH_H__
 
 extern void graph(struct meshlink_handle *mesh);
 
-#endif /* __TINC_GRAPH_H__ */
+#endif /* __MESHLINK_GRAPH_H__ */

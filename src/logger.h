@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_LOGGER_H__
-#define __TINC_LOGGER_H__
+#ifndef __MESHLINK_LOGGER_H__
+#define __MESHLINK_LOGGER_H__
 
 typedef enum debug_t {
 	DEBUG_NOTHING = 0,              /* Quiet mode, only show starting/stopping of the daemon */
@@ -65,4 +65,4 @@ enum {
 
 extern void logger(int, int, const char *, ...) __attribute__ ((__format__(printf, 3, 4)));
 
-#endif /* __TINC_LOGGER_H__ */
+#endif /* __MESHLINK_LOGGER_H__ */

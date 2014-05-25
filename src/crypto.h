@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_CRYPTO_H__
-#define __TINC_CRYPTO_H__
+#ifndef __MESHLINK_CRYPTO_H__
+#define __MESHLINK_CRYPTO_H__
 
 extern void crypto_init();
 extern void crypto_exit();

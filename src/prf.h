@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_PRF_H__
-#define __TINC_PRF_H__
+#ifndef __MESHLINK_PRF_H__
+#define __MESHLINK_PRF_H__
 
 extern bool prf(const char *secret, size_t secretlen, char *seed, size_t seedlen, char *out, size_t outlen) __attribute__ ((__warn_unused_result__));
 

@@ -17,13 +17,13 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_ECDH_H__
-#define __TINC_ECDH_H__
+#ifndef __MESHLINK_ECDH_H__
+#define __MESHLINK_ECDH_H__
 
 #define ECDH_SIZE 32
 #define ECDH_SHARED_SIZE 32
 
-#ifndef __TINC_ECDH_INTERNAL__
+#ifndef __MESHLINK_ECDH_INTERNAL__
 typedef struct ecdh ecdh_t;
 #endif
 

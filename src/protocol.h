@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_PROTOCOL_H__
-#define __TINC_PROTOCOL_H__
+#ifndef __MESHLINK_PROTOCOL_H__
+#define __MESHLINK_PROTOCOL_H__
 
 #include "ecdsa.h"
 
@@ -111,4 +111,4 @@ extern bool req_key_h(struct meshlink_handle *mesh, struct connection_t *, const
 extern bool ans_key_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
 extern bool tcppacket_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
 
-#endif /* __TINC_PROTOCOL_H__ */
+#endif /* __MESHLINK_PROTOCOL_H__ */

@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_NODE_H__
-#define __TINC_NODE_H__
+#ifndef __MESHLINK_NODE_H__
+#define __MESHLINK_NODE_H__
 
 #include "event.h"
 #include "sockaddr.h"
@@ -101,4 +101,4 @@ extern node_t *lookup_node(struct meshlink_handle *mesh, char *);
 extern node_t *lookup_node_udp(struct meshlink_handle *mesh, const sockaddr_t *);
 extern void update_node_udp(struct meshlink_handle *mesh, node_t *, const sockaddr_t *);
 
-#endif /* __TINC_NODE_H__ */
+#endif /* __MESHLINK_NODE_H__ */

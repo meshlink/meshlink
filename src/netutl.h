@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_NETUTL_H__
-#define __TINC_NETUTL_H__
+#ifndef __MESHLINK_NETUTL_H__
+#define __MESHLINK_NETUTL_H__
 
 #include "net.h"
 
@@ -34,4 +34,4 @@ extern void sockaddrunmap(sockaddr_t *);
 extern void sockaddrfree(sockaddr_t *);
 extern void sockaddrcpy(sockaddr_t *, const sockaddr_t *);
 
-#endif /* __TINC_NETUTL_H__ */
+#endif /* __MESHLINK_NETUTL_H__ */

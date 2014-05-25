@@ -17,8 +17,8 @@
    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_XALLOC_H__
-#define __TINC_XALLOC_H__
+#ifndef __MESHLINK_XALLOC_H__
+#define __MESHLINK_XALLOC_H__
 
 static inline void *xmalloc(size_t n) __attribute__ ((__malloc__));
 static inline void *xmalloc(size_t n) {

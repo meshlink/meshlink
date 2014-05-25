@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_EVENT_H__
-#define __TINC_EVENT_H__
+#ifndef __MESHLINK_EVENT_H__
+#define __MESHLINK_EVENT_H__
 
 #include "splay_tree.h"
 

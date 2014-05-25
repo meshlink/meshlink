@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_TINCCTL_H__
-#define __TINC_TINCCTL_H__
+#ifndef __MESHLINK_TINCCTL_H__
+#define __MESHLINK_TINCCTL_H__
 
 extern bool tty;
 extern char line[4096];

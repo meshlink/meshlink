@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_CONNECTION_H__
-#define __TINC_CONNECTION_H__
+#ifndef __MESHLINK_CONNECTION_H__
+#define __MESHLINK_CONNECTION_H__
 
 #include "buffer.h"
 #include "list.h"
@@ -96,4 +96,4 @@ extern void free_connection(connection_t *);
 extern void connection_add(struct meshlink_handle *mesh, connection_t *);
 extern void connection_del(struct meshlink_handle *mesh, connection_t *);
 
-#endif /* __TINC_CONNECTION_H__ */
+#endif /* __MESHLINK_CONNECTION_H__ */

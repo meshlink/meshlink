@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_EDGE_H__
-#define __TINC_EDGE_H__
+#ifndef __MESHLINK_EDGE_H__
+#define __MESHLINK_EDGE_H__
 
 #include "splay_tree.h"
 #include "connection.h"
@@ -47,4 +47,4 @@ extern void edge_add(struct meshlink_handle *mesh, edge_t *);
 extern void edge_del(struct meshlink_handle *mesh, edge_t *);
 extern edge_t *lookup_edge(struct node_t *, struct node_t *);
 
-#endif /* __TINC_EDGE_H__ */
+#endif /* __MESHLINK_EDGE_H__ */

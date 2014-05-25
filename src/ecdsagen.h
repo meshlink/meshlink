@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_ECDSAGEN_H__
-#define __TINC_ECDSAGEN_H__
+#ifndef __MESHLINK_ECDSAGEN_H__
+#define __MESHLINK_ECDSAGEN_H__
 
 #include "ecdsa.h"
 

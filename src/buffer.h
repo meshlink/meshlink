@@ -1,5 +1,5 @@
-#ifndef __TINC_BUFFER_H__
-#define __TINC_BUFFER_H__
+#ifndef __MESHLINK_BUFFER_H__
+#define __MESHLINK_BUFFER_H__
 
 typedef struct buffer_t {
 	char *data;

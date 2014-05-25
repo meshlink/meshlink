@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_NET_H__
-#define __TINC_NET_H__
+#ifndef __MESHLINK_NET_H__
+#define __MESHLINK_NET_H__
 
 #include "event.h"
 #include "sockaddr.h"
@@ -114,4 +114,4 @@ extern void retry(struct meshlink_handle *mesh);
 extern CRITICAL_SECTION mutex;
 #endif
 
-#endif /* __TINC_NET_H__ */
+#endif /* __MESHLINK_NET_H__ */

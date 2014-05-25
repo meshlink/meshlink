@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_META_H__
-#define __TINC_META_H__
+#ifndef __MESHLINK_META_H__
+#define __MESHLINK_META_H__
 
 #include "connection.h"
 
@@ -28,4 +28,4 @@ extern bool receive_meta_sptps(void *, uint8_t, const void *, uint16_t);
 extern void broadcast_meta(struct meshlink_handle *mesh, struct connection_t *, const char *, int);
 extern bool receive_meta(struct meshlink_handle *mesh, struct connection_t *);
 
-#endif /* __TINC_META_H__ */
+#endif /* __MESHLINK_META_H__ */

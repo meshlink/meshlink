@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_HAVE_H__
-#define __TINC_HAVE_H__
+#ifndef __MESHLINK_HAVE_H__
+#define __MESHLINK_HAVE_H__
 
 #ifdef HAVE_MINGW
 #ifdef WITH_WINDOWS2000
@@ -126,4 +126,4 @@
 #define SLASH "/"
 #endif
 
-#endif /* __TINC_SYSTEM_H__ */
+#endif /* __MESHLINK_SYSTEM_H__ */

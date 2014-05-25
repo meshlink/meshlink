@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_ROUTE_H__
-#define __TINC_ROUTE_H__
+#ifndef __MESHLINK_ROUTE_H__
+#define __MESHLINK_ROUTE_H__
 
 #include "net.h"
 #include "node.h"
@@ -27,4 +27,4 @@ extern bool decrement_ttl;
 
 extern void route(struct meshlink_handle *mesh, struct node_t *, struct vpn_packet_t *);
 
-#endif /* __TINC_ROUTE_H__ */
+#endif /* __MESHLINK_ROUTE_H__ */

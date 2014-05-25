@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_SYSTEM_H__
-#define __TINC_SYSTEM_H__
+#ifndef __MESHLINK_SYSTEM_H__
+#define __MESHLINK_SYSTEM_H__
 
 #include "../config.h"
 
@@ -42,4 +42,4 @@ typedef int bool;
 typedef int socklen_t;
 #endif
 
-#endif /* __TINC_SYSTEM_H__ */
+#endif /* __MESHLINK_SYSTEM_H__ */

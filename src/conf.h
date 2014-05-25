@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_CONF_H__
-#define __TINC_CONF_H__
+#ifndef __MESHLINK_CONF_H__
+#define __MESHLINK_CONF_H__
 
 #include "list.h"
 #include "meshlink_internal.h"
@@ -50,4 +50,4 @@ extern bool read_server_config(struct meshlink_handle *mesh);
 extern bool read_host_config(struct meshlink_handle *mesh, struct splay_tree_t *, const char *);
 extern bool append_config_file(struct meshlink_handle *mesh, const char *, const char *, const char *);
 
-#endif /* __TINC_CONF_H__ */
+#endif /* __MESHLINK_CONF_H__ */

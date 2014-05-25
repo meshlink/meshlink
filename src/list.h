@@ -17,8 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __TINC_LIST_H__
-#define __TINC_LIST_H__
+#ifndef __MESHLINK_LIST_H__
+#define __MESHLINK_LIST_H__
 
 typedef struct list_node_t {
 	struct list_node_t *prev;
@@ -80,4 +80,4 @@ extern void list_foreach_node(list_t *, list_action_node_t);
 
 #define list_each(type, item, list) (type *item = (type *)1; item; item = NULL) for(list_node_t *node = (list)->head, *next; item = node ? node->data : NULL, next = node ? node->next : NULL, node; node = next)
 
-#endif /* __TINC_LIST_H__ */
+#endif /* __MESHLINK_LIST_H__ */
