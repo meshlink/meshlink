@@ -41,6 +41,20 @@ void crypto_exit(void) {
 	close(random_fd);
 }
 
+void randomize(void *out, size_t outlen) {
+	while(outlen) {
+		size_t len = read(random_fd, out, outlen);
+		if(len <= 0) {
+			if(errno == EAGAIN || errno == EINTR)
+				continue;
+			fprintf(stderr, "Could not read random numbers: %s\n", strerror(errno));
+			abort();
+		}
+		out += len;
+		outlen -= len;
+	}
+}
+
 #else
 
 #include <wincrypt.h>
