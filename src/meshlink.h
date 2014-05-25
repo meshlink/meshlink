@@ -23,6 +23,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /// A handle for an instance of MeshLink.
 typedef struct meshlink_handle meshlink_handle_t;
 
@@ -293,5 +297,9 @@ extern bool meshlink_import(meshlink_handle_t *mesh, const char *data);
  *  @param node         A pointer to a meshlink_node_t describing the node to be blacklisted.
  */
 extern void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // MESHLINK_H
