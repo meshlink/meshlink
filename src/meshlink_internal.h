@@ -29,6 +29,8 @@
 #include "sockaddr.h"
 #include "sptps.h"
 
+#include <pthread.h>
+
 #define MAXSOCKETS 8    /* Probably overkill... */
 
 typedef struct listen_socket_t {

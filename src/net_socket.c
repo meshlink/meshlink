@@ -58,13 +58,13 @@ static void configure_tcp(connection_t *c) {
 #endif
 
 #if defined(SOL_TCP) && defined(TCP_NODELAY)
-	option = 1;
-	setsockopt(c->socket, SOL_TCP, TCP_NODELAY, (void *)&option, sizeof option);
+	int nodelay = 1;
+	setsockopt(c->socket, SOL_TCP, TCP_NODELAY, (void *)&nodelay, sizeof nodelay);
 #endif
 
 #if defined(SOL_IP) && defined(IP_TOS) && defined(IPTOS_LOWDELAY)
-	option = IPTOS_LOWDELAY;
-	setsockopt(c->socket, SOL_IP, IP_TOS, (void *)&option, sizeof option);
+	int lowdelay = IPTOS_LOWDELAY;
+	setsockopt(c->socket, SOL_IP, IP_TOS, (void *)&lowdelay, sizeof lowdelay);
 #endif
 }
 

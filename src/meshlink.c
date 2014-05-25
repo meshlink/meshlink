@@ -40,6 +40,9 @@ typedef struct {
 #include "xalloc.h"
 #include "ed25519/sha512.h"
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
 
 //TODO: this can go away completely
 const var_t variables[] = {
