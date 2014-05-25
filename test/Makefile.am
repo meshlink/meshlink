@@ -1,24 +1,11 @@
 TESTS = \
-	basic.test \
-	commandline.test \
-	executables.test \
-	import-export.test \
-	invite-join.test \
-	ns-ping.test \
-	ping.test \
-	sptps-basic.test \
-	variables.test
+	basic.test
 
 dist_check_SCRIPTS = $(TESTS)
 
-EXTRA_DIST = testlib.sh
+AM_CPPFLAGS = -I../src
 
-check_PROGRAMS = pong
+check_PROGRAMS = basic
 
-pong_SOURCES = pong.c
-
-clean-local:
-	-for pid in *.test.?/pid; do ../src/tinc --pidfile="$$pid" stop; done
-	-killall ../src/sptps_test
-	-killall pong
-	-rm -rf *.test.?
+basic_SOURCES = basic.c
+basic_LDADD = ../src/libmeshlink.la
