@@ -23,6 +23,8 @@
 
 //TODO: use a strict random source once to seed a PRNG?
 
+#ifndef HAVE_MINGW
+
 static int random_fd = -1;
 
 void crypto_init(void) {
@@ -36,11 +38,30 @@ void crypto_init(void) {
 }
 
 void crypto_exit(void) {
+	close(random_fd);
 }
 
-void randomize(void *out, size_t outlen) {
-	if(read(random_fd, out, outlen) != outlen) {
-		fprintf(stderr, "Error reading random numbers: %s\n", strerror(errno));
+#else
+
+#include <wincrypt.h>
+HCRYPTPROV prov;
+
+void crypto_init(void) {
+	if(!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+		fprintf(stderr, "CryptAcquireContext() failed!\n");
 		abort();
 	}
 }
+
+void crypto_exit(void) {
+	CryptReleaseContext(prov, 0);
+}
+
+void randomize(void *out, size_t outlen) {
+	if(!CryptGenRandom(prov, outlen, out)) {
+		fprintf(stderr, "CryptGenRandom() failed\n");
+		abort();
+	}
+}
+
+#endif
