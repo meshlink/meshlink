@@ -797,6 +797,11 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	if(!read_server_config(mesh))
 		return meshlink_close(mesh), NULL;
 
+#ifdef HAVE_MINGW
+	struct WSAData wsa_state;
+	WSAStartup(MAKEWORD(2, 2), &wsa_state);
+#endif
+
 	// Setup up everything
 	// TODO: we should not open listening sockets yet
 
@@ -852,6 +857,10 @@ void meshlink_close(meshlink_handle_t *mesh) {
 
 	exit_configuration(&mesh->config);
 	event_loop_exit(&mesh->loop);
+
+#ifdef HAVE_MINGW
+	WSACleanup();
+#endif
 }
 
 void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) {
