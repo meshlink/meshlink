@@ -236,44 +236,9 @@ static char *get_my_hostname(meshlink_handle_t* mesh) {
 		}
 	}
 
-	//if(!tty) {
-	//	if(!hostname) {
-	//		fprintf(stderr, "Could not determine the external address or hostname. Please set Address manually.\n");
-	//		return NULL;
-	//	}
-	//	goto save;
-	//}
-
-again:
-	fprintf(stderr, "Please enter your host's external address or hostname");
-	if(hostname)
-		fprintf(stderr, " [%s]", hostname);
-	fprintf(stderr, ": ");
-
-	if(!fgets(line, sizeof line, stdin)) {
-		fprintf(stderr, "Error while reading stdin: %s\n", strerror(errno));
-		free(hostname);
+	if(!hostname)
 		return NULL;
-	}
 
-	if(!rstrip(line)) {
-		if(hostname)
-			goto save;
-		else
-			goto again;
-	}
-
-	for(char *p = line; *p; p++) {
-		if(isalnum(*p) || *p == '-' || *p == '.')
-			continue;
-		fprintf(stderr, "Invalid address or hostname.\n");
-		goto again;
-	}
-
-	free(hostname);
-	hostname = xstrdup(line);
-
-save:
 	f = fopen(filename, "a");
 	if(f) {
 		fprintf(f, "\nAddress = %s\n", hostname);
@@ -928,14 +893,14 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 	snprintf(filename, sizeof filename, "%s" SLASH "invitations", mesh->confbase);
 	if(mkdir(filename, 0700) && errno != EEXIST) {
 		fprintf(stderr, "Could not create directory %s: %s\n", filename, strerror(errno));
-		return NULL;
+		return false;
 	}
 
 	// Count the number of valid invitations, clean up old ones
 	DIR *dir = opendir(filename);
 	if(!dir) {
 		fprintf(stderr, "Could not read directory %s: %s\n", filename, strerror(errno));
-		return NULL;
+		return false;
 	}
 
 	errno = 0;
@@ -987,18 +952,18 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 	if(!f) {
 		if(errno != ENOENT) {
 			fprintf(stderr, "Could not read %s: %s\n", filename, strerror(errno));
-			return NULL;
+			return false;
 		}
 
 		mesh->invitation_key = ecdsa_generate();
 		if(!mesh->invitation_key) {
 			fprintf(stderr, "Could not generate a new key!\n");
-			return NULL;
+			return false;
 		}
 		f = fopen(filename, "w");
 		if(!f) {
 			fprintf(stderr, "Could not write %s: %s\n", filename, strerror(errno));
-			return NULL;
+			return false;
 		}
 		chmod(filename, 0600);
 		ecdsa_write_pem_private_key(mesh->invitation_key, f);
@@ -1011,6 +976,17 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 	}
 
 	return mesh->invitation_key;
+}
+
+bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
+	for(const char *p = address; *p; p++) {
+		if(isalnum(*p) || *p == '-' || *p == '.' || *p == ':')
+			continue;
+		fprintf(stderr, "Invalid character in address: %s\n", address);
+		return false;
+	}
+
+	return append_config_file(mesh, mesh->self->name, "Address", address);
 }
 
 char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
@@ -1031,6 +1007,13 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	// Ensure no other nodes know about this name
 	if(meshlink_get_node(mesh, name)) {
 		fprintf(stderr, "A node with name %s is already known!\n", name);
+		return NULL;
+	}
+
+	// Get the local address
+	char *address = get_my_hostname(mesh);
+	if(!address) {
+		fprintf(stderr, "No Address known for ourselves!\n");
 		return NULL;
 	}
 
@@ -1068,9 +1051,6 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	FILE *f = fdopen(ifd, "w");
 	if(!f)
 		abort();
-
-	// Get the local address
-	char *address = get_my_hostname(mesh);
 
 	// Fill in the details.
 	fprintf(f, "Name = %s\n", name);

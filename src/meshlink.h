@@ -239,6 +239,16 @@ extern char *meshlink_sign(meshlink_handle_t *mesh, const char *data, size_t len
  */
 extern bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const char *data, size_t len, const char *signature);
 
+/// Add an Address for the local node.
+/** This function adds an Address for the local node, which will be used for invitation URLs.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param address      A string containing the address, which can be either in numeric format or a hostname.
+ *
+ *  @return             This function returns true if the address was added, false otherwise.
+ */
+extern bool meshlink_add_address(meshlink_handle_t *mesh, const char *address);
+
 /// Invite another node into the mesh.
 /** This function generates an invitation that can be used by another node to join the same mesh as the local node.
  *  The generated invitation is a string containing a URL.
