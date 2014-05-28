@@ -1,5 +1,5 @@
 /*
-    event.c -- I/O and timeout event handling
+    event.c -- I/O, timeout and signal event handling
     Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
@@ -117,6 +117,49 @@ void timeout_del(event_loop_t *loop, timeout_t *timeout) {
 	timeout->tv = (struct timeval){0, 0};
 }
 
+static int signal_compare(const signal_t *a, const signal_t *b) {
+	return (int)a->signum - (int)b->signum;
+}
+
+static void signalio_handler(event_loop_t *loop, void *data, int flags) {
+	unsigned char signum;
+	if(read(loop->pipefd[0], &signum, 1) != 1)
+		return;
+
+	signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = signum}));
+	if(sig)
+		sig->cb(loop, sig->data);
+}
+
+static void pipe_init(event_loop_t *loop) {
+	if(!pipe(loop->pipefd))
+		io_add(loop, &loop->signalio, signalio_handler, NULL, loop->pipefd[0], IO_READ);
+}
+
+void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum) {
+	if(sig->cb)
+		return;
+
+	sig->cb = cb;
+	sig->data = data;
+	sig->signum = signum;
+	sig->node.data = sig;
+
+	if(loop->pipefd[0] == -1)
+		pipe_init(loop);
+
+	if(!splay_insert_node(&loop->signals, &sig->node))
+		abort();
+}
+
+void signal_del(event_loop_t *loop, signal_t *sig) {
+	if(!sig->cb)
+		return;
+
+	splay_unlink_node(&loop->signals, &sig->node);
+	sig->cb = NULL;
+}
+
 bool event_loop_run(event_loop_t *loop) {
 	loop->running = true;
 
@@ -187,6 +230,9 @@ void event_loop_stop(event_loop_t *loop) {
 void event_loop_init(event_loop_t *loop) {
 	loop->ios.compare = (splay_compare_t)io_compare;
 	loop->timeouts.compare = (splay_compare_t)timeout_compare;
+	loop->signals.compare = (splay_compare_t)signal_compare;
+	loop->pipefd[0] = -1;
+	loop->pipefd[1] = -1;
 	gettimeofday(&loop->now, NULL);
 }
 
@@ -195,4 +241,6 @@ void event_loop_exit(event_loop_t *loop) {
 		splay_free_node(&loop->ios, node);
 	for splay_each(timeout_t, timeout, &loop->timeouts)
 		splay_free_node(&loop->timeouts, node);
+	for splay_each(signal_t, signal, &loop->signals)
+		splay_free_node(&loop->signals, node);
 }
