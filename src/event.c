@@ -136,6 +136,14 @@ static void pipe_init(event_loop_t *loop) {
 		io_add(loop, &loop->signalio, signalio_handler, NULL, loop->pipefd[0], IO_READ);
 }
 
+void signal_trigger(event_loop_t *loop, signal_t *sig) {
+
+	uint8_t signum = sig->signum;
+	write(loop->pipefd[1], &signum, 1);
+	return;
+
+}
+
 void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum) {
 	if(sig->cb)
 		return;

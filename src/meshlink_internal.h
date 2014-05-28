@@ -60,9 +60,11 @@ struct meshlink_handle {
 	meshlink_log_level_t log_level;
 
 	pthread_t thread;
+	pthread_mutex_t outpacketqueue_mutex;
 	event_loop_t loop;
 	listen_socket_t listen_socket[MAXSOCKETS];
 	int listen_sockets;
+	signal_t datafromapp;
 
 	struct node_t *self;
 
@@ -72,6 +74,8 @@ struct meshlink_handle {
 
 	struct list_t *connections;
 	struct list_t *outgoings;
+
+	struct list_t *outpacketqueue;
 
 	int contradicting_add_edge;
 	int contradicting_del_edge;

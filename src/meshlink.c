@@ -734,6 +734,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	meshlink_handle_t *mesh = xzalloc(sizeof *mesh);
 	mesh->confbase = xstrdup(confbase);
 	mesh->name = xstrdup(name);
+	pthread_mutex_init ( &(mesh->outpacketqueue_mutex), NULL);
 	event_loop_init(&mesh->loop);
 	mesh->loop.data = mesh;
 
@@ -842,25 +843,52 @@ void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, me
 }
 
 bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, unsigned int len) {
+
+	/* If there is no outgoing list yet, create one. */
+
+	if(!mesh->outpacketqueue)
+		mesh->outpacketqueue = list_alloc(NULL);
+
+	//add packet to the queue
+	outpacketqueue_t *packet_in_queue = xzalloc(sizeof *packet_in_queue);
+	packet_in_queue->destination=destination;
+	packet_in_queue->data=data;
+	packet_in_queue->len=len;
+	pthread_mutex_lock(&(mesh->outpacketqueue_mutex));
+	list_insert_head(mesh->outpacketqueue,packet_in_queue);
+	pthread_mutex_unlock(&(mesh->outpacketqueue_mutex));
+
+	//notify event loop
+	signal_trigger(&(mesh->loop),&(mesh->datafromapp));
+	return true;
+}
+
+void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh) {
 	vpn_packet_t packet;
 	meshlink_packethdr_t *hdr = (meshlink_packethdr_t *)packet.data;
-	if (sizeof(meshlink_packethdr_t) + len > MAXSIZE) {
+
+	outpacketqueue_t* p = list_get_tail(mesh->outpacketqueue);
+	if (p)
+	list_delete_tail(mesh->outpacketqueue);
+	else return ;
+
+	if (sizeof(meshlink_packethdr_t) + p->len > MAXSIZE) {
 		//log something
-		return false;
+		return ;
 	}
 
 	packet.probe = false;
 	memset(hdr, 0, sizeof *hdr);
-	memcpy(hdr->destination, destination->name, sizeof hdr->destination);
+	memcpy(hdr->destination, p->destination->name, sizeof hdr->destination);
 	memcpy(hdr->source, mesh->self->name, sizeof hdr->source);
 
-	packet.len = sizeof *hdr + len;
-	memcpy(packet.data + sizeof *hdr, data, len);
+	packet.len = sizeof *hdr + p->len;
+	memcpy(packet.data + sizeof *hdr, p->data, p->len);
 
         mesh->self->in_packets++;
         mesh->self->in_bytes += packet.len;
         route(mesh, mesh->self, &packet);
-	return false;
+	return ;
 }
 
 meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {

@@ -21,6 +21,7 @@
 #define __MESHLINK_EVENT_H__
 
 #include "splay_tree.h"
+#include "system.h"
 
 #define IO_READ 1
 #define IO_WRITE 2
