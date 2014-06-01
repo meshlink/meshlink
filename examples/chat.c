@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include "../src/meshlink.h"
 
 static void log_message(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
