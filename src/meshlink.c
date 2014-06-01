@@ -1232,11 +1232,77 @@ invalid:
 }
 
 char *meshlink_export(meshlink_handle_t *mesh) {
-	return NULL;
+	char filename[PATH_MAX];
+	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
+	FILE *f = fopen(filename, "r");
+	if(!f) {
+		fprintf(stderr, "Could not open %s: %s\n", filename, strerror(errno));
+		return NULL;
+	}
+
+	fseek(f, 0, SEEK_END);
+	int fsize = ftell(f);
+	rewind(f);
+
+	size_t len = fsize + 9 + strlen(mesh->self->name);
+	char *buf = xmalloc(len);
+	snprintf(buf, len, "Name = %s\n", mesh->self->name);
+	if(fread(buf + len - fsize - 1, fsize, 1, f) != 1) {
+		fprintf(stderr, "Error reading from %s: %s\n", filename, strerror(errno));
+		fclose(f);
+		return NULL;
+	}
+
+	fclose(f);
+	buf[len - 1] = 0;
+	return buf;
 }
 
 bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
-	return false;
+	if(strncmp(data, "Name = ", 7)) {
+		fprintf(stderr, "Invalid data\n");
+		return false;
+	}
+
+	char *end = strchr(data + 7, '\n');
+	if(!end) {
+		fprintf(stderr, "Invalid data\n");
+		return false;
+	}
+
+	int len = end - (data + 7);
+	char name[len + 1];
+	memcpy(name, data + 7, len);
+	name[len] = 0;
+	if(!check_id(name)) {
+		fprintf(stderr, "Invalid Name\n");
+		return false;
+	}
+
+	char filename[PATH_MAX];
+	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	if(!access(filename, F_OK)) {
+		fprintf(stderr, "File %s already exists, not importing\n", filename);
+		return false;
+	}
+
+	if(errno != ENOENT) {
+		fprintf(stderr, "Error accessing %s: %s\n", filename, strerror(errno));
+		return false;
+	}
+
+	FILE *f = fopen(filename, "w");
+	if(!f) {
+		fprintf(stderr, "Could not create %s: %s\n", filename, strerror(errno));
+		return false;
+	}
+
+	fwrite(end + 1, strlen(end + 1), 1, f);
+	fclose(f);
+
+	load_all_nodes(mesh);
+
+	return true;
 }
 
 void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
