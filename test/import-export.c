@@ -1,0 +1,73 @@
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "meshlink.h"
+
+volatile bool bar_reachable = false;
+
+void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	if(!strcmp(node->name, "bar"))
+		bar_reachable = reachable;
+}
+
+int main(int argc, char *argv[]) {
+	// Open two new meshlink instance.
+
+	meshlink_handle_t *mesh1 = meshlink_open("import_export_conf.1", "foo");
+	if(!mesh1)
+		return 1;
+
+	meshlink_handle_t *mesh2 = meshlink_open("import_export_conf.2", "bar");
+	if(!mesh2)
+		return 1;
+
+	// Import and export both side's data
+
+	meshlink_add_address(mesh1, "localhost");
+	meshlink_add_address(mesh2, "localhost");
+
+	char *data = meshlink_export(mesh1);
+
+	if(!meshlink_import(mesh2, data))
+		return 1;
+
+	free(data);
+
+	data = meshlink_export(mesh2);
+
+	if(!meshlink_import(mesh1, data))
+		return 1;
+
+	free(data);
+
+	// Start both instances
+
+	meshlink_set_node_status_cb(mesh1, status_cb);
+	
+	if(!meshlink_start(mesh1))
+		return 1;
+
+	if(!meshlink_start(mesh2))
+		return 1;
+
+	// Wait for the two to connect.
+
+	for(int i = 0; i < 20; i++) {
+		sleep(1);
+		if(bar_reachable)
+			break;
+	}
+
+	if(!bar_reachable)
+		return 1;
+
+	// Clean up.
+
+	meshlink_stop(mesh2);
+	meshlink_stop(mesh1);
+	meshlink_close(mesh2);
+	meshlink_close(mesh1);
+
+	return 0;
+}
