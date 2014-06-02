@@ -36,13 +36,17 @@ static int node_compare(const node_t *a, const node_t *b) {
 }
 
 void init_nodes(meshlink_handle_t *mesh) {
+	pthread_mutex_lock(&(mesh->nodes_mutex));
 	mesh->nodes = splay_alloc_tree((splay_compare_t) node_compare, (splay_action_t) free_node);
 	node_udp_cache = hash_alloc(0x100, sizeof(sockaddr_t));
+	pthread_mutex_unlock(&(mesh->nodes_mutex));
 }
 
 void exit_nodes(meshlink_handle_t *mesh) {
+	pthread_mutex_lock(&(mesh->nodes_mutex));
 	hash_free(node_udp_cache);
 	splay_delete_tree(mesh->nodes);
+	pthread_mutex_unlock(&(mesh->nodes_mutex));
 }
 
 node_t *new_node(void) {
@@ -81,25 +85,34 @@ void free_node(node_t *n) {
 }
 
 void node_add(meshlink_handle_t *mesh, node_t *n) {
+	pthread_mutex_lock(&(mesh->nodes_mutex));
 	n->mesh = mesh;
 	splay_insert(mesh->nodes, n);
+	pthread_mutex_unlock(&(mesh->nodes_mutex));
 }
 
 void node_del(meshlink_handle_t *mesh, node_t *n) {
+	pthread_mutex_lock(&(mesh->nodes_mutex));
 	timeout_del(&mesh->loop, &n->mtutimeout);
 
 	for splay_each(edge_t, e, n->edge_tree)
 		edge_del(mesh, e);
 
 	splay_delete(mesh->nodes, n);
+	pthread_mutex_unlock(&(mesh->nodes_mutex));
 }
 
 node_t *lookup_node(meshlink_handle_t *mesh, char *name) {
 	node_t n = {NULL};
+	node_t* result;
 
 	n.name = name;
 
-	return splay_search(mesh->nodes, &n);
+	pthread_mutex_lock(&(mesh->nodes_mutex));
+	result = splay_search(mesh->nodes, &n);
+	pthread_mutex_unlock(&(mesh->nodes_mutex));
+
+	return result;
 }
 
 node_t *lookup_node_udp(meshlink_handle_t *mesh, const sockaddr_t *sa) {

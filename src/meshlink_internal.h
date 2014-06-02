@@ -61,6 +61,7 @@ struct meshlink_handle {
 
 	pthread_t thread;
 	pthread_mutex_t outpacketqueue_mutex;
+	pthread_mutex_t nodes_mutex;
 	event_loop_t loop;
 	listen_socket_t listen_socket[MAXSOCKETS];
 	int listen_sockets;

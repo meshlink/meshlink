@@ -735,6 +735,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	mesh->confbase = xstrdup(confbase);
 	mesh->name = xstrdup(name);
 	pthread_mutex_init ( &(mesh->outpacketqueue_mutex), NULL);
+	pthread_mutex_init ( &(mesh->nodes_mutex), NULL);
 	event_loop_init(&mesh->loop);
 	mesh->loop.data = mesh;
 
@@ -898,11 +899,16 @@ meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
 size_t meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, size_t nmemb) {
 	size_t i = 0;
 
+	//lock mesh->nodes
+	pthread_mutex_lock(&(mesh->nodes_mutex));
+
 	for splay_each(node_t, n, mesh->nodes) {
 		if(i < nmemb)
 			nodes[i] = (meshlink_node_t *)n;
 		i++;
 	}
+
+	pthread_mutex_unlock(&(mesh->nodes_mutex));
 
 	return i;
 }
