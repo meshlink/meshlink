@@ -1171,6 +1171,12 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 
 	char *b64key = ecdsa_get_base64_public_key(key);
 
+	//Before doing meshlink_join make sure we are not connected to another mesh
+	if ( pthread_kill(mesh->thread,0) == 0){
+		printf("HELLO\n");
+		goto invalid;
+	}
+
 	// Connect to the meshlink daemon mentioned in the URL.
 	struct addrinfo *ai = str2addrinfo(address, port, SOCK_STREAM);
 	if(!ai)
@@ -1261,7 +1267,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	return true;
 
 invalid:
-	fprintf(stderr, "Invalid invitation URL.\n");
+	fprintf(stderr, "Invalid invitation URL or you are already connected to a Mesh ?\n");
 	return false;
 }
 
