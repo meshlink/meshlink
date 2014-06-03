@@ -1158,7 +1158,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 			*port++ = 0;
 	}
 
-	if(!*port)
+	if(!port)
 		port = "655";
 
 	if(!b64decode(slash, mesh->hash, 18) || !b64decode(slash + 24, mesh->cookie, 18))
