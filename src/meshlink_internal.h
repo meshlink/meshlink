@@ -60,6 +60,7 @@ struct meshlink_handle {
 	meshlink_log_level_t log_level;
 
 	pthread_t thread;
+	bool threadstarted;
 	pthread_mutex_t outpacketqueue_mutex;
 	pthread_mutex_t nodes_mutex;
 	event_loop_t loop;

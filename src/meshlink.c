@@ -736,6 +736,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	mesh->name = xstrdup(name);
 	pthread_mutex_init ( &(mesh->outpacketqueue_mutex), NULL);
 	pthread_mutex_init ( &(mesh->nodes_mutex), NULL);
+	mesh->threadstarted = false;
 	event_loop_init(&mesh->loop);
 	mesh->loop.data = mesh;
 
@@ -798,6 +799,8 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 		memset(&mesh->thread, 0, sizeof mesh->thread);
 		return false;
 	}
+
+	mesh->threadstarted=true;
 
 	return true;
 }
@@ -1172,8 +1175,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	char *b64key = ecdsa_get_base64_public_key(key);
 
 	//Before doing meshlink_join make sure we are not connected to another mesh
-	if ( pthread_kill(mesh->thread,0) == 0){
-		printf("HELLO\n");
+	if ( mesh->threadstarted ){
 		goto invalid;
 	}
 
