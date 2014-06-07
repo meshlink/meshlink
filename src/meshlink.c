@@ -715,6 +715,7 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 
 meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	// Validate arguments provided by the application
+	bool usingname = false;
 
 	if(!confbase || !*confbase) {
 		fprintf(stderr, "No confbase given!\n");
@@ -723,17 +724,19 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 
 	if(!name || !*name) {
 		fprintf(stderr, "No name given!\n");
-		return NULL;
+		//return NULL;
 	}
+	else { //check name only if there is a name != NULL
 
-	if(!check_id(name)) {
-		fprintf(stderr, "Invalid name given!\n");
-		return NULL;
+		if(!check_id(name)) {
+			fprintf(stderr, "Invalid name given!\n");
+			return NULL;
+		} else { usingname = true;}
 	}
 
 	meshlink_handle_t *mesh = xzalloc(sizeof *mesh);
 	mesh->confbase = xstrdup(confbase);
-	mesh->name = xstrdup(name);
+	if (usingname) mesh->name = xstrdup(name);
 	pthread_mutex_init ( &(mesh->outpacketqueue_mutex), NULL);
 	pthread_mutex_init ( &(mesh->nodes_mutex), NULL);
 	mesh->threadstarted = false;
@@ -791,6 +794,12 @@ void *meshlink_main_loop(void *arg) {
 
 bool meshlink_start(meshlink_handle_t *mesh) {
 	// TODO: open listening sockets first
+
+	//Check that a valid name is set
+	if(!mesh->name ) {
+		fprintf(stderr, "No name given!\n");
+		return false;
+	}
 
 	// Start the main thread
 
