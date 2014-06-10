@@ -22,7 +22,6 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include "event.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -196,8 +195,6 @@ extern void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t le
  *                      A return value of true does not guarantee that the message will actually arrive at the destination.
  */
 extern bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, unsigned int len);
-
-extern void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
 
 /// Get a handle for a specific node.
 /** This function returns a handle for the node with the given name.
