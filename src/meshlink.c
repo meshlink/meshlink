@@ -837,6 +837,8 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	exit_configuration(&mesh->config);
 	event_loop_exit(&mesh->loop);
 
+	free(mesh);
+
 #ifdef HAVE_MINGW
 	WSACleanup();
 #endif
