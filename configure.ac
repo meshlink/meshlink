@@ -15,6 +15,7 @@ AC_DEFINE([__USE_BSD], 1, [Enable BSD extensions])
 
 dnl Checks for programs.
 AC_PROG_CC_C99
+AC_PROG_CXX
 AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
