@@ -246,9 +246,9 @@ void event_loop_init(event_loop_t *loop) {
 
 void event_loop_exit(event_loop_t *loop) {
 	for splay_each(io_t, io, &loop->ios)
-		splay_free_node(&loop->ios, node);
+		splay_unlink_node(&loop->ios, node);
 	for splay_each(timeout_t, timeout, &loop->timeouts)
-		splay_free_node(&loop->timeouts, node);
+		splay_unlink_node(&loop->timeouts, node);
 	for splay_each(signal_t, signal, &loop->signals)
-		splay_free_node(&loop->signals, node);
+		splay_unlink_node(&loop->signals, node);
 }
