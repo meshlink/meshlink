@@ -1,21 +1,9 @@
 TODO list for MeshLink
 ----------------------
 
-* Check for remaining global variables and get rid of them.
-
-* Write code for all the functions in meshlink.c (some can be moved from libmeshlink.c)
-  Current stubs that need implementation:
-  - meshlink_export()
-  - meshlink_import()
-  - meshlink_blacklist()
-
-* Implement a simple single producer, single consumer queue for communication
-  between the application and library threads. It is possible to do this without locks.
-
-* Provide thread-safety to functions that return pointers to meshlink_node_t.
-  - The mesh->nodes tree can be updated by the library thread at any time,
-    so it must be protected by a mutex or rwlock.
-  - Individial node_t's must never be freed or moved except in meshlink_close().
+* Write meshlink_sign() and meshlink_verify(). These should just call
+  ecdsa_sign() and _verify(), with mesh->self->connection->ecdsa as the key for
+  _sign(), and node->ecdsa for _verify()?
 
 * meshlink_join():
   - add checks that we only join another mesh if we did not connect to any other node before.
@@ -30,10 +18,6 @@ TODO list for MeshLink
   - Get rid of "priority".
 
 * Fill in mesh->errno whenever an error happens (= when a function returns false or NULL).
-
-* Make the headers work correctly in a C++ environment.
-
-* Add a header-only C++ wrapper API.
 
 * Add autoconf/automake stuff to call Doxygen.
 
@@ -51,3 +35,27 @@ TODO list for MeshLink
 
 * Add a "channel" library to MeshLink.
   - Support multiple TCP- and UDP-like streams between two nodes.
+
+Mostly done:
+------------
+
+* Check for remaining global variables and get rid of them.
+
+* Write code for all the functions in meshlink.c (some can be moved from libmeshlink.c)
+  Current stubs that need implementation:
+  - meshlink_export()
+  - meshlink_import()
+  - meshlink_blacklist()
+
+* Implement a simple single producer, single consumer queue for communication
+  between the application and library threads. It is possible to do this without locks.
+
+* Provide thread-safety to functions that return pointers to meshlink_node_t.
+  - The mesh->nodes tree can be updated by the library thread at any time,
+    so it must be protected by a mutex or rwlock.
+  - Individial node_t's must never be freed or moved except in meshlink_close().
+
+* Make the headers work correctly in a C++ environment.
+
+* Add a header-only C++ wrapper API.
+
