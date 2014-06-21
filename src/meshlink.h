@@ -39,11 +39,6 @@ typedef enum {
 	MESHLINK_ENOMEM, ///< Out of memory
 	MESHLINK_ENOENT, ///< Node is not known
 } meshlink_errno_t;
-typedef struct outpacketqueue {
-	meshlink_node_t *destination;
-	const void *data;
-	unsigned int len;
-} outpacketqueue_t;
 
 #ifndef MESHLINK_INTERNAL_H
 
