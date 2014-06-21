@@ -156,7 +156,7 @@ namespace meshlink {
 		 *  @param nodes        A pointer to an array of pointers to meshlink::node, which should be allocated by the application.
 		 *  @param nmemb        The maximum number of pointers that can be stored in the nodes array.
 		 *
-		 *  @param return       The number of known nodes. This can be larger than nmemb, in which case not all nodes were stored in the nodes array.
+		 *  @return             The number of known nodes. This can be larger than nmemb, in which case not all nodes were stored in the nodes array.
 		 */
 		size_t get_all_nodes(node **nodes, size_t nmemb) {
 			return meshlink_get_all_nodes(this, (meshlink_node_t **)nodes, nmemb);
