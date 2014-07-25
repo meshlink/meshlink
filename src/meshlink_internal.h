@@ -85,6 +85,9 @@ struct meshlink_handle {
 
 	struct list_t *outpacketqueue;
 
+	struct splay_tree_t *past_request_tree;
+	timeout_t past_request_timeout;
+
 	int contradicting_add_edge;
 	int contradicting_del_edge;
 	int sleeptime;

@@ -49,8 +49,6 @@ static char (*request_name[]) = {
 		"ADD_EDGE", "DEL_EDGE", "KEY_CHANGED", "REQ_KEY", "ANS_KEY", "PACKET", "CONTROL",
 };
 
-static splay_tree_t *past_request_tree;
-
 bool check_id(const char *id) {
 	if(!id || !*id)
 		return false;
@@ -161,15 +159,13 @@ static void free_past_request(past_request_t *r) {
 	free(r);
 }
 
-static timeout_t past_request_timeout;
-
 static void age_past_requests(event_loop_t *loop, void *data) {
 	meshlink_handle_t *mesh = loop->data;
 	int left = 0, deleted = 0;
 
-	for splay_each(past_request_t, p, past_request_tree) {
+	for splay_each(past_request_t, p, mesh->past_request_tree) {
 		if(p->firstseen + mesh->pinginterval <= mesh->loop.now.tv_sec)
-			splay_delete_node(past_request_tree, node), deleted++;
+			splay_delete_node(mesh->past_request_tree, node), deleted++;
 		else
 			left++;
 	}
@@ -178,7 +174,7 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 		logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Aging past requests: deleted %d, left %d", deleted, left);
 
 	if(left)
-		timeout_set(&mesh->loop, &past_request_timeout, &(struct timeval){10, rand() % 100000});
+		timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timeval){10, rand() % 100000});
 }
 
 bool seen_request(meshlink_handle_t *mesh, const char *request) {
@@ -186,26 +182,25 @@ bool seen_request(meshlink_handle_t *mesh, const char *request) {
 
 	p.request = request;
 
-	if(splay_search(past_request_tree, &p)) {
+	if(splay_search(mesh->past_request_tree, &p)) {
 		logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Already seen request");
 		return true;
 	} else {
 		new = xmalloc(sizeof *new);
 		new->request = xstrdup(request);
 		new->firstseen = mesh->loop.now.tv_sec;
-		splay_insert(past_request_tree, new);
-		timeout_add(&mesh->loop, &past_request_timeout, age_past_requests, NULL, &(struct timeval){10, rand() % 100000});
+		splay_insert(mesh->past_request_tree, new);
+		timeout_add(&mesh->loop, &mesh->past_request_timeout, age_past_requests, NULL, &(struct timeval){10, rand() % 100000});
 		return false;
 	}
 }
 
-// TODO: move past_request_tree to meshlink_handle_t
 void init_requests(meshlink_handle_t *mesh) {
-	past_request_tree = splay_alloc_tree((splay_compare_t) past_request_compare, (splay_action_t) free_past_request);
+	mesh->past_request_tree = splay_alloc_tree((splay_compare_t) past_request_compare, (splay_action_t) free_past_request);
 }
 
 void exit_requests(meshlink_handle_t *mesh) {
-	splay_delete_tree(past_request_tree);
+	splay_delete_tree(mesh->past_request_tree);
 
-	timeout_del(&mesh->loop, &past_request_timeout);
+	timeout_del(&mesh->loop, &mesh->past_request_timeout);
 }

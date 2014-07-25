@@ -88,6 +88,9 @@ void io_del(event_loop_t *loop, io_t *io) {
 }
 
 void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *data, struct timeval *tv) {
+	if(!timeout->cb)
+		timeout->tv = (struct timeval){0, 0};
+
 	timeout->cb = cb;
 	timeout->data = data;
 	timeout->node.data = timeout;
