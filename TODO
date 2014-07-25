@@ -1,9 +1,12 @@
 TODO list for MeshLink
 ----------------------
 
+* Speed up start: immediately do outgoing connections instead of waiting 5 seconds.
+
 * meshlink_join():
   - add checks that we only join another mesh if we did not connect to any other node before.
   - only allow meshlink_join() when the library thread is not running.
+  - remove old host config file if the invitation gave the node a different name.
 
 * Allow meshlink_open() to be called with a NULL name, in anticipation of meshlink_join().
   - Do not allow meshlink_start() if no Name is set.
