@@ -29,8 +29,6 @@
 #include "utils.h"
 #include "xalloc.h"
 
-static hash_t *node_udp_cache;
-
 static int node_compare(const node_t *a, const node_t *b) {
 	return strcmp(a->name, b->name);
 }
@@ -38,13 +36,13 @@ static int node_compare(const node_t *a, const node_t *b) {
 void init_nodes(meshlink_handle_t *mesh) {
 	pthread_mutex_lock(&(mesh->nodes_mutex));
 	mesh->nodes = splay_alloc_tree((splay_compare_t) node_compare, (splay_action_t) free_node);
-	node_udp_cache = hash_alloc(0x100, sizeof(sockaddr_t));
+	mesh->node_udp_cache = hash_alloc(0x100, sizeof(sockaddr_t));
 	pthread_mutex_unlock(&(mesh->nodes_mutex));
 }
 
 void exit_nodes(meshlink_handle_t *mesh) {
 	pthread_mutex_lock(&(mesh->nodes_mutex));
-	hash_free(node_udp_cache);
+	hash_free(mesh->node_udp_cache);
 	splay_delete_tree(mesh->nodes);
 	pthread_mutex_unlock(&(mesh->nodes_mutex));
 }
@@ -116,7 +114,7 @@ node_t *lookup_node(meshlink_handle_t *mesh, char *name) {
 }
 
 node_t *lookup_node_udp(meshlink_handle_t *mesh, const sockaddr_t *sa) {
-	return hash_search(node_udp_cache, sa);
+	return hash_search(mesh->node_udp_cache, sa);
 }
 
 void update_node_udp(meshlink_handle_t *mesh, node_t *n, const sockaddr_t *sa) {
@@ -125,7 +123,7 @@ void update_node_udp(meshlink_handle_t *mesh, node_t *n, const sockaddr_t *sa) {
 		return;
 	}
 
-	hash_insert(node_udp_cache, &n->address, NULL);
+	hash_insert(mesh->node_udp_cache, &n->address, NULL);
 
 	if(sa) {
 		n->address = *sa;
@@ -136,7 +134,7 @@ void update_node_udp(meshlink_handle_t *mesh, node_t *n, const sockaddr_t *sa) {
 				break;
 			}
 		}
-		hash_insert(node_udp_cache, sa, n);
+		hash_insert(mesh->node_udp_cache, sa, n);
 		free(n->hostname);
 		n->hostname = sockaddr2hostname(&n->address);
 		logger(DEBUG_PROTOCOL, LOG_DEBUG, "UDP address of %s set to %s", n->name, n->hostname);
