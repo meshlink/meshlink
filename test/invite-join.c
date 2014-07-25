@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,45 +16,59 @@ int main(int argc, char *argv[]) {
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("invite_join_conf.1", "foo");
-	if(!mesh1)
+	if(!mesh1) {
+		fprintf(stderr, "Could not initialize configuration for foo\n");
 		return 1;
+	}
 
 	meshlink_handle_t *mesh2 = meshlink_open("invite_join_conf.2", "bar");
-	if(!mesh2)
+	if(!mesh2) {
+		fprintf(stderr, "Could not initialize configuration for bar\n");
 		return 1;
+	}
 
 	// Start the first instance and have it generate an invitation.
 
 	meshlink_set_node_status_cb(mesh1, status_cb);
 	
-	if(!meshlink_start(mesh1))
+	if(!meshlink_start(mesh1)) {
+		fprintf(stderr, "Foo could not start\n");
 		return 1;
+	}
 
 	meshlink_add_address(mesh1, "localhost");
 	char *url = meshlink_invite(mesh1, "baz");
-	if(!url)
+	if(!url) {
+		fprintf(stderr, "Foo could not generate an invitation for baz\n");
 		return 1;
+	}
 
 	// Have the second instance join the first.
 
-	if(!meshlink_join(mesh2, url))
+	if(!meshlink_join(mesh2, url)) {
+		fprintf(stderr, "Baz could not join foo's mesh\n");
 		return 1;
+	}
 
 	free(url);
 
-	if(!meshlink_start(mesh2))
+	if(!meshlink_start(mesh2)) {
+		fprintf(stderr, "Baz could not start\n");
 		return 1;
+	}
 
 	// Wait for the two to connect.
 
-	for(int i = 0; i < 20; i++) {
+	for(int i = 0; i < 60; i++) {
 		sleep(1);
 		if(baz_reachable)
 			break;
 	}
 
-	if(!baz_reachable)
+	if(!baz_reachable) {
+		fprintf(stderr, "Baz not reachable for foo after 20 seconds\n");
 		return 1;
+	}
 
 	// Clean up.
 
