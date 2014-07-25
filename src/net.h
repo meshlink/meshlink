@@ -66,6 +66,7 @@ typedef struct outgoing_t {
 	struct addrinfo *ai;
 	struct addrinfo *aip;
 	timeout_t ev;
+	struct meshlink_handle *mesh;
 } outgoing_t;
 
 extern int maxoutbufsize;

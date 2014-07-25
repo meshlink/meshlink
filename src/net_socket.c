@@ -632,7 +632,9 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	send_id(mesh, c);
 }
 
-static void free_outgoing(meshlink_handle_t *mesh, outgoing_t *outgoing) {
+static void free_outgoing(outgoing_t *outgoing) {
+	meshlink_handle_t *mesh = outgoing->mesh;
+
 	timeout_del(&mesh->loop, &outgoing->ev);
 
 	if(outgoing->ai)
@@ -684,6 +686,7 @@ void try_outgoing_connections(meshlink_handle_t *mesh) {
 
 		if(!found) {
 			outgoing_t *outgoing = xzalloc(sizeof *outgoing);
+			outgoing->mesh = mesh;
 			outgoing->name = name;
 			list_insert_tail(mesh->outgoings, outgoing);
 			setup_outgoing_connection(mesh, outgoing);
