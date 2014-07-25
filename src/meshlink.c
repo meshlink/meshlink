@@ -927,12 +927,23 @@ size_t meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, 
 	return i;
 }
 
-char *meshlink_sign(meshlink_handle_t *mesh, const char *data, size_t len) {
-	return NULL;
+bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len, void *signature, size_t *siglen) {
+	if(*siglen < MESHLINK_SIGLEN)
+		return false;
+	if(!ecdsa_sign(mesh->self->connection->ecdsa, data, len, signature))
+		return false;
+	*siglen = MESHLINK_SIGLEN;
+	return true;
 }
 
-bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const char *data, size_t len, const char *signature) {
-	return false;
+bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len, const void *signature, size_t siglen) {
+	if(siglen != MESHLINK_SIGLEN)
+		return false;
+	struct node_t *n = (struct node_t *)source;
+	node_read_ecdsa_public_key(mesh, n);
+	if(!n->ecdsa)
+		return false;
+	return ecdsa_verify(((struct node_t *)source)->ecdsa, data, len, signature);
 }
 
 static bool refresh_invitation_key(meshlink_handle_t *mesh) {

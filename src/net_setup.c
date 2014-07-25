@@ -80,7 +80,7 @@ bool read_ecdsa_public_key(meshlink_handle_t *mesh, connection_t *c) {
 	return false;
 }
 
-static bool read_ecdsa_private_key(meshlink_handle_t *mesh) {
+bool read_ecdsa_private_key(meshlink_handle_t *mesh) {
 	FILE *fp;
 	char filename[PATH_MAX];
 

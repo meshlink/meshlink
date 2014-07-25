@@ -1,10 +1,6 @@
 TODO list for MeshLink
 ----------------------
 
-* Write meshlink_sign() and meshlink_verify(). These should just call
-  ecdsa_sign() and _verify(), with mesh->self->connection->ecdsa as the key for
-  _sign(), and node->ecdsa for _verify()?
-
 * meshlink_join():
   - add checks that we only join another mesh if we did not connect to any other node before.
   - only allow meshlink_join() when the library thread is not running.

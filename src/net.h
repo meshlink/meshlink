@@ -104,6 +104,7 @@ extern int main_loop(struct meshlink_handle *mesh);
 extern void terminate_connection(struct meshlink_handle *mesh, struct connection_t *, bool);
 extern bool node_read_ecdsa_public_key(struct meshlink_handle *mesh, struct node_t *);
 extern bool read_ecdsa_public_key(struct meshlink_handle *mesh, struct connection_t *);
+extern bool read_ecdsa_private_key(struct meshlink_handle *mesh);
 extern void send_mtu_probe(struct meshlink_handle *mesh, struct node_t *);
 extern void handle_meta_connection_data(struct meshlink_handle *mesh, struct connection_t *);
 extern void retry(struct meshlink_handle *mesh);
