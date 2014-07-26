@@ -299,6 +299,7 @@ namespace meshlink {
 		 *  to hand the data over to the application's thread.
 		 *  The callback should also not block itself and return as quickly as possible.
 		 *
+		 *  @param channel   A handle for the channel.
 		 *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
 		 */
 		void set_channel_accept_cb(channel *channel, channel_accept_cb_t cb) {
@@ -317,7 +318,7 @@ namespace meshlink {
 		 *
 		 *  @return             A handle for the channel, or NULL in case of an error.
 		 */
-		channel *channel_open(node *node, uint16_t port, channel_receive_cb_t recv, const void *data, size_t len) {
+		channel *channel_open(node *node, uint16_t port, channel_receive_cb_t cb, const void *data, size_t len) {
 			return (channel *)meshlink_channel_open(this, node, port, (meshlink_channel_receive_cb_t)recv, data, len);
 		}
 
