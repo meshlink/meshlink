@@ -1,5 +1,6 @@
 TESTS = \
 	basic.test \
+	basicpp.test \
 	import-export.test \
 	invite-join.test \
 	sign-verify.test
@@ -8,10 +9,13 @@ dist_check_SCRIPTS = $(TESTS)
 
 AM_CPPFLAGS = -I../src
 
-check_PROGRAMS = basic import-export invite-join sign-verify
+check_PROGRAMS = basic basicpp import-export invite-join sign-verify
 
 basic_SOURCES = basic.c
 basic_LDADD = ../src/libmeshlink.la
+
+basicpp_SOURCES = basicpp.cpp
+basicpp_LDADD = ../src/libmeshlink.la
 
 import_export_SOURCES = import-export.c
 import_export_LDADD = ../src/libmeshlink.la

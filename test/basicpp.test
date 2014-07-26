@@ -1,0 +1,4 @@
+#!/bin/sh
+
+rm -Rf basicpp_conf
+./basicpp
