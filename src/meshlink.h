@@ -370,7 +370,7 @@ extern void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_cha
  *  @param channel   A handle for the channel.
  *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
  */
-extern void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_receive_cb_t cb);
+extern void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb);
 
 /// Open a reliable stream channel to another node.
 /** This function is called whenever a remote node wants to open a channel to the local node.
