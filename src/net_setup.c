@@ -269,7 +269,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	char *address = NULL;
 
 	if(!(name = get_name(mesh))) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Name for tinc daemon required!");
+		logger(DEBUG_ALWAYS, LOG_ERR, "Name for MeshLink instance required!");
 		return false;
 	}
 

@@ -23,7 +23,7 @@
 typedef enum debug_t {
 	DEBUG_NOTHING = 0,              /* Quiet mode, only show starting/stopping of the daemon */
 	DEBUG_ALWAYS = 0,
-	DEBUG_CONNECTIONS = 1,          /* Show (dis)connects of other tinc daemons via TCP */
+	DEBUG_CONNECTIONS = 1,          /* Show (dis)connects of other nodes via TCP */
 	DEBUG_ERROR = 2,                /* Show error messages received from other hosts */
 	DEBUG_STATUS = 2,               /* Show status messages received from other hosts */
 	DEBUG_PROTOCOL = 3,             /* Show the requests that are sent/received */

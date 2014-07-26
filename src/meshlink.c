@@ -16,7 +16,7 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-#define VAR_SERVER 1    /* Should be in tinc.conf */
+#define VAR_SERVER 1    /* Should be in meshlink.conf */
 #define VAR_HOST 2      /* Can be in host config file */
 #define VAR_MULTIPLE 4  /* Multiple statements allowed */
 #define VAR_OBSOLETE 8  /* Should not be used anymore */
@@ -190,9 +190,9 @@ static char *get_my_hostname(meshlink_handle_t* mesh) {
 
 	// If that doesn't work, guess externally visible hostname
 	fprintf(stderr, "Trying to discover externally visible hostname...\n");
-	struct addrinfo *ai = str2addrinfo("tinc-vpn.org", "80", SOCK_STREAM);
+	struct addrinfo *ai = str2addrinfo("meshlink.io", "80", SOCK_STREAM);
 	struct addrinfo *aip = ai;
-	static const char request[] = "GET http://tinc-vpn.org/host.cgi HTTP/1.0\r\n\r\n";
+	static const char request[] = "GET http://meshlink.io/host.cgi HTTP/1.0\r\n\r\n";
 
 	while(aip) {
 		int s = socket(aip->ai_family, aip->ai_socktype, aip->ai_protocol);
@@ -398,7 +398,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 		return false;
 	}
 
-	// Filter first chunk on approved keywords, split between tinc.conf and hosts/Name
+	// Filter first chunk on approved keywords, split between meshlink.conf and hosts/Name
 	// Other chunks go unfiltered to their respective host config files
 	const char *p = mesh->data;
 	char *l, *value;

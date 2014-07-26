@@ -1,6 +1,6 @@
 /*
     sptps_test.c -- Simple Peer-to-Peer Security test program
-    Copyright (C) 2011-2013 Guus Sliepen <guus@tinc-vpn.org>,
+    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>,
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ static void usage() {
 	fprintf(stderr, "Valid options are:\n"
 			"  --help  Display this help and exit.\n"
 			"\n");
-	fprintf(stderr, "Report bugs to tinc@tinc-vpn.org.\n");
+	fprintf(stderr, "Report bugs to bugs@meshlink.io.\n");
 }
 
 static struct option const long_options[] = {

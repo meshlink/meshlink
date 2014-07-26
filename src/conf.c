@@ -323,10 +323,8 @@ bool append_config_file(meshlink_handle_t *mesh, const char *name, const char *k
 	if(!fp) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Cannot open config file %s: %s", filename, strerror(errno));
 	} else {
-		fprintf(fp, "\n# The following line was automatically added by tinc\n%s = %s\n", key, value);
 		fclose(fp);
 	}
-
 
 	return fp != NULL;
 }

@@ -15,7 +15,7 @@
 
 This is the info manual for the MeshLink library version @value{VERSION}.
 
-Copyright @copyright{} 2014 Guus Sliepen <guus@@tinc-vpn.org>.
+Copyright @copyright{} 2014 Guus Sliepen <guus@@meshlink.io>.
 
 Permission is granted to make and distribute verbatim copies of this
 manual provided the copyright notice and this permission notice are
@@ -39,7 +39,7 @@ permission notice identical to this one.
 @vskip 0pt plus 1filll
 This is the info manual for the MeshLink library version @value{VERSION}.
 
-Copyright @copyright{} 2014 Guus Sliepen <guus@@tinc-vpn.org>
+Copyright @copyright{} 2014 Guus Sliepen <guus@@meshlink.io>
 
 Permission is granted to make and distribute verbatim copies of this
 manual provided the copyright notice and this permission notice are
