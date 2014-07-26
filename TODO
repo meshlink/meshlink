@@ -7,6 +7,10 @@ TODO list for MeshLink
   - add checks that we only join another mesh if we did not connect to any other node before.
   - only allow meshlink_join() when the library thread is not running.
   - remove old host config file if the invitation gave the node a different name.
+  - how to handle nodes that are part of one mesh and want to join another?
+
+* meshlink_leave()?
+  - leaving a mesh is basically starting all over again, with new private keys?
 
 * Allow meshlink_open() to be called with a NULL name, in anticipation of meshlink_join().
   - Do not allow meshlink_start() if no Name is set.
@@ -19,8 +23,6 @@ TODO list for MeshLink
 * Fill in mesh->errno whenever an error happens (= when a function returns false or NULL).
 
 * Add autoconf/automake stuff to call Doxygen.
-
-* Write a test suite for the library.
 
 * Write a manual
   - Document API
@@ -35,26 +37,15 @@ TODO list for MeshLink
 * Add a "channel" library to MeshLink.
   - Support multiple TCP- and UDP-like streams between two nodes.
 
-Mostly done:
-------------
+* Move queue code to its own source file.
 
-* Check for remaining global variables and get rid of them.
-
-* Write code for all the functions in meshlink.c (some can be moved from libmeshlink.c)
-  Current stubs that need implementation:
-  - meshlink_export()
-  - meshlink_import()
-  - meshlink_blacklist()
-
-* Implement a simple single producer, single consumer queue for communication
-  between the application and library threads. It is possible to do this without locks.
+Not finished but being worked on:
+---------------------------------
 
 * Provide thread-safety to functions that return pointers to meshlink_node_t.
   - The mesh->nodes tree can be updated by the library thread at any time,
     so it must be protected by a mutex or rwlock.
   - Individial node_t's must never be freed or moved except in meshlink_close().
+  - Check all public API functions.
 
-* Make the headers work correctly in a C++ environment.
-
-* Add a header-only C++ wrapper API.
-
+* Write a test suite for the library.
