@@ -23,6 +23,7 @@
 #include "event.h"
 #include "sockaddr.h"
 #include "sptps.h"
+#include "utcp/utcp.h"
 
 typedef struct node_status_t {
 	unsigned int unused_active:1;           /* 1 if active (not used for nodes) */
@@ -40,6 +41,8 @@ typedef struct node_status_t {
 
 typedef struct node_t {
 	char *name;                             /* name of this node */
+	void *priv;
+
 	uint32_t options;                       /* options turned on for this node */
 
 	struct meshlink_handle *mesh;           /* The mesh this node belongs to */
@@ -84,6 +87,8 @@ typedef struct node_t {
 	float rtt;                              /* Last measured round trip time */
 	float bandwidth;                        /* Last measured bandwidth */
 	float packetloss;                       /* Last measured packet loss rate */
+
+	struct utcp *utcp;
 
 	uint64_t in_packets;
 	uint64_t in_bytes;

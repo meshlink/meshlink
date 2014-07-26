@@ -1381,6 +1381,76 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 
 }
 
+static bool channel_pre_accept(struct utcp *utcp, uint16_t port) {
+	//TODO: implement
+	return false;
+}
+
+static void channel_accept(struct utcp_connection *utcp_connection, uint16_t port) {
+	//TODO: implement
+}
+
+static int channel_recv(struct utcp_connection *connection, const void *data, size_t len) {
+	meshlink_channel_t *channel = connection->priv;
+	node_t *n = channel->node;
+	meshlink_handle_t *mesh = n->mesh;
+	if(!channel->receive_cb)
+		return -1;
+	else {
+		channel->receive_cb(mesh, channel, data, len);
+		return 0;
+	}
+}
+
+static int channel_send(struct utcp *utcp, const void *data, size_t len) {
+	node_t *n = utcp->priv;
+	meshlink_handle_t *mesh = n->mesh;
+	return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? len : -1;
+}
+
+void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_accept_cb_t cb) {
+	mesh->channel_accept_cb = cb;
+}
+
+void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb) {
+	channel->receive_cb = cb;
+}
+
+meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len) {
+	node_t *n = (node_t *)node;
+	if(!n->utcp) {
+		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+		if(!n->utcp)
+			return NULL;
+	}
+	meshlink_channel_t *channel = xzalloc(sizeof *channel);
+	channel->node = n;
+	channel->receive_cb = cb;
+	channel->c = utcp_connect(n->utcp, port, channel_recv, channel);
+	if(!channel->c) {
+		free(channel);
+		return NULL;
+	}
+	return channel;
+}
+
+void meshlink_channel_shutdown(meshlink_handle_t *mesh, meshlink_channel_t *channel, int direction) {
+	utcp_shutdown(channel->c, direction);
+}
+
+void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel) {
+	utcp_close(channel->c);
+	free(channel);
+}
+
+ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+	// TODO: locking.
+	// Ideally we want to put the data into the UTCP connection's send buffer.
+	// Then, preferrably only if there is room in the receiver window,
+	// kick the meshlink thread to go send packets.
+	return utcp_send(channel->c, data, len);
+}
+
 static void __attribute__((constructor)) meshlink_init(void) {
 	crypto_init();
 }
