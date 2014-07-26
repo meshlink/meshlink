@@ -20,8 +20,10 @@
 #ifndef MESHLINK_H
 #define MESHLINK_H
 
+#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +36,9 @@ typedef struct meshlink_handle meshlink_handle_t;
 
 /// A handle for a MeshLink node.
 typedef struct meshlink_node meshlink_node_t;
+
+/// A handle for a MeshLink channel.
+typedef struct meshlink_channel meshlink_channel_t;
 
 /// Code of most recent error encountered.
 typedef enum {
@@ -52,6 +57,9 @@ struct meshlink_handle {
 struct meshlink_node {
 	const char *name; ///< Textual name of this node.
 	void *priv;       ///< Private pointer which the application can set at will.
+};
+
+struct meshlink_channel {
 };
 
 #endif // MESHLINK_INTERNAL_H
@@ -311,6 +319,106 @@ extern bool meshlink_import(meshlink_handle_t *mesh, const char *data);
  *  @param node         A pointer to a meshlink_node_t describing the node to be blacklisted.
  */
 extern void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node);
+
+/// A callback for accepting incoming channels.
+/** This function is called whenever a remote node wants to open a channel to the local node.
+ *  The application then has to decide whether to accept or reject this channel.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the incoming channel.
+ *  @param node         The node from which this channel is being initiated.
+ *  @param port         The port number the peer wishes to connect to.
+ *  @param data         A pointer to a buffer containing data already received. (Not yet used.)
+ *  @param len          The length of the data. (Not yet used.)
+ *
+ *  @return             This function should return true if the application accepts the incoming channel, false otherwise.
+ *                      If returning false, the channel is invalid and may not be used anymore.
+ */
+typedef bool (*meshlink_channel_accept_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_node_t *node, uint16_t port, void *data, size_t len);
+
+/// A callback for receiving data from a channel.
+/** This function is called whenever a remote node wants to open a channel to the local node.
+ *  The application then has to decide whether to accept or reject this channel.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *  @param data         A pointer to a buffer containing data sent by the source.
+ *  @param len          The length of the data.
+ */
+typedef void (*meshlink_channel_receive_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *data, size_t len);
+
+/// Set the accept callback.
+/** This functions sets the callback that is called whenever another node sends data to the local node.
+ *  The callback is run in MeshLink's own thread.
+ *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to hand the data over to the application's thread.
+ *  The callback should also not block itself and return as quickly as possible.
+ *
+ *  @param mesh      A handle which represents an instance of MeshLink.
+ *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
+ */
+extern void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_accept_cb_t cb);
+
+/// Set the receive callback.
+/** This functions sets the callback that is called whenever another node sends data to the local node.
+ *  The callback is run in MeshLink's own thread.
+ *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to hand the data over to the application's thread.
+ *  The callback should also not block itself and return as quickly as possible.
+ *
+ *  @param mesh      A handle which represents an instance of MeshLink.
+ *  @param channel   A handle for the channel.
+ *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
+ */
+extern void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_receive_cb_t cb);
+
+/// Open a reliable stream channel to another node.
+/** This function is called whenever a remote node wants to open a channel to the local node.
+ *  The application then has to decide whether to accept or reject this channel.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         The node to which this channel is being initiated.
+ *  @param port         The port number the peer wishes to connect to.
+ *  @param cb           A pointer to the function which will be called when the remote node sends data to the local node.
+ *  @param data         A pointer to a buffer containing data to already queue for sending.
+ *  @param len          The length of the data.
+ *
+ *  @return             A handle for the channel, or NULL in case of an error.
+ */
+extern meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, void *data, size_t len);
+
+/// Partially close a reliable stream channel.
+/** This shuts down the read or write side of a channel, or both, without closing the handle.
+ *  It can be used to inform the remote node that the local node has finished sending all data on the channel,
+ *  but still allows waiting for incoming data from the remote node.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *  @param direction    Must be one of SHUT_RD, SHUT_WR or SHUT_RDWR.
+ */
+extern void meshlink_channel_shutdown(meshlink_handle_t *mesh, meshlink_channel_t *channel, int direction);
+
+/// Close a reliable stream channel.
+/** This informs the remote node that the local node has finished sending all data on the channel.
+ *  It also causes the local node to stop accepting incoming data from the remote node.
+ *  Afterwards, the channel handle is invalid and must not be used any more.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ */
+extern void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel);
+
+/// Transmit data on a channel
+/** This queues data to send to the remote node.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *  @param data         A pointer to a buffer containing data sent by the source.
+ *  @param len          The length of the data.
+ *
+ *  @return             The amount of data that was queued, which can be less than len, or a negative value in case of an error.
+ */
+extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *data, size_t len);
 
 #ifdef __cplusplus
 }
