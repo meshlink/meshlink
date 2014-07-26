@@ -66,7 +66,7 @@ namespace meshlink {
 	 *  @return             This function should return true if the application accepts the incoming channel, false otherwise.
 	 *                      If returning false, the channel is invalid and may not be used anymore.
 	 */
-	typedef bool (*channel_accept_cb_t)(mesh *mesh, channel *channel, node *node, uint16_t port, void *data, size_t len);
+	typedef bool (*channel_accept_cb_t)(mesh *mesh, channel *channel, node *node, uint16_t port, const void *data, size_t len);
 
 	/// A callback for receiving data from a channel.
 	/** @param mesh         A handle which represents an instance of MeshLink.
@@ -74,7 +74,7 @@ namespace meshlink {
 	 *  @param data         A pointer to a buffer containing data sent by the source.
 	 *  @param len          The length of the data.
 	 */
-	typedef void (*channel_receive_cb_t)(mesh *mesh, channel *channel, void *data, size_t len);
+	typedef void (*channel_receive_cb_t)(mesh *mesh, channel *channel, const void *data, size_t len);
 
 	/// A class describing a MeshLink node.
 	class node: public meshlink_node_t {
@@ -317,7 +317,7 @@ namespace meshlink {
 		 *
 		 *  @return             A handle for the channel, or NULL in case of an error.
 		 */
-		channel *channel_open(node *node, uint16_t port, channel_receive_cb_t recv, void *data, size_t len) {
+		channel *channel_open(node *node, uint16_t port, channel_receive_cb_t recv, const void *data, size_t len) {
 			return (channel *)meshlink_channel_open(this, node, port, (meshlink_channel_receive_cb_t)recv, data, len);
 		}
 

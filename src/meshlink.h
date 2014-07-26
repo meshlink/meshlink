@@ -334,7 +334,7 @@ extern void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node);
  *  @return             This function should return true if the application accepts the incoming channel, false otherwise.
  *                      If returning false, the channel is invalid and may not be used anymore.
  */
-typedef bool (*meshlink_channel_accept_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_node_t *node, uint16_t port, void *data, size_t len);
+typedef bool (*meshlink_channel_accept_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_node_t *node, uint16_t port, const void *data, size_t len);
 
 /// A callback for receiving data from a channel.
 /** This function is called whenever a remote node wants to open a channel to the local node.
@@ -345,7 +345,7 @@ typedef bool (*meshlink_channel_accept_cb_t)(meshlink_handle_t *mesh, meshlink_c
  *  @param data         A pointer to a buffer containing data sent by the source.
  *  @param len          The length of the data.
  */
-typedef void (*meshlink_channel_receive_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *data, size_t len);
+typedef void (*meshlink_channel_receive_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len);
 
 /// Set the accept callback.
 /** This functions sets the callback that is called whenever another node sends data to the local node.
@@ -385,7 +385,7 @@ extern void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_ch
  *
  *  @return             A handle for the channel, or NULL in case of an error.
  */
-extern meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, void *data, size_t len);
+extern meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len);
 
 /// Partially close a reliable stream channel.
 /** This shuts down the read or write side of a channel, or both, without closing the handle.
@@ -418,7 +418,7 @@ extern void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *
  *
  *  @return             The amount of data that was queued, which can be less than len, or a negative value in case of an error.
  */
-extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *data, size_t len);
+extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len);
 
 #ifdef __cplusplus
 }
