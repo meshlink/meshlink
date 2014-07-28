@@ -319,7 +319,7 @@ namespace meshlink {
 		 *  @return             A handle for the channel, or NULL in case of an error.
 		 */
 		channel *channel_open(node *node, uint16_t port, channel_receive_cb_t cb, const void *data, size_t len) {
-			return (channel *)meshlink_channel_open(this, node, port, (meshlink_channel_receive_cb_t)recv, data, len);
+			return (channel *)meshlink_channel_open(this, node, port, (meshlink_channel_receive_cb_t)cb, data, len);
 		}
 
 		/// Partially close a reliable stream channel.
