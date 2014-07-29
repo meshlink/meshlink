@@ -162,8 +162,18 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			int i = 0;
 
 			for splay_each(node_t, n, mesh->nodes) {
-				if(i++ != r)
-					continue;
+				bool trying_unreachable = false;
+
+				if(i++ != r) {
+					if(n->status->reachable) {
+						continue;
+					} else {
+						/* If we see an unreachable node
+						   before node i, try it anyway.
+						*/
+						trying_unreachable = true;
+					}
+				}
 
 				if(n->connection)
 					break;
@@ -185,6 +195,15 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 					outgoing->name = xstrdup(n->name);
 					list_insert_tail(mesh->outgoings, outgoing);
 					setup_outgoing_connection(mesh, outgoing);
+				} else if(trying_unreachable) {
+					/* We're trying an unreachable node instead
+					   of node i. We already have an outgoing
+					   to it. Try the next node rather than
+					   breaking here, to avoid churning on a
+					   connection attempt to the first
+					   unreachable node.
+					*/
+					continue;
 				}
 				break;
 			}
