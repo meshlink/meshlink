@@ -75,20 +75,29 @@ struct meshlink_channel {
  */
 extern const char *meshlink_strerror(meshlink_errno_t errno);
 
-/// Initialize MeshLink's configuration directory.
-/** This function causes MeshLink to initialize its configuration directory,
- *  if it hasn't already been initialized.
- *  It only has to be run the first time the application starts,
- *  but it is not a problem if it is run more than once, as long as
- *  the arguments given are the same.
+/// Open or create a MeshLink instance.
+/** This function opens or creates a MeshLink instance.
+ *  The state is stored in the configuration directory passed in the variable @a confbase @a.
+ *  If the configuration directory does not exist yet, for example when it is the first time
+ *  this instance is opened, the configuration directory will be automatically created and initialized.
+ *  However, the parent directory should already exist, otherwise an error will be returned.
+ *
+ *  The name given should be a unique identifier for this instance.
+ *
+ *  This function returns a pointer to a struct meshlink_handle that will be allocated by MeshLink.
+ *  When the application does no longer need to use this handle, it must call meshlink_close() to
+ *  free its resources.
  *
  *  This function does not start any network I/O yet. The application should
  *  first set callbacks, and then call meshlink_start().
  *
  *  @param confbase The directory in which MeshLink will store its configuration files.
+ *                  After the function returns, the application is free to overwrite or free @a confbase @a.
  *  @param name     The name which this instance of the application will use in the mesh.
+ *                  After the function returns, the application is free to overwrite or free @a name @a.
  *
- *  @return         This function will return true if MeshLink has succesfully set up its configuration files, false otherwise.
+ *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink.
+ *                  The pointer is valid until meshlink_close() is called.
  */
 extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name);
 
@@ -112,8 +121,8 @@ extern void meshlink_stop(meshlink_handle_t *mesh);
 
 /// Close the MeshLink handle.
 /** This function calls meshlink_stop() if necessary,
- *  and frees all memory allocated by MeshLink.
- *  Afterwards, the handle and any pointers to a struct meshlink_node are invalid.
+ *  and frees the struct meshlink_handle and all associacted memory allocated by MeshLink.
+ *  Afterwards, the handle and any pointers to a struct meshlink_node or struct meshlink_channel are invalid.
  *
  *  @param mesh     A handle which represents an instance of MeshLink.
  */
@@ -123,6 +132,8 @@ extern void meshlink_close(meshlink_handle_t *mesh);
 /** @param mesh      A handle which represents an instance of MeshLink.
  *  @param source    A pointer to a meshlink_node_t describing the source of the data.
  *  @param data      A pointer to a buffer containing the data sent by the source.
+ *                   The pointer is only valid during the lifetime of the callback.
+ *                   The callback should mempcy() the data if it needs to be available outside the callback.
  *  @param len       The length of the received data.
  */
 typedef void (*meshlink_receive_cb_t)(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len);
@@ -136,6 +147,7 @@ typedef void (*meshlink_receive_cb_t)(meshlink_handle_t *mesh, meshlink_node_t *
  *
  *  @param mesh      A handle which represents an instance of MeshLink.
  *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
+ *                   If a NULL pointer is given, the callback will be disabled.
  */
 extern void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb);
 
@@ -155,6 +167,7 @@ typedef void (*meshlink_node_status_cb_t)(meshlink_handle_t *mesh, meshlink_node
  *
  *  @param mesh      A handle which represents an instance of MeshLink.
  *  @param cb        A pointer to the function which will be called when another node's status changes.
+ *                   If a NULL pointer is given, the callback will be disabled.
  */
 extern void meshlink_set_node_status_cb(meshlink_handle_t *mesh, meshlink_node_status_cb_t cb);
 
@@ -171,6 +184,8 @@ typedef enum {
 /** @param mesh      A handle which represents an instance of MeshLink.
  *  @param level     An enum describing the severity level of the message.
  *  @param text      A pointer to a string containing the textual log message.
+ *                   This pointer is only valid for the duration of the callback.
+ *                   The application should strdup() the text if it has to be available outside the callback.
  */
 typedef void (*meshlink_log_cb_t)(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text);
 
@@ -184,6 +199,7 @@ typedef void (*meshlink_log_cb_t)(meshlink_handle_t *mesh, meshlink_log_level_t 
  *  @param mesh      A handle which represents an instance of MeshLink.
  *  @param level     An enum describing the minimum severity level. Debugging information with a lower level will not trigger the callback.
  *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
+ *                   If a NULL pointer is given, the callback will be disabled.
  */
 extern void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, meshlink_log_cb_t cb);
 
@@ -197,6 +213,7 @@ extern void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t le
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param destination  A pointer to a meshlink_node_t describing the destination for the data.
  *  @param data         A pointer to a buffer containing the data to be sent to the source.
+ *                      After meshlink_send() returns, the application is free to overwrite or free this buffer.
  *  @param len          The length of the data.
  *  @return             This function will return true if MeshLink has queued the message for transmission, and false otherwise.
  *                      A return value of true does not guarantee that the message will actually arrive at the destination.
@@ -208,9 +225,11 @@ extern bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination,
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param name         The name of the node for which a handle is requested.
+ *                      After this function returns, the application is free to overwrite or free @a name @a.
  *
  *  @return             A pointer to a meshlink_node_t which represents the requested node,
  *                      or NULL if the requested node does not exist.
+ *                      The pointer is guaranteed to be valid until meshlink_close() is called.
  */
 extern meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name);
 
@@ -219,6 +238,7 @@ extern meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *n
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param nodes        A pointer to an array of pointers to meshlink_node_t, which should be allocated by the application.
+ *                      The pointers are valid until meshlink_close() is called.
  *  @param nmemb        The maximum number of pointers that can be stored in the nodes array.
  *
  *  @return             The number of known nodes, or -1 in case of an error.
@@ -234,6 +254,7 @@ extern ssize_t meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t *
  *  @param data         A pointer to a buffer containing the data to be signed.
  *  @param len          The length of the data to be signed.
  *  @param signature    A pointer to a buffer where the signature will be stored.
+ *                      The buffer must be allocated by the application, and should be at least MESHLINK_SIGLEN bytes big.
  *  @param siglen       The size of the signature buffer. Will be changed after the call to match the size of the signature itself.
  *
  *  @return             This function returns true if the signature was correctly generated, false otherwise.
@@ -247,8 +268,9 @@ extern bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len,
  *  @param source       A pointer to a meshlink_node_t describing the source of the signature.
  *  @param data         A pointer to a buffer containing the data to be verified.
  *  @param len          The length of the data to be verified.
- *  @param signature    A pointer to a string containing the signature.
- *  @param siglen       The size of the signature.
+ *  @param signature    A pointer to a buffer where the signature will be stored.
+ *  @param siglen       A pointer to a variable holding the size of the signature buffer.
+ *                      The contents of the variable will be changed by meshlink_sign() to reflect the actual size of the signature.
  *
  *  @return             This function returns true if the signature is valid, false otherwise.
  */
@@ -272,6 +294,7 @@ extern bool meshlink_add_address(meshlink_handle_t *mesh, const char *address);
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param name         The name that the invitee will use in the mesh.
+ *                      After this function returns, the application is free to overwrite or free @a name @a.
  *
  *  @return             This function returns a string that contains the invitation URL.
  *                      The application should call free() after it has finished using the URL.
@@ -285,6 +308,7 @@ extern char *meshlink_invite(meshlink_handle_t *mesh, const char *name);
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param invitation   A string containing the invitation URL.
+ *                      After this function returns, the application is free to overwrite or free @a invitation @a.
  *
  *  @return             This function returns true if the local node joined the mesh it was invited to, false otherwise.
  */
@@ -308,6 +332,7 @@ extern char *meshlink_export(meshlink_handle_t *mesh);
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param data         A string containing the other node's exported key and addresses.
+ *                      After this function returns, the application is free to overwrite or free @a data @a.
  *
  *  @return             This function returns true if the data was valid and the other node has been granted access to the mesh, false otherwise.
  */
@@ -329,9 +354,17 @@ extern void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node);
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param channel      A handle for the incoming channel.
+ *                      If the application accepts the incoming channel by returning true,
+ *                      then this handle is valid until meshlink_channel_close() is called on it.
+ *                      If the application rejects the incoming channel by returning false,
+ *                      then this handle is invalid after the callback returns
+ *                      (the callback does not need to call meshlink_channel_close() itself in this case).
  *  @param node         The node from which this channel is being initiated.
+ *                      The pointer is guaranteed to be valid until meshlink_close() is called.
  *  @param port         The port number the peer wishes to connect to.
  *  @param data         A pointer to a buffer containing data already received. (Not yet used.)
+ *                      The pointer is only valid during the lifetime of the callback.
+ *                      The callback should mempcy() the data if it needs to be available outside the callback.
  *  @param len          The length of the data. (Not yet used.)
  *
  *  @return             This function should return true if the application accepts the incoming channel, false otherwise.
@@ -346,6 +379,8 @@ typedef bool (*meshlink_channel_accept_cb_t)(meshlink_handle_t *mesh, meshlink_c
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param channel      A handle for the channel.
  *  @param data         A pointer to a buffer containing data sent by the source.
+ *                      The pointer is only valid during the lifetime of the callback.
+ *                      The callback should mempcy() the data if it needs to be available outside the callback.
  *  @param len          The length of the data.
  */
 typedef void (*meshlink_channel_receive_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len);
@@ -357,8 +392,11 @@ typedef void (*meshlink_channel_receive_cb_t)(meshlink_handle_t *mesh, meshlink_
  *  to hand the data over to the application's thread.
  *  The callback should also not block itself and return as quickly as possible.
  *
+ *  If no accept callback is set, incoming channels are rejected.
+ *
  *  @param mesh      A handle which represents an instance of MeshLink.
  *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
+ *                   If a NULL pointer is given, the callback will be disabled.
  */
 extern void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_accept_cb_t cb);
 
@@ -372,6 +410,7 @@ extern void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_cha
  *  @param mesh      A handle which represents an instance of MeshLink.
  *  @param channel   A handle for the channel.
  *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
+ *                   If a NULL pointer is given, the callback will be disabled.
  */
 extern void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb);
 
@@ -379,14 +418,20 @@ extern void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_ch
 /** This function is called whenever a remote node wants to open a channel to the local node.
  *  The application then has to decide whether to accept or reject this channel.
  *
+ *  This function returns a pointer to a struct meshlink_channel that will be allocated by MeshLink.
+ *  When the application does no longer need to use this channel, it must call meshlink_close()
+ *  to free its resources.
+ *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param node         The node to which this channel is being initiated.
  *  @param port         The port number the peer wishes to connect to.
  *  @param cb           A pointer to the function which will be called when the remote node sends data to the local node.
  *  @param data         A pointer to a buffer containing data to already queue for sending.
+ *                      After meshlink_send() returns, the application is free to overwrite or free this buffer.
  *  @param len          The length of the data.
  *
  *  @return             A handle for the channel, or NULL in case of an error.
+ *                      The handle is valid until meshlink_channel_close() is called.
  */
 extern meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len);
 
@@ -394,6 +439,8 @@ extern meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshli
 /** This shuts down the read or write side of a channel, or both, without closing the handle.
  *  It can be used to inform the remote node that the local node has finished sending all data on the channel,
  *  but still allows waiting for incoming data from the remote node.
+ *
+ *  Shutting down the receive direction is also possible, and is equivalent to setting the receive callback to NULL.
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param channel      A handle for the channel.
@@ -404,6 +451,7 @@ extern void meshlink_channel_shutdown(meshlink_handle_t *mesh, meshlink_channel_
 /// Close a reliable stream channel.
 /** This informs the remote node that the local node has finished sending all data on the channel.
  *  It also causes the local node to stop accepting incoming data from the remote node.
+ *  It will free the struct meshlink_channel and all associated resources.
  *  Afterwards, the channel handle is invalid and must not be used any more.
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
@@ -417,6 +465,7 @@ extern void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param channel      A handle for the channel.
  *  @param data         A pointer to a buffer containing data sent by the source.
+ *                      After meshlink_send() returns, the application is free to overwrite or free this buffer.
  *  @param len          The length of the data.
  *
  *  @return             The amount of data that was queued, which can be less than len, or a negative value in case of an error.
