@@ -853,11 +853,19 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	exit_configuration(&mesh->config);
 	event_loop_exit(&mesh->loop);
 
+#ifdef HAVE_MINGW
+	if(mesh->confbase)
+		WSACleanup();
+#endif
+
+	ecdsa_free(mesh->invitation_key);
+
+	free(mesh->name);
+	free(mesh->confbase);
+
 	free(mesh);
 
-#ifdef HAVE_MINGW
-	WSACleanup();
-#endif
+	memset(mesh, 0, sizeof *mesh);
 }
 
 void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) {
