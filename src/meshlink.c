@@ -789,7 +789,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	return mesh;
 }
 
-void *meshlink_main_loop(void *arg) {
+static void *meshlink_main_loop(void *arg) {
 	meshlink_handle_t *mesh = arg;
 
 	try_outgoing_connections(mesh);
