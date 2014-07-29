@@ -119,6 +119,74 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 	timeout_set(&mesh->loop, data, &(struct timeval){mesh->pingtimeout, rand() % 100000});
 }
 
+/// Utility function to establish connections based on condition check
+/** The function iterates over all nodes, but skips those that do
+ *  not pass the condition check.
+ *  
+ *  The condition check function is passed
+ *  a pointer to a random number r between 0 and rand_modulo, a pointer to the
+ *  current node index i, and the node pointer n. This function should return true
+ *  if a connection attempt to the node should be made.
+ *  
+ *  @param mesh		A pointer to the mesh structure
+ *  @param rand_modulo	Random index is selected between 0 and rand_modulo
+ *  @cond_check		A function pointer. This function should return true
+ *  			if a connection attempt to the node should be made
+ */
+static void cond_add_connection(meshlink_handle_t *mesh, int rand_modulo, bool (*cond_check)(int*, int*, node_t*)) {
+	int r = rand() % rand_modulo;
+	int i = 0;
+
+	for splay_each(node_t, n, mesh->nodes) {
+		/* skip nodes that do not pass condition check */
+		if(!(*cond_check)(&i, &r, n))
+			continue;
+
+		/* check if there is already a connection attempt to this node */
+		bool found = false;
+		for list_each(outgoing_t, outgoing, mesh->outgoings) {
+			if(!strcmp(outgoing->name, n->name)) {
+				found = true;
+				break;
+			}
+		}
+
+		if(!found) {
+			//TODO: if the node is blacklisted the connection will not happen, but
+			//the user will read this debug message "Autoconnecting to %s" that is misleading
+			logger(DEBUG_CONNECTIONS, LOG_INFO, "Autoconnecting to %s", n->name);
+			outgoing_t *outgoing = xzalloc(sizeof *outgoing);
+			outgoing->name = xstrdup(n->name);
+			list_insert_tail(mesh->outgoings, outgoing);
+			setup_outgoing_connection(mesh, outgoing);
+		}
+		break;
+	}
+}
+
+static bool found_random_node(int *i, int *r, node_t *n) {
+	if((*i)++ != *r)
+		return false;
+
+	if(n->connection)
+		return false;
+	
+	return true;
+}
+
+static bool found_random_unreachable_node(int *i, int *r, node_t *n) {
+	if(n->status.reachable)
+		return false;
+	
+	if((*i)++ != *r)
+		return false;
+
+	if(n->connection)
+		return false;
+
+	return true;
+}
+
 static void periodic_handler(event_loop_t *loop, void *data) {
 	meshlink_handle_t *mesh = loop->data;
 
@@ -165,75 +233,15 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			   and we are not already trying to make one, create an
 			   outgoing connection to this node.
 			*/
-			int r = rand() % mesh->nodes->count;
-			int i = 0;
-
-			for splay_each(node_t, n, mesh->nodes) {
-				if(i++ != r)
-					continue;
-
-				if(n->connection)
-					break;
-
-				bool found = false;
-
-				for list_each(outgoing_t, outgoing, mesh->outgoings) {
-					if(!strcmp(outgoing->name, n->name)) {
-						found = true;
-						break;
-					}
-				}
-
-				if(!found) {
-					//TODO: if the node is blacklisted the connection will not happen, but
-					//the user will read this debug message "Autoconnecting to %s" that is misleading
-					logger(DEBUG_CONNECTIONS, LOG_INFO, "Autoconnecting to %s", n->name);
-					outgoing_t *outgoing = xzalloc(sizeof *outgoing);
-					outgoing->name = xstrdup(n->name);
-					list_insert_tail(mesh->outgoings, outgoing);
-					setup_outgoing_connection(mesh, outgoing);
-				}
-				break;
-			}
+			cond_add_connection(mesh, mesh->nodes->count, &found_random_node);
 		} else if (num_unreachable > 0) {
 			/* Min number of connections established. Now try
 			   to connect to some unreachable nodes to attempt
 			   to heal possible partitions.
 			*/
-			int r = rand() % num_unreachable;
-			int i = 0;
-
-			for splay_each(node_t, n, mesh->nodes) {
-				if(n->status.reachable)
-					continue;
-				
-				if(i++ != r)
-					continue;
-
-				if(n->connection)
-					break;
-
-				bool found = false;
-
-				for list_each(outgoing_t, outgoing, mesh->outgoings) {
-					if(!strcmp(outgoing->name, n->name)) {
-						found = true;
-						break;
-					}
-				}
-
-				if(!found) {
-					//TODO: if the node is blacklisted the connection will not happen, but
-					//the user will read this debug message "Autoconnecting to %s" that is misleading
-					logger(DEBUG_CONNECTIONS, LOG_INFO, "Autoconnecting to %s", n->name);
-					outgoing_t *outgoing = xzalloc(sizeof *outgoing);
-					outgoing->name = xstrdup(n->name);
-					list_insert_tail(mesh->outgoings, outgoing);
-					setup_outgoing_connection(mesh, outgoing);
-				}
-				break;
-			}
+			cond_add_connection(mesh, num_unreachable, &found_random_unreachable_node);
 		}
+		
 		if(nc > autoconnect) {
 			/* Too many active connections, try to remove one.
 			   Choose a random outgoing connection to a node
