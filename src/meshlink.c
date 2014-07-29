@@ -327,15 +327,20 @@ static bool try_bind(int port) {
 
 	while(ai) {
 		int fd = socket(ai->ai_family, SOCK_STREAM, IPPROTO_TCP);
-		if(!fd)
+		if(!fd) {
+			freeaddrinfo(ai);
 			return false;
+		}
 		int result = bind(fd, ai->ai_addr, ai->ai_addrlen);
 		closesocket(fd);
-		if(result)
+		if(result) {
+			freeaddrinfo(ai);
 			return false;
+		}
 		ai = ai->ai_next;
 	}
 
+	freeaddrinfo(ai);
 	return true;
 }
 
@@ -1100,6 +1105,8 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 
 	b64encode_urlsafe(cookie, cookie, 18);
 
+	free(fingerprint);
+
 	// Create a file containing the details of the invitation.
 	snprintf(filename, sizeof filename, "%s" SLASH "invitations" SLASH "%s", mesh->confbase, cookiehash);
 	int ifd = open(filename, O_RDWR | O_CREAT | O_EXCL, 0600);
@@ -1147,11 +1154,15 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	// Create an URL from the local address, key hash and cookie
 	char *url;
 	xasprintf(&url, "%s/%s%s", address, hash, cookie);
+	free(address);
 
 	return url;
 }
 
 bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
+	if(!mesh || !invitation)
+		return false;
+
 	//TODO: think of a better name for this variable, or of a different way to tokenize the invitation URL.
 	char copy[strlen(invitation) + 1];
 	strcpy(copy, invitation);
@@ -1229,6 +1240,8 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 		closesocket(mesh->sock);
 		return false;
 	}
+
+	free(b64key);
 
 	char hisname[4096] = "";
 	int code, hismajor, hisminor = 0;
