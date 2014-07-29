@@ -234,7 +234,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			   outgoing connection to this node.
 			*/
 			cond_add_connection(mesh, mesh->nodes->count, &found_random_node);
-		} else if (num_unreachable > 0) {
+		} else if(num_unreachable > 0) {
 			/* Min number of connections established. Now try
 			   to connect to some unreachable nodes to attempt
 			   to heal possible partitions.
