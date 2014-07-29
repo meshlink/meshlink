@@ -515,7 +515,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 	free(mesh->self->name);
 	free(mesh->self->connection->name);
 	mesh->self->name = xstrdup(name);
-	mesh->self->connection->name = xstrdup(name);
+	mesh->self->connection->name = name;
 
 	fprintf(stderr, "Configuration stored in: %s\n", mesh->confbase);
 
