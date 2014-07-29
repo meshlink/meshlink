@@ -192,7 +192,7 @@ static char *get_my_hostname(meshlink_handle_t* mesh) {
 	fprintf(stderr, "Trying to discover externally visible hostname...\n");
 	struct addrinfo *ai = str2addrinfo("meshlink.io", "80", SOCK_STREAM);
 	struct addrinfo *aip = ai;
-	static const char request[] = "GET http://meshlink.io/host.cgi HTTP/1.0\r\n\r\n";
+	static const char request[] = "GET http://www.meshlink.io/host.cgi HTTP/1.0\r\n\r\n";
 
 	while(aip) {
 		int s = socket(aip->ai_family, aip->ai_socktype, aip->ai_protocol);
