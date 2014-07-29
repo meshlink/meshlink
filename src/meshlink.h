@@ -69,11 +69,11 @@ struct meshlink_channel {
 /// Get the text for the given MeshLink error code.
 /** This function returns a pointer to the string containing the description of the given error code.
  *
- *  @param errno    An error code returned by MeshLink.
+ *  @param err      An error code returned by MeshLink.
  *
  *  @return         A pointer to a string containing the description of the error code.
  */
-extern const char *meshlink_strerror(meshlink_errno_t errno);
+extern const char *meshlink_strerror(meshlink_errno_t err);
 
 /// Open or create a MeshLink instance.
 /** This function opens or creates a MeshLink instance.

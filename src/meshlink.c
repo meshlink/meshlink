@@ -629,8 +629,8 @@ static const char *errstr[] = {
 	[MESHLINK_ENOENT] = "No such node",
 };
 
-const char *meshlink_strerror(meshlink_errno_t errno) {
-	return errstr[errno];
+const char *meshlink_strerror(meshlink_errno_t err) {
+	return errstr[err];
 }
 
 static bool ecdsa_keygen(meshlink_handle_t *mesh) {
