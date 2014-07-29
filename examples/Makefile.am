@@ -1,4 +1,4 @@
-bin_PROGRAMS = meshlinkapp chat chatpp
+bin_PROGRAMS = meshlinkapp chat chatpp manynodes
 
 AM_CPPFLAGS = -I../src
 
@@ -10,3 +10,6 @@ chat_LDADD = ../src/libmeshlink.la
 
 chatpp_SOURCES = chatpp.cc
 chatpp_LDADD = ../src/libmeshlink.la
+
+manynodes_SOURCES = manynodes.cc
+manynodes_LDADD = ../src/libmeshlink.la
