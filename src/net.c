@@ -165,7 +165,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				bool trying_unreachable = false;
 
 				if(i++ != r) {
-					if(n->status->reachable) {
+					if(n->status.reachable) {
 						continue;
 					} else {
 						/* If we see an unreachable node
