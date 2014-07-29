@@ -221,9 +221,10 @@ extern meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *n
  *  @param nodes        A pointer to an array of pointers to meshlink_node_t, which should be allocated by the application.
  *  @param nmemb        The maximum number of pointers that can be stored in the nodes array.
  *
- *  @return             The number of known nodes. This can be larger than nmemb, in which case not all nodes were stored in the nodes array.
+ *  @return             The number of known nodes, or -1 in case of an error.
+ *                      The returned number of nodes can be larger than nmemb, in which case not all nodes were stored in the nodes array.
  */
-extern size_t meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, size_t nmemb);
+extern ssize_t meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, size_t nmemb);
 
 /// Sign data using the local node's MeshLink key.
 /** This function signs data using the local node's MeshLink key.

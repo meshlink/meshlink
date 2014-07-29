@@ -800,6 +800,9 @@ static void *meshlink_main_loop(void *arg) {
 }
 
 bool meshlink_start(meshlink_handle_t *mesh) {
+	if(!mesh)
+		return false;
+
 	// TODO: open listening sockets first
 
 	//Check that a valid name is set
@@ -822,6 +825,9 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 }
 
 void meshlink_stop(meshlink_handle_t *mesh) {
+	if(!mesh)
+		return;
+
 	// Shut down the listening sockets to signal the main thread to shut down
 
 	for(int i = 0; i < mesh->listen_sockets; i++) {
@@ -835,6 +841,9 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 }
 
 void meshlink_close(meshlink_handle_t *mesh) {
+	if(!mesh)
+		return;
+
 	// Close and free all resources used.
 
 	close_network_connections(mesh);
@@ -852,19 +861,31 @@ void meshlink_close(meshlink_handle_t *mesh) {
 }
 
 void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) {
+	if(!mesh)
+		return;
 	mesh->receive_cb = cb;
 }
 
 void meshlink_set_node_status_cb(meshlink_handle_t *mesh, meshlink_node_status_cb_t cb) {
+	if(!mesh)
+		return;
 	mesh->node_status_cb = cb;
 }
 
 void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, meshlink_log_cb_t cb) {
+	if(!mesh)
+		return;
 	mesh->log_cb = cb;
 	mesh->log_level = level;
 }
 
 bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, unsigned int len) {
+	if(!mesh || !destination)
+		return false;
+	if(!len)
+		return true;
+	if(!data)
+		return false;
 
 	/* If there is no outgoing list yet, create one. */
 
@@ -914,10 +935,15 @@ void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh) {
 }
 
 meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
+	if(!mesh || !name)
+		return NULL;
 	return (meshlink_node_t *)lookup_node(mesh, (char *)name); // TODO: make lookup_node() use const
 }
 
-size_t meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, size_t nmemb) {
+ssize_t meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, size_t nmemb) {
+	if(!mesh || (nmemb && !nodes))
+		return -1;
+
 	size_t i = 0;
 
 	//lock mesh->nodes
@@ -935,6 +961,8 @@ size_t meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, 
 }
 
 bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len, void *signature, size_t *siglen) {
+	if(!mesh || !data || !len || !signature || !siglen)
+		return false;
 	if(*siglen < MESHLINK_SIGLEN)
 		return false;
 	if(!ecdsa_sign(mesh->self->connection->ecdsa, data, len, signature))
@@ -944,6 +972,8 @@ bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len, void *
 }
 
 bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len, const void *signature, size_t siglen) {
+	if(!mesh || !data || !len || !signature)
+		return false;
 	if(siglen != MESHLINK_SIGLEN)
 		return false;
 	struct node_t *n = (struct node_t *)source;
@@ -1045,6 +1075,9 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 }
 
 bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
+	if(!mesh || !address)
+		return false;
+
 	for(const char *p = address; *p; p++) {
 		if(isalnum(*p) || *p == '-' || *p == '.' || *p == ':')
 			continue;
@@ -1056,6 +1089,9 @@ bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
 }
 
 char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
+	if(!mesh)
+		return false;
+
 	// Check validity of the new node's name
 	if(!check_id(name)) {
 		fprintf(stderr, "Invalid name for node.\n");
@@ -1222,14 +1258,18 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	mesh->sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 	if(mesh->sock <= 0) {
 		fprintf(stderr, "Could not open socket: %s\n", strerror(errno));
+		freeaddrinfo(ai);
 		return false;
 	}
 
 	if(connect(mesh->sock, ai->ai_addr, ai->ai_addrlen)) {
 		fprintf(stderr, "Could not connect to %s port %s: %s\n", address, port, strerror(errno));
 		closesocket(mesh->sock);
+		freeaddrinfo(ai);
 		return false;
 	}
+
+	freeaddrinfo(ai);
 
 	fprintf(stderr, "Connected to %s port %s...\n", address, port);
 
@@ -1311,6 +1351,9 @@ invalid:
 }
 
 char *meshlink_export(meshlink_handle_t *mesh) {
+	if(!mesh)
+		return NULL;
+
 	char filename[PATH_MAX];
 	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
 	FILE *f = fopen(filename, "r");
@@ -1338,6 +1381,9 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 }
 
 bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
+	if(!mesh || !data)
+		return false;
+
 	if(strncmp(data, "Name = ", 7)) {
 		fprintf(stderr, "Invalid data\n");
 		return false;
@@ -1385,15 +1431,18 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 }
 
 void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
-    node_t *n;
-    n = (node_t*)node;
-    n->status.blacklisted=true;
+	if(!mesh || !node)
+		return;
+
+	node_t *n;
+	n = (node_t*)node;
+	n->status.blacklisted=true;
 	fprintf(stderr, "Blacklisted %s.\n",node->name);
 
 	//Make blacklisting persistent in the config file
 	append_config_file(mesh, n->name, "blacklisted", "yes");
-    return;
 
+	return;
 }
 
 static void __attribute__((constructor)) meshlink_init(void) {
