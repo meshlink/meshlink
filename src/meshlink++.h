@@ -387,6 +387,10 @@ namespace meshlink {
 	static void close(mesh *mesh) {
 		meshlink_close(mesh);
 	}
+
+	static const char *strerror(errno_t err = meshlink_errno) {
+		return meshlink_strerror(err);
+	}
 };
 
 #endif // MESHLINKPP_H

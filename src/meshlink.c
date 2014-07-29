@@ -44,6 +44,8 @@ typedef struct {
 #define MSG_NOSIGNAL 0
 #endif
 
+__thread meshlink_errno_t meshlink_errno;
+
 //TODO: this can go away completely
 const var_t variables[] = {
 	/* Server configuration */

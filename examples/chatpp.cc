@@ -42,7 +42,7 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 
 		invitation = mesh->invite(arg);
 		if(!invitation) {
-			fprintf(stderr, "Could not invite '%s': %s\n", arg, mesh->errstr);
+			fprintf(stderr, "Could not invite '%s': %s\n", arg, meshlink::strerror());
 			return;
 		}
 
@@ -55,7 +55,7 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 		}
 
 		if(!mesh->join(arg))
-			fprintf(stderr, "Could not join using invitation: %s\n", mesh->errstr);
+			fprintf(stderr, "Could not join using invitation: %s\n", meshlink::strerror());
 		else
 			fprintf(stderr, "Invitation accepted!\n");
 	} else if(!strcasecmp(buf, "kick")) {
@@ -81,7 +81,7 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 				fprintf(stderr, "No nodes known!\n");
 			} else {
 				printf("Known nodes:");
-				for(int i = 0; i < n && i < 100; i++)
+				for(size_t i = 0; i < n && i < 100; i++)
 					printf(" %s", nodes[i]->name);
 				if(n > 100)
 					printf(" (and %zu more)", n - 100);
@@ -164,7 +164,7 @@ static void parse_input(meshlink::mesh *mesh, char *buf) {
 	}
 
 	if(!mesh->send(destination, msg, strlen(msg) + 1)) {
-		fprintf(stderr, "Could not send message to '%s': %s\n", destination->name, mesh->errstr);
+		fprintf(stderr, "Could not send message to '%s': %s\n", destination->name, meshlink::strerror());
 		return;
 	}
 
@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
 	mesh->set_log_cb(MESHLINK_INFO, log_message);
 
 	if(!mesh->start()) {
-		fprintf(stderr, "Could not start MeshLink: %s\n", mesh->errstr);
+		fprintf(stderr, "Could not start MeshLink: %s\n", meshlink::strerror());
 		return 1;
 	}
 
