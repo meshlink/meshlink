@@ -841,7 +841,7 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 }
 
 void meshlink_close(meshlink_handle_t *mesh) {
-	if(!mesh)
+	if(!mesh || !mesh->confbase)
 		return;
 
 	// Close and free all resources used.
@@ -863,9 +863,9 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	free(mesh->name);
 	free(mesh->confbase);
 
-	free(mesh);
-
 	memset(mesh, 0, sizeof *mesh);
+
+	free(mesh);
 }
 
 void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) {
