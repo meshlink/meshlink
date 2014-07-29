@@ -195,8 +195,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				}
 				break;
 			}
-		//} else if(nc > autoconnect) {
-		} else {
+		} else if (num_unreachable > 0) {
 			/* Min number of connections established. Now try
 			   to connect to some unreachable nodes to attempt
 			   to heal possible partitions.
