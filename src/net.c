@@ -152,6 +152,13 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				nc++;
 		}
 
+		/* Count number of unreachable nodes */
+		int num_unreachable = 0;
+		for splay_each(node_t, n, mesh->nodes) {
+			if(!n->status.reachable)
+				num_unreachable++;
+		}
+
 		if(nc < autoconnect) {
 			/* Not enough active connections, try to add one.
 			   Choose a random node, if we don't have a connection to it,
@@ -188,7 +195,47 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				}
 				break;
 			}
-		} else if(nc > autoconnect) {
+		//} else if(nc > autoconnect) {
+		} else {
+			/* Min number of connections established. Now try
+			   to connect to some unreachable nodes to attempt
+			   to heal possible partitions.
+			*/
+			int r = rand() % num_unreachable;
+			int i = 0;
+
+			for splay_each(node_t, n, mesh->nodes) {
+				if(n->status.reachable)
+					continue;
+				
+				if(i++ != r)
+					continue;
+
+				if(n->connection)
+					break;
+
+				bool found = false;
+
+				for list_each(outgoing_t, outgoing, mesh->outgoings) {
+					if(!strcmp(outgoing->name, n->name)) {
+						found = true;
+						break;
+					}
+				}
+
+				if(!found) {
+					//TODO: if the node is blacklisted the connection will not happen, but
+					//the user will read this debug message "Autoconnecting to %s" that is misleading
+					logger(DEBUG_CONNECTIONS, LOG_INFO, "Autoconnecting to %s", n->name);
+					outgoing_t *outgoing = xzalloc(sizeof *outgoing);
+					outgoing->name = xstrdup(n->name);
+					list_insert_tail(mesh->outgoings, outgoing);
+					setup_outgoing_connection(mesh, outgoing);
+				}
+				break;
+			}
+		}
+		if(nc > autoconnect) {
 			/* Too many active connections, try to remove one.
 			   Choose a random outgoing connection to a node
 			   that has at least one other connection.
@@ -217,8 +264,16 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		if(nc >= autoconnect) {
 			/* If we have enough active connections,
 			   remove any pending outgoing connections.
+			   Do not remove pending connections to unreachable
+			   nodes.
 			*/
+			node_t *o_node = NULL;
 			for list_each(outgoing_t, o, mesh->outgoings) {
+				o_node = lookup_node(mesh, o->name);
+				/* o_node is NULL if it is not part of the graph yet */
+				if(!o_node || !o_node->status.reachable)
+					continue;
+
 				bool found = false;
 				for list_each(connection_t, c, mesh->connections) {
 					if(c->outgoing == o) {
@@ -228,6 +283,10 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				}
 				if(!found) {
 					logger(DEBUG_CONNECTIONS, LOG_INFO, "Cancelled outgoing connection to %s", o->name);
+					/* The node variable is leaked in from using the list_each macro.
+					   The o variable could be used, but using node directly
+					   is more efficient.
+					*/
 					list_delete_node(mesh->outgoings, node);
 				}
 			}
