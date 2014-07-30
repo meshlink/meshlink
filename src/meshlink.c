@@ -39,6 +39,7 @@ typedef struct {
 #include "utils.h"
 #include "xalloc.h"
 #include "ed25519/sha512.h"
+#include "discovery.h"
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
@@ -823,12 +824,19 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 
 	mesh->threadstarted=true;
 
+	// Start discovery
+	if(!discovery_start(mesh))
+		return false;
+
 	return true;
 }
 
 void meshlink_stop(meshlink_handle_t *mesh) {
 	if(!mesh)
 		return;
+
+	// Stop discovery
+	discovery_stop(mesh);
 
 	// Shut down the listening sockets to signal the main thread to shut down
 

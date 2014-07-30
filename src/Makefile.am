@@ -65,6 +65,7 @@ libmeshlink_la_SOURCES = \
 	conf.c conf.h \
 	connection.c connection.h \
 	crypto.c crypto.h \
+	discovery.c discovery.h \
 	dropin.c dropin.h \
 	ecdh.h \
 	ecdsa.h \
@@ -103,7 +104,7 @@ libmeshlink_la_SOURCES = \
 
 libmeshlink_la_CFLAGS = -fPIC
 
-libmeshlink_la_LIBADD = -lpthread
+libmeshlink_la_LIBADD = -lpthread -lavahi-core -lavahi-common -lavahi-client
 
 libmeshlink_la_SOURCES += \
 	ed25519/ecdh.c \
