@@ -240,6 +240,20 @@ extern void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t le
  */
 extern bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len);
 
+/// Query the maximum packet size that can be sent to a node.
+/** This functions returns the maximum size of packets (path MTU) that can be sent to a specific node with meshlink_send().
+ *  The path MTU is a property of the path packets will take to the destination node over the Internet.
+ *  It can be different for different destination nodes.
+ *  and the path MTU can change at any point in time due to changes in the Internet.
+ *  Therefore, although this should only occur rarely, it can still happen that packets that do not exceed this size get dropped.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param destination  A pointer to a meshlink_node_t describing the destination for the data.
+ *
+ *  @return             The recommended maximum size of packets that are to be sent to the destination node, 0 if the node is unreachable,
+ *                      or a negative value in case of an error.
+ */
+extern ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination);
 
 /// Get a handle for a specific node.
 /** This function returns a handle for the node with the given name.

@@ -944,6 +944,19 @@ void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh) {
 	return ;
 }
 
+ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination) {
+	if(!mesh || !destination)
+		return -1;
+
+	node_t *n = (node_t *)destination;
+	if(!n->status.reachable)
+		return 0;
+	else if(n->mtuprobes > 30 && n->minmtu)
+		return n->minmtu;
+	else
+		return MTU;
+}
+
 meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
 	if(!mesh || !name)
 		return NULL;
