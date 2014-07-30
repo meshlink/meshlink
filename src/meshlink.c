@@ -950,24 +950,30 @@ meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
 	return (meshlink_node_t *)lookup_node(mesh, (char *)name); // TODO: make lookup_node() use const
 }
 
-ssize_t meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, size_t nmemb) {
+meshlink_node_t **meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, size_t *nmemb) {
 	if(!mesh || (nmemb && !nodes))
-		return -1;
+		return NULL;
 
-	size_t i = 0;
+	meshlink_node_t **result, **p;
 
 	//lock mesh->nodes
 	pthread_mutex_lock(&(mesh->nodes_mutex));
 
-	for splay_each(node_t, n, mesh->nodes) {
-		if(i < nmemb)
-			nodes[i] = (meshlink_node_t *)n;
-		i++;
+	*nmemb = mesh->nodes->count;
+	result = realloc(nodes, *nmemb * sizeof *nodes);
+
+	if(result) {
+		for splay_each(node_t, n, mesh->nodes)
+			*p++ = (meshlink_node_t *)n;
+	} else {
+		*nmemb = 0;
+		free(nodes);
+		meshlink_errno = MESHLINK_ENOMEM;
 	}
 
 	pthread_mutex_unlock(&(mesh->nodes_mutex));
 
-	return i;
+	return result;
 }
 
 bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len, void *signature, size_t *siglen) {
@@ -1451,6 +1457,18 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 
 	//Make blacklisting persistent in the config file
 	append_config_file(mesh, n->name, "blacklisted", "yes");
+
+	return;
+}
+
+void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	if(!mesh || !node)
+		return;
+
+	node_t *n = (node_t *)node;
+	n->status.blacklisted = false;
+
+	//TODO: remove blacklisted = yes from the config file
 
 	return;
 }
