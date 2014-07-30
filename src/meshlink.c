@@ -1023,12 +1023,12 @@ meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
 }
 
 meshlink_node_t **meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, size_t *nmemb) {
-	if(!mesh || (nmemb && !nodes)) {
+	if(!mesh || !nmemb || (*nmemb && !nodes)) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
 	}
 
-	meshlink_node_t **result, **p;
+	meshlink_node_t **result;
 
 	//lock mesh->nodes
 	pthread_mutex_lock(&(mesh->nodes_mutex));
@@ -1037,6 +1037,7 @@ meshlink_node_t **meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_
 	result = realloc(nodes, *nmemb * sizeof *nodes);
 
 	if(result) {
+		meshlink_node_t **p = result;
 		for splay_each(node_t, n, mesh->nodes)
 			*p++ = (meshlink_node_t *)n;
 	} else {
