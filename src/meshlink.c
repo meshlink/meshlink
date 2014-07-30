@@ -21,6 +21,8 @@
 #define VAR_MULTIPLE 4  /* Multiple statements allowed */
 #define VAR_OBSOLETE 8  /* Should not be used anymore */
 #define VAR_SAFE 16     /* Variable is safe when accepting invitations */
+#define MAX_ADDRESS_LENGTH 45 /* Max length of an (IPv6) address */
+#define MAX_PORT_LENGTH 5 /* 0-65535 */
 typedef struct {
 	const char *name;
 	int type;
@@ -1484,6 +1486,47 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	//TODO: remove blacklisted = yes from the config file
 
 	return;
+}
+
+/* Hint that a hostname may be found at an address
+ * See header file for detailed comment.
+ */
+extern void meshlink_hint_address(meshlink_handle_t *mesh, char *hostname, struct sockaddr *addr) {
+	if(!mesh || !hostname || !addr)
+		return;
+	
+	node_t *n = NULL;
+	char *addr_str = malloc(MAX_ADDRESS_LENGTH*sizeof(char));
+	memset(addr_str, 0, MAX_ADDRESS_LENGTH*sizeof(char));
+
+	char *port_str = malloc(MAX_PORT_LENGTH*sizeof(char));
+	memset(port_str, 0, MAX_PORT_LENGTH*sizeof(char));
+	
+	// extra byte for a space, and one to make sure string is null-terminated
+	int full_addr_len = MAX_ADDRESS_LENGTH + MAX_PORT_LENGTH + 2;
+
+	char *full_addr_str = malloc(full_addr_len*sizeof(char));
+	memset(full_addr_str, 0, full_addr_len*sizeof(char));
+	
+	// check that hostname matches an existing node
+	n = lookup_node(mesh, hostname);
+	if(!n)
+		return;
+
+	// get address and port number
+	if(!get_ip_str(addr, addr_str, MAX_ADDRESS_LENGTH))
+		return;
+	if(!get_port_str(addr, port_str, MAX_ADDRESS_LENGTH))
+		return;
+
+	// append_config_file expects an address, a space, and then a port number
+	strcat(full_addr_str, addr_str);
+	strcat(full_addr_str, " ");
+	strcat(full_addr_str, port_str);
+	
+	append_config_file(mesh, n->name, "Address", full_addr_str);
+
+	// TODO do we want to fire off a connection attempt right away?
 }
 
 static void __attribute__((constructor)) meshlink_init(void) {
