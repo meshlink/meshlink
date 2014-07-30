@@ -277,6 +277,18 @@ extern ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *desti
  */
 extern meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name);
 
+/// Get the fingerprint of a node's public key.
+/** This function returns a fingerprint of the node's public key.
+ *  It should be treated as an opaque blob.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A pointer to a meshlink_node_t describing the node.
+ *
+ *  @return		A nul-terminated C string containing the fingerprint of the node's public key in a printable ASCII format.
+ *                      The application should call free() after it is done using this string.
+ */
+extern char *meshlink_get_fingerprint(meshlink_handle_t *mesh, meshlink_node_t *node);
+
 /// Get a list of all nodes.
 /** This function returns a list with handles for all known nodes.
  *

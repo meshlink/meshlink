@@ -1013,6 +1013,27 @@ ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination)
 		return MTU;
 }
 
+char *meshlink_get_fingerprint(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	if(!mesh || !node) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	node_t *n = (node_t *)node;
+
+	if(!node_read_ecdsa_public_key(mesh, n) || !n->ecdsa) {
+		meshlink_errno = MESHLINK_EINTERNAL;
+		return false;
+	}
+
+	char *fingerprint = ecdsa_get_base64_public_key(n->ecdsa);
+
+	if(!fingerprint)
+		meshlink_errno = MESHLINK_EINTERNAL;
+
+	return fingerprint;
+}
+
 meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
 	if(!mesh || !name) {
 		meshlink_errno = MESHLINK_EINVAL;
