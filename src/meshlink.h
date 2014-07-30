@@ -96,7 +96,7 @@ extern const char *meshlink_strerror(meshlink_errno_t err);
  *  @param name     The name which this instance of the application will use in the mesh.
  *                  After the function returns, the application is free to overwrite or free @a name @a.
  *
- *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink.
+ *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink, or NULL in case of an error.
  *                  The pointer is valid until meshlink_close() is called.
  */
 extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name);
@@ -296,7 +296,7 @@ extern bool meshlink_add_address(meshlink_handle_t *mesh, const char *address);
  *  @param name         The name that the invitee will use in the mesh.
  *                      After this function returns, the application is free to overwrite or free @a name @a.
  *
- *  @return             This function returns a string that contains the invitation URL.
+ *  @return             This function returns a string that contains the invitation URL, or NULL in case of an error.
  *                      The application should call free() after it has finished using the URL.
  */
 extern char *meshlink_invite(meshlink_handle_t *mesh, const char *name);
@@ -321,7 +321,7 @@ extern bool meshlink_join(meshlink_handle_t *mesh, const char *invitation);
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *
- *  @return             This function returns a string that contains the exported key and addresses.
+ *  @return             This function returns a string that contains the exported key and addresses, or NULL in case of an error.
  *                      The application should call free() after it has finished using this string.
  */
 extern char *meshlink_export(meshlink_handle_t *mesh);
