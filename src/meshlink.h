@@ -238,7 +238,8 @@ extern void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t le
  *  @return             This function will return true if MeshLink has queued the message for transmission, and false otherwise.
  *                      A return value of true does not guarantee that the message will actually arrive at the destination.
  */
-extern bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, unsigned int len);
+extern bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len);
+
 
 /// Get a handle for a specific node.
 /** This function returns a handle for the node with the given name.
