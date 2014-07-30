@@ -69,7 +69,7 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 
 		meshlink_node_t *node = meshlink_get_node(mesh, arg);
 		if(!node) {
-			fprintf(stderr, "Unknown node '%s'\n", arg);
+			fprintf(stderr, "Error looking up '%s': %s\n", arg, meshlink_strerror(meshlink_errno));
 			return;
 		}
 
@@ -80,9 +80,9 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 		if(!arg) {
 			nodes = meshlink_get_all_nodes(mesh, nodes, &nnodes);
 			if(!nnodes) {
-				fprintf(stderr, "No nodes known!\n");
+				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink_strerror(meshlink_errno));
 			} else {
-				printf("Known nodes:");
+				printf("%zu known nodes:", nnodes);
 				for(int i = 0; i < nnodes; i++)
 					printf(" %s", nodes[i]->name);
 				printf("\n");
@@ -90,7 +90,7 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 		} else {
 			meshlink_node_t *node = meshlink_get_node(mesh, arg);
 			if(!node) {
-				fprintf(stderr, "Unknown node '%s'\n", arg);
+				fprintf(stderr, "Error looking up '%s': %s\n", arg, meshlink_strerror(meshlink_errno));
 			} else {
 				printf("Node %s found\n", arg);
 			}
@@ -153,7 +153,7 @@ static void parse_input(meshlink_handle_t *mesh, char *buf) {
 
 		destination = meshlink_get_node(mesh, buf);
 		if(!destination) {
-			fprintf(stderr, "Unknown node '%s'\n", buf);
+			fprintf(stderr, "Error looking up '%s': %s\n", buf, meshlink_strerror(meshlink_errno));
 			return;
 		}
 	}
@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
 
 	meshlink_handle_t *mesh = meshlink_open(confbase, nick);
 	if(!mesh) {
-		fprintf(stderr, "Could not open MeshLink!\n");
+		fprintf(stderr, "Could not open MeshLink: %s\n", meshlink_strerror(meshlink_errno));
 		return 1;
 	}
 
