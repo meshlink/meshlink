@@ -377,11 +377,13 @@ bool setup_network(meshlink_handle_t *mesh) {
   close all open network connections
 */
 void close_network_connections(meshlink_handle_t *mesh) {
-	for(list_node_t *node = mesh->connections->head, *next; node; node = next) {
-		next = node->next;
-		connection_t *c = node->data;
-		c->outgoing = NULL;
-		terminate_connection(mesh, c, false);
+	if(mesh->connections) {
+		for(list_node_t *node = mesh->connections->head, *next; node; node = next) {
+			next = node->next;
+			connection_t *c = node->data;
+			c->outgoing = NULL;
+			terminate_connection(mesh, c, false);
+		}
 	}
 
 	if(mesh->outgoings)

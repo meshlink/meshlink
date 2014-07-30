@@ -42,8 +42,12 @@ void init_nodes(meshlink_handle_t *mesh) {
 
 void exit_nodes(meshlink_handle_t *mesh) {
 	pthread_mutex_lock(&(mesh->nodes_mutex));
-	hash_free(mesh->node_udp_cache);
-	splay_delete_tree(mesh->nodes);
+	if(mesh->node_udp_cache)
+		hash_free(mesh->node_udp_cache);
+	if(mesh->nodes)
+		splay_delete_tree(mesh->nodes);
+	mesh->node_udp_cache = NULL;
+	mesh->nodes = NULL;
 	pthread_mutex_unlock(&(mesh->nodes_mutex));
 }
 

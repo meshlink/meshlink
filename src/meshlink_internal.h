@@ -62,8 +62,10 @@ typedef struct outpacketqueue {
 
 /// A handle for an instance of MeshLink.
 struct meshlink_handle {
-	char *confbase;
 	char *name;
+	void *priv;
+
+	char *confbase;
 
 	meshlink_receive_cb_t receive_cb;
 	meshlink_node_status_cb_t node_status_cb;
