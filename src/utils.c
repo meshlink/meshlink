@@ -178,3 +178,51 @@ unsigned int bitfield_to_int(const void *bitfield, size_t size) {
 	memcpy(&value, bitfield, size);
 	return value;
 }
+
+/* Write IP address from sockaddr to string.
+ * Returns NULL on error.
+ */
+char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
+{
+	switch(sa->sa_family) {
+		case AF_INET:
+			inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
+				s, maxlen);
+			break;
+
+		case AF_INET6:
+			inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
+				s, maxlen);
+			break;
+
+		default:
+			strncpy(s, "Unknown AF", maxlen);
+			return NULL;
+	}
+
+	return s;
+}
+
+/* Write port from sockaddr to string.
+ * Returns NULL on error.
+ */
+char *get_port_str(const struct sockaddr *sa, char *s, size_t maxlen)
+{
+	switch(sa->sa_family) {
+		case AF_INET:
+			snprintf(s, maxlen, "%d",
+				ntohs(((struct sockaddr_in*)sa)->sin_port));
+			break;
+
+		case AF_INET6:
+			snprintf(s, maxlen, "%d",
+				ntohs(((struct sockaddr_in6*)sa)->sin6_port));
+			break;
+
+		default:
+			strncpy(s, "Unknown AF", maxlen);
+			return NULL;
+	}
+
+	return s;
+}
