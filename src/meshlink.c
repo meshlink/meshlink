@@ -630,6 +630,8 @@ static const char *errstr[] = {
 };
 
 const char *meshlink_strerror(meshlink_errno_t err) {
+	if(err < 0 || err >= sizeof errstr / sizeof *errstr)
+		return "Invalid error code";
 	return errstr[err];
 }
 

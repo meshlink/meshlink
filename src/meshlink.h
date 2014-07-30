@@ -72,6 +72,7 @@ struct meshlink_channel {
  *  @param err      An error code returned by MeshLink.
  *
  *  @return         A pointer to a string containing the description of the error code.
+ *                  This function will always return a valid pointer, even if an invalid error code has been passed.
  */
 extern const char *meshlink_strerror(meshlink_errno_t err);
 
