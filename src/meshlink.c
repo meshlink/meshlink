@@ -783,12 +783,15 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	if(access(filename, R_OK)) {
 		if(errno == ENOENT) {
 			// If not, create it
-			if(!meshlink_setup(mesh))
+			if(!meshlink_setup(mesh)) {
 				// meshlink_errno is set by meshlink_setup()
 				return NULL;
+			}
 		} else {
 			fprintf(stderr, "Cannot not read from %s: %s\n", filename, strerror(errno));
-			return meshlink_close(mesh), NULL;
+			meshlink_close(mesh);
+			meshlink_errno = MESHLINK_ESTORAGE;
+			return NULL;
 		}
 	}
 
@@ -796,8 +799,11 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 
 	init_configuration(&mesh->config);
 
-	if(!read_server_config(mesh))
-		return meshlink_close(mesh), NULL;
+	if(!read_server_config(mesh)) {
+		meshlink_close(mesh);
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return NULL;
+	};
 
 #ifdef HAVE_MINGW
 	struct WSAData wsa_state;
@@ -807,8 +813,11 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 	// Setup up everything
 	// TODO: we should not open listening sockets yet
 
-	if(!setup_network(mesh))
-		return meshlink_close(mesh), NULL;
+	if(!setup_network(mesh)) {
+		meshlink_close(mesh);
+		meshlink_errno = MESHLINK_ENETWORK;
+		return NULL;
+	}
 
 	return mesh;
 }
