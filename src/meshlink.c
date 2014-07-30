@@ -1526,6 +1526,10 @@ extern void meshlink_hint_address(meshlink_handle_t *mesh, char *hostname, struc
 	
 	append_config_file(mesh, n->name, "Address", full_addr_str);
 
+	free(addr_str);
+	free(port_str);
+	free(full_addr_str);
+
 	// TODO do we want to fire off a connection attempt right away?
 }
 
