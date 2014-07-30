@@ -200,7 +200,9 @@ void init_requests(meshlink_handle_t *mesh) {
 }
 
 void exit_requests(meshlink_handle_t *mesh) {
-	splay_delete_tree(mesh->past_request_tree);
+	if(mesh->past_request_tree)
+		splay_delete_tree(mesh->past_request_tree);
+	mesh->past_request_tree = NULL;
 
 	timeout_del(&mesh->loop, &mesh->past_request_timeout);
 }

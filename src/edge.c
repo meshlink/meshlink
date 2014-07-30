@@ -61,7 +61,9 @@ void free_edge_tree(splay_tree_t *edge_tree) {
 }
 
 void exit_edges(meshlink_handle_t *mesh) {
-	splay_delete_tree(mesh->edges);
+	if(mesh->edges)
+		splay_delete_tree(mesh->edges);
+	mesh->edges = NULL;
 }
 
 /* Creation and deletion of connection elements */

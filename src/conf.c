@@ -51,7 +51,8 @@ void init_configuration(splay_tree_t **config_tree) {
 }
 
 void exit_configuration(splay_tree_t **config_tree) {
-	splay_delete_tree(*config_tree);
+	if(*config_tree)
+		splay_delete_tree(*config_tree);
 	*config_tree = NULL;
 }
 

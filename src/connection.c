@@ -36,8 +36,13 @@ void init_connections(meshlink_handle_t *mesh) {
 }
 
 void exit_connections(meshlink_handle_t *mesh) {
-	list_delete_list(mesh->connections);
+	if(mesh->connections)
+		list_delete_list(mesh->connections);
+
 	free_connection(mesh->everyone);
+
+	mesh->connections = NULL;
+	mesh->everyone = NULL;
 }
 
 connection_t *new_connection(void) {
