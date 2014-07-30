@@ -59,6 +59,8 @@ extern __thread meshlink_errno_t meshlink_errno;
 #ifndef MESHLINK_INTERNAL_H
 
 struct meshlink_handle {
+	const char *name;
+	void *priv;
 };
 
 struct meshlink_node {
