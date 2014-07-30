@@ -44,8 +44,15 @@ typedef struct meshlink_channel meshlink_channel_t;
 /// Code of most recent error encountered.
 typedef enum {
 	MESHLINK_OK,     ///< Everything is fine
+	MESHLINK_EINVAL, ///< Invalid parameter(s) to function call
 	MESHLINK_ENOMEM, ///< Out of memory
 	MESHLINK_ENOENT, ///< Node is not known
+	MESHLINK_EEXIST, ///< Node already exists
+	MESHLINK_EINTERNAL, ///< MeshLink internal error
+	MESHLINK_ERESOLV, ///< MeshLink could not resolve a hostname
+	MESHLINK_ESTORAGE, ///< MeshLink coud not load or write data from/to disk
+	MESHLINK_ENETWORK, ///< MeshLink encountered a network error
+	MESHLINK_EPEER, ///< A peer caused an error
 } meshlink_errno_t;
 
 /// A variable holding the last encountered error from MeshLink.
