@@ -27,6 +27,9 @@ static void node_status(meshlink::mesh *mesh, meshlink::node *node, bool reachab
 		printf("%s left.\n", node->name);
 }
 
+static meshlink::node **nodes;
+static size_t nnodes;
+
 static void parse_command(meshlink::mesh *mesh, char *buf) {
 	char *arg = strchr(buf, ' ');
 	if(arg)
@@ -75,16 +78,13 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 		printf("Node '%s' blacklisted.\n", arg);
 	} else if(!strcasecmp(buf, "who")) {
 		if(!arg) {
-			meshlink::node *nodes[100];
-			size_t n = mesh->get_all_nodes(nodes, 100);
-			if(!n) {
+			nodes = mesh->get_all_nodes(nodes, &nnodes);
+			if(!nnodes) {
 				fprintf(stderr, "No nodes known!\n");
 			} else {
 				printf("Known nodes:");
-				for(size_t i = 0; i < n && i < 100; i++)
+				for(size_t i = 0; i < nnodes; i++)
 					printf(" %s", nodes[i]->name);
-				if(n > 100)
-					printf(" (and %zu more)", n - 100);
 				printf("\n");
 			}
 		} else {

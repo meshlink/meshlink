@@ -185,8 +185,8 @@ namespace meshlink {
 		 *  @return             The number of known nodes, or -1 in case of an error.
 		 *                      This can be larger than nmemb, in which case not all nodes were stored in the nodes array.
 		 */
-		ssize_t get_all_nodes(node **nodes, size_t nmemb) {
-			return meshlink_get_all_nodes(this, (meshlink_node_t **)nodes, nmemb);
+		node **get_all_nodes(node **nodes, size_t *nmemb) {
+			return (node **)meshlink_get_all_nodes(this, (meshlink_node_t **)nodes, nmemb);
 		}
 
 		/// Sign data using the local node's MeshLink key.
