@@ -541,6 +541,20 @@ extern void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *
  */
 extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len);
 
+/// Hint that a hostname may be found at an address
+/** This function indicates to meshlink that the given hostname is likely found
+ *  at the given IP address and port.
+ *
+ *  @param mesh		A handle which represents an instance of MeshLink.
+ *  @param hostname	The hostname which can be found at the given address.
+ *  			The caller is free to overwrite or free this string
+ *  			once meshlink returns.
+ *  @param addr		The IP address and port which should be tried for the
+ *  			given hostname. The caller is free to overwrite or free
+ *  			this memory once meshlink returns.
+ */
+extern void meshlink_hint_address(meshlink_handle_t *mesh, char *hostname, struct sockaddr *addr);
+
 #ifdef __cplusplus
 }
 #endif
