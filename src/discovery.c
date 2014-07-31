@@ -107,7 +107,10 @@ static void discovery_resolve_callback(
                 }
 
                 // @TODO: aquire mutex?
-                meshlink_hint_address(mesh, node->name, &naddr);
+                if(naddr.ss_family == AF_INET || naddr.ss_family == AF_INET6)
+                {
+                    meshlink_hint_address(mesh, node->name, (struct sockaddr*)&naddr);
+                }
             }
             else
             {
