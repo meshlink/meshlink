@@ -30,7 +30,9 @@ int ed25519_create_seed(unsigned char *seed) {
         return 1;
     }
 
-    fread(seed, 1, 32, f);
+    if(fread(seed, 32, 1, f) != 1)
+	    return 1;
+
     fclose(f);
 #endif
 
