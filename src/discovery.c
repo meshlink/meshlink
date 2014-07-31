@@ -18,6 +18,10 @@
 //#define MESHLINK_MDNS_SERVICE_NAME "Meshlink"
 #define MESHLINK_MDNS_FINGERPRINT_KEY "fingerprint"
 
+
+// @TODO: aquire mutex in case we call meshlink_* methods?
+
+
 static void discovery_resolve_callback(
     AvahiSServiceResolver *resolver,
     AVAHI_GCC_UNUSED AvahiIfIndex interface,
@@ -106,7 +110,6 @@ static void discovery_resolve_callback(
                     naddr.ss_family = AF_UNKNOWN;
                 }
 
-                // @TODO: aquire mutex?
                 if(naddr.ss_family == AF_INET || naddr.ss_family == AF_INET6)
                 {
                     meshlink_hint_address(mesh, node->name, (struct sockaddr*)&naddr);
