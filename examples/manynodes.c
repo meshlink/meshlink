@@ -11,28 +11,8 @@
 static int n = 100;
 static meshlink_handle_t **mesh;
 
-static void log_message(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
-	const char *levelstr[] = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"};
-	fprintf(stderr, "%s: %s\n", levelstr[level], text);
-}
-
-static void receive(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
-	const char *msg = data;
-
-	if(!len || msg[len - 1]) {
-		fprintf(stderr, "Received invalid data from %s\n", source->name);
-		return;
-	}
-
-	printf("%s says: %s\n", source->name, msg);
-}
-
-static void node_status(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
-	if(reachable)
-		printf("%s joined.\n", node->name);
-	else
-		printf("%s left.\n", node->name);
-}
+static meshlink_node_t **nodes;
+static size_t nnodes;
 
 // Make all nodes know about each other by importing each others public keys and addresses.
 static void linkmesh() {
@@ -98,16 +78,13 @@ static void parse_command(char *buf) {
 		printf("Node '%s' blacklisted.\n", arg);
 	} else if(!strcasecmp(buf, "who")) {
 		if(!arg) {
-			meshlink_node_t *nodes[100];
-			size_t n = meshlink_get_all_nodes(mesh[0], nodes, 100);
-			if(!n) {
-				fprintf(stderr, "No nodes known!\n");
+			nodes = meshlink_get_all_nodes(mesh[0], nodes, &nnodes);
+			if(!nodes) {
+				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink_strerror(meshlink_errno));
 			} else {
-				printf("Known nodes:");
-				for(int i = 0; i < n && i < 100; i++)
+				printf("%zu known nodes:", nnodes);
+				for(int i = 0; i < nnodes; i++)
 					printf(" %s", nodes[i]->name);
-				if(n > 100)
-					printf(" (and %zu more)", n - 100);
 				printf("\n");
 			}
 		} else {
