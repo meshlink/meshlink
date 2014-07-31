@@ -1660,7 +1660,7 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 /* Hint that a hostname may be found at an address
  * See header file for detailed comment.
  */
-extern void meshlink_hint_address(meshlink_handle_t *mesh, char *hostname, struct sockaddr *addr) {
+extern void meshlink_hint_address(meshlink_handle_t *mesh, const char *hostname, struct sockaddr *addr) {
 	if(!mesh || !hostname || !addr)
 		return;
 	

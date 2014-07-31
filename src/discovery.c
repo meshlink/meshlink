@@ -12,6 +12,8 @@
 #include <avahi-common/alternative.h>
 #include <avahi-common/error.h>
 
+#include <netinet/in.h>
+
 #define MESHLINK_MDNS_SERVICE_TYPE "_meshlink._tcp"
 //#define MESHLINK_MDNS_SERVICE_NAME "Meshlink"
 #define MESHLINK_MDNS_FINGERPRINT_KEY "fingerprint"
@@ -76,10 +78,40 @@ static void discovery_resolve_callback(
             if( node && fgli && strcmp(avahi_string_list_get_text(fgli)+strlen(MESHLINK_MDNS_FINGERPRINT_KEY)+1, meshlink_get_fingerprint(mesh, node)) == 0 )
             {
                 fprintf(stderr, "Node %s is part of the mesh network - updating ip address.\n", node->name);
+
+                struct sockaddr_storage naddr;
+                memset(&naddr, 0, sizeof(naddr));
+
+                switch(address->proto)
+                {
+                    case AVAHI_PROTO_INET:
+                    {
+                        struct sockaddr_in* naddr_in = (struct sockaddr_in*)&naddr;
+                        naddr_in->sin_family = AF_INET;
+                        naddr_in->sin_port = port;
+                        naddr_in->sin_addr.s_addr = address->data.ipv4.address;
+                    }
+                    break;
+
+                    case AVAHI_PROTO_INET6:
+                    {
+                        struct sockaddr_in6* naddr_in = (struct sockaddr_in6*)&naddr;
+                        naddr_in->sin6_family = AF_INET6;
+                        naddr_in->sin6_port = port;
+                        memcpy(naddr_in->sin6_addr.s6_addr, address->data.ipv6.address, sizeof(naddr_in->sin6_addr.s6_addr));
+                    }
+                    break;
+
+                    default:
+                    naddr.ss_family = AF_UNKNOWN;
+                }
+
+                // @TODO: aquire mutex?
+                meshlink_hint_address(mesh, node->name, &naddr);
             }
             else
             {
-                fprintf(stderr, "Node %s is not part of the mesh network - ignoring ip address.\n", node->name);
+                fprintf(stderr, "Node %s is not part of the mesh network - ignoring ip address.\n", node ? node->name : "n/a");
             }
         }
     }
@@ -298,7 +330,7 @@ fail:
 
 void discovery_stop(meshlink_handle_t *mesh)
 {
-	// @TODO: Shut down 
+	// Shut down 
 	avahi_simple_poll_quit(mesh->avahi_poll);
 
 	// Wait for the discovery thread to finish

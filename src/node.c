@@ -104,7 +104,7 @@ void node_del(meshlink_handle_t *mesh, node_t *n) {
 	pthread_mutex_unlock(&(mesh->nodes_mutex));
 }
 
-node_t *lookup_node(meshlink_handle_t *mesh, char *name) {
+node_t *lookup_node(meshlink_handle_t *mesh, const char *name) {
 	node_t n = {NULL};
 	node_t* result;
 
