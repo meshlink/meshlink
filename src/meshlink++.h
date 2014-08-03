@@ -21,6 +21,7 @@
 #define MESHLINKPP_H
 
 #include <meshlink.h>
+#include <new> // for 'placement new'
 
 namespace meshlink {
 	class mesh;
@@ -86,9 +87,30 @@ namespace meshlink {
 
 	/// A class describing a MeshLink mesh.
 	class mesh: public meshlink_handle_t {
-		public:
-		// TODO: delete constructor, add a destructor.
-
+	public:
+		mesh() {}
+	
+		virtual ~mesh() {
+			meshlink_close(this);
+		}
+		
+		/** instead of registerin callbacks you derive your own class and overwrite the following abstract member functions.
+		 *  These functions are run in MeshLink's own thread.
+		 *  It is therefore important that these functions use apprioriate methods (queues, pipes, locking, etc.)
+		 *  to hand the data over to the application's thread.
+		 *  These functions should also not block itself and return as quickly as possible.
+		 * The default member functions are no-ops, so you are not required to overwrite all these member functions
+		 */
+		
+		/// This function is called whenever another node sends data to the local node.
+		virtual void receive(node* source, const void* data, size_t length) { /* do nothing */ }
+		
+		/// This functions is called  whenever another node's status changed.
+		virtual void node_status(node* peer, bool reachable)                { /* do nothing */ }
+		
+		/// This functions is called whenever MeshLink has some information to log.
+		virtual void log(log_level_t level, const char* message)            { /* do nothing */ }
+		
 		/// Start MeshLink.
 		/** This function causes MeshLink to open network sockets, make outgoing connections, and
 		 *  create a new thread, which will handle all network I/O.
@@ -96,6 +118,9 @@ namespace meshlink {
 		 *  @return         This function will return true if MeshLink has succesfully started its thread, false otherwise.
 		 */
 		bool start() {
+			meshlink_set_receive_cb    (this, &receive_trampoline);
+			meshlink_set_node_status_cb(this, &node_status_trampoline);
+			meshlink_set_log_cb        (this, MESHLINK_DEBUG, &log_trampoline);
 			return meshlink_start(this);
 		}
 
@@ -105,46 +130,6 @@ namespace meshlink {
 		 */
 		void stop() {
 			meshlink_stop(this);
-		}
-
-		/// Set the receive callback.
-		/** This functions sets the callback that is called whenever another node sends data to the local node.
-		 *  The callback is run in MeshLink's own thread.
-		 *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
-		 *  to hand the data over to the application's thread.
-		 *  The callback should also not block itself and return as quickly as possible.
-		 *
-		 *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
-		 */
-		void set_receive_cb(receive_cb_t cb) {
-			meshlink_set_receive_cb(this, (meshlink_receive_cb_t)cb);
-		}
-
-		/// Set the node status callback.
-		/** This functions sets the callback that is called whenever another node's status changed.
-		 *  The callback is run in MeshLink's own thread.
-		 *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
-		 *  to hand the data over to the application's thread.
-		 *  The callback should also not block itself and return as quickly as possible.
-		 *
-		 *  @param cb        A pointer to the function which will be called when another node's status changes.
-		 */
-		void set_node_status_cb(node_status_cb_t cb) {
-			meshlink_set_node_status_cb(this, (meshlink_node_status_cb_t)cb);
-		}
-
-		/// Set the log callback.
-		/** This functions sets the callback that is called whenever MeshLink has some information to log.
-		 *  The callback is run in MeshLink's own thread.
-		 *  It is important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
-		 *  to hand the data over to the application's thread.
-		 *  The callback should also not block itself and return as quickly as possible.
-		 *
-		 *  @param level     An enum describing the minimum severity level. Debugging information with a lower level will not trigger the callback.
-		 *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
-		 */
-		void set_log_cb(meshlink_log_level_t level, log_cb_t cb) {
-			meshlink_set_log_cb(this, level, (meshlink_log_cb_t)cb);
 		}
 
 		/// Send data to another node.
@@ -359,6 +344,29 @@ namespace meshlink {
 			return meshlink_channel_send(this, channel, data, len);
 		}
 
+	private:
+		// non-copyable:
+		mesh(const mesh&) /* TODO: C++11: = delete */;
+		void operator=(const mesh&) /* TODO: C++11: = delete */ ;
+		
+		/// static callback trampolines:
+		static void receive_trampoline(meshlink_handle_t* handle, meshlink_node_t* source, const void* data, size_t length)
+		{
+			mesh* that = static_cast<mesh*>(handle);
+			that->receive(static_cast<node*>(source), data, length);
+		}
+		
+		static void node_status_trampoline(meshlink_handle_t* handle, meshlink_node_t* peer, bool reachable)
+		{
+			mesh* that = static_cast<mesh*>(handle);
+			that->node_status(static_cast<node*>(peer), reachable);
+		}
+
+		static void log_trampoline(meshlink_handle_t* handle, log_level_t level, const char* message)
+		{
+			mesh* that = static_cast<mesh*>(handle);
+			that->log(level, message);
+		}
 	};
 
 	/// Initialize MeshLink's configuration directory.
@@ -376,8 +384,10 @@ namespace meshlink {
 	 *
 	 *  @return         This function will return a pointer to a meshlink::mesh if MeshLink has succesfully set up its configuration files, NULL otherwise.
 	 */
-	static mesh *open(const char *confbase, const char *name) {
-		return (mesh *)meshlink_open(confbase, name);
+	template<class MESH>
+	static MESH* open(const char *confbase, const char *name) {
+		void* mp = (void *)meshlink_open_with_size(confbase, name, sizeof(MESH));
+		return new (mp) MESH;
 	}
 
 	/// Close the MeshLink handle.
@@ -392,6 +402,7 @@ namespace meshlink {
 	static const char *strerror(errno_t err = meshlink_errno) {
 		return meshlink_strerror(err);
 	}
-};
+
+}
 
 #endif // MESHLINKPP_H

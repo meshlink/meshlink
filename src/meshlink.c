@@ -740,7 +740,13 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	return true;
 }
 
+
 meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
+	return meshlink_open_with_size(confbase, name, sizeof(meshlink_handle_t) );
+}
+
+
+meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, size_t size) {
 	// Validate arguments provided by the application
 	bool usingname = false;
 
@@ -763,7 +769,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 		} else { usingname = true;}
 	}
 
-	meshlink_handle_t *mesh = xzalloc(sizeof *mesh);
+	meshlink_handle_t *mesh = xzalloc(size);
 	mesh->confbase = xstrdup(confbase);
 	if (usingname) mesh->name = xstrdup(name);
 	pthread_mutex_init ( &(mesh->outpacketqueue_mutex), NULL);

@@ -4,28 +4,32 @@
 #include <strings.h>
 #include "../src/meshlink++.h"
 
-static void log_message(meshlink::mesh *mesh, meshlink::log_level_t level, const char *text) {
-	const char *levelstr[] = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"};
-	fprintf(stderr, "%s: %s\n", levelstr[level], text);
-}
+class ChatMesh : public meshlink::mesh
+{
+public:
+	void log(meshlink::log_level_t level, const char *text) {
+		const char *levelstr[] = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"};
+		fprintf(stderr, "%s: %s\n", levelstr[level], text);
+		}
 
-static void receive(meshlink::mesh *mesh, meshlink::node *source, const void *data, size_t len) {
-	const char *msg = (const char *)data;
-
-	if(!len || msg[len - 1]) {
-		fprintf(stderr, "Received invalid data from %s\n", source->name);
-		return;
+	void receive(meshlink::node *source, const void *data, size_t len) {
+		const char *msg = (const char *)data;
+	
+		if(!len || msg[len - 1]) {
+			fprintf(stderr, "Received invalid data from %s\n", source->name);
+			return;
+		}
+		
+		printf("%s says: %s\n", source->name, msg);
 	}
 
-	printf("%s says: %s\n", source->name, msg);
-}
-
-static void node_status(meshlink::mesh *mesh, meshlink::node *node, bool reachable) {
-	if(reachable)
-		printf("%s joined.\n", node->name);
-	else
-		printf("%s left.\n", node->name);
-}
+	void node_status(meshlink::node *node, bool reachable) {
+		if(reachable)
+			printf("%s joined.\n", node->name);
+		else
+			printf("%s left.\n", node->name);
+	}
+};
 
 static meshlink::node **nodes;
 static size_t nnodes;
@@ -82,7 +86,7 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 			if(!nodes) {
 				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink::strerror());
 			} else {
-				printf("%d known nodes:", nnodes);
+				printf("%zu known nodes:", nnodes);
 				for(size_t i = 0; i < nnodes; i++)
 					printf(" %s", nodes[i]->name);
 				printf("\n");
@@ -171,6 +175,7 @@ static void parse_input(meshlink::mesh *mesh, char *buf) {
 	printf("Message sent to '%s'.\n", destination->name);
 }
 
+
 int main(int argc, char *argv[]) {
 	const char *confbase = ".chat";
 	const char *nick = NULL;
@@ -182,15 +187,11 @@ int main(int argc, char *argv[]) {
 	if(argc > 2)
 		nick = argv[2];
 
-	meshlink::mesh *mesh = meshlink::open(confbase, nick);
+	ChatMesh* mesh = meshlink::open<ChatMesh>(confbase, nick);
 	if(!mesh) {
 		fprintf(stderr, "Could not open MeshLink: %s\n", meshlink::strerror());
 		return 1;
 	}
-
-	mesh->set_receive_cb(receive);
-	mesh->set_node_status_cb(node_status);
-	mesh->set_log_cb(MESHLINK_INFO, log_message);
 
 	if(!mesh->start()) {
 		fprintf(stderr, "Could not start MeshLink: %s\n", meshlink::strerror());
