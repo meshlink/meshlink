@@ -38,7 +38,6 @@ typedef struct meshlink_queue_item {
 
 static inline bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
 	meshlink_queue_item_t *item = malloc(sizeof *item);
-	fprintf(stderr, "Pushing %p %p %p\n", queue, item, data);
 	if(!item)
 		return false;
 	item->data = data;
@@ -63,7 +62,6 @@ static inline void *meshlink_queue_pop(meshlink_queue_t *queue) {
 	}
 	pthread_mutex_unlock(&queue->mutex);
 	data = item ? item->data : NULL;
-	fprintf(stderr, "Popping %p %p %p\n", queue, item, data);
 	free(item);
 	return data;
 }
