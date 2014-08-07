@@ -347,12 +347,7 @@ static bool try_bind(int port) {
 }
 
 static int check_port(meshlink_handle_t *mesh) {
-	if(try_bind(655))
-		return 655;
-
-	fprintf(stderr, "Warning: could not bind to port 655.\n");
-
-	for(int i = 0; i < 100; i++) {
+	for(int i = 0; i < 1000; i++) {
 		int port = 0x1000 + (rand() & 0x7fff);
 		if(try_bind(port)) {
 			char filename[PATH_MAX];
@@ -365,7 +360,6 @@ static int check_port(meshlink_handle_t *mesh) {
 
 			fprintf(f, "Port = %d\n", port);
 			fclose(f);
-			fprintf(stderr, "MeshLink will instead listen on port %d.\n", port);
 			return port;
 		}
 	}
@@ -1398,7 +1392,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	}
 
 	if(!port)
-		port = "655";
+		goto invalid;
 
 	if(!b64decode(slash, mesh->hash, 18) || !b64decode(slash + 24, mesh->cookie, 18))
 		goto invalid;

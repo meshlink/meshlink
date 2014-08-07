@@ -372,8 +372,11 @@ begin:
 			*space = 0;
 		} else {
 			// TODO: Only allow Address statements?
-			if(!get_config_string(lookup_config(outgoing->config_tree, "Port"), &port))
-				port = xstrdup("655");
+			if(!get_config_string(lookup_config(outgoing->config_tree, "Port"), &port)) {
+				logger(DEBUG_CONNECTIONS, LOG_ERR, "No Port known for %s", outgoing->name);
+				retry_outgoing(mesh, outgoing);
+				return false;
+			}
 		}
 
 		outgoing->ai = str2addrinfo(address, port, SOCK_STREAM);

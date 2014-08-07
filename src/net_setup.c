@@ -279,8 +279,10 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	mesh->self->connection->name = xstrdup(name);
 	read_host_config(mesh, mesh->config, name);
 
-	if(!get_config_string(lookup_config(mesh->config, "Port"), &mesh->myport))
-		mesh->myport = xstrdup("655");
+	if(!get_config_string(lookup_config(mesh->config, "Port"), &mesh->myport)) {
+		logger(DEBUG_ALWAYS, LOG_ERR, "Port for MeshLink instance required!");
+		return false;
+	}
 
 	mesh->self->connection->options = 0;
 	mesh->self->connection->protocol_major = PROT_MAJOR;
@@ -338,11 +340,6 @@ bool setup_myself(meshlink_handle_t *mesh) {
 		logger(DEBUG_ALWAYS, LOG_ERR, "Unable to create any listening socket!");
 		return false;
 	}
-
-	// TODO: require Port to be set? Or use "0" and use getsockname()?
-
-	if(!mesh->myport)
-		mesh->myport = xstrdup("655");
 
 	xasprintf(&mesh->self->hostname, "MYSELF port %s", mesh->myport);
 	mesh->self->connection->hostname = xstrdup(mesh->self->hostname);
