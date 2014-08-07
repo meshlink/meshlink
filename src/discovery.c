@@ -1,6 +1,7 @@
 
 #include "meshlink_internal.h"
 #include "discovery.h"
+#include "sockaddr.h"
 
 #include <pthread.h>
 
@@ -14,137 +15,36 @@
 
 #include <netinet/in.h>
 
+#include <uuid/uuid.h>
+
 #define MESHLINK_MDNS_SERVICE_TYPE "_meshlink._tcp"
-//#define MESHLINK_MDNS_SERVICE_NAME "Meshlink"
 #define MESHLINK_MDNS_FINGERPRINT_KEY "fingerprint"
 
-
-// @TODO: aquire mutex in case we call meshlink_* methods?
-
-
-static void discovery_resolve_callback(
-    AvahiSServiceResolver *resolver,
-    AVAHI_GCC_UNUSED AvahiIfIndex interface,
-    AVAHI_GCC_UNUSED AvahiProtocol protocol,
-    AvahiResolverEvent event,
-    const char *name,
-    const char *type,
-    const char *domain,
-    const char *host_name,
-    const AvahiAddress *address,
-    uint16_t port,
-    AvahiStringList *txt,
-    AvahiLookupResultFlags flags,
-    AVAHI_GCC_UNUSED void* userdata)
-{
-
-    meshlink_handle_t *mesh = userdata;
-
-    /* Called whenever a service has been resolved successfully or timed out */
-
-    switch (event)
-    {
-        case AVAHI_RESOLVER_FAILURE:
-            fprintf(stderr, "(Resolver) Failed to resolve service '%s' of type '%s' in domain '%s': %s\n", name, type, domain, avahi_strerror(avahi_server_errno(mesh->avahi_server)));
-            break;
-
-        case AVAHI_RESOLVER_FOUND:
-        {
-            char straddr[AVAHI_ADDRESS_STR_MAX], *strtxt;
-
-            fprintf(stderr, "(Resolver) Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
-
-            avahi_address_snprint(straddr, sizeof(straddr), address);
-            strtxt = avahi_string_list_to_string(txt);
-            fprintf(stderr,
-                    "\t%s:%u (%s)\n"
-                    "\tTXT=%s\n"
-                    "\tcookie is %u\n"
-                    "\tis_local: %i\n"
-                    "\twide_area: %i\n"
-                    "\tmulticast: %i\n"
-                    "\tcached: %i\n",
-                    host_name, port, straddr,
-                    strtxt,
-                    avahi_string_list_get_service_cookie(txt),
-                    !!(flags & AVAHI_LOOKUP_RESULT_LOCAL),
-                    !!(flags & AVAHI_LOOKUP_RESULT_WIDE_AREA),
-                    !!(flags & AVAHI_LOOKUP_RESULT_MULTICAST),
-                    !!(flags & AVAHI_LOOKUP_RESULT_CACHED));
-            avahi_free(strtxt);
-
-            // retrieve fingerprint
-            AvahiStringList *fgli = avahi_string_list_find(txt, MESHLINK_MDNS_FINGERPRINT_KEY);
-            meshlink_node_t *node = meshlink_get_node(mesh, name);
-
-            fprintf(stderr, "%p, %p, %s, %s\n", fgli, node, avahi_string_list_get_text(fgli), meshlink_get_fingerprint(mesh, node));
-
-            if( node && fgli && strcmp(avahi_string_list_get_text(fgli)+strlen(MESHLINK_MDNS_FINGERPRINT_KEY)+1, meshlink_get_fingerprint(mesh, node)) == 0 )
-            {
-                fprintf(stderr, "Node %s is part of the mesh network - updating ip address.\n", node->name);
-
-                struct sockaddr_storage naddr;
-                memset(&naddr, 0, sizeof(naddr));
-
-                switch(address->proto)
-                {
-                    case AVAHI_PROTO_INET:
-                    {
-                        struct sockaddr_in* naddr_in = (struct sockaddr_in*)&naddr;
-                        naddr_in->sin_family = AF_INET;
-                        naddr_in->sin_port = port;
-                        naddr_in->sin_addr.s_addr = address->data.ipv4.address;
-                    }
-                    break;
-
-                    case AVAHI_PROTO_INET6:
-                    {
-                        struct sockaddr_in6* naddr_in = (struct sockaddr_in6*)&naddr;
-                        naddr_in->sin6_family = AF_INET6;
-                        naddr_in->sin6_port = port;
-                        memcpy(naddr_in->sin6_addr.s6_addr, address->data.ipv6.address, sizeof(naddr_in->sin6_addr.s6_addr));
-                    }
-                    break;
-
-                    default:
-                    naddr.ss_family = AF_UNKNOWN;
-                }
-
-                if(naddr.ss_family == AF_INET || naddr.ss_family == AF_INET6)
-                {
-                    meshlink_hint_address(mesh, node->name, (struct sockaddr*)&naddr);
-                }
-            }
-            else
-            {
-                fprintf(stderr, "Node %s is not part of the mesh network - ignoring ip address.\n", node ? node->name : "n/a");
-            }
-        }
-    }
-
-    avahi_s_service_resolver_free(resolver);
-}
-
-static void discovery_entry_group_callback(AvahiServer *server, AvahiSEntryGroup *group, AvahiEntryGroupState state, AVAHI_GCC_UNUSED void *userdata)
+static void discovery_entry_group_callback(AvahiServer *server, AvahiSEntryGroup *group, AvahiEntryGroupState state, void *userdata)
 {
     meshlink_handle_t *mesh = userdata;
+
+    // asserts
+    assert(mesh != NULL);
+    assert(mesh->name != NULL);
+    assert(mesh->avahi_server != NULL);
+    assert(mesh->avahi_poll != NULL);
 
     /* Called whenever the entry group state changes */
-    switch (state)
+    switch(state)
     {
         case AVAHI_ENTRY_GROUP_ESTABLISHED:
             /* The entry group has been established successfully */
-            fprintf(stderr, "Service '%s' successfully established.\n", /*MESHLINK_MDNS_SERVICE_NAME*/ mesh->name);
+            fprintf(stderr, "Service '%s' successfully established.\n", mesh->name);
             break;
 
         case AVAHI_ENTRY_GROUP_COLLISION:
-            fprintf(stderr, "Service name collision '%s'\n", /*MESHLINK_MDNS_SERVICE_NAME*/ mesh->name);
+            fprintf(stderr, "Service name collision '%s'\n", mesh->name);
             break;
 
         case AVAHI_ENTRY_GROUP_FAILURE :
-            fprintf(stderr, "Entry group failure: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
-
             /* Some kind of failure happened while we were registering our services */
+            fprintf(stderr, "Entry group failure: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
             avahi_simple_poll_quit(mesh->avahi_poll);
             break;
 
@@ -157,28 +57,40 @@ static void discovery_entry_group_callback(AvahiServer *server, AvahiSEntryGroup
 
 static void discovery_create_services(meshlink_handle_t *mesh)
 {
-    fprintf(stderr, "Adding service '%s'\n", /*MESHLINK_MDNS_SERVICE_NAME*/ mesh->name);
+    // asserts
+    assert(mesh != NULL);
+    assert(mesh->name != NULL);
+    assert(mesh->myport != NULL);
+    assert(mesh->avahi_server != NULL);
+    assert(mesh->avahi_poll != NULL);
 
-    /* If this is the first time we're called, let's create a new entry group */
-    if (!mesh->avahi_group)
-        if (!(mesh->avahi_group = avahi_s_entry_group_new(mesh->avahi_server, discovery_entry_group_callback, mesh))) {
+    fprintf(stderr, "Adding service '%s'\n", mesh->name);
+
+    /* Ifthis is the first time we're called, let's create a new entry group */
+    if(!mesh->avahi_group)
+    {
+        if(!(mesh->avahi_group = avahi_s_entry_group_new(mesh->avahi_server, discovery_entry_group_callback, mesh)))
+        {
             fprintf(stderr, "avahi_entry_group_new() failed: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
             goto fail;
         }
+    }
 
-    /* Create some random TXT data */
-    char fingerprint[1024] = "";
-    snprintf(fingerprint, sizeof(fingerprint), "%s=%s", MESHLINK_MDNS_FINGERPRINT_KEY, meshlink_get_fingerprint(mesh, meshlink_get_node(mesh, mesh->name)));
+    /* Create txt record */
+    char txt_fingerprint[MESHLINK_FINGERPRINTLEN + sizeof(MESHLINK_MDNS_FINGERPRINT_KEY) + 2];
+    snprintf(txt_fingerprint, sizeof(txt_fingerprint), "%s=%s", MESHLINK_MDNS_FINGERPRINT_KEY, meshlink_get_fingerprint(mesh, meshlink_get_node(mesh, mesh->name)));
 
-    /* Add the service for IPP */
+    /* Add the service */
     int ret = 0;
-    if ((ret = avahi_server_add_service(mesh->avahi_server, mesh->avahi_group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, /*MESHLINK_MDNS_SERVICE_NAME*/ mesh->name, MESHLINK_MDNS_SERVICE_TYPE, NULL, NULL, mesh->myport ? atoi(mesh->myport) : 655, fingerprint, NULL)) < 0) {
-        fprintf(stderr, "Failed to add _ipp._tcp service: %s\n", avahi_strerror(ret));
+    if((ret = avahi_server_add_service(mesh->avahi_server, mesh->avahi_group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, mesh->name, MESHLINK_MDNS_SERVICE_TYPE, NULL, NULL, atoi(mesh->myport), txt_fingerprint, NULL)) < 0)
+    {
+        fprintf(stderr, "Failed to add service: %s\n", avahi_strerror(ret));
         goto fail;
     }
 
     /* Tell the server to register the service */
-    if ((ret = avahi_s_entry_group_commit(mesh->avahi_group)) < 0) {
+    if((ret = avahi_s_entry_group_commit(mesh->avahi_group)) < 0)
+    {
         fprintf(stderr, "Failed to commit entry_group: %s\n", avahi_strerror(ret));
         goto fail;
     }
@@ -189,35 +101,74 @@ fail:
     avahi_simple_poll_quit(mesh->avahi_poll);
 }
 
-static void discovery_server_callback(AvahiServer *server, AvahiServerState state, AVAHI_GCC_UNUSED void * userdata)
+static void discovery_server_callback(AvahiServer *server, AvahiServerState state, void * userdata)
 {
 	meshlink_handle_t *mesh = userdata;
 
-    switch (state)
+    // asserts
+    assert(mesh != NULL);
+
+    switch(state)
     {
         case AVAHI_SERVER_RUNNING:
-            /* The serve has startup successfully and registered its host
-             * name on the network, so it's time to create our services */
-            if (!mesh->avahi_group)
-                discovery_create_services(mesh);
+            {
+                /* The serve has startup successfully and registered its host
+                 * name on the network, so it's time to create our services */
+                if(!mesh->avahi_group)
+                {
+                    discovery_create_services(mesh);
+                }
+            }
             break;
 
         case AVAHI_SERVER_COLLISION:
-            /* A host name collision happened. Let's do nothing */
+            {
+                // asserts
+                assert(mesh->avahi_server != NULL);
+                assert(mesh->avahi_poll != NULL);
+
+                fprintf(stderr, "Host name collision with '%s'\n", avahi_server_get_host_name(mesh->avahi_server));
+
+                /* A host name collision happened. Let's pick a new name for the server */
+                /*
+                char *new_name = avahi_alternative_host_name(avahi_server_get_host_name(mesh->avahi_server));
+                fprintf(stderr, "Host name collision, retrying with '%s'\n", new_name);
+                int result = avahi_server_set_host_name(mesh->avahi_server, new_name);
+                avahi_free(new_name);
+
+                if(result < 0)
+                {
+                    fprintf(stderr, "Failed to set new host name: %s\n", avahi_strerror(result));
+                    avahi_simple_poll_quit(mesh->avahi_poll);
+                    return;
+                }
+                */
+            }
             break;
 
         case AVAHI_SERVER_REGISTERING:
-	    	/* Let's drop our registered services. When the server is back
-             * in AVAHI_SERVER_RUNNING state we will register them
-             * again with the new host name. */
-            //if (mesh->avahi_group)
-            //    avahi_s_entry_group_reset(mesh->avahi_group);
+            {
+                /* Let's drop our registered services. When the server is back
+                 * in AVAHI_SERVER_RUNNING state we will register them
+                 * again with the new host name. */
+                if(mesh->avahi_group)
+                {
+                    avahi_s_entry_group_reset(mesh->avahi_group);
+                    mesh->avahi_group = NULL;
+                }
+            }
             break;
 
         case AVAHI_SERVER_FAILURE:
-            /* Terminate on failure */
-            fprintf(stderr, "Server failure: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
-            avahi_simple_poll_quit(mesh->avahi_poll);
+            {
+                // asserts
+                assert(mesh->avahi_server != NULL);
+                assert(mesh->avahi_poll != NULL);
+
+                /* Terminate on failure */
+                fprintf(stderr, "Server failure: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+                avahi_simple_poll_quit(mesh->avahi_poll);
+            }
             break;
 
         case AVAHI_SERVER_INVALID:
@@ -225,71 +176,219 @@ static void discovery_server_callback(AvahiServer *server, AvahiServerState stat
     }
 }
 
-static void discovery_browse_callback(
-    AvahiSServiceBrowser *browser,
-    AvahiIfIndex interface,
-    AvahiProtocol protocol,
-    AvahiBrowserEvent event,
-    const char *name,
-    const char *type,
-    const char *domain,
-    AVAHI_GCC_UNUSED AvahiLookupResultFlags flags,
-    void* userdata)
+static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfIndex interface, AvahiProtocol protocol, AvahiResolverEvent event, const char *name, const char *type, const char *domain, const char *host_name, const AvahiAddress *address, uint16_t port, AvahiStringList *txt, AvahiLookupResultFlags flags, void* userdata)
+{
+    meshlink_handle_t *mesh = userdata;
+
+    // asserts
+    assert(resolver != NULL);
+    assert(mesh != NULL);
+    assert(mesh->avahi_server != NULL);
+
+    /* Called whenever a service has been resolved successfully or timed out */
+    switch(event)
+    {
+        case AVAHI_RESOLVER_FAILURE:
+            {
+                // asserts
+                assert(name != NULL);
+                assert(type != NULL);
+                assert(domain != NULL);
+
+                fprintf(stderr, "(Resolver) Failed to resolve service '%s' of type '%s' in domain '%s': %s\n", name, type, domain, avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+            }
+            break;
+
+        case AVAHI_RESOLVER_FOUND:
+            {
+                // asserts
+                assert(name != NULL);
+                assert(type != NULL);
+                assert(domain != NULL);
+                assert(host_name != NULL);
+                assert(address != NULL);
+                assert(txt != NULL);
+        
+                char straddr[AVAHI_ADDRESS_STR_MAX], *strtxt;
+
+                fprintf(stderr, "(Resolver) Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
+
+                avahi_address_snprint(straddr, sizeof(straddr), address);
+                strtxt = avahi_string_list_to_string(txt);
+                fprintf(stderr,
+                        "\t%s:%u (%s)\n"
+                        "\tTXT=%s\n"
+                        "\tcookie is %u\n"
+                        "\tis_local: %i\n"
+                        "\twide_area: %i\n"
+                        "\tmulticast: %i\n"
+                        "\tcached: %i\n",
+                        host_name, port, straddr,
+                        strtxt,
+                        avahi_string_list_get_service_cookie(txt),
+                        !!(flags & AVAHI_LOOKUP_RESULT_LOCAL),
+                        !!(flags & AVAHI_LOOKUP_RESULT_WIDE_AREA),
+                        !!(flags & AVAHI_LOOKUP_RESULT_MULTICAST),
+                        !!(flags & AVAHI_LOOKUP_RESULT_CACHED));
+                avahi_free(strtxt);
+
+                // retrieve fingerprint
+                AvahiStringList *fgli = avahi_string_list_find(txt, MESHLINK_MDNS_FINGERPRINT_KEY);
+                meshlink_node_t *node = meshlink_get_node(mesh, name);
+
+                fprintf(stderr, "%p, %p, %s, %s\n", fgli, node, avahi_string_list_get_text(fgli), meshlink_get_fingerprint(mesh, node));
+
+                if(node && fgli && strcmp(avahi_string_list_get_text(fgli) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY) + 1, meshlink_get_fingerprint(mesh, node)) == 0 )
+                {
+                    fprintf(stderr, "Node %s is part of the mesh network.\n", node->name);
+
+                    sockaddr_t naddress;
+                    memset(&naddress, 0, sizeof(naddress));
+
+                    switch(address->proto)
+                    {
+                        case AVAHI_PROTO_INET:
+                            {
+                                naddress.in.sin_family = AF_INET;
+                                naddress.in.sin_port = port;
+                                naddress.in.sin_addr.s_addr = address->data.ipv4.address;
+                            }
+                            break;
+
+                        case AVAHI_PROTO_INET6:
+                            {
+                                naddress.in6.sin6_family = AF_INET6;
+                                naddress.in6.sin6_port = port;
+                                memcpy(naddress.in6.sin6_addr.s6_addr, address->data.ipv6.address, sizeof(naddress.in6.sin6_addr.s6_addr));
+                            }
+                            break;
+
+                        default:
+                            naddress.unknown.family = AF_UNKNOWN;
+                            break;
+                    }
+
+                    if(naddress.unknown.family != AF_UNKNOWN)
+                    {
+                        meshlink_hint_address(mesh, node, (struct sockaddr*)&naddress);
+                    }
+                    else
+                    {
+                        fprintf(stderr, "Could not resolve node %s to a known address family type.\n", node->name);
+                    }
+                }
+                else
+                {
+                    fprintf(stderr, "Node %s is not part of the mesh network.\n", node ? node->name : "n/a");
+                }
+            }
+            break;
+    }
+
+    avahi_s_service_resolver_free(resolver);
+}
+
+static void discovery_browse_callback(AvahiSServiceBrowser *browser, AvahiIfIndex interface, AvahiProtocol protocol, AvahiBrowserEvent event, const char *name, const char *type, const char *domain, AvahiLookupResultFlags flags, void* userdata)
 {
 	meshlink_handle_t *mesh = userdata;
 
-    /* Called whenever a new services becomes available on the LAN or is removed from the LAN */
+    // asserts
+    assert(mesh != NULL);
+    assert(mesh->avahi_server != NULL);
+    assert(mesh->avahi_poll != NULL);
 
+    /* Called whenever a new services becomes available on the LAN or is removed from the LAN */
     switch (event)
     {
         case AVAHI_BROWSER_FAILURE:
-            fprintf(stderr, "(Browser) %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
-            avahi_simple_poll_quit(mesh->avahi_poll);
-            return;
+            {
+                fprintf(stderr, "(Browser) %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+                avahi_simple_poll_quit(mesh->avahi_poll);
+                return;
+            }
 
         case AVAHI_BROWSER_NEW:
-            fprintf(stderr, "(Browser) NEW: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
-            /* We ignore the returned resolver object. In the callback
-               function we free it. If the server is terminated before
-               the callback function is called the server will free
-               the resolver for us. */
-            if (!(avahi_s_service_resolver_new(mesh->avahi_server, interface, protocol, name, type, domain, AVAHI_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh)))
-                fprintf(stderr, "Failed to resolve service '%s': %s\n", name, avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+            {
+                // asserts
+                assert(name != NULL);
+                assert(type != NULL);
+                assert(domain != NULL);
+
+                fprintf(stderr, "(Browser) NEW: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
+                /* We ignore the returned resolver object. In the callback
+                   function we free it. Ifthe server is terminated before
+                   the callback function is called the server will free
+                   the resolver for us. */
+                if(!(avahi_s_service_resolver_new(mesh->avahi_server, interface, protocol, name, type, domain, AVAHI_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh)))
+                {
+                    fprintf(stderr, "Failed to resolve service '%s': %s\n", name, avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+                }
+            }
             break;
 
         case AVAHI_BROWSER_REMOVE:
-            fprintf(stderr, "(Browser) REMOVE: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
+            {
+                // asserts
+                assert(name != NULL);
+                assert(type != NULL);
+                assert(domain != NULL);
+
+                fprintf(stderr, "(Browser) REMOVE: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
+            }
             break;
 
         case AVAHI_BROWSER_ALL_FOR_NOW:
         case AVAHI_BROWSER_CACHE_EXHAUSTED:
-            fprintf(stderr, "(Browser) %s\n", event == AVAHI_BROWSER_CACHE_EXHAUSTED ? "CACHE_EXHAUSTED" : "ALL_FOR_NOW");
+            {
+                fprintf(stderr, "(Browser) %s\n", event == AVAHI_BROWSER_CACHE_EXHAUSTED ? "CACHE_EXHAUSTED" : "ALL_FOR_NOW");
+            }
             break;
     }
 }
 
-static void *discovery_loop(void *arg)
+static void *discovery_loop(void *userdata)
 {
-	meshlink_handle_t *mesh = arg;
+	meshlink_handle_t *mesh = userdata;
+
+    // asserts
+    assert(mesh != NULL);
+    assert(mesh->avahi_poll != NULL);
 
     avahi_simple_poll_loop(mesh->avahi_poll);
-
-	return NULL;
+	
+    return NULL;
 }
 
 bool discovery_start(meshlink_handle_t *mesh)
 {
+    // asserts
+    assert(mesh != NULL);
+    assert(mesh->avahi_poll == NULL);
+    assert(mesh->avahi_server == NULL);
+    assert(mesh->avahi_browser == NULL);
+    assert(mesh->discovery_threadstarted == false);
+
     // Allocate discovery loop object
-    if (!(mesh->avahi_poll = avahi_simple_poll_new())) {
+    if(!(mesh->avahi_poll = avahi_simple_poll_new()))
+    {
         fprintf(stderr, "Failed to create discovery poll object.\n");
 		goto fail;
     }
 
+    // generate random host name
+    uuid_t hostname;
+    uuid_generate(hostname);
+
+    char hostnamestr[36+1];
+    uuid_unparse_lower(hostname, hostnamestr);
+
     // Let's set the host name for this server.
     AvahiServerConfig config;
     avahi_server_config_init(&config);
-    config.host_name = avahi_strdup(mesh->name);
+    config.host_name = avahi_strdup(hostnamestr);
     config.publish_workstation = 0;
+    config.disallow_other_stacks = 0;
+    config.publish_hinfo = 0;
 
     /* Allocate a new server */
     int error;
@@ -299,19 +398,22 @@ bool discovery_start(meshlink_handle_t *mesh)
     avahi_server_config_free(&config);
 
     /* Check wether creating the server object succeeded */
-    if (!mesh->avahi_server) {
+    if(!mesh->avahi_server)
+    {
         fprintf(stderr, "Failed to create discovery server: %s\n", avahi_strerror(error));
         goto fail;
     }
 
     // Create the service browser
-    if (!(mesh->avahi_browser = avahi_s_service_browser_new(mesh->avahi_server, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, MESHLINK_MDNS_SERVICE_TYPE, NULL, 0, discovery_browse_callback, mesh))) {
+    if(!(mesh->avahi_browser = avahi_s_service_browser_new(mesh->avahi_server, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, MESHLINK_MDNS_SERVICE_TYPE, NULL, 0, discovery_browse_callback, mesh)))
+    {
         fprintf(stderr, "Failed to create discovery service browser: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
         goto fail;
     }
 
 	// Start the discovery thread
-	if(pthread_create(&mesh->discovery_thread, NULL, discovery_loop, mesh) != 0) {
+	if(pthread_create(&mesh->discovery_thread, NULL, discovery_loop, mesh) != 0)
+    {
 		fprintf(stderr, "Could not start discovery thread: %s\n", strerror(errno));
 		memset(&mesh->discovery_thread, 0, sizeof mesh->discovery_thread);
 		goto fail;
@@ -322,34 +424,49 @@ bool discovery_start(meshlink_handle_t *mesh)
 	return true;
 
 fail:
-    if (mesh->avahi_browser)
+    if(mesh->avahi_browser)
+    {
         avahi_s_service_browser_free(mesh->avahi_browser);
+        mesh->avahi_browser = NULL;
+    }
 
-    if (mesh->avahi_server)
+    if(mesh->avahi_server)
+    {
         avahi_server_free(mesh->avahi_server);
+        mesh->avahi_server = NULL;
+    }
 
-    if (mesh->avahi_poll)
+    if(mesh->avahi_poll)
+    {
         avahi_simple_poll_free(mesh->avahi_poll);
+        mesh->avahi_poll = NULL;
+    }
 
     return false;
 }
 
 void discovery_stop(meshlink_handle_t *mesh)
 {
+    // asserts
+    assert(mesh != NULL);
+    assert(mesh->avahi_poll != NULL);
+    assert(mesh->avahi_server != NULL);
+    assert(mesh->avahi_browser != NULL);
+    assert(mesh->discovery_threadstarted == true);
+
 	// Shut down 
 	avahi_simple_poll_quit(mesh->avahi_poll);
 
 	// Wait for the discovery thread to finish
-
 	pthread_join(mesh->discovery_thread, NULL);
 
 	// Clean up resources
-    if (mesh->avahi_browser)
-        avahi_s_service_browser_free(mesh->avahi_browser);
+    avahi_s_service_browser_free(mesh->avahi_browser);
+    mesh->avahi_browser = NULL;
 
-    if (mesh->avahi_server)
-        avahi_server_free(mesh->avahi_server);
+    avahi_server_free(mesh->avahi_server);
+    mesh->avahi_server = NULL;
 
-    if (mesh->avahi_poll)
-        avahi_simple_poll_free(mesh->avahi_poll);
+    avahi_simple_poll_free(mesh->avahi_poll);
+    mesh->avahi_poll = NULL;
 }

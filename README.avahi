@@ -1,0 +1,5 @@
+
+cd avahi
+./bootstrap.sh
+./configure --disable-qt3 CFLAGS=-fPIC
+make

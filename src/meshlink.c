@@ -1660,11 +1660,10 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 /* Hint that a hostname may be found at an address
  * See header file for detailed comment.
  */
-extern void meshlink_hint_address(meshlink_handle_t *mesh, const char *hostname, struct sockaddr *addr) {
-	if(!mesh || !hostname || !addr)
+extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, struct sockaddr *addr) {
+	if(!mesh || !node || !addr)
 		return;
 	
-	node_t *n = NULL;
 	char *addr_str = malloc(MAX_ADDRESS_LENGTH*sizeof(char));
 	memset(addr_str, 0, MAX_ADDRESS_LENGTH*sizeof(char));
 
@@ -1677,29 +1676,26 @@ extern void meshlink_hint_address(meshlink_handle_t *mesh, const char *hostname,
 	char *full_addr_str = malloc(full_addr_len*sizeof(char));
 	memset(full_addr_str, 0, full_addr_len*sizeof(char));
 	
-	// check that hostname matches an existing node
-	n = lookup_node(mesh, hostname);
-	if(!n)
-		return;
-
 	// get address and port number
 	if(!get_ip_str(addr, addr_str, MAX_ADDRESS_LENGTH))
-		return;
+		goto fail;
 	if(!get_port_str(addr, port_str, MAX_ADDRESS_LENGTH))
-		return;
+		goto fail;
 
 	// append_config_file expects an address, a space, and then a port number
 	strcat(full_addr_str, addr_str);
 	strcat(full_addr_str, " ");
 	strcat(full_addr_str, port_str);
 	
-	append_config_file(mesh, n->name, "Address", full_addr_str);
+	append_config_file(mesh, node->name, "Address", full_addr_str);
 
+fail:
+done:
 	free(addr_str);
 	free(port_str);
 	free(full_addr_str);
 
-	// TODO do we want to fire off a connection attempt right away?
+	// @TODO do we want to fire off a connection attempt right away?
 }
 
 static void __attribute__((constructor)) meshlink_init(void) {

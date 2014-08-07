@@ -32,6 +32,9 @@ extern "C" {
 /// The length in bytes of a signature made with meshlink_sign()
 #define MESHLINK_SIGLEN  (64)
 
+// The maximum length of fingerprints
+#define MESHLINK_FINGERPRINTLEN  (64)
+
 /// A handle for an instance of MeshLink.
 typedef struct meshlink_handle meshlink_handle_t;
 
@@ -574,7 +577,7 @@ extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t
  *  			given hostname. The caller is free to overwrite or free
  *  			this memory once meshlink returns.
  */
-extern void meshlink_hint_address(meshlink_handle_t *mesh, const char *hostname, struct sockaddr *addr);
+extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, struct sockaddr *addr);
 
 #ifdef __cplusplus
 }

@@ -1,0 +1,4 @@
+[submodule "avahi"]
+	path = avahi
+	url = git@chicago.everbase.net:meshlink/avahi-noptr.git
+	branch = noptr
