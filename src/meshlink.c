@@ -772,7 +772,6 @@ meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *nam
 	meshlink_handle_t *mesh = xzalloc(size);
 	mesh->confbase = xstrdup(confbase);
 	if (usingname) mesh->name = xstrdup(name);
-	pthread_mutex_init ( &(mesh->outpacketqueue_mutex), NULL);
 	pthread_mutex_init ( &(mesh->nodes_mutex), NULL);
 	mesh->threadstarted = false;
 	event_loop_init(&mesh->loop);
@@ -957,19 +956,15 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 		return false;
 	}
 
-	/* If there is no outgoing list yet, create one. */
-
-	if(!mesh->outpacketqueue)
-		mesh->outpacketqueue = list_alloc(NULL);
-
 	//add packet to the queue
 	outpacketqueue_t *packet_in_queue = xzalloc(sizeof *packet_in_queue);
 	packet_in_queue->destination=destination;
 	packet_in_queue->data=data;
 	packet_in_queue->len=len;
-	pthread_mutex_lock(&(mesh->outpacketqueue_mutex));
-	list_insert_head(mesh->outpacketqueue,packet_in_queue);
-	pthread_mutex_unlock(&(mesh->outpacketqueue_mutex));
+	if(!meshlink_queue_push(&mesh->outpacketqueue, packet_in_queue)) {
+		free(packet_in_queue);
+		return false;
+	}
 
 	//notify event loop
 	signal_trigger(&(mesh->loop),&(mesh->datafromapp));
@@ -980,10 +975,9 @@ void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh) {
 	vpn_packet_t packet;
 	meshlink_packethdr_t *hdr = (meshlink_packethdr_t *)packet.data;
 
-	outpacketqueue_t* p = list_get_tail(mesh->outpacketqueue);
-	if (p)
-	list_delete_tail(mesh->outpacketqueue);
-	else return ;
+	outpacketqueue_t* p = meshlink_queue_pop(&mesh->outpacketqueue);
+	if(!p)
+		return;
 
 	if (sizeof(meshlink_packethdr_t) + p->len > MAXSIZE) {
 		//log something

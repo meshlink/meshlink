@@ -26,6 +26,7 @@
 #include "hash.h"
 #include "logger.h"
 #include "meshlink.h"
+#include "meshlink_queue.h"
 #include "sockaddr.h"
 #include "sptps.h"
 
@@ -85,7 +86,7 @@ struct meshlink_handle {
 	struct list_t *connections;
 	struct list_t *outgoings;
 
-	struct list_t *outpacketqueue;
+	meshlink_queue_t outpacketqueue;
 
 	struct splay_tree_t *past_request_tree;
 	timeout_t past_request_timeout;
