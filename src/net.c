@@ -31,6 +31,10 @@
 #include "protocol.h"
 #include "xalloc.h"
 
+static const int min(int a, int b) {
+	return a < b ? a : b;
+}
+
 /*
   Terminate a connection:
   - Mark it as inactive
@@ -210,6 +214,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 	mesh->contradicting_add_edge = 0;
 	mesh->contradicting_del_edge = 0;
 
+	int timeout = 5;
+
 	/* If AutoConnect is set, check if we need to make or break connections. */
 
 	if(autoconnect && mesh->nodes->count > 1) {
@@ -298,9 +304,12 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				}
 			}
 		}
+
+		if (nc + mesh->outgoings->count < min(autoconnect, mesh->nodes->count - 1))
+			timeout = 0;
 	}
 
-	timeout_set(&mesh->loop, data, &(struct timeval){5, rand() % 100000});
+	timeout_set(&mesh->loop, data, &(struct timeval){timeout, rand() % 100000});
 }
 
 void handle_meta_connection_data(meshlink_handle_t *mesh, connection_t *c) {
@@ -333,7 +342,7 @@ void retry(meshlink_handle_t *mesh) {
 */
 int main_loop(meshlink_handle_t *mesh) {
 	timeout_add(&mesh->loop, &mesh->pingtimer, timeout_handler, &mesh->pingtimer, &(struct timeval){mesh->pingtimeout, rand() % 100000});
-	timeout_add(&mesh->loop, &mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval){mesh->pingtimeout, rand() % 100000});
+	timeout_add(&mesh->loop, &mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval){0, 0});
 
 	//Add signal handler
 	mesh->datafromapp.signum = 0;
