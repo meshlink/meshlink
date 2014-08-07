@@ -882,6 +882,7 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	// Wait for the main thread to finish
 
 	pthread_join(mesh->thread, NULL);
+	mesh->threadstarted = false;
 }
 
 void meshlink_close(meshlink_handle_t *mesh) {
