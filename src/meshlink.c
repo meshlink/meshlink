@@ -832,7 +832,9 @@ static void *meshlink_main_loop(void *arg) {
 
 	try_outgoing_connections(mesh);
 
+	fprintf(stderr, "Starting main_loop...\n");
 	main_loop(mesh);
+	fprintf(stderr, "main_loop returned.\n");
 
 	return NULL;
 }
@@ -872,17 +874,26 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 		return;
 	}
 
-	// Shut down the listening sockets to signal the main thread to shut down
+	listen_socket_t *s = &mesh->listen_socket[0];
 
-	for(int i = 0; i < mesh->listen_sockets; i++) {
-		shutdown(mesh->listen_socket[i].tcp.fd, SHUT_RDWR);
-		shutdown(mesh->listen_socket[i].udp.fd, SHUT_RDWR);
-	}
+	// Shut down a listening socket to signal the main thread to shut down
+
+	shutdown(s->tcp.fd, SHUT_RDWR);
 
 	// Wait for the main thread to finish
 
 	pthread_join(mesh->thread, NULL);
 	mesh->threadstarted = false;
+
+	// Fix the socket
+	
+	closesocket(s->tcp.fd);
+	io_del(&mesh->loop, &s->tcp);
+	s->tcp.fd = setup_listen_socket(&s->sa);
+	if(s->tcp.fd < 0)
+		logger(DEBUG_ALWAYS, LOG_ERR, "Could not repair listenen socket!");
+	else
+		io_add(&mesh->loop, &s->tcp, handle_new_meta_connection, s, s->tcp.fd, IO_READ);
 }
 
 void meshlink_close(meshlink_handle_t *mesh) {
