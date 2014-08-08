@@ -305,7 +305,7 @@ static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 	if(c->outbuf.len <= c->outbuf.offset)
 		return;
 
-	ssize_t outlen = send(c->socket, c->outbuf.data + c->outbuf.offset, c->outbuf.len - c->outbuf.offset, 0);
+	ssize_t outlen = send(c->socket, c->outbuf.data + c->outbuf.offset, c->outbuf.len - c->outbuf.offset, MSG_NOSIGNAL);
 	if(outlen <= 0) {
 		if(!errno || errno == EPIPE) {
 			logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Connection closed by %s (%s)", c->name, c->hostname);
