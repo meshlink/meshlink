@@ -81,6 +81,8 @@ void io_del(event_loop_t *loop, io_t *io) {
 	if(!io->cb)
 		return;
 
+	loop->deletion = true;
+
 	io_set(loop, io, 0);
 
 	splay_unlink_node(&loop->ios, &io->node);
@@ -114,6 +116,8 @@ void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv) {
 void timeout_del(event_loop_t *loop, timeout_t *timeout) {
 	if(!timeout->cb)
 		return;
+
+	loop->deletion = true;
 
 	splay_unlink_node(&loop->timeouts, &timeout->node);
 	timeout->cb = 0;
@@ -167,6 +171,8 @@ void signal_del(event_loop_t *loop, signal_t *sig) {
 	if(!sig->cb)
 		return;
 
+	loop->deletion = true;
+
 	splay_unlink_node(&loop->signals, &sig->node);
 	sig->cb = NULL;
 }
@@ -217,11 +223,21 @@ bool event_loop_run(event_loop_t *loop) {
 		if(!n)
 			continue;
 
+		// Normally, splay_each allows the current node to be deleted. However,
+		// it can be that one io callback triggers the deletion of another io,
+		// so we have to detect this and break the loop.
+
+		loop->deletion = false;
+
 		for splay_each(io_t, io, &loop->ios) {
-			if(FD_ISSET(io->fd, &writable))
+			if(FD_ISSET(io->fd, &writable) && io->cb)
 				io->cb(loop, io->data, IO_WRITE);
-			else if(FD_ISSET(io->fd, &readable))
+			if(loop->deletion)
+				break;
+			if(FD_ISSET(io->fd, &readable) && io->cb)
 				io->cb(loop, io->data, IO_READ);
+			if(loop->deletion)
+				break;
 		}
 	}
 

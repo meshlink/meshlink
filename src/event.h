@@ -60,6 +60,7 @@ struct event_loop_t {
 
 	volatile bool running;
 	struct timeval now;
+	bool deletion;
 	
 	splay_tree_t ios;
 	splay_tree_t timeouts;
