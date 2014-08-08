@@ -47,6 +47,9 @@ typedef struct {
 #define MSG_NOSIGNAL 0
 #endif
 
+static pthread_mutex_t global_mutex;
+static bool discovery_started;
+
 __thread meshlink_errno_t meshlink_errno;
 
 //TODO: this can go away completely
@@ -869,8 +872,16 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 	mesh->threadstarted=true;
 
 	// Start discovery
-	if(!discovery_start(mesh))
-		return false;
+	// Since only one Avahi instance can run in one program at the moment, make sure we only start one, ignore it otherwise.
+
+	bool discovery_on = false;
+	pthread_mutex_lock(&global_mutex);
+	if(!discovery_started)
+		discovery_on = discovery_started = true;
+	pthread_mutex_unlock(&global_mutex);
+
+	if(discovery_on)
+		discovery_start(mesh);
 
 	return true;
 }
@@ -883,7 +894,14 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	}
 
 	// Stop discovery
+
+	bool discovery_on = mesh->discovery_threadstarted;
 	discovery_stop(mesh);
+	if(discovery_on) {
+		pthread_mutex_lock(&global_mutex);
+		discovery_started = false;
+		pthread_mutex_unlock(&global_mutex);
+	}
 
 	// Shut down a listening socket to signal the main thread to shut down
 
@@ -1702,7 +1720,6 @@ extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node
 	append_config_file(mesh, node->name, "Address", full_addr_str);
 
 fail:
-done:
 	free(addr_str);
 	free(port_str);
 	free(full_addr_str);
