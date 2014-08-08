@@ -846,6 +846,9 @@ static void *meshlink_main_loop(void *arg) {
 }
 
 bool meshlink_start(meshlink_handle_t *mesh) {
+
+	fprintf(stderr, "meshlink_start called\n");
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -887,6 +890,8 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 }
 
 void meshlink_stop(meshlink_handle_t *mesh) {
+
+	fprintf(stderr, "meshlink_stop called\n");
 	
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;

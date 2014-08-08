@@ -258,53 +258,63 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
 
                 if(node_name_li != NULL && node_fp_li != NULL)
                 {
-                    char *node_name = avahi_string_list_get_text(node_name_li) + strlen(MESHLINK_MDNS_NAME_KEY) + 1;
-                    char *node_fp = avahi_string_list_get_text(node_fp_li) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY) + 1;
+                    char *node_name = (char*)avahi_string_list_get_text(node_name_li) + strlen(MESHLINK_MDNS_NAME_KEY);
+                    char *node_fp = (char*)avahi_string_list_get_text(node_fp_li) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY);
 
-                    meshlink_node_t *node = meshlink_get_node(mesh, node_name);
-
-                    if(node != NULL)
+                    if(node_name[0] == '=' && node_fp[0] == '=')
                     {
-                        fprintf(stderr, "Node %s is part of the mesh network.\n", node->name);
+                        node_name += 1;
+                        node_fp += 1;
 
-                        sockaddr_t naddress;
-                        memset(&naddress, 0, sizeof(naddress));
+                        meshlink_node_t *node = meshlink_get_node(mesh, node_name);
 
-                        switch(address->proto)
+                        if(node != NULL)
                         {
-                            case AVAHI_PROTO_INET:
-                                {
-                                    naddress.in.sin_family = AF_INET;
-                                    naddress.in.sin_port = port;
-                                    naddress.in.sin_addr.s_addr = address->data.ipv4.address;
-                                }
-                                break;
+                            fprintf(stderr, "Node %s is part of the mesh network.\n", node->name);
 
-                            case AVAHI_PROTO_INET6:
-                                {
-                                    naddress.in6.sin6_family = AF_INET6;
-                                    naddress.in6.sin6_port = port;
-                                    memcpy(naddress.in6.sin6_addr.s6_addr, address->data.ipv6.address, sizeof(naddress.in6.sin6_addr.s6_addr));
-                                }
-                                break;
+                            sockaddr_t naddress;
+                            memset(&naddress, 0, sizeof(naddress));
 
-                            default:
-                                naddress.unknown.family = AF_UNKNOWN;
-                                break;
-                        }
+                            switch(address->proto)
+                            {
+                                case AVAHI_PROTO_INET:
+                                    {
+                                        naddress.in.sin_family = AF_INET;
+                                        naddress.in.sin_port = port;
+                                        naddress.in.sin_addr.s_addr = address->data.ipv4.address;
+                                    }
+                                    break;
 
-                        if(naddress.unknown.family != AF_UNKNOWN)
-                        {
-                            meshlink_hint_address(mesh, (meshlink_node_t *)node, (struct sockaddr*)&naddress);
+                                case AVAHI_PROTO_INET6:
+                                    {
+                                        naddress.in6.sin6_family = AF_INET6;
+                                        naddress.in6.sin6_port = port;
+                                        memcpy(naddress.in6.sin6_addr.s6_addr, address->data.ipv6.address, sizeof(naddress.in6.sin6_addr.s6_addr));
+                                    }
+                                    break;
+
+                                default:
+                                    naddress.unknown.family = AF_UNKNOWN;
+                                    break;
+                            }
+
+                            if(naddress.unknown.family != AF_UNKNOWN)
+                            {
+                                meshlink_hint_address(mesh, (meshlink_node_t *)node, (struct sockaddr*)&naddress);
+                            }
+                            else
+                            {
+                                fprintf(stderr, "Could not resolve node %s to a known address family type.\n", node->name);
+                            }
                         }
                         else
                         {
-                            fprintf(stderr, "Could not resolve node %s to a known address family type.\n", node->name);
+                            fprintf(stderr, "Node %s is not part of the mesh network.\n", node_name);
                         }
                     }
                     else
                     {
-                        fprintf(stderr, "Node %s is not part of the mesh network.\n", node_name);
+                        fprintf(stderr, "TXT records invalid.\n");
                     }
                 }
                 else
@@ -391,6 +401,8 @@ static void *discovery_loop(void *userdata)
 
 bool discovery_start(meshlink_handle_t *mesh)
 {
+    fprintf(stderr, "discovery_start called\n");
+
     // asserts
     assert(mesh != NULL);
     assert(mesh->avahi_poll == NULL);
@@ -498,6 +510,8 @@ fail:
 
 void discovery_stop(meshlink_handle_t *mesh)
 {
+    fprintf(stderr, "discovery_stop called\n");
+
     // asserts
     assert(mesh != NULL);
 
