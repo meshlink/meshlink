@@ -105,10 +105,8 @@ void node_del(meshlink_handle_t *mesh, node_t *n) {
 }
 
 node_t *lookup_node(meshlink_handle_t *mesh, const char *name) {
-	node_t n = {NULL};
-	node_t* result;
-
-	n.name = name;
+	const node_t n = {.name = (char *)name};
+	node_t *result;
 
 	pthread_mutex_lock(&(mesh->nodes_mutex));
 	result = splay_search(mesh->nodes, &n);
