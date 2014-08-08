@@ -6,7 +6,7 @@
 int main(int argc, char *argv[]) {
 	// Open a new meshlink instance.
 
-	meshlink_handle_t *mesh = meshlink_open("basic_conf", "foo");
+	meshlink_handle_t *mesh = meshlink_open("basic_conf", "foo", "basic");
 	if(!mesh) {
 		fprintf(stderr, "Could not initialize configuration for foo\n");
 		return 1;
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
 	// Check that the name is ignored now, and that we still are "foo".
 
-	mesh = meshlink_open("basic_conf", "bar");
+	mesh = meshlink_open("basic_conf", "bar", "basic");
 	if(!mesh) {
 		fprintf(stderr, "Could not open configuration for foo a second time\n");
 		return 1;

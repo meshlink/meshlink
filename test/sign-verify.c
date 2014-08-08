@@ -8,13 +8,13 @@
 int main(int argc, char *argv[]) {
 	// Open two new meshlink instance.
 
-	meshlink_handle_t *mesh1 = meshlink_open("sign_verify_conf.1", "foo");
+	meshlink_handle_t *mesh1 = meshlink_open("sign_verify_conf.1", "foo", "sign-verify");
 	if(!mesh1) {
 		fprintf(stderr, "Could not initialize configuration for foo\n");
 		return 1;
 	}
 
-	meshlink_handle_t *mesh2 = meshlink_open("sign_verify_conf.2", "bar");
+	meshlink_handle_t *mesh2 = meshlink_open("sign_verify_conf.2", "bar", "sign-verify");
 	if(!mesh2) {
 		fprintf(stderr, "Could not initialize configuration for bar\n");
 		return 1;
