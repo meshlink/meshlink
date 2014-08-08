@@ -104,7 +104,7 @@ libmeshlink_la_SOURCES = \
 
 libmeshlink_la_CFLAGS = -fPIC -I../avahi/
 
-libmeshlink_la_LIBADD = -lpthread -luuid ../avahi/avahi-core/.libs/libavahi-core.a ../avahi/avahi-common/.libs/libavahi-common.a ../avahi/avahi-client/.libs/libavahi-client.a
+libmeshlink_la_LIBADD = -lpthread -luuid ../avahi/avahi-core/.libs/libavahi-core.a ../avahi/avahi-common/.libs/libavahi-common.a
 
 libmeshlink_la_SOURCES += \
 	ed25519/ecdh.c \
