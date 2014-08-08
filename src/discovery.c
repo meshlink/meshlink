@@ -389,6 +389,8 @@ bool discovery_start(meshlink_handle_t *mesh)
     config.publish_workstation = 0;
     config.disallow_other_stacks = 0;
     config.publish_hinfo = 0;
+    config.publish_addresses = 1;
+    config.publish_no_reverse = 1;
 
     /* Allocate a new server */
     int error;
