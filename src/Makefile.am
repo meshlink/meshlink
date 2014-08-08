@@ -65,6 +65,7 @@ libmeshlink_la_SOURCES = \
 	conf.c conf.h \
 	connection.c connection.h \
 	crypto.c crypto.h \
+	discovery.c discovery.h \
 	dropin.c dropin.h \
 	ecdh.h \
 	ecdsa.h \
@@ -101,9 +102,9 @@ libmeshlink_la_SOURCES = \
 	$(ed25519_SOURCES) \
 	$(chacha_poly1305_SOURCES)
 
-libmeshlink_la_CFLAGS = -fPIC
+libmeshlink_la_CFLAGS = -fPIC -I../avahi/
 
-libmeshlink_la_LIBADD = -lpthread
+libmeshlink_la_LIBADD = -lpthread -luuid ../avahi/avahi-core/.libs/libavahi-core.a ../avahi/avahi-common/.libs/libavahi-common.a ../avahi/avahi-client/.libs/libavahi-client.a
 
 libmeshlink_la_SOURCES += \
 	ed25519/ecdh.c \

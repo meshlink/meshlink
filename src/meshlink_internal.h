@@ -34,6 +34,11 @@
 
 #define MAXSOCKETS 8    /* Probably overkill... */
 
+struct AvahiServer;
+struct AvahiSServiceBrowser;
+struct AvahiSimplePoll;
+struct AvahiSEntryGroup;
+
 typedef struct listen_socket_t {
 	struct io_t tcp;
 	struct io_t udp;
@@ -62,6 +67,8 @@ struct meshlink_handle {
 	void *priv;
 
 	char *confbase;
+
+	char *appname;
 
 	meshlink_receive_cb_t receive_cb;
 	meshlink_node_status_cb_t node_status_cb;
@@ -127,6 +134,14 @@ struct meshlink_handle {
 	char line[4096];
 	char buffer[4096];
 	size_t blen;
+
+	pthread_t discovery_thread;
+	bool discovery_threadstarted;
+	struct AvahiServer *avahi_server;
+	struct AvahiSServiceBrowser *avahi_browser;
+	struct AvahiSimplePoll *avahi_poll;
+	struct AvahiSEntryGroup *avahi_group;
+	char* avahi_servicetype;
 };
 
 /// A handle for a MeshLink node.

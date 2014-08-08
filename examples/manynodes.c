@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
 		snprintf(nodename, sizeof nodename, "node%d", i);
 		snprintf(filename, sizeof filename, "%s/%s", basebase, nodename);
 		bool itsnew = access(filename, R_OK);
-		mesh[i] = meshlink_open(filename, nodename);
+		mesh[i] = meshlink_open(filename, nodename, "manynodes");
 		if(itsnew)
 			meshlink_add_address(mesh[i], "localhost");
 		if(!mesh[i]) {

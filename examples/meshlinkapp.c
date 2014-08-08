@@ -14,7 +14,7 @@ int main(int argc , char **argv){
 
 	meshlink_handle_t* myhandle;
 
-	myhandle = meshlink_open(confbase, name);
+	myhandle = meshlink_open(confbase, name, "meshlinkapp");
 
 	//Register callback function for incoming data
 	meshlink_set_receive_cb(myhandle, (meshlink_receive_cb_t)handle_recv_data);

@@ -25,12 +25,22 @@
 #include <stddef.h>
 #include <unistd.h>
 
+#if defined(_WIN32)
+#include <Winsock2.h>
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /// The length in bytes of a signature made with meshlink_sign()
 #define MESHLINK_SIGLEN  (64)
+
+// The maximum length of fingerprints
+#define MESHLINK_FINGERPRINTLEN  (64)
 
 /// A handle for an instance of MeshLink.
 typedef struct meshlink_handle meshlink_handle_t;
@@ -111,14 +121,16 @@ extern const char *meshlink_strerror(meshlink_errno_t err);
  *                  After the function returns, the application is free to overwrite or free @a confbase @a.
  *  @param name     The name which this instance of the application will use in the mesh.
  *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *  @param appname  The application name which will be used in the mesh.
+ *                  After the function returns, the application is free to overwrite or free @a name @a.
  *
  *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink, or NULL in case of an error.
  *                  The pointer is valid until meshlink_close() is called.
  */
-extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name);
+extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname);
 
 /// is used by the C++ wrapper to allocate more memory behind the handle
-extern meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, size_t size);
+extern meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, const char* appname, size_t size);
 
 /// Start MeshLink.
 /** This function causes MeshLink to open network sockets, make outgoing connections, and
@@ -564,6 +576,20 @@ extern void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *
  *  @return             The amount of data that was queued, which can be less than len, or a negative value in case of an error.
  */
 extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len);
+
+/// Hint that a hostname may be found at an address
+/** This function indicates to meshlink that the given hostname is likely found
+ *  at the given IP address and port.
+ *
+ *  @param mesh		A handle which represents an instance of MeshLink.
+ *  @param hostname	The hostname which can be found at the given address.
+ *  			The caller is free to overwrite or free this string
+ *  			once meshlink returns.
+ *  @param addr		The IP address and port which should be tried for the
+ *  			given hostname. The caller is free to overwrite or free
+ *  			this memory once meshlink returns.
+ */
+extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, struct sockaddr *addr);
 
 #ifdef __cplusplus
 }

@@ -21,6 +21,8 @@
 #define VAR_MULTIPLE 4  /* Multiple statements allowed */
 #define VAR_OBSOLETE 8  /* Should not be used anymore */
 #define VAR_SAFE 16     /* Variable is safe when accepting invitations */
+#define MAX_ADDRESS_LENGTH 45 /* Max length of an (IPv6) address */
+#define MAX_PORT_LENGTH 5 /* 0-65535 */
 typedef struct {
 	const char *name;
 	int type;
@@ -39,6 +41,7 @@ typedef struct {
 #include "utils.h"
 #include "xalloc.h"
 #include "ed25519/sha512.h"
+#include "discovery.h"
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
@@ -734,18 +737,23 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	return true;
 }
 
-
-meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
-	return meshlink_open_with_size(confbase, name, sizeof(meshlink_handle_t) );
+meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname) {
+	return meshlink_open_with_size(confbase, name, appname, sizeof(meshlink_handle_t));
 }
 
+meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, const char* appname, size_t size) {
 
-meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, size_t size) {
 	// Validate arguments provided by the application
 	bool usingname = false;
 
 	if(!confbase || !*confbase) {
 		fprintf(stderr, "No confbase given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(!appname || !*appname) {
+		fprintf(stderr, "No appname given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
 	}
@@ -765,6 +773,7 @@ meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *nam
 
 	meshlink_handle_t *mesh = xzalloc(size);
 	mesh->confbase = xstrdup(confbase);
+	mesh->appname = xstrdup(appname);
 	if (usingname) mesh->name = xstrdup(name);
 	pthread_mutex_init ( &(mesh->nodes_mutex), NULL);
 	mesh->threadstarted = false;
@@ -859,19 +868,26 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 
 	mesh->threadstarted=true;
 
+	// Start discovery
+	if(!discovery_start(mesh))
+		return false;
+
 	return true;
 }
 
 void meshlink_stop(meshlink_handle_t *mesh) {
+	
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
 	}
 
-	listen_socket_t *s = &mesh->listen_socket[0];
+	// Stop discovery
+	discovery_stop(mesh);
 
 	// Shut down a listening socket to signal the main thread to shut down
 
+	listen_socket_t *s = &mesh->listen_socket[0];
 	shutdown(s->tcp.fd, SHUT_RDWR);
 
 	// Wait for the main thread to finish
@@ -1651,6 +1667,47 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	//TODO: remove blacklisted = yes from the config file
 
 	return;
+}
+
+/* Hint that a hostname may be found at an address
+ * See header file for detailed comment.
+ */
+extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, struct sockaddr *addr) {
+	if(!mesh || !node || !addr)
+		return;
+	
+	char *addr_str = malloc(MAX_ADDRESS_LENGTH*sizeof(char));
+	memset(addr_str, 0, MAX_ADDRESS_LENGTH*sizeof(char));
+
+	char *port_str = malloc(MAX_PORT_LENGTH*sizeof(char));
+	memset(port_str, 0, MAX_PORT_LENGTH*sizeof(char));
+	
+	// extra byte for a space, and one to make sure string is null-terminated
+	int full_addr_len = MAX_ADDRESS_LENGTH + MAX_PORT_LENGTH + 2;
+
+	char *full_addr_str = malloc(full_addr_len*sizeof(char));
+	memset(full_addr_str, 0, full_addr_len*sizeof(char));
+	
+	// get address and port number
+	if(!get_ip_str(addr, addr_str, MAX_ADDRESS_LENGTH))
+		goto fail;
+	if(!get_port_str(addr, port_str, MAX_ADDRESS_LENGTH))
+		goto fail;
+
+	// append_config_file expects an address, a space, and then a port number
+	strcat(full_addr_str, addr_str);
+	strcat(full_addr_str, " ");
+	strcat(full_addr_str, port_str);
+	
+	append_config_file(mesh, node->name, "Address", full_addr_str);
+
+fail:
+done:
+	free(addr_str);
+	free(port_str);
+	free(full_addr_str);
+
+	// @TODO do we want to fire off a connection attempt right away?
 }
 
 static void __attribute__((constructor)) meshlink_init(void) {
