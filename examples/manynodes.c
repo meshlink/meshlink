@@ -56,11 +56,13 @@ static void parse_command(char *buf) {
 			fprintf(stderr, "/join requires an argument!\n");
 			return;
 		}
-
+		meshlink_stop(mesh[0]);
 		if(!meshlink_join(mesh[0], arg))
 			fprintf(stderr, "Could not join using invitation: %s\n", meshlink_strerror(meshlink_errno));
-		else
+		else {
 			fprintf(stderr, "Invitation accepted!\n");
+			meshlink_start(mesh[0]);
+		}
 	} else if(!strcasecmp(buf, "kick")) {
 		if(!arg) {
 			fprintf(stderr, "/kick requires an argument!\n");
@@ -176,18 +178,22 @@ static void parse_input(char *buf) {
 
 int main(int argc, char *argv[]) {
 	const char *basebase = ".manynodes";
+	const char *namesprefix = "machine1";
 	char buf[1024];
 
 	if(argc > 1)
 		n = atoi(argv[1]);
 
 	if(n < 1) {
-		fprintf(stderr, "Usage: %s [number of local nodes] [confbase]\n", argv[0]);
+		fprintf(stderr, "Usage: %s [number of local nodes] [confbase] [prefixnodenames]\n", argv[0]);
 		return 1;
 	}
 
 	if(argc > 2)
 		basebase = argv[2];
+
+	if(argc > 3)
+		namesprefix = argv[3];
 
 	mesh = calloc(n, sizeof *mesh);
 
@@ -196,7 +202,7 @@ int main(int argc, char *argv[]) {
 	char filename[PATH_MAX];
 	char nodename[100];
 	for(int i = 0; i < n; i++) {
-		snprintf(nodename, sizeof nodename, "node%d", i);
+		snprintf(nodename, sizeof nodename, "%snode%d", namesprefix,i);
 		snprintf(filename, sizeof filename, "%s/%s", basebase, nodename);
 		bool itsnew = access(filename, R_OK);
 		mesh[i] = meshlink_open(filename, nodename, "manynodes");
