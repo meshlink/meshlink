@@ -8,7 +8,7 @@
 
 #include "../src/meshlink.h"
 
-static int n = 100;
+static int n = 10;
 static meshlink_handle_t **mesh;
 
 static meshlink_node_t **nodes;
