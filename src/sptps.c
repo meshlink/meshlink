@@ -374,9 +374,14 @@ bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len) {
 	if(!s->instate || len < 21)
 		return error(s, EIO, "Received short packet");
 
-	// TODO: just decrypt without updating the replay window
+	uint32_t seqno;
+	memcpy(&seqno, data, 4);
+	seqno = ntohl(seqno);
+	// TODO: check whether seqno makes sense, to avoid CPU intensive decrypt
 
-	return true;
+	char buffer[len];
+	size_t outlen;
+	return chacha_poly1305_decrypt(s->incipher, seqno, data + 4, len - 4, buffer, &outlen);
 }
 
 // Receive incoming data, datagram version.
