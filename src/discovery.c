@@ -67,6 +67,7 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     assert(mesh->avahi_server != NULL);
     assert(mesh->avahi_poll != NULL);
     assert(mesh->avahi_servicetype != NULL);
+    assert(mesh->self != NULL);
 
     fprintf(stderr, "Adding service\n");
 
@@ -95,16 +96,9 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     char txt_fingerprint[sizeof(MESHLINK_MDNS_FINGERPRINT_KEY) + 1 + MESHLINK_FINGERPRINTLEN + 1];
     snprintf(txt_fingerprint, sizeof(txt_fingerprint), "%s=%s", MESHLINK_MDNS_FINGERPRINT_KEY, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self));
 
-    // Generate a name for the service (actually we do not care)
-    uuid_t srvname;
-    uuid_generate(srvname);
-
-    char srvnamestr[36+1];
-    uuid_unparse_lower(srvname, srvnamestr);
-
     /* Add the service */
     int ret = 0;
-    if((ret = avahi_server_add_service(mesh->avahi_server, mesh->avahi_group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, srvnamestr, mesh->avahi_servicetype, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0)
+    if((ret = avahi_server_add_service(mesh->avahi_server, mesh->avahi_group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self), mesh->avahi_servicetype, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0)
     {
         fprintf(stderr, "Failed to add service: %s\n", avahi_strerror(ret));
         goto fail;
