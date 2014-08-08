@@ -160,6 +160,7 @@ static void cond_add_connection(meshlink_handle_t *mesh, int rand_modulo, bool (
 			//the user will read this debug message "Autoconnecting to %s" that is misleading
 			logger(DEBUG_CONNECTIONS, LOG_INFO, "Autoconnecting to %s", n->name);
 			outgoing_t *outgoing = xzalloc(sizeof *outgoing);
+			outgoing->mesh = mesh;
 			outgoing->name = xstrdup(n->name);
 			list_insert_tail(mesh->outgoings, outgoing);
 			setup_outgoing_connection(mesh, outgoing);
