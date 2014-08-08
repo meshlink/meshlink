@@ -14,6 +14,27 @@ static meshlink_handle_t **mesh;
 static meshlink_node_t **nodes;
 static size_t nnodes;
 
+//Test mesh sending data
+static void testmesh () {
+
+	for(int nindex = 0; nindex < n; nindex++) {
+
+			nodes = meshlink_get_all_nodes(mesh[nindex], nodes, &nnodes);
+			if(!nodes) {
+				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink_strerror(meshlink_errno));
+			} else {
+				printf("%zu known nodes:", nnodes);
+				for(int i = 0; i < nnodes; i++) {
+					printf(" %s", nodes[i]->name);
+					if(!meshlink_send(mesh[nindex], nodes[i], "magic", strlen("magic") + 1)) {
+		fprintf(stderr, "Could not send message to '%s': %s\n", nodes[i]->name, meshlink_strerror(meshlink_errno));
+	}
+	}
+
+			}
+
+	}
+}
 // Make all nodes know about each other by importing each others public keys and addresses.
 static void linkmesh() {
 	for(int i = 0; i < n; i++) {
@@ -99,6 +120,8 @@ static void parse_command(char *buf) {
 		}
 	} else if(!strcasecmp(buf, "link")) {
 		linkmesh();
+	} else if(!strcasecmp(buf, "test")) {
+		testmesh();
 	} else if(!strcasecmp(buf, "quit")) {
 		printf("Bye!\n");
 		fclose(stdin);
@@ -111,6 +134,7 @@ static void parse_command(char *buf) {
 			"/kick <name>          Blacklist the given node.\n"
 			"/who [<name>]         List all nodes or show information about the given node.\n"
 			"/link                 Link all nodes together.\n"
+			"/test                 Test functionality sending some data to all nodes\n"
 			"/quit                 Exit this program.\n"
 			);
 	} else {
