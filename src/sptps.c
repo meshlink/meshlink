@@ -371,8 +371,11 @@ static bool receive_handshake(sptps_t *s, const char *data, uint16_t len) {
 
 // Check datagram for valid HMAC
 bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len) {
-	if(!s->instate || len < 21)
-		return error(s, EIO, "Received short packet");
+	if(len < 21)
+		return error(s, EIO, "Received short packet in sptps_verify_datagram");
+
+	if (!s->instate)
+		return error(s, EIO, "SPTPS state not ready to verify this datagram");
 
 	uint32_t seqno;
 	memcpy(&seqno, data, 4);
@@ -388,8 +391,11 @@ bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len) {
 static bool sptps_receive_data_datagram(sptps_t *s, const void *vdata, size_t len) {
 	const char *data = vdata;
 
-	if(len < (s->instate ? 21 : 5))
-		return error(s, EIO, "Received short packet");
+	if(len < 21)
+		return error(s, EIO, "Received short packet in sptps_receive_data_datagram");
+
+	if (!s->instate)
+		return error(s, EIO, "SPTPS state not ready to verify this datagram");
 
 	uint32_t seqno;
 	memcpy(&seqno, data, 4);
