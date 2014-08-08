@@ -70,6 +70,17 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	int pmtu = meshlink_get_pmtu(mesh1, meshlink_get_node(mesh1, "baz"));
+	for(int i = 0; i < 10 && !pmtu; i++) {
+		sleep(1);
+		pmtu = meshlink_get_pmtu(mesh1, meshlink_get_node(mesh1, "baz"));
+	}
+
+	if(!pmtu) {
+		fprintf(stderr, "UDP communication with baz not possible after 10 seconds\n");
+		return 1;
+	}
+
 	// Clean up.
 
 	meshlink_stop(mesh2);
