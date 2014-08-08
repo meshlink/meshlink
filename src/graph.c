@@ -67,7 +67,7 @@ static void mst_kruskal(meshlink_handle_t *mesh) {
 	for list_each(connection_t, c, mesh->connections)
 		c->status.mst = false;
 
-	logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Running Kruskal's algorithm:");
+	logger(mesh, MESHLINK_DEBUG, "Running Kruskal's algorithm:");
 
 	/* Clear visited status on nodes */
 
@@ -102,7 +102,7 @@ static void mst_kruskal(meshlink_handle_t *mesh) {
 		if(e->reverse->connection)
 			e->reverse->connection->status.mst = true;
 
-		logger(DEBUG_SCARY_THINGS, LOG_DEBUG, " Adding edge %s - %s weight %d", e->from->name, e->to->name, e->weight);
+		logger(mesh, MESHLINK_DEBUG, " Adding edge %s - %s weight %d", e->from->name, e->to->name, e->weight);
 
 		if(skipped) {
 			skipped = false;
@@ -139,7 +139,7 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 	/* Loop while todo_list is filled */
 
 	for list_each(node_t, n, todo_list) {                   /* "n" is the node from which we start */
-		logger(DEBUG_SCARY_THINGS, LOG_DEBUG, " Examining edges from %s", n->name);
+		logger(mesh, MESHLINK_DEBUG, " Examining edges from %s", n->name);
 
 		if(n->distance < 0)
 			abort();
@@ -202,10 +202,10 @@ static void check_reachability(meshlink_handle_t *mesh) {
 			n->last_state_change = mesh->loop.now.tv_sec;
 
 			if(n->status.reachable) {
-				logger(DEBUG_TRAFFIC, LOG_DEBUG, "Node %s (%s) became reachable",
+				logger(mesh, MESHLINK_DEBUG, "Node %s (%s) became reachable",
 					   n->name, n->hostname);
 			} else {
-				logger(DEBUG_TRAFFIC, LOG_DEBUG, "Node %s (%s) became unreachable",
+				logger(mesh, MESHLINK_DEBUG, "Node %s (%s) became unreachable",
 					   n->name, n->hostname);
 			}
 

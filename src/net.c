@@ -43,7 +43,7 @@ static const int min(int a, int b) {
   - Check if we need to retry making an outgoing connection
 */
 void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report) {
-	logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Closing connection with %s (%s)", c->name, c->hostname);
+	logger(mesh, MESHLINK_INFO, "Closing connection with %s (%s)", c->name, c->hostname);
 
 	c->status.active = false;
 
@@ -103,7 +103,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 		if(c->last_ping_time + mesh->pingtimeout <= mesh->loop.now.tv_sec) {
 			if(c->status.active) {
 				if(c->status.pinged) {
-					logger(DEBUG_CONNECTIONS, LOG_INFO, "%s (%s) didn't respond to PING in %ld seconds", c->name, c->hostname, (long)mesh->loop.now.tv_sec - c->last_ping_time);
+					logger(mesh, MESHLINK_INFO, "%s (%s) didn't respond to PING in %ld seconds", c->name, c->hostname, (long)mesh->loop.now.tv_sec - c->last_ping_time);
 				} else if(c->last_ping_time + mesh->pinginterval <= mesh->loop.now.tv_sec) {
 					send_ping(mesh, c);
 					continue;
@@ -112,9 +112,9 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 				}
 			} else {
 				if(c->status.connecting)
-					logger(DEBUG_CONNECTIONS, LOG_WARNING, "Timeout while connecting to %s (%s)", c->name, c->hostname);
+					logger(mesh, MESHLINK_WARNING, "Timeout while connecting to %s (%s)", c->name, c->hostname);
 				else
-					logger(DEBUG_CONNECTIONS, LOG_WARNING, "Timeout from %s (%s) during authentication", c->name, c->hostname);
+					logger(mesh, MESHLINK_WARNING, "Timeout from %s (%s) during authentication", c->name, c->hostname);
 			}
 			terminate_connection(mesh, c, c->status.active);
 		}
@@ -158,7 +158,7 @@ static void cond_add_connection(meshlink_handle_t *mesh, int rand_modulo, bool (
 		if(!found) {
 			//TODO: if the node is blacklisted the connection will not happen, but
 			//the user will read this debug message "Autoconnecting to %s" that is misleading
-			logger(DEBUG_CONNECTIONS, LOG_INFO, "Autoconnecting to %s", n->name);
+			logger(mesh, MESHLINK_INFO, "Autoconnecting to %s", n->name);
 			outgoing_t *outgoing = xzalloc(sizeof *outgoing);
 			outgoing->mesh = mesh;
 			outgoing->name = xstrdup(n->name);
@@ -201,7 +201,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 	*/
 
 	if(mesh->contradicting_del_edge > 100 && mesh->contradicting_add_edge > 100) {
-		logger(DEBUG_ALWAYS, LOG_WARNING, "Possible node with same Name as us! Sleeping %d seconds.", mesh->sleeptime);
+		logger(mesh, MESHLINK_WARNING, "Possible node with same Name as us! Sleeping %d seconds.", mesh->sleeptime);
 		usleep(mesh->sleeptime * 1000000LL);
 		mesh->sleeptime *= 2;
 		if(mesh->sleeptime < 0)
@@ -267,7 +267,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				if(!c->outgoing || !c->node || c->node->edge_tree->count < 2)
 					break;
 
-				logger(DEBUG_CONNECTIONS, LOG_INFO, "Autodisconnecting from %s", c->name);
+				logger(mesh, MESHLINK_INFO, "Autodisconnecting from %s", c->name);
 				list_delete(mesh->outgoings, c->outgoing);
 				c->outgoing = NULL;
 				terminate_connection(mesh, c, c->status.active);
@@ -296,7 +296,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 					}
 				}
 				if(!found) {
-					logger(DEBUG_CONNECTIONS, LOG_INFO, "Cancelled outgoing connection to %s", o->name);
+					logger(mesh, MESHLINK_INFO, "Cancelled outgoing connection to %s", o->name);
 					/* The node variable is leaked in from using the list_each macro.
 					   The o variable could be used, but using node directly
 					   is more efficient.
@@ -350,7 +350,7 @@ int main_loop(meshlink_handle_t *mesh) {
 	signal_add(&(mesh->loop),&(mesh->datafromapp), (signal_cb_t)meshlink_send_from_queue,mesh, mesh->datafromapp.signum);
 
 	if(!event_loop_run(&mesh->loop)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error while waiting for input: %s", strerror(errno));
+		logger(mesh, MESHLINK_ERROR, "Error while waiting for input: %s", strerror(errno));
 		return 1;
 	}
 

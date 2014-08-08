@@ -115,7 +115,7 @@ static void parse_command(char *buf) {
 			if(!node) {
 				fprintf(stderr, "Unknown node '%s'\n", arg);
 			} else {
-				printf("Node %s found\n", arg);
+				printf("Node %s found, pmtu %zd\n", arg, meshlink_get_pmtu(mesh[0], node));
 			}
 		}
 	} else if(!strcasecmp(buf, "link")) {

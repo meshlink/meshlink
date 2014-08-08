@@ -24,7 +24,6 @@
 
 #include "event.h"
 #include "hash.h"
-#include "logger.h"
 #include "meshlink.h"
 #include "meshlink_queue.h"
 #include "sockaddr.h"
@@ -120,7 +119,6 @@ struct meshlink_handle {
 	struct connection_t *everyone;
 	struct ecdsa *invitation_key;
 
-	debug_t debug_level;
 	int pinginterval;	/* seconds between pings */
 	int pingtimeout;	/* seconds to wait for response */
 	int maxtimeout;
@@ -157,6 +155,8 @@ typedef struct meshlink_packethdr {
 } __attribute__ ((__packed__)) meshlink_packethdr_t;
 
 extern void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
+extern meshlink_log_level_t global_log_level;
+extern meshlink_log_cb_t global_log_cb;
 
 
 #endif // MESHLINK_INTERNAL_H

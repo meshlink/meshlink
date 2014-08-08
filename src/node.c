@@ -121,7 +121,7 @@ node_t *lookup_node_udp(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 
 void update_node_udp(meshlink_handle_t *mesh, node_t *n, const sockaddr_t *sa) {
 	if(n == mesh->self) {
-		logger(DEBUG_ALWAYS, LOG_WARNING, "Trying to update UDP address of mesh->self!");
+		logger(mesh, MESHLINK_WARNING, "Trying to update UDP address of mesh->self!");
 		return;
 	}
 
@@ -139,6 +139,6 @@ void update_node_udp(meshlink_handle_t *mesh, node_t *n, const sockaddr_t *sa) {
 		hash_insert(mesh->node_udp_cache, sa, n);
 		free(n->hostname);
 		n->hostname = sockaddr2hostname(&n->address);
-		logger(DEBUG_PROTOCOL, LOG_DEBUG, "UDP address of %s set to %s", n->name, n->hostname);
+		logger(mesh, MESHLINK_DEBUG, "UDP address of %s set to %s", n->name, n->hostname);
 	}
 }

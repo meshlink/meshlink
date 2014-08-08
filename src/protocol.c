@@ -77,12 +77,12 @@ bool send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, 
 	va_end(args);
 
 	if(len < 0 || len > MAXBUFSIZE - 1) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Output buffer overflow while sending request to %s (%s)",
+		logger(mesh, MESHLINK_ERROR, "Output buffer overflow while sending request to %s (%s)",
 			   c->name, c->hostname);
 		return false;
 	}
 
-	logger(DEBUG_META, LOG_DEBUG, "Sending %s to %s (%s): %s", request_name[atoi(request)], c->name, c->hostname, request);
+	logger(mesh, MESHLINK_DEBUG, "Sending %s to %s (%s): %s", request_name[atoi(request)], c->name, c->hostname, request);
 
 	request[len++] = '\n';
 
@@ -94,7 +94,7 @@ bool send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, 
 }
 
 void forward_request(meshlink_handle_t *mesh, connection_t *from, const char *request) {
-	logger(DEBUG_META, LOG_DEBUG, "Forwarding %s from %s (%s): %s", request_name[atoi(request)], from->name, from->hostname, request);
+	logger(mesh, MESHLINK_DEBUG, "Forwarding %s from %s (%s): %s", request_name[atoi(request)], from->name, from->hostname, request);
 
 	// Create a temporary newline-terminated copy of the request
 	int len = strlen(request);
@@ -110,10 +110,10 @@ bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *reque
 			return true;
 		if(!strncasecmp(request, "HTTP/1.1 ", 9)) {
 			if(!strncmp(request + 9, "200", 3)) {
-				logger(DEBUG_CONNECTIONS, LOG_DEBUG, "Proxy request granted");
+				logger(mesh, MESHLINK_DEBUG, "Proxy request granted");
 				return true;
 			} else {
-				logger(DEBUG_ALWAYS, LOG_DEBUG, "Proxy request rejected: %s", request + 9);
+				logger(mesh, MESHLINK_DEBUG, "Proxy request rejected: %s", request + 9);
 				return false;
 			}
 		}
@@ -123,25 +123,25 @@ bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *reque
 
 	if(reqno || *request == '0') {
 		if((reqno < 0) || (reqno >= LAST) || !request_handlers[reqno]) {
-			logger(DEBUG_META, LOG_DEBUG, "Unknown request from %s (%s): %s", c->name, c->hostname, request);
+			logger(mesh, MESHLINK_DEBUG, "Unknown request from %s (%s): %s", c->name, c->hostname, request);
 			return false;
 		} else {
-			logger(DEBUG_META, LOG_DEBUG, "Got %s from %s (%s): %s", request_name[reqno], c->name, c->hostname, request);
+			logger(mesh, MESHLINK_DEBUG, "Got %s from %s (%s): %s", request_name[reqno], c->name, c->hostname, request);
 		}
 
 		if((c->allow_request != ALL) && (c->allow_request != reqno)) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Unauthorized request from %s (%s)", c->name, c->hostname);
+			logger(mesh, MESHLINK_ERROR, "Unauthorized request from %s (%s)", c->name, c->hostname);
 			return false;
 		}
 
 		if(!request_handlers[reqno](mesh, c, request)) {
 			/* Something went wrong. Probably scriptkiddies. Terminate. */
 
-			logger(DEBUG_ALWAYS, LOG_ERR, "Error while processing %s from %s (%s)", request_name[reqno], c->name, c->hostname);
+			logger(mesh, MESHLINK_ERROR, "Error while processing %s from %s (%s)", request_name[reqno], c->name, c->hostname);
 			return false;
 		}
 	} else {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Bogus data received from %s (%s)", c->name, c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Bogus data received from %s (%s)", c->name, c->hostname);
 		return false;
 	}
 
@@ -171,7 +171,7 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 	}
 
 	if(left || deleted)
-		logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Aging past requests: deleted %d, left %d", deleted, left);
+		logger(mesh, MESHLINK_DEBUG, "Aging past requests: deleted %d, left %d", deleted, left);
 
 	if(left)
 		timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timeval){10, rand() % 100000});
@@ -183,7 +183,7 @@ bool seen_request(meshlink_handle_t *mesh, const char *request) {
 	p.request = request;
 
 	if(splay_search(mesh->past_request_tree, &p)) {
-		logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Already seen request");
+		logger(mesh, MESHLINK_DEBUG, "Already seen request");
 		return true;
 	} else {
 		new = xmalloc(sizeof *new);

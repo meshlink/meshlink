@@ -88,7 +88,7 @@ bool read_ecdsa_private_key(meshlink_handle_t *mesh) {
 	fp = fopen(filename, "r");
 
 	if(!fp) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error reading ECDSA private key file: %s", strerror(errno));
+		logger(mesh, MESHLINK_ERROR, "Error reading ECDSA private key file: %s", strerror(errno));
 		return false;
 	}
 
@@ -96,7 +96,7 @@ bool read_ecdsa_private_key(meshlink_handle_t *mesh) {
 	fclose(fp);
 
 	if(!mesh->self->connection->ecdsa)
-		logger(DEBUG_ALWAYS, LOG_ERR, "Reading ECDSA private key file failed: %s", strerror(errno));
+		logger(mesh, MESHLINK_ERROR, "Reading ECDSA private key file failed: %s", strerror(errno));
 
 	return mesh->self->connection->ecdsa;
 }
@@ -118,7 +118,7 @@ static bool read_invitation_key(meshlink_handle_t *mesh) {
 		mesh->invitation_key = ecdsa_read_pem_private_key(fp);
 		fclose(fp);
 		if(!mesh->invitation_key)
-			logger(DEBUG_ALWAYS, LOG_ERR, "Reading ECDSA private key file `%s' failed: %s", filename, strerror(errno));
+			logger(mesh, MESHLINK_ERROR, "Reading ECDSA private key file `%s' failed: %s", filename, strerror(errno));
 	}
 
 	return mesh->invitation_key;
@@ -132,7 +132,7 @@ void load_all_nodes(meshlink_handle_t *mesh) {
 	snprintf(dname,PATH_MAX, "%s" SLASH "hosts", mesh->confbase);
 	dir = opendir(dname);
 	if(!dir) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Could not open %s: %s", dname, strerror(errno));
+		logger(mesh, MESHLINK_ERROR, "Could not open %s: %s", dname, strerror(errno));
 		return;
 	}
 
@@ -162,7 +162,7 @@ char *get_name(meshlink_handle_t *mesh) {
 		return NULL;
 
 	if(!check_id(name)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Invalid name for mesh->self!");
+		logger(mesh, MESHLINK_ERROR, "Invalid name for mesh->self!");
 		free(name);
 		return NULL;
 	}
@@ -209,7 +209,7 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 	free(address);
 
 	if(err || !ai) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "getaddrinfo", err == EAI_SYSTEM ? strerror(err) : gai_strerror(err));
+		logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "getaddrinfo", err == EAI_SYSTEM ? strerror(err) : gai_strerror(err));
 		return false;
 	}
 
@@ -227,7 +227,7 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 			continue;
 
 		if(mesh->listen_sockets >= MAXSOCKETS) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "Too many listening sockets");
+			logger(mesh, MESHLINK_ERROR, "Too many listening sockets");
 			return false;
 		}
 
@@ -246,9 +246,9 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 		io_add(&mesh->loop, &mesh->listen_socket[mesh->listen_sockets].tcp, handle_new_meta_connection, &mesh->listen_socket[mesh->listen_sockets], tcp_fd, IO_READ);
 		io_add(&mesh->loop, &mesh->listen_socket[mesh->listen_sockets].udp, handle_incoming_vpn_data, &mesh->listen_socket[mesh->listen_sockets], udp_fd, IO_READ);
 
-		if(mesh->debug_level >= DEBUG_CONNECTIONS) {
+		if(mesh->log_level >= MESHLINK_INFO) {
 			char *hostname = sockaddr2hostname((sockaddr_t *) aip->ai_addr);
-			logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Listening on %s", hostname);
+			logger(mesh, MESHLINK_INFO, "Listening on %s", hostname);
 			free(hostname);
 		}
 
@@ -269,7 +269,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	char *address = NULL;
 
 	if(!(name = get_name(mesh))) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Name for MeshLink instance required!");
+		logger(mesh, MESHLINK_ERROR, "Name for MeshLink instance required!");
 		return false;
 	}
 
@@ -280,7 +280,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	read_host_config(mesh, mesh->config, name);
 
 	if(!get_config_string(lookup_config(mesh->config, "Port"), &mesh->myport)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Port for MeshLink instance required!");
+		logger(mesh, MESHLINK_ERROR, "Port for MeshLink instance required!");
 		return false;
 	}
 
@@ -337,7 +337,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 		return false;
 
 	if(!mesh->listen_sockets) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Unable to create any listening socket!");
+		logger(mesh, MESHLINK_ERROR, "Unable to create any listening socket!");
 		return false;
 	}
 

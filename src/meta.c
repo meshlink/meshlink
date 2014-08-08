@@ -33,7 +33,7 @@ bool send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t leng
 	meshlink_handle_t *mesh = c->mesh;
 
 	if(!c) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "send_meta_sptps() called with NULL pointer!");
+		logger(mesh, MESHLINK_ERROR, "send_meta_sptps() called with NULL pointer!");
 		abort();
 	}
 
@@ -45,11 +45,11 @@ bool send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t leng
 
 bool send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int length) {
 	if(!c) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "send_meta() called with NULL pointer!");
+		logger(mesh, MESHLINK_ERROR, "send_meta() called with NULL pointer!");
 		abort();
 	}
 
-	logger(DEBUG_META, LOG_DEBUG, "Sending %d bytes of metadata to %s (%s)", length,
+	logger(mesh, MESHLINK_DEBUG, "Sending %d bytes of metadata to %s (%s)", length,
 			   c->name, c->hostname);
 
 	if(c->allow_request == ID) {
@@ -73,7 +73,7 @@ bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t l
 	char *request = (char *)data;
 
 	if(!c) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "receive_meta_sptps() called with NULL pointer!");
+		logger(mesh, MESHLINK_ERROR, "receive_meta_sptps() called with NULL pointer!");
 		abort();
 	}
 
@@ -124,7 +124,7 @@ bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 	buffer_compact(&c->inbuf, MAXBUFSIZE);
 
 	if(sizeof inbuf <= c->inbuf.len) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Input buffer full for %s (%s)", c->name, c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Input buffer full for %s (%s)", c->name, c->hostname);
 		return false;
 	}
 
@@ -132,12 +132,12 @@ bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 
 	if(inlen <= 0) {
 		if(!inlen || !errno) {
-			logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Connection closed by %s (%s)",
+			logger(mesh, MESHLINK_INFO, "Connection closed by %s (%s)",
 					   c->name, c->hostname);
 		} else if(sockwouldblock(sockerrno))
 			return true;
 		else
-			logger(DEBUG_ALWAYS, LOG_ERR, "Metadata socket read error for %s (%s): %s",
+			logger(mesh, MESHLINK_ERROR, "Metadata socket read error for %s (%s): %s",
 				   c->name, c->hostname, sockstrerror(sockerrno));
 		return false;
 	}

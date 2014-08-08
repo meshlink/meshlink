@@ -47,13 +47,13 @@ static void configure_tcp(connection_t *c) {
 	int flags = fcntl(c->socket, F_GETFL);
 
 	if(fcntl(c->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "fcntl for %s: %s", c->hostname, strerror(errno));
+		logger(c->mesh, MESHLINK_ERROR, "fcntl for %s: %s", c->hostname, strerror(errno));
 	}
 #elif defined(WIN32)
 	unsigned long arg = 1;
 
 	if(ioctlsocket(c->socket, FIONBIO, &arg) != 0) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "ioctlsocket for %s: %s", c->hostname, sockstrerror(sockerrno));
+		logger(c->mesh, MESHLINK_ERROR, "ioctlsocket for %s: %s", c->hostname, sockstrerror(sockerrno));
 	}
 #endif
 
@@ -89,7 +89,7 @@ static bool bind_to_address(meshlink_handle_t *mesh, connection_t *c) {
 		sa.in6.sin6_port = 0;
 
 	if(bind(c->socket, &sa.sa, SALEN(sa.sa))) {
-		logger(DEBUG_CONNECTIONS, LOG_WARNING, "Can't bind outgoing socket: %s", strerror(errno));
+		logger(mesh, MESHLINK_WARNING, "Can't bind outgoing socket: %s", strerror(errno));
 		return false;
 	}
 
@@ -104,7 +104,7 @@ int setup_listen_socket(const sockaddr_t *sa) {
 	nfd = socket(sa->sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 
 	if(nfd < 0) {
-		logger(DEBUG_STATUS, LOG_ERR, "Creating metasocket failed: %s", sockstrerror(sockerrno));
+		logger(NULL, MESHLINK_ERROR, "Creating metasocket failed: %s", sockstrerror(sockerrno));
 		return -1;
 	}
 
@@ -125,14 +125,14 @@ int setup_listen_socket(const sockaddr_t *sa) {
 	if(bind(nfd, &sa->sa, SALEN(sa->sa))) {
 		closesocket(nfd);
 		addrstr = sockaddr2hostname(sa);
-		logger(DEBUG_ALWAYS, LOG_ERR, "Can't bind to %s/tcp: %s", addrstr, sockstrerror(sockerrno));
+		logger(NULL, MESHLINK_ERROR, "Can't bind to %s/tcp: %s", addrstr, sockstrerror(sockerrno));
 		free(addrstr);
 		return -1;
 	}
 
 	if(listen(nfd, 3)) {
 		closesocket(nfd);
-		logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "listen", sockstrerror(sockerrno));
+		logger(NULL, MESHLINK_ERROR, "System call `%s' failed: %s", "listen", sockstrerror(sockerrno));
 		return -1;
 	}
 
@@ -147,7 +147,7 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	nfd = socket(sa->sa.sa_family, SOCK_DGRAM, IPPROTO_UDP);
 
 	if(nfd < 0) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Creating UDP socket failed: %s", sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Creating UDP socket failed: %s", sockstrerror(sockerrno));
 		return -1;
 	}
 
@@ -161,7 +161,7 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 
 		if(fcntl(nfd, F_SETFL, flags | O_NONBLOCK) < 0) {
 			closesocket(nfd);
-			logger(DEBUG_ALWAYS, LOG_ERR, "System call `%s' failed: %s", "fcntl",
+			logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "fcntl",
 				   strerror(errno));
 			return -1;
 		}
@@ -171,7 +171,7 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 		unsigned long arg = 1;
 		if(ioctlsocket(nfd, FIONBIO, &arg) != 0) {
 			closesocket(nfd);
-			logger(DEBUG_ALWAYS, LOG_ERR, "Call to `%s' failed: %s", "ioctlsocket", sockstrerror(sockerrno));
+			logger(mesh, MESHLINK_ERROR, "Call to `%s' failed: %s", "ioctlsocket", sockstrerror(sockerrno));
 			return -1;
 		}
 	}
@@ -221,7 +221,7 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	if(bind(nfd, &sa->sa, SALEN(sa->sa))) {
 		closesocket(nfd);
 		addrstr = sockaddr2hostname(sa);
-		logger(DEBUG_ALWAYS, LOG_ERR, "Can't bind to %s/udp: %s", addrstr, sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Can't bind to %s/udp: %s", addrstr, sockstrerror(sockerrno));
 		free(addrstr);
 		return -1;
 	}
@@ -243,11 +243,11 @@ void retry_outgoing(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 
 	timeout_add(&mesh->loop, &outgoing->ev, retry_outgoing_handler, outgoing, &(struct timeval){outgoing->timeout, rand() % 100000});
 
-	logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Trying to re-establish outgoing connection in %d seconds", outgoing->timeout);
+	logger(mesh, MESHLINK_INFO, "Trying to re-establish outgoing connection in %d seconds", outgoing->timeout);
 }
 
 void finish_connecting(meshlink_handle_t *mesh, connection_t *c) {
-	logger(DEBUG_CONNECTIONS, LOG_INFO, "Connected to %s (%s)", c->name, c->hostname);
+	logger(mesh, MESHLINK_INFO, "Connected to %s (%s)", c->name, c->hostname);
 
 	c->last_ping_time = mesh->loop.now.tv_sec;
 	c->status.connecting = false;
@@ -260,14 +260,14 @@ static void do_outgoing_pipe(meshlink_handle_t *mesh, connection_t *c, char *com
 	int fd[2];
 
 	if(socketpair(AF_UNIX, SOCK_STREAM, 0, fd)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Could not create socketpair: %s", strerror(errno));
+		logger(mesh, MESHLINK_ERROR, "Could not create socketpair: %s", strerror(errno));
 		return;
 	}
 
 	if(fork()) {
 		c->socket = fd[0];
 		close(fd[1]);
-		logger(DEBUG_CONNECTIONS, LOG_DEBUG, "Using proxy %s", command);
+		logger(mesh, MESHLINK_DEBUG, "Using proxy %s", command);
 		return;
 	}
 
@@ -291,12 +291,12 @@ static void do_outgoing_pipe(meshlink_handle_t *mesh, connection_t *c, char *com
 
 	int result = system(command);
 	if(result < 0)
-		logger(DEBUG_ALWAYS, LOG_ERR, "Could not execute %s: %s", command, strerror(errno));
+		logger(mesh, MESHLINK_ERROR, "Could not execute %s: %s", command, strerror(errno));
 	else if(result)
-		logger(DEBUG_ALWAYS, LOG_ERR, "%s exited with non-zero status %d", command, result);
+		logger(mesh, MESHLINK_ERROR, "%s exited with non-zero status %d", command, result);
 	exit(result);
 #else
-	logger(DEBUG_ALWAYS, LOG_ERR, "Proxy type exec not supported on this platform!");
+	logger(mesh, MESHLINK_ERROR, "Proxy type exec not supported on this platform!");
 	return;
 #endif
 }
@@ -308,12 +308,12 @@ static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 	ssize_t outlen = send(c->socket, c->outbuf.data + c->outbuf.offset, c->outbuf.len - c->outbuf.offset, MSG_NOSIGNAL);
 	if(outlen <= 0) {
 		if(!errno || errno == EPIPE) {
-			logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Connection closed by %s (%s)", c->name, c->hostname);
+			logger(mesh, MESHLINK_INFO, "Connection closed by %s (%s)", c->name, c->hostname);
 		} else if(sockwouldblock(sockerrno)) {
-			logger(DEBUG_CONNECTIONS, LOG_DEBUG, "Sending %d bytes to %s (%s) would block", c->outbuf.len - c->outbuf.offset, c->name, c->hostname);
+			logger(mesh, MESHLINK_DEBUG, "Sending %d bytes to %s (%s) would block", c->outbuf.len - c->outbuf.offset, c->name, c->hostname);
 			return;
 		} else {
-			logger(DEBUG_CONNECTIONS, LOG_ERR, "Could not send %d bytes of data to %s (%s): %s", c->outbuf.len - c->outbuf.offset, c->name, c->hostname, strerror(errno));
+			logger(mesh, MESHLINK_ERROR, "Could not send %d bytes of data to %s (%s): %s", c->outbuf.len - c->outbuf.offset, c->name, c->hostname, strerror(errno));
 		}
 
 		terminate_connection(mesh, c, c->status.active);
@@ -339,7 +339,7 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 		if(!result)
 			finish_connecting(mesh, c);
 		else {
-			logger(DEBUG_CONNECTIONS, LOG_DEBUG, "Error while connecting to %s (%s): %s", c->name, c->hostname, sockstrerror(result));
+			logger(mesh, MESHLINK_DEBUG, "Error while connecting to %s (%s): %s", c->name, c->hostname, sockstrerror(result));
 			terminate_connection(mesh, c, false);
 			return;
 		}
@@ -359,7 +359,7 @@ bool do_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 begin:
 	if(!outgoing->ai) {
 		if(!outgoing->cfg) {
-			logger(DEBUG_CONNECTIONS, LOG_ERR, "Could not set up a meta connection to %s", outgoing->name);
+			logger(mesh, MESHLINK_ERROR, "Could not set up a meta connection to %s", outgoing->name);
 			retry_outgoing(mesh, outgoing);
 			return false;
 		}
@@ -373,7 +373,7 @@ begin:
 		} else {
 			// TODO: Only allow Address statements?
 			if(!get_config_string(lookup_config(outgoing->config_tree, "Port"), &port)) {
-				logger(DEBUG_CONNECTIONS, LOG_ERR, "No Port known for %s", outgoing->name);
+				logger(mesh, MESHLINK_ERROR, "No Port known for %s", outgoing->name);
 				retry_outgoing(mesh, outgoing);
 				return false;
 			}
@@ -402,7 +402,7 @@ begin:
 
 	c->hostname = sockaddr2hostname(&c->address);
 
-	logger(DEBUG_CONNECTIONS, LOG_INFO, "Trying to connect to %s (%s)", outgoing->name, c->hostname);
+	logger(mesh, MESHLINK_INFO, "Trying to connect to %s (%s)", outgoing->name, c->hostname);
 
 	if(!mesh->proxytype) {
 		c->socket = socket(c->address.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
@@ -415,13 +415,13 @@ begin:
 			free_connection(c);
 			goto begin;
 		}
-		logger(DEBUG_CONNECTIONS, LOG_INFO, "Using proxy at %s port %s", mesh->proxyhost, mesh->proxyport);
+		logger(mesh, MESHLINK_INFO, "Using proxy at %s port %s", mesh->proxyhost, mesh->proxyport);
 		c->socket = socket(proxyai->ai_family, SOCK_STREAM, IPPROTO_TCP);
 		configure_tcp(c);
 	}
 
 	if(c->socket == -1) {
-		logger(DEBUG_CONNECTIONS, LOG_ERR, "Creating socket for %s failed: %s", c->hostname, sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Creating socket for %s failed: %s", c->hostname, sockstrerror(sockerrno));
 		free_connection(c);
 		goto begin;
 	}
@@ -452,7 +452,7 @@ begin:
 	}
 
 	if(result == -1 && !sockinprogress(sockerrno)) {
-		logger(DEBUG_CONNECTIONS, LOG_ERR, "Could not connect to %s (%s): %s", outgoing->name, c->hostname, sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Could not connect to %s (%s): %s", outgoing->name, c->hostname, sockstrerror(sockerrno));
 		free_connection(c);
 
 		goto begin;
@@ -512,7 +512,7 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	node_t *n = lookup_node(mesh, outgoing->name);
 
 	if(n && n->connection) {
-		logger(DEBUG_CONNECTIONS, LOG_INFO, "Already connected to %s", outgoing->name);
+		logger(mesh, MESHLINK_INFO, "Already connected to %s", outgoing->name);
 
 		n->connection->outgoing = outgoing;
 		return;
@@ -529,7 +529,7 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 		if(n)
 			outgoing->aip = outgoing->ai = get_known_addresses(n);
 		if(!outgoing->ai) {
-			logger(DEBUG_ALWAYS, LOG_ERR, "No address known for %s", outgoing->name);
+			logger(mesh, MESHLINK_ERROR, "No address known for %s", outgoing->name);
 			return;
 		}
 	}
@@ -557,7 +557,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 			return;
 		}
 
-		logger(DEBUG_ALWAYS, LOG_ERR, "Accepting a new connection failed: %s", sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Accepting a new connection failed: %s", sockstrerror(sockerrno));
 		return;
 	}
 
@@ -623,7 +623,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	c->socket = fd;
 	c->last_ping_time = mesh->loop.now.tv_sec;
 
-	logger(DEBUG_CONNECTIONS, LOG_NOTICE, "Connection from %s", c->hostname);
+	logger(mesh, MESHLINK_INFO, "Connection from %s", c->hostname);
 
 	io_add(&mesh->loop, &c->io, handle_meta_io, c, c->socket, IO_READ);
 
@@ -670,7 +670,7 @@ void try_outgoing_connections(meshlink_handle_t *mesh) {
 		get_config_string(cfg, &name);
 
 		if(!check_id(name)) {
-			logger(DEBUG_ALWAYS, LOG_ERR,
+			logger(mesh, MESHLINK_ERROR,
 				   "Invalid name for outgoing connection in %s line %d",
 				   cfg->file, cfg->line);
 			free(name);
@@ -701,7 +701,7 @@ void try_outgoing_connections(meshlink_handle_t *mesh) {
 	for list_each(connection_t, c, mesh->connections) {
 		if(c->outgoing && c->outgoing->timeout == -1) {
 			c->outgoing = NULL;
-			logger(DEBUG_CONNECTIONS, LOG_INFO, "No more outgoing connection to %s", c->name);
+			logger(mesh, MESHLINK_INFO, "No more outgoing connection to %s", c->name);
 			terminate_connection(mesh, c, c->status.active);
 		}
 	}

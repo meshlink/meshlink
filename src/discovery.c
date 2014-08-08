@@ -35,17 +35,17 @@ static void discovery_entry_group_callback(AvahiServer *server, AvahiSEntryGroup
     {
         case AVAHI_ENTRY_GROUP_ESTABLISHED:
             /* The entry group has been established successfully */
-            fprintf(stderr, "Service successfully established.\n");
+            logger(mesh, MESHLINK_DEBUG, "Avahi Service successfully established.\n");
             break;
 
         case AVAHI_ENTRY_GROUP_COLLISION:
-            fprintf(stderr, "Service collision\n");
+            logger(mesh, MESHLINK_WARNING, "Avahi Service collision.\n");
             // @TODO can we just set a new name and retry?
             break;
 
         case AVAHI_ENTRY_GROUP_FAILURE :
             /* Some kind of failure happened while we were registering our services */
-            fprintf(stderr, "Entry group failure: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+            logger(mesh, MESHLINK_ERROR, "Avahi Entry group failure: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
             avahi_simple_poll_quit(mesh->avahi_poll);
             break;
 
@@ -69,14 +69,14 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     assert(mesh->avahi_servicetype != NULL);
     assert(mesh->self != NULL);
 
-    fprintf(stderr, "Adding service\n");
+    logger(mesh, MESHLINK_DEBUG, "Adding service\n");
 
     /* Ifthis is the first time we're called, let's create a new entry group */
     if(!mesh->avahi_group)
     {
         if(!(mesh->avahi_group = avahi_s_entry_group_new(mesh->avahi_server, discovery_entry_group_callback, mesh)))
         {
-            fprintf(stderr, "avahi_entry_group_new() failed: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+            logger(mesh, MESHLINK_ERROR, "avahi_entry_group_new() failed: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
             goto fail;
         }
     }
@@ -87,7 +87,7 @@ static void discovery_create_services(meshlink_handle_t *mesh)
 
     if(txt_name == NULL)
     {
-        fprintf(stderr, "Could not allocate memory for TXT record\n");
+        logger(mesh, MESHLINK_ERROR, "Could not allocate memory for TXT record\n");
         goto fail;
     }
 
@@ -100,14 +100,14 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     int ret = 0;
     if((ret = avahi_server_add_service(mesh->avahi_server, mesh->avahi_group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self), mesh->avahi_servicetype, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0)
     {
-        fprintf(stderr, "Failed to add service: %s\n", avahi_strerror(ret));
+        logger(mesh, MESHLINK_ERROR, "Failed to add service: %s\n", avahi_strerror(ret));
         goto fail;
     }
 
     /* Tell the server to register the service */
     if((ret = avahi_s_entry_group_commit(mesh->avahi_group)) < 0)
     {
-        fprintf(stderr, "Failed to commit entry_group: %s\n", avahi_strerror(ret));
+        logger(mesh, MESHLINK_ERROR, "Failed to commit entry_group: %s\n", avahi_strerror(ret));
         goto fail;
     }
 
@@ -154,12 +154,12 @@ static void discovery_server_callback(AvahiServer *server, AvahiServerState stat
                 char hostnamestr[36+1];
                 uuid_unparse_lower(hostname, hostnamestr);
 
-                fprintf(stderr, "Host name collision, retrying with '%s'\n", hostnamestr);
+                logger(mesh, MESHLINK_WARNING, "Avahi host name collision, retrying with '%s'\n", hostnamestr);
                 int result = avahi_server_set_host_name(mesh->avahi_server, hostnamestr);
 
                 if(result < 0)
                 {
-                    fprintf(stderr, "Failed to set new host name: %s\n", avahi_strerror(result));
+                    logger(mesh, MESHLINK_ERROR, "Avahi failed to set new host name: %s\n", avahi_strerror(result));
                     avahi_simple_poll_quit(mesh->avahi_poll);
                     return;
                 }
@@ -186,7 +186,7 @@ static void discovery_server_callback(AvahiServer *server, AvahiServerState stat
                 assert(mesh->avahi_poll != NULL);
 
                 /* Terminate on failure */
-                fprintf(stderr, "Server failure: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+                logger(mesh, MESHLINK_ERROR, "Avahi server failure: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
                 avahi_simple_poll_quit(mesh->avahi_poll);
             }
             break;
@@ -215,7 +215,7 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
                 assert(type != NULL);
                 assert(domain != NULL);
 
-                fprintf(stderr, "(Resolver) Failed to resolve service '%s' of type '%s' in domain '%s': %s\n", name, type, domain, avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+                logger(mesh, MESHLINK_WARNING, "(Resolver) Failed to resolve service '%s' of type '%s' in domain '%s': %s\n", name, type, domain, avahi_strerror(avahi_server_errno(mesh->avahi_server)));
             }
             break;
 
@@ -231,11 +231,11 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
         
                 char straddr[AVAHI_ADDRESS_STR_MAX], *strtxt;
 
-                fprintf(stderr, "(Resolver) Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
+                logger(mesh, MESHLINK_DEBUG, "(Resolver) Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
 
                 avahi_address_snprint(straddr, sizeof(straddr), address);
                 strtxt = avahi_string_list_to_string(txt);
-                fprintf(stderr,
+                logger(mesh, MESHLINK_DEBUG,
                         "\t%s:%u (%s)\n"
                         "\tTXT=%s\n"
                         "\tcookie is %u\n"
@@ -270,7 +270,7 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
 
                         if(node != NULL)
                         {
-                            fprintf(stderr, "Node %s is part of the mesh network.\n", node->name);
+                            logger(mesh, MESHLINK_INFO, "Node %s is part of the mesh network.\n", node->name);
 
                             sockaddr_t naddress;
                             memset(&naddress, 0, sizeof(naddress));
@@ -304,22 +304,22 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
                             }
                             else
                             {
-                                fprintf(stderr, "Could not resolve node %s to a known address family type.\n", node->name);
+                                logger(mesh, MESHLINK_WARNING, "Could not resolve node %s to a known address family type.\n", node->name);
                             }
                         }
                         else
                         {
-                            fprintf(stderr, "Node %s is not part of the mesh network.\n", node_name);
+                            logger(mesh, MESHLINK_WARNING, "Node %s is not part of the mesh network.\n", node_name);
                         }
                     }
                     else
                     {
-                        fprintf(stderr, "TXT records invalid.\n");
+                        logger(mesh, MESHLINK_WARNING, "TXT records invalid.\n");
                     }
                 }
                 else
                 {
-                    fprintf(stderr, "TXT records missing.\n");
+                    logger(mesh, MESHLINK_WARNING, "TXT records missing.\n");
                 }
             }
             break;
@@ -342,7 +342,7 @@ static void discovery_browse_callback(AvahiSServiceBrowser *browser, AvahiIfInde
     {
         case AVAHI_BROWSER_FAILURE:
             {
-                fprintf(stderr, "(Browser) %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+                logger(mesh, MESHLINK_ERROR, "(Browser) %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
                 avahi_simple_poll_quit(mesh->avahi_poll);
             }
             return;
@@ -354,14 +354,14 @@ static void discovery_browse_callback(AvahiSServiceBrowser *browser, AvahiIfInde
                 assert(type != NULL);
                 assert(domain != NULL);
 
-                fprintf(stderr, "(Browser) NEW: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
+                logger(mesh, MESHLINK_DEBUG, "(Browser) NEW: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
                 /* We ignore the returned resolver object. In the callback
                    function we free it. Ifthe server is terminated before
                    the callback function is called the server will free
                    the resolver for us. */
                 if(!(avahi_s_service_resolver_new(mesh->avahi_server, interface, protocol, name, type, domain, AVAHI_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh)))
                 {
-                    fprintf(stderr, "Failed to resolve service '%s': %s\n", name, avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+                    logger(mesh, MESHLINK_DEBUG, "Failed to resolve service '%s': %s\n", name, avahi_strerror(avahi_server_errno(mesh->avahi_server)));
                 }
             }
             break;
@@ -373,14 +373,14 @@ static void discovery_browse_callback(AvahiSServiceBrowser *browser, AvahiIfInde
                 assert(type != NULL);
                 assert(domain != NULL);
 
-                fprintf(stderr, "(Browser) REMOVE: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
+                logger(mesh, MESHLINK_DEBUG, "(Browser) REMOVE: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
             }
             break;
 
         case AVAHI_BROWSER_ALL_FOR_NOW:
         case AVAHI_BROWSER_CACHE_EXHAUSTED:
             {
-                fprintf(stderr, "(Browser) %s\n", event == AVAHI_BROWSER_CACHE_EXHAUSTED ? "CACHE_EXHAUSTED" : "ALL_FOR_NOW");
+                logger(mesh, MESHLINK_DEBUG, "(Browser) %s\n", event == AVAHI_BROWSER_CACHE_EXHAUSTED ? "CACHE_EXHAUSTED" : "ALL_FOR_NOW");
             }
             break;
     }
@@ -401,7 +401,7 @@ static void *discovery_loop(void *userdata)
 
 bool discovery_start(meshlink_handle_t *mesh)
 {
-    fprintf(stderr, "discovery_start called\n");
+    logger(mesh, MESHLINK_DEBUG, "discovery_start called\n");
 
     // asserts
     assert(mesh != NULL);
@@ -417,7 +417,7 @@ bool discovery_start(meshlink_handle_t *mesh)
 
     if(mesh->avahi_servicetype == NULL)
     {
-        fprintf(stderr, "Failed to allocate memory for service type string.\n");
+        logger(mesh, MESHLINK_ERROR, "Failed to allocate memory for service type string.\n");
         goto fail;
     }
 
@@ -426,7 +426,7 @@ bool discovery_start(meshlink_handle_t *mesh)
     // Allocate discovery loop object
     if(!(mesh->avahi_poll = avahi_simple_poll_new()))
     {
-        fprintf(stderr, "Failed to create discovery poll object.\n");
+        logger(mesh, MESHLINK_ERROR, "Failed to create discovery poll object.\n");
 		goto fail;
     }
 
@@ -457,21 +457,21 @@ bool discovery_start(meshlink_handle_t *mesh)
     /* Check wether creating the server object succeeded */
     if(!mesh->avahi_server)
     {
-        fprintf(stderr, "Failed to create discovery server: %s\n", avahi_strerror(error));
+        logger(mesh, MESHLINK_ERROR, "Failed to create discovery server: %s\n", avahi_strerror(error));
         goto fail;
     }
 
     // Create the service browser
     if(!(mesh->avahi_browser = avahi_s_service_browser_new(mesh->avahi_server, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, mesh->avahi_servicetype, NULL, 0, discovery_browse_callback, mesh)))
     {
-        fprintf(stderr, "Failed to create discovery service browser: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+        logger(mesh, MESHLINK_ERROR, "Failed to create discovery service browser: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
         goto fail;
     }
 
 	// Start the discovery thread
 	if(pthread_create(&mesh->discovery_thread, NULL, discovery_loop, mesh) != 0)
     {
-		fprintf(stderr, "Could not start discovery thread: %s\n", strerror(errno));
+		logger(mesh, MESHLINK_ERROR, "Could not start discovery thread: %s\n", strerror(errno));
 		memset(&mesh->discovery_thread, 0, sizeof mesh->discovery_thread);
 		goto fail;
 	}
@@ -510,7 +510,7 @@ fail:
 
 void discovery_stop(meshlink_handle_t *mesh)
 {
-    fprintf(stderr, "discovery_stop called\n");
+    logger(mesh, MESHLINK_DEBUG, "discovery_stop called\n");
 
     // asserts
     assert(mesh != NULL);

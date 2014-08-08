@@ -38,14 +38,14 @@ ecdsa_t *ecdsa_set_base64_public_key(const char *p) {
 	int len = strlen(p);
 
 	if(len != 43) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Invalid size %d for public key!", len);
+		logger(NULL, MESHLINK_ERROR, "Invalid size %d for public key!", len);
 		return 0;
 	}
 
 	ecdsa_t *ecdsa = xzalloc(sizeof *ecdsa);
 	len = b64decode(p, ecdsa->public, len);
 	if(len != 32) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Invalid format of public key! len = %d", len);
+		logger(NULL, MESHLINK_ERROR, "Invalid format of public key! len = %d", len);
 		free(ecdsa);
 		return 0;
 	}

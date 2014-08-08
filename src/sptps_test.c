@@ -35,6 +35,8 @@
 // Symbols necessary to link with logger.o
 bool send_request(void *c, const char *msg, ...) { return false; }
 void *mesh;
+void *global_log_cb;
+int global_log_level;
 bool send_meta(void *c, const char *msg , int len) { return false; }
 char *logfilename = NULL;
 struct timeval now;

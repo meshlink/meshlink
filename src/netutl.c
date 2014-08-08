@@ -41,7 +41,7 @@ struct addrinfo *str2addrinfo(const char *address, const char *service, int sock
 	err = getaddrinfo(address, service, &hint, &ai);
 
 	if(err) {
-		logger(DEBUG_ALWAYS, LOG_WARNING, "Error looking up %s port %s: %s", address, service, err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
+		logger(NULL, MESHLINK_WARNING, "Error looking up %s port %s: %s", address, service, err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
 		return NULL;
 	}
 
@@ -60,7 +60,7 @@ sockaddr_t str2sockaddr(const char *address, const char *port) {
 	err = getaddrinfo(address, port, &hint, &ai);
 
 	if(err || !ai) {
-		logger(DEBUG_SCARY_THINGS, LOG_DEBUG, "Unknown type address %s port %s", address, port);
+		logger(NULL, MESHLINK_DEBUG, "Unknown type address %s port %s", address, port);
 		result.sa.sa_family = AF_UNKNOWN;
 		result.unknown.address = xstrdup(address);
 		result.unknown.port = xstrdup(port);
@@ -90,7 +90,7 @@ void sockaddr2str(const sockaddr_t *sa, char **addrstr, char **portstr) {
 	err = getnameinfo(&sa->sa, SALEN(sa->sa), address, sizeof address, port, sizeof port, NI_NUMERICHOST | NI_NUMERICSERV);
 
 	if(err) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error while translating addresses: %s", err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
+		logger(NULL, MESHLINK_ERROR, "Error while translating addresses: %s", err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
 		abort();
 	}
 
@@ -119,7 +119,7 @@ char *sockaddr2hostname(const sockaddr_t *sa) {
 	err = getnameinfo(&sa->sa, SALEN(sa->sa), address, sizeof address, port, sizeof port,
 					hostnames ? 0 : (NI_NUMERICHOST | NI_NUMERICSERV));
 	if(err) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error while looking up hostname: %s", err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
+		logger(NULL, MESHLINK_ERROR, "Error while looking up hostname: %s", err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
 	}
 
 	xasprintf(&str, "%s port %s", address, port);
@@ -149,7 +149,7 @@ int sockaddrcmp_noport(const sockaddr_t *a, const sockaddr_t *b) {
 			return memcmp(&a->in6.sin6_addr, &b->in6.sin6_addr, sizeof(a->in6.sin6_addr));
 
 		default:
-			logger(DEBUG_ALWAYS, LOG_ERR, "sockaddrcmp() was called with unknown address family %d, exitting!",
+			logger(NULL, MESHLINK_ERROR, "sockaddrcmp() was called with unknown address family %d, exitting!",
 				   a->sa.sa_family);
 			abort();
 	}
@@ -192,7 +192,7 @@ int sockaddrcmp(const sockaddr_t *a, const sockaddr_t *b) {
 			return memcmp(&a->in6.sin6_port, &b->in6.sin6_port, sizeof a->in6.sin6_port);
 
 		default:
-			logger(DEBUG_ALWAYS, LOG_ERR, "sockaddrcmp() was called with unknown address family %d, exitting!",
+			logger(NULL, MESHLINK_ERROR, "sockaddrcmp() was called with unknown address family %d, exitting!",
 				   a->sa.sa_family);
 			abort();
 	}

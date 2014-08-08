@@ -125,7 +125,7 @@ bool get_config_bool(const config_t *cfg, bool *result) {
 		return true;
 	}
 
-	logger(DEBUG_ALWAYS, LOG_ERR, "\"yes\" or \"no\" expected for configuration variable %s in %s line %d",
+	logger(NULL, MESHLINK_ERROR, "\"yes\" or \"no\" expected for configuration variable %s in %s line %d",
 		   cfg->variable, cfg->file, cfg->line);
 
 	return false;
@@ -138,7 +138,7 @@ bool get_config_int(const config_t *cfg, int *result) {
 	if(sscanf(cfg->value, "%d", result) == 1)
 		return true;
 
-	logger(DEBUG_ALWAYS, LOG_ERR, "Integer expected for configuration variable %s in %s line %d",
+	logger(NULL, MESHLINK_ERROR, "Integer expected for configuration variable %s in %s line %d",
 		   cfg->variable, cfg->file, cfg->line);
 
 	return false;
@@ -166,7 +166,7 @@ bool get_config_address(const config_t *cfg, struct addrinfo **result) {
 		return true;
 	}
 
-	logger(DEBUG_ALWAYS, LOG_ERR, "Hostname or IP address expected for configuration variable %s in %s line %d",
+	logger(NULL, MESHLINK_ERROR, "Hostname or IP address expected for configuration variable %s in %s line %d",
 		   cfg->variable, cfg->file, cfg->line);
 
 	return false;
@@ -221,7 +221,7 @@ config_t *parse_config_line(char *line, const char *fname, int lineno) {
 
 	if(!*value) {
 		const char err[] = "No value for variable";
-		logger(DEBUG_ALWAYS, LOG_ERR, "%s `%s' on line %d while reading config file %s",
+		logger(NULL, MESHLINK_ERROR, "%s `%s' on line %d while reading config file %s",
 			err, variable, lineno, fname);
 		return NULL;
 	}
@@ -251,7 +251,7 @@ bool read_config_file(splay_tree_t *config_tree, const char *fname) {
 	fp = fopen(fname, "r");
 
 	if(!fp) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Cannot open config file %s: %s", fname, strerror(errno));
+		logger(NULL, MESHLINK_ERROR, "Cannot open config file %s: %s", fname, strerror(errno));
 		return false;
 	}
 
@@ -300,7 +300,7 @@ bool read_server_config(meshlink_handle_t *mesh) {
 	x = read_config_file(mesh->config, filename);
 
 	if(!x && errno)
-		logger(DEBUG_ALWAYS, LOG_ERR, "Failed to read `%s': %s", filename, strerror(errno));
+		logger(mesh, MESHLINK_ERROR, "Failed to read `%s': %s", filename, strerror(errno));
 
 	return x;
 }
@@ -322,7 +322,7 @@ bool append_config_file(meshlink_handle_t *mesh, const char *name, const char *k
 	FILE *fp = fopen(filename, "a");
 
 	if(!fp) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Cannot open config file %s: %s", filename, strerror(errno));
+		logger(mesh, MESHLINK_ERROR, "Cannot open config file %s: %s", filename, strerror(errno));
 	} else {
 		fprintf(fp, "%s = %s\n", key, value);
 		fclose(fp);

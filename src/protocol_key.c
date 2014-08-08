@@ -46,7 +46,7 @@ bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request
 	node_t *n;
 
 	if(sscanf(request, "%*d %*x " MAX_STRING, name) != 1) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s)", "KEY_CHANGED",
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "KEY_CHANGED",
 			   c->name, c->hostname);
 		return false;
 	}
@@ -57,7 +57,7 @@ bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request
 	n = lookup_node(mesh, name);
 
 	if(!n) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got %s from %s (%s) origin %s which does not exist",
+		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) origin %s which does not exist",
 			   "KEY_CHANGED", c->name, c->hostname, name);
 		return true;
 	}
@@ -80,13 +80,13 @@ static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data
 
 bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 	if(!node_read_ecdsa_public_key(mesh, to)) {
-		logger(DEBUG_PROTOCOL, LOG_DEBUG, "No ECDSA key known for %s (%s)", to->name, to->hostname);
+		logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s (%s)", to->name, to->hostname);
 		send_request(mesh, to->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY);
 		return true;
 	}
 
 	if(to->sptps.label)
-		logger(DEBUG_ALWAYS, LOG_DEBUG, "send_req_key(%s) called while sptps->label != NULL!", to->name);
+		logger(mesh, MESHLINK_DEBUG, "send_req_key(%s) called while sptps->label != NULL!", to->name);
 
 	char label[25 + strlen(mesh->self->name) + strlen(to->name)];
 	snprintf(label, sizeof label, "MeshLink UDP key expansion %s %s", mesh->self->name, to->name);
@@ -111,36 +111,36 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 
 		case ANS_PUBKEY: {
 			if(node_read_ecdsa_public_key(mesh, from)) {
-				logger(DEBUG_PROTOCOL, LOG_WARNING, "Got ANS_PUBKEY from %s (%s) even though we already have his pubkey", from->name, from->hostname);
+				logger(mesh, MESHLINK_WARNING, "Got ANS_PUBKEY from %s (%s) even though we already have his pubkey", from->name, from->hostname);
 				return true;
 			}
 
 			char pubkey[MAX_STRING_SIZE];
 			if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, pubkey) != 1 || !(from->ecdsa = ecdsa_set_base64_public_key(pubkey))) {
-				logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s): %s", "ANS_PUBKEY", from->name, from->hostname, "invalid pubkey");
+				logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ANS_PUBKEY", from->name, from->hostname, "invalid pubkey");
 				return true;
 			}
 
-			logger(DEBUG_PROTOCOL, LOG_INFO, "Learned ECDSA public key from %s (%s)", from->name, from->hostname);
+			logger(mesh, MESHLINK_INFO, "Learned ECDSA public key from %s (%s)", from->name, from->hostname);
 			append_config_file(mesh, from->name, "ECDSAPublicKey", pubkey);
 			return true;
 		}
 
 		case REQ_KEY: {
 			if(!node_read_ecdsa_public_key(mesh, from)) {
-				logger(DEBUG_PROTOCOL, LOG_DEBUG, "No ECDSA key known for %s (%s)", from->name, from->hostname);
+				logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s (%s)", from->name, from->hostname);
 				send_request(mesh, from->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, from->name, REQ_PUBKEY);
 				return true;
 			}
 
 			if(from->sptps.label)
-				logger(DEBUG_ALWAYS, LOG_DEBUG, "Got REQ_KEY from %s while we already started a SPTPS session!", from->name);
+				logger(mesh, MESHLINK_DEBUG, "Got REQ_KEY from %s while we already started a SPTPS session!", from->name);
 
 			char buf[MAX_STRING_SIZE];
 			int len;
 
 			if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, buf) != 1 || !(len = b64decode(buf, buf, strlen(buf)))) {
-				logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s): %s", "REQ_SPTPS_START", from->name, from->hostname, "invalid SPTPS data");
+				logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "REQ_SPTPS_START", from->name, from->hostname, "invalid SPTPS data");
 				return true;
 			}
 
@@ -157,14 +157,14 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 
 		case REQ_SPTPS: {
 			if(!from->status.validkey) {
-				logger(DEBUG_PROTOCOL, LOG_ERR, "Got REQ_SPTPS from %s (%s) but we don't have a valid key yet", from->name, from->hostname);
+				logger(mesh, MESHLINK_ERROR, "Got REQ_SPTPS from %s (%s) but we don't have a valid key yet", from->name, from->hostname);
 				return true;
 			}
 
 			char buf[MAX_STRING_SIZE];
 			int len;
 			if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, buf) != 1 || !(len = b64decode(buf, buf, strlen(buf)))) {
-				logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s): %s", "REQ_SPTPS", from->name, from->hostname, "invalid SPTPS data");
+				logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "REQ_SPTPS", from->name, from->hostname, "invalid SPTPS data");
 				return true;
 			}
 			sptps_receive_data(&from->sptps, buf, len);
@@ -172,7 +172,7 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		}
 
 		default:
-			logger(DEBUG_ALWAYS, LOG_ERR, "Unknown extended REQ_KEY request from %s (%s): %s", from->name, from->hostname, request);
+			logger(mesh, MESHLINK_ERROR, "Unknown extended REQ_KEY request from %s (%s): %s", from->name, from->hostname, request);
 			return true;
 	}
 }
@@ -184,20 +184,20 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	int reqno = 0;
 
 	if(sscanf(request, "%*d " MAX_STRING " " MAX_STRING " %d", from_name, to_name, &reqno) < 2) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s)", "REQ_KEY", c->name,
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "REQ_KEY", c->name,
 			   c->hostname);
 		return false;
 	}
 
 	if(!check_id(from_name) || !check_id(to_name)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s): %s", "REQ_KEY", c->name, c->hostname, "invalid name");
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "REQ_KEY", c->name, c->hostname, "invalid name");
 		return false;
 	}
 
 	from = lookup_node(mesh, from_name);
 
 	if(!from) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got %s from %s (%s) origin %s which does not exist in our connection list",
+		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) origin %s which does not exist in our connection list",
 			   "REQ_KEY", c->name, c->hostname, from_name);
 		return true;
 	}
@@ -205,7 +205,7 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	to = lookup_node(mesh, to_name);
 
 	if(!to) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got %s from %s (%s) destination %s which does not exist in our connection list",
+		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) destination %s which does not exist in our connection list",
 			   "REQ_KEY", c->name, c->hostname, to_name);
 		return true;
 	}
@@ -221,7 +221,7 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		send_ans_key(mesh, from);
 	} else {
 		if(!to->status.reachable) {
-			logger(DEBUG_PROTOCOL, LOG_WARNING, "Got %s from %s (%s) destination %s which is not reachable",
+			logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) destination %s which is not reachable",
 				"REQ_KEY", c->name, c->hostname, to_name);
 			return true;
 		}
@@ -248,20 +248,20 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	if(sscanf(request, "%*d "MAX_STRING" "MAX_STRING" "MAX_STRING" %d %d %d %d "MAX_STRING" "MAX_STRING,
 		from_name, to_name, key, &cipher, &digest, &maclength,
 		&compression, address, port) < 7) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s)", "ANS_KEY", c->name,
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ANS_KEY", c->name,
 			   c->hostname);
 		return false;
 	}
 
 	if(!check_id(from_name) || !check_id(to_name)) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got bad %s from %s (%s): %s", "ANS_KEY", c->name, c->hostname, "invalid name");
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ANS_KEY", c->name, c->hostname, "invalid name");
 		return false;
 	}
 
 	from = lookup_node(mesh, from_name);
 
 	if(!from) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got %s from %s (%s) origin %s which does not exist in our connection list",
+		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) origin %s which does not exist in our connection list",
 			   "ANS_KEY", c->name, c->hostname, from_name);
 		return true;
 	}
@@ -269,7 +269,7 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	to = lookup_node(mesh, to_name);
 
 	if(!to) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Got %s from %s (%s) destination %s which does not exist in our connection list",
+		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) destination %s which does not exist in our connection list",
 			   "ANS_KEY", c->name, c->hostname, to_name);
 		return true;
 	}
@@ -278,14 +278,14 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(to != mesh->self) {
 		if(!to->status.reachable) {
-			logger(DEBUG_ALWAYS, LOG_WARNING, "Got %s from %s (%s) destination %s which is not reachable",
+			logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) destination %s which is not reachable",
 				   "ANS_KEY", c->name, c->hostname, to_name);
 			return true;
 		}
 
 		if(!*address && from->address.sa.sa_family != AF_UNSPEC) {
 			char *address, *port;
-			logger(DEBUG_PROTOCOL, LOG_DEBUG, "Appending reflexive UDP address to ANS_KEY from %s to %s", from->name, to->name);
+			logger(mesh, MESHLINK_DEBUG, "Appending reflexive UDP address to ANS_KEY from %s to %s", from->name, to->name);
 			sockaddr2str(&from->address, &address, &port);
 			send_request(mesh, to->nexthop->connection, "%s %s %s", request, address, port);
 			free(address);
@@ -300,7 +300,7 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	from->status.validkey = false;
 
 	if(compression < 0 || compression > 11) {
-		logger(DEBUG_ALWAYS, LOG_ERR, "Node %s (%s) uses bogus compression level!", from->name, from->hostname);
+		logger(mesh, MESHLINK_ERROR, "Node %s (%s) uses bogus compression level!", from->name, from->hostname);
 		return true;
 	}
 
@@ -312,11 +312,11 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	int len = b64decode(key, buf, strlen(key));
 
 	if(!len || !sptps_receive_data(&from->sptps, buf, len))
-		logger(DEBUG_ALWAYS, LOG_ERR, "Error processing SPTPS data from %s (%s)", from->name, from->hostname);
+		logger(mesh, MESHLINK_ERROR, "Error processing SPTPS data from %s (%s)", from->name, from->hostname);
 
 	if(from->status.validkey) {
 		if(*address && *port) {
-			logger(DEBUG_PROTOCOL, LOG_DEBUG, "Using reflexive UDP address from %s: %s port %s", from->name, address, port);
+			logger(mesh, MESHLINK_DEBUG, "Using reflexive UDP address from %s: %s port %s", from->name, address, port);
 			sockaddr_t sa = str2sockaddr(address, port);
 			update_node_udp(mesh, from, &sa);
 		}
