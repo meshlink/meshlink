@@ -18,6 +18,7 @@
 #include <uuid/uuid.h>
 
 #define MESHLINK_MDNS_SERVICE_TYPE "_meshlink._tcp"
+#define MESHLINK_MDNS_NAME_KEY "name"
 #define MESHLINK_MDNS_FINGERPRINT_KEY "fingerprint"
 
 static void discovery_entry_group_callback(AvahiServer *server, AvahiSEntryGroup *group, AvahiEntryGroupState state, void *userdata)
@@ -26,7 +27,6 @@ static void discovery_entry_group_callback(AvahiServer *server, AvahiSEntryGroup
 
     // asserts
     assert(mesh != NULL);
-    assert(mesh->name != NULL);
     assert(mesh->avahi_server != NULL);
     assert(mesh->avahi_poll != NULL);
 
@@ -35,11 +35,12 @@ static void discovery_entry_group_callback(AvahiServer *server, AvahiSEntryGroup
     {
         case AVAHI_ENTRY_GROUP_ESTABLISHED:
             /* The entry group has been established successfully */
-            fprintf(stderr, "Service '%s' successfully established.\n", mesh->name);
+            fprintf(stderr, "Service successfully established.\n");
             break;
 
         case AVAHI_ENTRY_GROUP_COLLISION:
-            fprintf(stderr, "Service name collision '%s'\n", mesh->name);
+            fprintf(stderr, "Service collision\n");
+            // @TODO can we just set a new name and retry?
             break;
 
         case AVAHI_ENTRY_GROUP_FAILURE :
@@ -57,6 +58,8 @@ static void discovery_entry_group_callback(AvahiServer *server, AvahiSEntryGroup
 
 static void discovery_create_services(meshlink_handle_t *mesh)
 {
+    char *txt_name = NULL;
+
     // asserts
     assert(mesh != NULL);
     assert(mesh->name != NULL);
@@ -64,7 +67,7 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     assert(mesh->avahi_server != NULL);
     assert(mesh->avahi_poll != NULL);
 
-    fprintf(stderr, "Adding service '%s'\n", mesh->name);
+    fprintf(stderr, "Adding service\n");
 
     /* Ifthis is the first time we're called, let's create a new entry group */
     if(!mesh->avahi_group)
@@ -76,13 +79,24 @@ static void discovery_create_services(meshlink_handle_t *mesh)
         }
     }
 
-    /* Create txt record */
-    char txt_fingerprint[MESHLINK_FINGERPRINTLEN + sizeof(MESHLINK_MDNS_FINGERPRINT_KEY) + 2];
-    snprintf(txt_fingerprint, sizeof(txt_fingerprint), "%s=%s", MESHLINK_MDNS_FINGERPRINT_KEY, meshlink_get_fingerprint(mesh, meshlink_get_node(mesh, mesh->name)));
+    /* Create txt records */
+    size_t txt_name_len = sizeof(MESHLINK_MDNS_NAME_KEY) + 1 + strlen(mesh->name) + 1;
+    txt_name = malloc(txt_name_len);
+    snprintf(txt_name, txt_name_len, "%s=%s", MESHLINK_MDNS_NAME_KEY, mesh->name);
+
+    char txt_fingerprint[sizeof(MESHLINK_MDNS_FINGERPRINT_KEY) + 1 + MESHLINK_FINGERPRINTLEN + 1];
+    snprintf(txt_fingerprint, sizeof(txt_fingerprint), "%s=%s", MESHLINK_MDNS_FINGERPRINT_KEY, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self));
+
+    // Generate a name for the service (actually we do not care)
+    uuid_t srvname;
+    uuid_generate(srvname);
+
+    char srvnamestr[36+1];
+    uuid_unparse_lower(srvname, srvnamestr);
 
     /* Add the service */
     int ret = 0;
-    if((ret = avahi_server_add_service(mesh->avahi_server, mesh->avahi_group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, mesh->name, MESHLINK_MDNS_SERVICE_TYPE, NULL, NULL, atoi(mesh->myport), txt_fingerprint, NULL)) < 0)
+    if((ret = avahi_server_add_service(mesh->avahi_server, mesh->avahi_group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, srvnamestr, MESHLINK_MDNS_SERVICE_TYPE, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0)
     {
         fprintf(stderr, "Failed to add service: %s\n", avahi_strerror(ret));
         goto fail;
@@ -95,10 +109,14 @@ static void discovery_create_services(meshlink_handle_t *mesh)
         goto fail;
     }
 
-    return;
+    goto done;
 
 fail:
     avahi_simple_poll_quit(mesh->avahi_poll);
+
+done:
+    if(txt_name)
+        free(txt_name);
 }
 
 static void discovery_server_callback(AvahiServer *server, AvahiServerState state, void * userdata)
@@ -127,14 +145,15 @@ static void discovery_server_callback(AvahiServer *server, AvahiServerState stat
                 assert(mesh->avahi_server != NULL);
                 assert(mesh->avahi_poll != NULL);
 
-                fprintf(stderr, "Host name collision with '%s'\n", avahi_server_get_host_name(mesh->avahi_server));
-
                 /* A host name collision happened. Let's pick a new name for the server */
-                /*
-                char *new_name = avahi_alternative_host_name(avahi_server_get_host_name(mesh->avahi_server));
-                fprintf(stderr, "Host name collision, retrying with '%s'\n", new_name);
-                int result = avahi_server_set_host_name(mesh->avahi_server, new_name);
-                avahi_free(new_name);
+                uuid_t hostname;
+                uuid_generate(hostname);
+
+                char hostnamestr[36+1];
+                uuid_unparse_lower(hostname, hostnamestr);
+
+                fprintf(stderr, "Host name collision, retrying with '%s'\n", hostnamestr);
+                int result = avahi_server_set_host_name(mesh->avahi_server, hostnamestr);
 
                 if(result < 0)
                 {
@@ -142,7 +161,6 @@ static void discovery_server_callback(AvahiServer *server, AvahiServerState stat
                     avahi_simple_poll_quit(mesh->avahi_poll);
                     return;
                 }
-                */
             }
             break;
 
@@ -233,53 +251,63 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
                 avahi_free(strtxt);
 
                 // retrieve fingerprint
-                AvahiStringList *fgli = avahi_string_list_find(txt, MESHLINK_MDNS_FINGERPRINT_KEY);
-                meshlink_node_t *node = meshlink_get_node(mesh, name);
+                AvahiStringList *node_name_li = avahi_string_list_find(txt, MESHLINK_MDNS_NAME_KEY);
+                AvahiStringList *node_fp_li = avahi_string_list_find(txt, MESHLINK_MDNS_FINGERPRINT_KEY);
 
-                fprintf(stderr, "%p, %p, %s, %s\n", fgli, node, avahi_string_list_get_text(fgli), meshlink_get_fingerprint(mesh, node));
-
-                if(node && fgli && strcmp(avahi_string_list_get_text(fgli) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY) + 1, meshlink_get_fingerprint(mesh, node)) == 0 )
+                if(node_name_li != NULL && node_fp_li != NULL)
                 {
-                    fprintf(stderr, "Node %s is part of the mesh network.\n", node->name);
+                    char *node_name = avahi_string_list_get_text(node_name_li) + strlen(MESHLINK_MDNS_NAME_KEY) + 1;
+                    char *node_fp = avahi_string_list_get_text(node_fp_li) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY) + 1;
 
-                    sockaddr_t naddress;
-                    memset(&naddress, 0, sizeof(naddress));
+                    meshlink_node_t *node = meshlink_get_node(mesh, node_name);
 
-                    switch(address->proto)
+                    if(node != NULL)
                     {
-                        case AVAHI_PROTO_INET:
-                            {
-                                naddress.in.sin_family = AF_INET;
-                                naddress.in.sin_port = port;
-                                naddress.in.sin_addr.s_addr = address->data.ipv4.address;
-                            }
-                            break;
+                        fprintf(stderr, "Node %s is part of the mesh network.\n", node->name);
 
-                        case AVAHI_PROTO_INET6:
-                            {
-                                naddress.in6.sin6_family = AF_INET6;
-                                naddress.in6.sin6_port = port;
-                                memcpy(naddress.in6.sin6_addr.s6_addr, address->data.ipv6.address, sizeof(naddress.in6.sin6_addr.s6_addr));
-                            }
-                            break;
+                        sockaddr_t naddress;
+                        memset(&naddress, 0, sizeof(naddress));
 
-                        default:
-                            naddress.unknown.family = AF_UNKNOWN;
-                            break;
-                    }
+                        switch(address->proto)
+                        {
+                            case AVAHI_PROTO_INET:
+                                {
+                                    naddress.in.sin_family = AF_INET;
+                                    naddress.in.sin_port = port;
+                                    naddress.in.sin_addr.s_addr = address->data.ipv4.address;
+                                }
+                                break;
 
-                    if(naddress.unknown.family != AF_UNKNOWN)
-                    {
-                        meshlink_hint_address(mesh, node, (struct sockaddr*)&naddress);
+                            case AVAHI_PROTO_INET6:
+                                {
+                                    naddress.in6.sin6_family = AF_INET6;
+                                    naddress.in6.sin6_port = port;
+                                    memcpy(naddress.in6.sin6_addr.s6_addr, address->data.ipv6.address, sizeof(naddress.in6.sin6_addr.s6_addr));
+                                }
+                                break;
+
+                            default:
+                                naddress.unknown.family = AF_UNKNOWN;
+                                break;
+                        }
+
+                        if(naddress.unknown.family != AF_UNKNOWN)
+                        {
+                            meshlink_hint_address(mesh, (meshlink_node_t *)node, (struct sockaddr*)&naddress);
+                        }
+                        else
+                        {
+                            fprintf(stderr, "Could not resolve node %s to a known address family type.\n", node->name);
+                        }
                     }
                     else
                     {
-                        fprintf(stderr, "Could not resolve node %s to a known address family type.\n", node->name);
+                        fprintf(stderr, "Node %s is not part of the mesh network.\n", node_name);
                     }
                 }
                 else
                 {
-                    fprintf(stderr, "Node %s is not part of the mesh network.\n", node ? node->name : "n/a");
+                    fprintf(stderr, "TXT records missing.\n");
                 }
             }
             break;
@@ -375,7 +403,7 @@ bool discovery_start(meshlink_handle_t *mesh)
 		goto fail;
     }
 
-    // generate random host name
+    // generate some unique host name (we actually do not care about it)
     uuid_t hostname;
     uuid_generate(hostname);
 
