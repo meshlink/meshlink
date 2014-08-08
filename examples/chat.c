@@ -63,7 +63,7 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			fprintf(stderr, "Invitation accepted!\n");
 			if(!meshlink_start(mesh)) {
 				fprintf(stderr, "Could not start MeshLink: %s\n", meshlink_strerror(meshlink_errno));
-			return 1;
+			return;
 			}
 		}
 	} else if(!strcasecmp(buf, "kick")) {
