@@ -373,11 +373,12 @@ namespace meshlink {
 	 *
 	 *  @param confbase The directory in which MeshLink will store its configuration files.
 	 *  @param name     The name which this instance of the application will use in the mesh.
+	 *  @param appname  The application name which will be used in the mesh.
 	 *
 	 *  @return         This function will return a pointer to a meshlink::mesh if MeshLink has succesfully set up its configuration files, NULL otherwise.
 	 */
-	static mesh *open(const char *confbase, const char *name) {
-		return (mesh *)meshlink_open(confbase, name);
+	static mesh *open(const char *confbase, const char *name, const char* appname) {
+		return (mesh *)meshlink_open(confbase, name, appname);
 	}
 
 	/// Close the MeshLink handle.

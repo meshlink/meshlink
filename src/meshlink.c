@@ -743,12 +743,18 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	return true;
 }
 
-meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
+meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname) {
 	// Validate arguments provided by the application
 	bool usingname = false;
 
 	if(!confbase || !*confbase) {
 		fprintf(stderr, "No confbase given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(!appname || !*appname) {
+		fprintf(stderr, "No appname given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
 	}
@@ -768,6 +774,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name) {
 
 	meshlink_handle_t *mesh = xzalloc(sizeof *mesh);
 	mesh->confbase = xstrdup(confbase);
+	mesh->appname = xstrdup(appname);
 	if (usingname) mesh->name = xstrdup(name);
 	pthread_mutex_init ( &(mesh->outpacketqueue_mutex), NULL);
 	pthread_mutex_init ( &(mesh->nodes_mutex), NULL);

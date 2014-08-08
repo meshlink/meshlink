@@ -67,6 +67,8 @@ struct meshlink_handle {
 
 	char *confbase;
 
+	char *appname;
+
 	meshlink_receive_cb_t receive_cb;
 	meshlink_node_status_cb_t node_status_cb;
 	meshlink_log_cb_t log_cb;
@@ -138,6 +140,7 @@ struct meshlink_handle {
 	struct AvahiSServiceBrowser *avahi_browser;
 	struct AvahiSimplePoll *avahi_poll;
 	struct AvahiSEntryGroup *avahi_group;
+	char* avahi_servicetype;
 };
 
 /// A handle for a MeshLink node.

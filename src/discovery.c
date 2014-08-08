@@ -17,7 +17,7 @@
 
 #include <uuid/uuid.h>
 
-#define MESHLINK_MDNS_SERVICE_TYPE "_meshlink._tcp"
+#define MESHLINK_MDNS_SERVICE_TYPE "_%s._tcp"
 #define MESHLINK_MDNS_NAME_KEY "name"
 #define MESHLINK_MDNS_FINGERPRINT_KEY "fingerprint"
 
@@ -66,6 +66,7 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     assert(mesh->myport != NULL);
     assert(mesh->avahi_server != NULL);
     assert(mesh->avahi_poll != NULL);
+    assert(mesh->avahi_servicetype != NULL);
 
     fprintf(stderr, "Adding service\n");
 
@@ -96,7 +97,7 @@ static void discovery_create_services(meshlink_handle_t *mesh)
 
     /* Add the service */
     int ret = 0;
-    if((ret = avahi_server_add_service(mesh->avahi_server, mesh->avahi_group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, srvnamestr, MESHLINK_MDNS_SERVICE_TYPE, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0)
+    if((ret = avahi_server_add_service(mesh->avahi_server, mesh->avahi_group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, srvnamestr, mesh->avahi_servicetype, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0)
     {
         fprintf(stderr, "Failed to add service: %s\n", avahi_strerror(ret));
         goto fail;
@@ -332,8 +333,8 @@ static void discovery_browse_callback(AvahiSServiceBrowser *browser, AvahiIfInde
             {
                 fprintf(stderr, "(Browser) %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
                 avahi_simple_poll_quit(mesh->avahi_poll);
-                return;
             }
+            return;
 
         case AVAHI_BROWSER_NEW:
             {
@@ -395,6 +396,19 @@ bool discovery_start(meshlink_handle_t *mesh)
     assert(mesh->avahi_server == NULL);
     assert(mesh->avahi_browser == NULL);
     assert(mesh->discovery_threadstarted == false);
+    assert(mesh->avahi_servicetype == NULL);
+
+    // create service type string
+    size_t servicetype_strlen = sizeof(MESHLINK_MDNS_SERVICE_TYPE) + strlen(mesh->appname) + 1;
+    mesh->avahi_servicetype = malloc(servicetype_strlen);
+
+    if(mesh->avahi_servicetype == NULL)
+    {
+        fprintf(stderr, "Failed to allocate memory for service type string.\n");
+        goto fail;
+    }
+
+    snprintf(mesh->avahi_servicetype, servicetype_strlen, MESHLINK_MDNS_SERVICE_TYPE, mesh->appname);
 
     // Allocate discovery loop object
     if(!(mesh->avahi_poll = avahi_simple_poll_new()))
@@ -435,7 +449,7 @@ bool discovery_start(meshlink_handle_t *mesh)
     }
 
     // Create the service browser
-    if(!(mesh->avahi_browser = avahi_s_service_browser_new(mesh->avahi_server, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, MESHLINK_MDNS_SERVICE_TYPE, NULL, 0, discovery_browse_callback, mesh)))
+    if(!(mesh->avahi_browser = avahi_s_service_browser_new(mesh->avahi_server, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, mesh->avahi_servicetype, NULL, 0, discovery_browse_callback, mesh)))
     {
         fprintf(stderr, "Failed to create discovery service browser: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
         goto fail;
@@ -454,22 +468,28 @@ bool discovery_start(meshlink_handle_t *mesh)
 	return true;
 
 fail:
-    if(mesh->avahi_browser)
+    if(mesh->avahi_browser != NULL)
     {
         avahi_s_service_browser_free(mesh->avahi_browser);
         mesh->avahi_browser = NULL;
     }
 
-    if(mesh->avahi_server)
+    if(mesh->avahi_server != NULL)
     {
         avahi_server_free(mesh->avahi_server);
         mesh->avahi_server = NULL;
     }
 
-    if(mesh->avahi_poll)
+    if(mesh->avahi_poll != NULL)
     {
         avahi_simple_poll_free(mesh->avahi_poll);
         mesh->avahi_poll = NULL;
+    }
+
+    if(mesh->avahi_servicetype != NULL)
+    {
+        free(mesh->avahi_servicetype);
+        mesh->avahi_servicetype = NULL;
     }
 
     return false;
@@ -483,6 +503,7 @@ void discovery_stop(meshlink_handle_t *mesh)
     assert(mesh->avahi_server != NULL);
     assert(mesh->avahi_browser != NULL);
     assert(mesh->discovery_threadstarted == true);
+    assert(mesh->avahi_servicetype != NULL);
 
 	// Shut down 
 	avahi_simple_poll_quit(mesh->avahi_poll);
@@ -499,4 +520,7 @@ void discovery_stop(meshlink_handle_t *mesh)
 
     avahi_simple_poll_free(mesh->avahi_poll);
     mesh->avahi_poll = NULL;
+
+    free(mesh->avahi_servicetype);
+    mesh->avahi_servicetype = NULL;
 }

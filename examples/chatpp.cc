@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
 	if(argc > 2)
 		nick = argv[2];
 
-	meshlink::mesh *mesh = meshlink::open(confbase, nick);
+	meshlink::mesh *mesh = meshlink::open(confbase, nick, "chatpp");
 	if(!mesh) {
 		fprintf(stderr, "Could not open MeshLink: %s\n", meshlink::strerror());
 		return 1;
