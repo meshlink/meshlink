@@ -83,6 +83,13 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     /* Create txt records */
     size_t txt_name_len = sizeof(MESHLINK_MDNS_NAME_KEY) + 1 + strlen(mesh->name) + 1;
     txt_name = malloc(txt_name_len);
+
+    if(txt_name == NULL)
+    {
+        fprintf(stderr, "Could not allocate memory for TXT record\n");
+        goto fail;
+    }
+
     snprintf(txt_name, txt_name_len, "%s=%s", MESHLINK_MDNS_NAME_KEY, mesh->name);
 
     char txt_fingerprint[sizeof(MESHLINK_MDNS_FINGERPRINT_KEY) + 1 + MESHLINK_FINGERPRINTLEN + 1];
@@ -117,7 +124,7 @@ fail:
 
 done:
     if(txt_name)
-        free(txt_name);
+        { free(txt_name); }
 }
 
 static void discovery_server_callback(AvahiServer *server, AvahiServerState state, void * userdata)
