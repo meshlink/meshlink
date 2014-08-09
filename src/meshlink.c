@@ -1679,39 +1679,21 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 /* Hint that a hostname may be found at an address
  * See header file for detailed comment.
  */
-extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, struct sockaddr *addr) {
+extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr) {
 	if(!mesh || !node || !addr)
 		return;
 	
-	char *addr_str = malloc(MAX_ADDRESS_LENGTH*sizeof(char));
-	memset(addr_str, 0, MAX_ADDRESS_LENGTH*sizeof(char));
+	char *host = NULL, *port = NULL, *str = NULL;
+	sockaddr2str((const sockaddr_t *)addr, &host, &port);
 
-	char *port_str = malloc(MAX_PORT_LENGTH*sizeof(char));
-	memset(port_str, 0, MAX_PORT_LENGTH*sizeof(char));
-	
-	// extra byte for a space, and one to make sure string is null-terminated
-	int full_addr_len = MAX_ADDRESS_LENGTH + MAX_PORT_LENGTH + 2;
+	if(host && port) {
+		xasprintf(&str, "%s %s", host, port);
+		append_config_file(mesh, node->name, "Address", str);
+	}
 
-	char *full_addr_str = malloc(full_addr_len*sizeof(char));
-	memset(full_addr_str, 0, full_addr_len*sizeof(char));
-	
-	// get address and port number
-	if(!get_ip_str(addr, addr_str, MAX_ADDRESS_LENGTH))
-		goto fail;
-	if(!get_port_str(addr, port_str, MAX_ADDRESS_LENGTH))
-		goto fail;
-
-	// append_config_file expects an address, a space, and then a port number
-	strcat(full_addr_str, addr_str);
-	strcat(full_addr_str, " ");
-	strcat(full_addr_str, port_str);
-	
-	append_config_file(mesh, node->name, "Address", full_addr_str);
-
-fail:
-	free(addr_str);
-	free(port_str);
-	free(full_addr_str);
+	free(str);
+	free(host);
+	free(port);
 
 	// @TODO do we want to fire off a connection attempt right away?
 }
