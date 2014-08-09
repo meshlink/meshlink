@@ -261,6 +261,9 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		}
 
 		bool satisfied = dclass_ccounts_satisfied(mesh->self->dclass, ccounts, num_total);
+		int maxcc = max_ccount_from_dclass(mesh->self->dclass);
+
+		logger(mesh, MESHLINK_INFO, "* num_total = %d, satisfied = %d, maxcc = %d", num_total, satisfied, maxcc);
 
 		if(!satisfied) {
 			logger(mesh, MESHLINK_INFO, "* Not enough active connections, try to add one.");
@@ -281,7 +284,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			cond_add_connection(mesh, num_unreachable, &found_random_unreachable_node);
 		}
 		
-		if(num_total > max_ccount_from_dclass(mesh->self->dclass)) {
+		if(num_total > maxcc) {
 			logger(mesh, MESHLINK_INFO, "* Too many active connections, try to remove one.");
 			/* Too many active connections, try to remove one.
 			   Choose a random outgoing connection to a node
