@@ -48,6 +48,9 @@ typedef struct meshlink_handle meshlink_handle_t;
 /// A handle for a MeshLink node.
 typedef struct meshlink_node meshlink_node_t;
 
+/// A handle for a MeshLink edge.
+typedef struct meshlink_edge meshlink_edge_t;
+
 /// A handle for a MeshLink channel.
 typedef struct meshlink_channel meshlink_channel_t;
 
@@ -96,6 +99,15 @@ struct meshlink_channel {
 };
 
 #endif // MESHLINK_INTERNAL_H
+
+// TODO documentation
+struct meshlink_edge {
+	struct meshlink_node *from;
+	struct meshlink_node *to;
+	struct sockaddr_storage address;
+	uint32_t options;
+	int weight;
+};
 
 /// Get the text for the given MeshLink error code.
 /** This function returns a pointer to the string containing the description of the given error code.
@@ -607,6 +619,25 @@ extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t
  *  			this memory once meshlink returns.
  */
 extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr);
+
+/// Get a list of edges.
+/** This function returns an array with copies of all known bidirectional edges.
+ *  The edges are copied to capture the mesh state at call time, since edges
+ *  mutate frequently. The nodes pointed to within the meshlink_edge_t type
+ *  are not copies; these are the same pointers that one would get from a call
+ *  to meshlink_get_all_nodes().
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param nmemb        A pointer to a variable that will be filled with the number
+ *  			of edges in the returned array.
+ *
+ *  @return             A pointer to an array containing pointers to all known 
+ *  			edges, or NULL in case of an error.
+ *  			The caller must call free() on each element of this
+ *  			array (but not the contents of said elements),
+ *  			as well as the array itself when it is finished.
+ */
+extern meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, size_t *nmemb);
 
 #ifdef __cplusplus
 }

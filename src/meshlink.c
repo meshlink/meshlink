@@ -1836,6 +1836,56 @@ void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const
 	// @TODO do we want to fire off a connection attempt right away?
 }
 
+/* Return an array of edges in the current network graph.
+ * Data captures the current state and will not be updated.
+ * Caller must deallocate data when done.
+ */
+meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, size_t *nmemb) {
+	if(!mesh || !nmemb) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	pthread_mutex_lock(&(mesh->mesh_mutex));
+	
+	meshlink_edge_t **result = NULL;
+	meshlink_edge_t *copy = NULL;
+
+	// mesh->edges->count is the max size
+	*nmemb = mesh->edges->count;
+
+	result = xzalloc(*nmemb * sizeof (meshlink_edge_t*));
+
+	if(result) {
+		meshlink_edge_t **p = result;
+		for splay_each(edge_t, e, mesh->edges) {
+			// skip edges that do not represent a two-directional connection
+			if((!e->reverse) || (e->reverse->to != e->from)) {
+				*nmemb--;
+				continue;
+			}
+			// copy the edge so it can't be mutated
+			copy = xzalloc(sizeof *copy);
+			copy->from = (meshlink_node_t*)e->from;
+			copy->to = (meshlink_node_t*)e->to;
+			//TODO fix conversion from sockaddr_t to sockaddr_storage
+			//copy->address = e->address.ss;
+			copy->options = e->options;
+			copy->weight = e->weight;
+			*p++ = copy;
+		}
+		// shrink result to the actual amount of memory used
+		result = realloc(result, *nmemb * sizeof (meshlink_edge_t*));
+	} else {
+		*nmemb = 0;
+		meshlink_errno = MESHLINK_ENOMEM;
+	}
+
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
+
+	return result;
+}
+
 static void __attribute__((constructor)) meshlink_init(void) {
 	crypto_init();
 }
