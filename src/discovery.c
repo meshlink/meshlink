@@ -536,6 +536,13 @@ void discovery_stop(meshlink_handle_t *mesh)
         mesh->avahi_browser = NULL;
     }
 
+    if(mesh->avahi_group)
+    {
+        avahi_s_entry_group_reset(mesh->avahi_group);
+        avahi_s_entry_group_free(mesh->avahi_group);
+        mesh->avahi_group = NULL;
+    }
+
     if(mesh->avahi_server != NULL)
     {
         avahi_server_free(mesh->avahi_server);

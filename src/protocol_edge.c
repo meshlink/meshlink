@@ -87,16 +87,18 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	if(!from) {
 		from = new_node();
 		from->name = xstrdup(from_name);
-		from->dclass = from_dclass;
 		node_add(mesh, from);
 	}
+
+	from->dclass = from_dclass;
 
 	if(!to) {
 		to = new_node();
 		to->name = xstrdup(to_name);
-		to->dclass = to_dclass;
 		node_add(mesh, to);
 	}
+
+	to->dclass = to_dclass;
 
 	/* Convert addresses */
 
