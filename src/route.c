@@ -42,7 +42,7 @@ void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 	node_t *via = NULL;
 	meshlink_packethdr_t *hdr = (meshlink_packethdr_t *) packet->data;
 	owner = lookup_node(mesh, (char *)hdr->destination);
-	logger(mesh, MESHLINK_WARNING, "Routing packet from: %s . To: %s \n", hdr->source, hdr->destination);
+	logger(mesh, MESHLINK_DEBUG, "Routing packet from \"%s\" to \"%s\"\n", hdr->source, hdr->destination);
 
 	//Check Lenght
 	if(!checklength(source, packet, (sizeof(meshlink_packethdr_t))))
@@ -56,7 +56,7 @@ void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 	}
 
 	if(owner == mesh->self) {
-		logger(mesh, MESHLINK_WARNING, "I received a packet for me with payload: %s \n", packet->data + sizeof *hdr);
+		logger(mesh, MESHLINK_DEBUG, "I received a packet for me with payload: %s \n", packet->data + sizeof *hdr);
 		if(mesh->receive_cb)
 			mesh->receive_cb(mesh, (meshlink_node_t *)source, packet->data + sizeof *hdr, packet->len - sizeof *hdr);
 		return;
