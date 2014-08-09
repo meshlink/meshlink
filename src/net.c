@@ -223,14 +223,32 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 	int timeout = 5;
 
-	/* If AutoConnect is set, check if we need to make or break connections. */
+	/* Check if we need to make or break connections. */
 
-	if(autoconnect && mesh->nodes->count > 1) {
-		/* Count number of active connections */
-		int nc = 0;
+	if(mesh->nodes->count > 1) {
+
+		splay_tree_t* ccounts = splay_alloc_tree(dclass_ccount_compare, NULL);
+
+		/* Count number of active connections per device class */
+		int num_total = 0;
 		for list_each(connection_t, c, mesh->connections) {
 			if(c->status.active)
-				nc++;
+			{
+				dclass_ccount_t key;
+				key.dclass = c->node->dclass;
+
+				dclass_ccount_t* ccount = splay_search(ccounts, &key);
+
+				if(!ccount)
+				{
+					ccount = dclass_ccount_alloc();
+					ccount->dclass = c->node->dclass;
+					splay_insert(ccounts, ccount);
+				}
+
+				ccount->ccount++;
+				num_total++;
+			}
 		}
 
 		/* Count number of unreachable nodes */
@@ -240,14 +258,18 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				num_unreachable++;
 		}
 
-		if(nc < autoconnect) {
+		bool satisfied = dclass_ccounts_satisfied(mesh->self->dclass, ccounts, num_total);
+
+		if(!satisfied) {
 			/* Not enough active connections, try to add one.
 			   Choose a random node, if we don't have a connection to it,
 			   and we are not already trying to make one, create an
 			   outgoing connection to this node.
 			*/
 			cond_add_connection(mesh, mesh->nodes->count, &found_random_node);
-		} else if(num_unreachable > 0) {
+		}
+
+		if(satisfied && num_unreachable > 0) {
 			/* Min number of connections established. Now try
 			   to connect to some unreachable nodes to attempt
 			   to heal possible partitions.
@@ -255,12 +277,12 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			cond_add_connection(mesh, num_unreachable, &found_random_unreachable_node);
 		}
 		
-		if(nc > autoconnect) {
+		if(max_ccount_from_dclass(mesh->self->dclass) > num_total) {
 			/* Too many active connections, try to remove one.
 			   Choose a random outgoing connection to a node
 			   that has at least one other connection.
 			*/
-			int r = rand() % nc;
+			int r = rand() % num_total;
 			int i = 0;
 
 			for list_each(connection_t, c, mesh->connections) {
@@ -281,7 +303,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			}
 		}
 
-		if(nc >= autoconnect) {
+		if(satisfied) {
 			/* If we have enough active connections,
 			   remove any pending outgoing connections.
 			   Do not remove pending connections to unreachable
@@ -312,8 +334,10 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			}
 		}
 
-		if (nc + mesh->outgoings->count < min(autoconnect, mesh->nodes->count - 1))
+		if (!satisfied && (num_total + mesh->outgoings->count) < mesh->nodes->count)
 			timeout = 0;
+
+		splay_free_tree(ccounts);
 	}
 
 	timeout_set(&mesh->loop, data, &(struct timeval){timeout, rand() % 100000});

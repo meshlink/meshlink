@@ -1706,7 +1706,7 @@ static void __attribute__((destructor)) meshlink_exit(void) {
 	crypto_exit();
 }
 
-int weight_from_dclass(dclass_t dclass)
+int cweight_from_dclass(dclass_t dclass)
 {
 	switch(dclass)
 	{
@@ -1721,4 +1721,85 @@ int weight_from_dclass(dclass_t dclass)
 	}
 
 	return 9;
+}
+
+int max_ccount_from_dclass(dclass_t dclass)
+{
+	switch(dclass)
+	{
+	case BACKBONE:
+		return 10000;
+
+	case STATIONARY:
+		return 100;
+
+	case PORTABLE:
+		return 3;
+	}
+
+	return 3;
+}
+
+bool dclass_ccounts_satisfied(dclass_t dclass, splay_tree_t* counts, int total_count)
+{
+	// lookup keys
+	dclass_ccount_t key_portable;
+	key_portable.dclass = PORTABLE;
+
+	dclass_ccount_t key_stationary;
+	key_stationary.dclass = STATIONARY;
+
+	dclass_ccount_t key_backbone;
+	key_backbone.dclass = BACKBONE;
+
+	// check num of portable devices
+	dclass_ccount_t* portable = splay_search(counts, &key_portable);
+
+	if(portable)
+	{
+		if(portable->ccount > 9)
+			return true;
+	}
+
+	// check num of stationary devices
+	dclass_ccount_t* stationary = splay_search(counts, &key_stationary);
+
+	if(stationary)
+	{
+		if(stationary->ccount > 6)
+			return true;
+	}
+
+	// check num of backbone devices
+	dclass_ccount_t* backbone = splay_search(counts, &key_backbone);
+
+	if(backbone)
+	{
+		if(backbone->ccount > 3)
+			return true;
+	}
+
+	// fallback
+	if(total_count >= max_ccount_from_dclass(dclass))
+		return true;
+
+	return false;
+}
+
+int dclass_ccount_compare(const void *a, const void *b)
+{
+	const dclass_ccount_t* da = a;
+	const dclass_ccount_t* db = b;
+
+	return da->dclass - db->dclass;
+}
+
+dclass_ccount_t* dclass_ccount_alloc()
+{
+	return xzalloc(sizeof(dclass_ccount_t));
+}
+
+void dclass_ccount_delete(void *c)
+{
+	free(c);
 }

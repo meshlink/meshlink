@@ -76,7 +76,6 @@ extern unsigned replaywin;
 extern int keylifetime;
 extern int max_connection_burst;
 extern bool do_prune;
-extern int autoconnect;
 
 /* Yes, very strange placement indeed, but otherwise the typedefs get all tangled up */
 #include "connection.h"

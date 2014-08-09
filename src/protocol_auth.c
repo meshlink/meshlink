@@ -444,7 +444,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	sockaddr2str(&c->address, &hisaddress, NULL);
 	c->edge->address = str2sockaddr(hisaddress, hisport);
 	free(hisaddress);
-	c->edge->weight = weight_from_dclass(dclass);
+	c->edge->weight = cweight_from_dclass(dclass);
 	c->edge->connection = c;
 	c->edge->options = c->options;
 

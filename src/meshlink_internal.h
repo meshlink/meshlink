@@ -158,6 +158,17 @@ extern void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
 extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
 
-extern int weight_from_dclass(dclass_t dclass);
+extern int cweight_from_dclass(dclass_t dclass);
+extern int max_ccount_from_dclass(dclass_t dclass);
+extern bool dclass_ccounts_satisfied(dclass_t dclass, splay_tree_t* counts, int total_count);
+
+typedef struct {
+	dclass_t dclass;
+	int ccount;
+} dclass_ccount_t;
+
+extern int dclass_ccount_compare(const void *a, const void *b);
+extern dclass_ccount_t* dclass_ccount_alloc();
+extern void dclass_ccount_delete(void *c);
 
 #endif // MESHLINK_INTERNAL_H

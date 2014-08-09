@@ -32,8 +32,6 @@
 #include "utils.h"
 #include "xalloc.h"
 
-int autoconnect = 3;
-
 bool node_read_ecdsa_public_key(meshlink_handle_t *mesh, node_t *n) {
 	if(ecdsa_active(n->ecdsa))
 		return true;
@@ -230,7 +228,6 @@ bool setup_myself_reloadable(meshlink_handle_t *mesh) {
 	mesh->localdiscovery = true;
 	keylifetime = 3600; // TODO: check if this can be removed as well
 	mesh->maxtimeout = 900;
-	autoconnect = 3;
 	mesh->self->options |= OPTION_PMTU_DISCOVERY;
 
 	read_invitation_key(mesh);
@@ -383,8 +380,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	graph(mesh);
 
-	if(autoconnect)
-		load_all_nodes(mesh);
+	load_all_nodes(mesh);
 
 	/* Open sockets */
 

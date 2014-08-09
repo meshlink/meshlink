@@ -163,7 +163,6 @@ static void discovery_server_callback(AvahiServer *server, AvahiServerState stat
                 {
                     logger(mesh, MESHLINK_ERROR, "Avahi failed to set new host name: %s\n", avahi_strerror(result));
                     avahi_simple_poll_quit(mesh->avahi_poll);
-                    return;
                 }
             }
             break;
@@ -347,7 +346,7 @@ static void discovery_browse_callback(AvahiSServiceBrowser *browser, AvahiIfInde
                 logger(mesh, MESHLINK_ERROR, "(Browser) %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
                 avahi_simple_poll_quit(mesh->avahi_poll);
             }
-            return;
+            break;
 
         case AVAHI_BROWSER_NEW:
             {
