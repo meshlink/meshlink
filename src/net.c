@@ -98,8 +98,14 @@ void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report)
 */
 static void timeout_handler(event_loop_t *loop, void *data) {
 	meshlink_handle_t *mesh = loop->data;
+	logger(mesh, MESHLINK_DEBUG, "timeout_handler()");
 
 	for list_each(connection_t, c, mesh->connections) {
+		// Also make sure that if outstanding key requests for the UDP counterpart of a connection has timed out, we restart it.
+		if(c->node) {
+			if(c->node->status.waitingforkey && c->node->last_req_key + mesh->pingtimeout <= mesh->loop.now.tv_sec)
+				send_req_key(mesh, c->node);
+		}
 		if(c->last_ping_time + mesh->pingtimeout <= mesh->loop.now.tv_sec) {
 			if(c->status.active) {
 				if(c->status.pinged) {
