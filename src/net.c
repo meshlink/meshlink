@@ -309,7 +309,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		}
 
 		if(satisfied) {
-			logger(mesh, MESHLINK_INFO, "* If we have enough active connections, remove pending outgoing connections.");
+			logger(mesh, MESHLINK_INFO, "* We have enough active connections, remove pending outgoing connections.");
 			/* If we have enough active connections,
 			   remove any pending outgoing connections.
 			   Do not remove pending connections to unreachable
