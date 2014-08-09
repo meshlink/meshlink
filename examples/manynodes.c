@@ -37,11 +37,9 @@ static void testmesh () {
 				printf("%zu known nodes:\n", nnodes);
 				for(int i = 0; i < nnodes; i++) {
 					//printf(" %s\n", nodes[i]->name);
-					if (nindex != i) {
 						if(!meshlink_send(mesh[nindex], nodes[i], "magic", strlen("magic") + 1)) {
 		fprintf(stderr, "Could not send message to '%s': %s\n", nodes[i]->name, meshlink_strerror(meshlink_errno));
 						}
-					}
 				}
 
 			}
@@ -234,7 +232,7 @@ int main(int argc, char *argv[]) {
 
 	mesh = calloc(n, sizeof *mesh);
 
-	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_message);
+	meshlink_set_log_cb(NULL, MESHLINK_INFO, log_message);
 	mkdir(basebase, 0750);
 
 	char filename[PATH_MAX];
