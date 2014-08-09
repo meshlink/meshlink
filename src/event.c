@@ -177,7 +177,7 @@ void signal_del(event_loop_t *loop, signal_t *sig) {
 	sig->cb = NULL;
 }
 
-bool event_loop_run(event_loop_t *loop) {
+bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 	loop->running = true;
 
 	fd_set readable;
@@ -211,7 +211,12 @@ bool event_loop_run(event_loop_t *loop) {
 			fds = last->fd + 1;
 		}
 
+		// release mesh mutex during select
+		if(mutex)
+			pthread_mutex_unlock(mutex);
 		int n = select(fds, &readable, &writable, NULL, tv);
+		if(mutex)
+			pthread_mutex_lock(mutex);
 
 		if(n < 0) {
 			if(sockwouldblock(errno))
