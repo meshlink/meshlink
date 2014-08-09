@@ -1042,8 +1042,10 @@ void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh) {
 
 	outpacketqueue_t* p = meshlink_queue_pop(&mesh->outpacketqueue);
 	if(!p)
+	{
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
 		return;
+	}
 
 	if (sizeof(meshlink_packethdr_t) + p->len > MAXSIZE) {
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
