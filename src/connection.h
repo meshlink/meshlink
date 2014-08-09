@@ -64,8 +64,6 @@ typedef struct connection_t {
 	int socket;                     /* socket used for this connection */
 	uint32_t options;               /* options for this connection */
 	connection_status_t status;     /* status info */
-	int estimated_weight;           /* estimation for the weight of the edge for this connection */
-	struct timeval start;           /* time this connection was started, used for above estimation */
 	struct outgoing_t *outgoing;    /* used to keep track of outgoing connections */
 
 	struct meshlink_handle *mesh;   /* the mesh this connection belongs to */

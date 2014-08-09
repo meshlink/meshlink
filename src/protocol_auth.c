@@ -124,8 +124,7 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 }
 
 bool send_id(meshlink_handle_t *mesh, connection_t *c) {
-	gettimeofday(&c->start, NULL);
-
+	
 	int minor = mesh->self->connection->protocol_minor;
 
 	if(mesh->proxytype && c->outgoing)
@@ -353,22 +352,13 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
-	/* ACK message contains rest of the information the other end needs
-	   to create node_t and edge_t structures. */
-
-	struct timeval now;
-
-	/* Estimate weight */
-
-	gettimeofday(&now, NULL);
-	c->estimated_weight = (now.tv_sec - c->start.tv_sec) * 1000 + (now.tv_usec - c->start.tv_usec) / 1000;
 
 	/* Check some options */
 
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY)
 		c->options |= OPTION_PMTU_DISCOVERY;
 
-	return send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, c->estimated_weight, (c->options & 0xffffff) | (PROT_MINOR << 24));
+	return send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->dclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
 }
 
 static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
@@ -383,11 +373,11 @@ static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
 bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char hisport[MAX_STRING_SIZE];
 	char *hisaddress;
-	int weight;
+	int dclass;
 	uint32_t options;
 	node_t *n;
 
-	if(sscanf(request, "%*d " MAX_STRING " %d %x", hisport, &weight, &options) != 3) {
+	if(sscanf(request, "%*d " MAX_STRING " %d %x", hisport, &dclass, &options) != 3) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ACK", c->name,
 			   c->hostname);
 		return false;
@@ -449,7 +439,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	sockaddr2str(&c->address, &hisaddress, NULL);
 	c->edge->address = str2sockaddr(hisaddress, hisport);
 	free(hisaddress);
-	c->edge->weight = (weight + c->estimated_weight) / 2;
+	c->edge->weight = weight_from_dclass(dclass);
 	c->edge->connection = c;
 	c->edge->options = c->options;
 

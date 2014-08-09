@@ -63,11 +63,11 @@ typedef struct outpacketqueue {
 /// A handle for an instance of MeshLink.
 struct meshlink_handle {
 	char *name;
+	char *appname;
+	dclass_t dclass;
 	void *priv;
 
 	char *confbase;
-
-	char *appname;
 
 	meshlink_receive_cb_t receive_cb;
 	meshlink_node_status_cb_t node_status_cb;
@@ -158,5 +158,6 @@ extern void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
 extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
 
+extern int weight_from_dclass(dclass_t dclass);
 
 #endif // MESHLINK_INTERNAL_H

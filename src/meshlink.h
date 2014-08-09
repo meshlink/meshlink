@@ -65,6 +65,12 @@ typedef enum {
 	MESHLINK_EPEER, ///< A peer caused an error
 } meshlink_errno_t;
 
+// Device class
+typedef enum {
+	STATIONARY = 1,
+	PORTABLE = 2
+} dclass_t;
+
 /// A variable holding the last encountered error from MeshLink.
 /** This is a thread local variable that contains the error code of the most recent error
  *  encountered by a MeshLink API function called in the current thread.
@@ -123,14 +129,15 @@ extern const char *meshlink_strerror(meshlink_errno_t err);
  *                  After the function returns, the application is free to overwrite or free @a name @a.
  *  @param appname  The application name which will be used in the mesh.
  *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *  @param dclass   The device class which will be used in the mesh.
  *
  *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink, or NULL in case of an error.
  *                  The pointer is valid until meshlink_close() is called.
  */
-extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname);
+extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dclass_t dclass);
 
 /// is used by the C++ wrapper to allocate more memory behind the handle
-extern meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, const char* appname, size_t size);
+extern meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, const char* appname, dclass_t dclass, size_t size);
 
 /// Start MeshLink.
 /** This function causes MeshLink to open network sockets, make outgoing connections, and

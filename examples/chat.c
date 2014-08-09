@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
 
 	meshlink_set_log_cb(NULL, MESHLINK_INFO, log_message);
 
-	meshlink_handle_t *mesh = meshlink_open(confbase, nick, "chat");
+	meshlink_handle_t *mesh = meshlink_open(confbase, nick, "chat", STATIONARY);
 	if(!mesh) {
 		fprintf(stderr, "Could not open MeshLink: %s\n", meshlink_strerror(meshlink_errno));
 		return 1;

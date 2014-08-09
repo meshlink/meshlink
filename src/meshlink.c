@@ -742,11 +742,11 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	return true;
 }
 
-meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname) {
-	return meshlink_open_with_size(confbase, name, appname, sizeof(meshlink_handle_t));
+meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dclass_t dclass) {
+	return meshlink_open_with_size(confbase, name, appname, dclass, sizeof(meshlink_handle_t));
 }
 
-meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, const char* appname, size_t size) {
+meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, const char* appname, dclass_t dclass, size_t size) {
 
 	// Validate arguments provided by the application
 	bool usingname = false;
@@ -779,6 +779,7 @@ meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *nam
 	meshlink_handle_t *mesh = xzalloc(size);
 	mesh->confbase = xstrdup(confbase);
 	mesh->appname = xstrdup(appname);
+	mesh->dclass = dclass;
 	if (usingname) mesh->name = xstrdup(name);
 	pthread_mutex_init ( &(mesh->nodes_mutex), NULL);
 	mesh->threadstarted = false;
@@ -934,6 +935,7 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	ecdsa_free(mesh->invitation_key);
 
 	free(mesh->name);
+	free(mesh->appname);
 	free(mesh->confbase);
 
 	memset(mesh, 0, sizeof *mesh);
@@ -1720,4 +1722,11 @@ static void __attribute__((constructor)) meshlink_init(void) {
 
 static void __attribute__((destructor)) meshlink_exit(void) {
 	crypto_exit();
+}
+
+int weight_from_dclass(dclass_t dclass)
+{
+	if(dclass == PORTABLE)
+		return 3;
+	return 1;
 }
