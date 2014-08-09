@@ -22,7 +22,7 @@ static void log_message(meshlink_handle_t *mesh, meshlink_log_level_t level, con
 		[MESHLINK_ERROR] = "\x1b[31mERROR",
 		[MESHLINK_CRITICAL] = "\x1b[31mCRITICAL",
 	};
-	fprintf(stderr, "%s\t%s:\x1b[0m %s\n", mesh->name,levelstr[level], text);
+	fprintf(stderr, "%s\t%s:\x1b[0m %s\n", mesh ? mesh->name : "global",levelstr[level], text);
 }
 
 //Test mesh sending data
