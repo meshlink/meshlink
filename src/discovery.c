@@ -281,7 +281,7 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
                                 case AVAHI_PROTO_INET:
                                     {
                                         naddress.in.sin_family = AF_INET;
-                                        naddress.in.sin_port = port;
+                                        naddress.in.sin_port = htons(port);
                                         naddress.in.sin_addr.s_addr = address->data.ipv4.address;
                                     }
                                     break;
@@ -289,7 +289,7 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
                                 case AVAHI_PROTO_INET6:
                                     {
                                         naddress.in6.sin6_family = AF_INET6;
-                                        naddress.in6.sin6_port = port;
+                                        naddress.in6.sin6_port = htons(port);
                                         memcpy(naddress.in6.sin6_addr.s6_addr, address->data.ipv6.address, sizeof(naddress.in6.sin6_addr.s6_addr));
                                     }
                                     break;
