@@ -36,11 +36,13 @@ static void testmesh () {
 			} else {
 				printf("%zu known nodes:\n", nnodes);
 				for(int i = 0; i < nnodes; i++) {
-					printf(" %s\n", nodes[i]->name);
-					if(!meshlink_send(mesh[nindex], nodes[i], "magic", strlen("magic") + 1)) {
+					//printf(" %s\n", nodes[i]->name);
+					if (nindex != i) {
+						if(!meshlink_send(mesh[nindex], nodes[i], "magic", strlen("magic") + 1)) {
 		fprintf(stderr, "Could not send message to '%s': %s\n", nodes[i]->name, meshlink_strerror(meshlink_errno));
-	}
-	}
+						}
+					}
+				}
 
 			}
 

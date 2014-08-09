@@ -560,11 +560,11 @@ void send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 		return;
 	}
 
-	logger(mesh, MESHLINK_ERROR, "Sending packet of %d bytes to %s (%s)",
+	logger(mesh, MESHLINK_DEBUG, "Sending packet of %d bytes to %s (%s)",
 			   packet->len, n->name, n->hostname);
 
 	if(!n->status.reachable) {
-		logger(mesh, MESHLINK_INFO, "Node %s (%s) is not reachable",
+		logger(mesh, MESHLINK_WARNING, "Node %s (%s) is not reachable",
 				   n->name, n->hostname);
 		return;
 	}

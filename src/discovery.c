@@ -9,6 +9,7 @@
 #include <avahi-core/core.h>
 #include <avahi-core/lookup.h>
 #include <avahi-core/publish.h>
+#include <avahi-core/log.h>
 #include <avahi-common/simple-watch.h>
 #include <avahi-common/malloc.h>
 #include <avahi-common/alternative.h>
@@ -400,6 +401,33 @@ static void *discovery_loop(void *userdata)
     return NULL;
 }
 
+static void discovery_log_cb(AvahiLogLevel level, const char *txt)
+{
+    meshlink_log_level_t mlevel = MESHLINK_CRITICAL;
+
+    switch(level)
+    {
+    case AVAHI_LOG_ERROR:
+        mlevel = MESHLINK_ERROR;
+        break;
+
+    case AVAHI_LOG_WARN:
+        mlevel = MESHLINK_WARNING;
+        break;
+
+    case AVAHI_LOG_NOTICE:
+    case AVAHI_LOG_INFO:
+        mlevel = MESHLINK_INFO;
+        break;
+
+    case AVAHI_LOG_DEBUG:
+        mlevel = MESHLINK_DEBUG;
+        break;
+    }
+
+    logger(NULL, mlevel, "%s\n", txt);
+}
+
 bool discovery_start(meshlink_handle_t *mesh)
 {
     logger(mesh, MESHLINK_DEBUG, "discovery_start called\n");
@@ -412,6 +440,9 @@ bool discovery_start(meshlink_handle_t *mesh)
     assert(mesh->discovery_threadstarted == false);
     assert(mesh->avahi_servicetype == NULL);
 
+    // handle avahi logs
+    avahi_set_log_function(discovery_log_cb);
+    
     // create service type string
     size_t servicetype_strlen = sizeof(MESHLINK_MDNS_SERVICE_TYPE) + strlen(mesh->appname) + 1;
     mesh->avahi_servicetype = malloc(servicetype_strlen);
@@ -534,6 +565,13 @@ void discovery_stop(meshlink_handle_t *mesh)
     {
         avahi_s_service_browser_free(mesh->avahi_browser);
         mesh->avahi_browser = NULL;
+    }
+
+    if(mesh->avahi_group)
+    {
+        avahi_s_entry_group_reset(mesh->avahi_group);
+        avahi_s_entry_group_free(mesh->avahi_group);
+        mesh->avahi_group = NULL;
     }
 
     if(mesh->avahi_server != NULL)
