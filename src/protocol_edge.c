@@ -62,7 +62,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	int weight;
 
 	if(sscanf(request, "%*d %*x "MAX_STRING" %d "MAX_STRING" "MAX_STRING" "MAX_STRING" %d %x %d",
-			  from_name, &from_dclass, to_name, to_address, to_port, &to_dclass, &options, &weight) != 6) {
+			  from_name, &from_dclass, to_name, to_address, to_port, &to_dclass, &options, &weight) != 8) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ADD_EDGE", c->name,
 			   c->hostname);
 		return false;
