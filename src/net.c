@@ -227,6 +227,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 	if(mesh->nodes->count > 1) {
 
+		logger(mesh, MESHLINK_INFO, "--- autoconnect begin ---");
+
 		splay_tree_t* ccounts = splay_alloc_tree(dclass_ccount_compare, NULL);
 
 		/* Count number of active connections per device class */
@@ -261,6 +263,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		bool satisfied = dclass_ccounts_satisfied(mesh->self->dclass, ccounts, num_total);
 
 		if(!satisfied) {
+			logger(mesh, MESHLINK_INFO, "* Not enough active connections, try to add one.");
 			/* Not enough active connections, try to add one.
 			   Choose a random node, if we don't have a connection to it,
 			   and we are not already trying to make one, create an
@@ -270,6 +273,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		}
 
 		if(satisfied && num_unreachable > 0) {
+			logger(mesh, MESHLINK_INFO, "* Min number of connections established. Now heal possible partitions.");
 			/* Min number of connections established. Now try
 			   to connect to some unreachable nodes to attempt
 			   to heal possible partitions.
@@ -277,7 +281,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			cond_add_connection(mesh, num_unreachable, &found_random_unreachable_node);
 		}
 		
-		if(max_ccount_from_dclass(mesh->self->dclass) > num_total) {
+		if(num_total > max_ccount_from_dclass(mesh->self->dclass)) {
+			logger(mesh, MESHLINK_INFO, "* Too many active connections, try to remove one.");
 			/* Too many active connections, try to remove one.
 			   Choose a random outgoing connection to a node
 			   that has at least one other connection.
@@ -304,6 +309,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		}
 
 		if(satisfied) {
+			logger(mesh, MESHLINK_INFO, "* If we have enough active connections, remove pending outgoing connections.");
 			/* If we have enough active connections,
 			   remove any pending outgoing connections.
 			   Do not remove pending connections to unreachable
@@ -335,9 +341,14 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		}
 
 		if (!satisfied && (num_total + mesh->outgoings->count) < mesh->nodes->count)
+		{
+			logger(mesh, MESHLINK_INFO, "* No timeout.");
 			timeout = 0;
+		}
 
 		splay_free_tree(ccounts);
+
+		logger(mesh, MESHLINK_INFO, "--- autoconnect end ---");
 	}
 
 	timeout_set(&mesh->loop, data, &(struct timeval){timeout, rand() % 100000});
