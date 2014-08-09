@@ -47,7 +47,4 @@ extern const char *winerror(int);
 
 extern unsigned int bitfield_to_int(const void *bitfield, size_t size);
 
-extern char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen);
-extern char *get_port_str(const struct sockaddr *sa, char *s, size_t maxlen);
-
 #endif /* __MESHLINK_UTILS_H__ */
