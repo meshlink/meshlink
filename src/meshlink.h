@@ -589,7 +589,7 @@ extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t
  *  			given hostname. The caller is free to overwrite or free
  *  			this memory once meshlink returns.
  */
-extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, struct sockaddr *addr);
+extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr);
 
 #ifdef __cplusplus
 }
