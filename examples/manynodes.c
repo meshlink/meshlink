@@ -14,6 +14,17 @@ static meshlink_handle_t **mesh;
 static meshlink_node_t **nodes;
 static size_t nnodes;
 
+static void log_message(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	const char *levelstr[] = {
+		[MESHLINK_DEBUG] = "\x1b[34mDEBUG",
+		[MESHLINK_INFO] = "\x1b[32mINFO",
+		[MESHLINK_WARNING] = "\x1b[33mWARNING",
+		[MESHLINK_ERROR] = "\x1b[31mERROR",
+		[MESHLINK_CRITICAL] = "\x1b[31mCRITICAL",
+	};
+	fprintf(stderr, "%s\t%s:\x1b[0m %s\n", mesh->name,levelstr[level], text);
+}
+
 //Test mesh sending data
 static void testmesh () {
 
@@ -23,9 +34,9 @@ static void testmesh () {
 			if(!nodes) {
 				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink_strerror(meshlink_errno));
 			} else {
-				printf("%zu known nodes:", nnodes);
+				printf("%zu known nodes:\n", nnodes);
 				for(int i = 0; i < nnodes; i++) {
-					printf(" %s", nodes[i]->name);
+					printf(" %s\n", nodes[i]->name);
 					if(!meshlink_send(mesh[nindex], nodes[i], "magic", strlen("magic") + 1)) {
 		fprintf(stderr, "Could not send message to '%s': %s\n", nodes[i]->name, meshlink_strerror(meshlink_errno));
 	}
@@ -221,6 +232,7 @@ int main(int argc, char *argv[]) {
 
 	mesh = calloc(n, sizeof *mesh);
 
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_message);
 	mkdir(basebase, 0750);
 
 	char filename[PATH_MAX];
@@ -230,6 +242,7 @@ int main(int argc, char *argv[]) {
 		snprintf(filename, sizeof filename, "%s/%s", basebase, nodename);
 		bool itsnew = access(filename, R_OK);
 		mesh[i] = meshlink_open(filename, nodename, "manynodes", STATIONARY);
+		meshlink_set_log_cb(mesh[i], MESHLINK_INFO, log_message);
 		if(itsnew)
 			meshlink_add_address(mesh[i], "localhost");
 		if(!mesh[i]) {
