@@ -124,6 +124,61 @@ static bool read_invitation_key(meshlink_handle_t *mesh) {
 	return mesh->invitation_key;
 }
 
+bool node_read_dclass(meshlink_handle_t *mesh, node_t *n) {
+	if(n->dclass != 0)
+		return true;
+
+	splay_tree_t *config_tree;
+	char *p;
+
+	init_configuration(&config_tree);
+	if(!read_host_config(mesh, config_tree, n->name))
+		goto exit;
+
+	if(get_config_string(lookup_config(config_tree, "DeviceClass"), &p)) {
+		n->dclass = atoi(p);
+		free(p);
+	}
+
+exit:
+	exit_configuration(&config_tree);
+	return n->dclass != 0;
+}
+
+bool node_write_dclass(meshlink_handle_t *mesh, node_t *n) {
+
+	if(n->dclass == 0)
+		return false;
+
+	bool result = false;
+
+	splay_tree_t *config_tree;
+	init_configuration(&config_tree);
+
+	// ignore read errors; in case the file does not exist we will create it
+	read_host_config(mesh, config_tree, n->name);
+
+	config_t* cnf = lookup_config(config_tree, "DeviceClass");
+
+	if(!cnf)
+	{
+		cnf = new_config();
+		cnf->variable = xstrdup("DeviceClass");
+		config_add(config_tree, cnf);
+	}
+
+	set_config_int(cnf, n->dclass);
+
+	if(!write_host_config(mesh, config_tree, n->name))
+		goto fail;
+
+	result = true;
+
+fail:
+	exit_configuration(&config_tree);
+	return result;
+}
+
 void load_all_nodes(meshlink_handle_t *mesh) {
 	DIR *dir;
 	struct dirent *ent;
@@ -146,6 +201,7 @@ void load_all_nodes(meshlink_handle_t *mesh) {
 
 		n = new_node();
 		n->name = xstrdup(ent->d_name);
+		node_read_dclass(mesh, n);
 		node_add(mesh, n);
 	}
 

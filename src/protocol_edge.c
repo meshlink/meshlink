@@ -91,6 +91,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	}
 
 	from->dclass = from_dclass;
+	node_write_dclass(mesh, from);
 
 	if(!to) {
 		to = new_node();
@@ -99,6 +100,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	}
 
 	to->dclass = to_dclass;
+	node_write_dclass(mesh, to);
 
 	/* Convert addresses */
 

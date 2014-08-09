@@ -144,11 +144,40 @@ bool get_config_int(const config_t *cfg, int *result) {
 	return false;
 }
 
+bool set_config_int(config_t *cfg, int val)
+{
+	if(!cfg)
+		return false;
+
+	char val_str[1024];
+	snprintf(val_str, sizeof(val_str), "%d", val);
+
+	if(cfg->value)
+		free(cfg->value);
+
+	cfg->value = xstrdup(val_str);
+
+	return true;
+}
+
 bool get_config_string(const config_t *cfg, char **result) {
 	if(!cfg)
 		return false;
 
 	*result = xstrdup(cfg->value);
+
+	return true;
+}
+
+bool set_config_string(config_t *cfg, const char* val)
+{
+	if(!cfg)
+		return false;
+
+	if(cfg->value)
+		free(cfg->value);
+
+	cfg->value = xstrdup(val);
 
 	return true;
 }
@@ -291,6 +320,45 @@ bool read_config_file(splay_tree_t *config_tree, const char *fname) {
 	return result;
 }
 
+bool write_config_file(const struct splay_tree_t *config_tree, const char *fname)
+{
+	FILE *fp;
+
+	fp = fopen(fname, "w+");
+
+	if(!fp) {
+		logger(NULL, MESHLINK_ERROR, "Cannot open config file %s: %s", fname, strerror(errno));
+		return false;
+	}
+
+	for splay_each(config_t, cnf, config_tree)
+	{
+		if(fwrite(cnf->variable, sizeof(char), strlen(cnf->variable), fp) < strlen(cnf->variable)) {
+			logger(NULL, MESHLINK_ERROR, "Cannot write to config file %s: %s", fname, strerror(errno));
+			return false;
+		}
+
+		if(fwrite(" = ", sizeof(char), 3, fp) < 3) {
+			logger(NULL, MESHLINK_ERROR, "Cannot write to config file %s: %s", fname, strerror(errno));
+			return false;
+		}
+
+		if(fwrite(cnf->value, sizeof(char), strlen(cnf->value), fp) < strlen(cnf->value)) {
+			logger(NULL, MESHLINK_ERROR, "Cannot write to config file %s: %s", fname, strerror(errno));
+			return false;
+		}
+
+		if(fwrite("\n", sizeof(char), 1, fp) < 1) {
+			logger(NULL, MESHLINK_ERROR, "Cannot write to config file %s: %s", fname, strerror(errno));
+			return false;
+		}
+	}
+
+	fclose(fp);
+
+	return true;
+}
+
 bool read_server_config(meshlink_handle_t *mesh) {
 	char filename[PATH_MAX];
 	bool x;
@@ -313,6 +381,14 @@ bool read_host_config(meshlink_handle_t *mesh, splay_tree_t *config_tree, const 
 	x = read_config_file(config_tree, filename);
 
 	return x;
+}
+
+bool write_host_config(struct meshlink_handle *mesh, const struct splay_tree_t *config_tree, const char *name)
+{
+	char filename[PATH_MAX];
+
+	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	return write_config_file(config_tree, filename);
 }
 
 bool append_config_file(meshlink_handle_t *mesh, const char *name, const char *key, const char *value) {
