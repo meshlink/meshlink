@@ -1726,7 +1726,17 @@ static void __attribute__((destructor)) meshlink_exit(void) {
 
 int weight_from_dclass(dclass_t dclass)
 {
-	if(dclass == PORTABLE)
+	switch(dclass)
+	{
+	case BACKBONE:
+		return 1;
+
+	case STATIONARY:
 		return 3;
-	return 1;
+
+	case PORTABLE:
+		return 6;
+	}
+
+	return 9;
 }

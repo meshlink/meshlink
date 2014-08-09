@@ -67,8 +67,9 @@ typedef enum {
 
 // Device class
 typedef enum {
-	STATIONARY = 1,
-	PORTABLE = 2
+	BACKBONE = 1,
+	STATIONARY = 2,
+	PORTABLE = 3
 } dclass_t;
 
 /// A variable holding the last encountered error from MeshLink.

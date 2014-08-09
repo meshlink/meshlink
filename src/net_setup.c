@@ -276,6 +276,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	mesh->self = new_node();
 	mesh->self->connection = new_connection();
 	mesh->self->name = name;
+	mesh->self->dclass = mesh->dclass;
 	mesh->self->connection->name = xstrdup(name);
 	read_host_config(mesh, mesh->config, name);
 

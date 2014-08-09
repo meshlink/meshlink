@@ -2,6 +2,7 @@
 #include "meshlink_internal.h"
 #include "discovery.h"
 #include "sockaddr.h"
+#include "logger.h"
 
 #include <pthread.h>
 

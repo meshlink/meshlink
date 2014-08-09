@@ -411,6 +411,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		}
 	}
 
+	n->dclass = dclass;
 	n->connection = c;
 	c->node = n;
 	if(!(c->options & options & OPTION_PMTU_DISCOVERY)) {

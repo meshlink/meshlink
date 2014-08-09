@@ -39,8 +39,8 @@ bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
 
 	sockaddr2str(&e->address, &address, &port);
 
-	x = send_request(mesh, c, "%d %x %s %s %s %s %x %d", ADD_EDGE, rand(),
-					 e->from->name, e->to->name, address, port,
+	x = send_request(mesh, c, "%d %x %s %d %s %s %s %d %x %d", ADD_EDGE, rand(),
+					 e->from->name, e->from->dclass, e->to->name, address, port, e->to->dclass,
 					 e->options, e->weight);
 	free(address);
 	free(port);
@@ -52,15 +52,17 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	edge_t *e;
 	node_t *from, *to;
 	char from_name[MAX_STRING_SIZE];
+	int from_dclass;
 	char to_name[MAX_STRING_SIZE];
 	char to_address[MAX_STRING_SIZE];
 	char to_port[MAX_STRING_SIZE];
+	int to_dclass;
 	sockaddr_t address;
 	uint32_t options;
 	int weight;
 
-	if(sscanf(request, "%*d %*x "MAX_STRING" "MAX_STRING" "MAX_STRING" "MAX_STRING" %x %d",
-			  from_name, to_name, to_address, to_port, &options, &weight) != 6) {
+	if(sscanf(request, "%*d %*x "MAX_STRING" %d "MAX_STRING" "MAX_STRING" "MAX_STRING" %d %x %d",
+			  from_name, &from_dclass, to_name, to_address, to_port, &to_dclass, &options, &weight) != 6) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ADD_EDGE", c->name,
 			   c->hostname);
 		return false;
@@ -85,15 +87,16 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	if(!from) {
 		from = new_node();
 		from->name = xstrdup(from_name);
+		from->dclass = from_dclass;
 		node_add(mesh, from);
 	}
 
 	if(!to) {
 		to = new_node();
 		to->name = xstrdup(to_name);
+		to->dclass = to_dclass;
 		node_add(mesh, to);
 	}
-
 
 	/* Convert addresses */
 
