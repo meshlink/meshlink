@@ -132,7 +132,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 		packet.len = len;
 		n->status.broadcast = i >= 4 && n->mtuprobes <= 10 && n->prevedge;
 
-		logger(mesh, MESHLINK_INFO, "Sending MTU probe length %d to %s (%s)", len, n->name, n->hostname);
+		logger(mesh, MESHLINK_DEBUG, "Sending MTU probe length %d to %s (%s)", len, n->name, n->hostname);
 
 		send_udppacket(mesh, n, &packet);
 	}
@@ -163,7 +163,7 @@ void send_mtu_probe(meshlink_handle_t *mesh, node_t *n) {
 }
 
 static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet, uint16_t len) {
-	logger(mesh, MESHLINK_INFO, "Got MTU probe length %d from %s (%s)", packet->len, n->name, n->hostname);
+	logger(mesh, MESHLINK_DEBUG, "Got MTU probe length %d from %s (%s)", packet->len, n->name, n->hostname);
 
 	if(!packet->data[0]) {
 		/* It's a probe request, send back a reply */
