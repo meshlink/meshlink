@@ -36,6 +36,8 @@
 #include "utils.h"
 #include "xalloc.h"
 #include "ed25519/sha512.h"
+    
+extern bool node_write_dclass(meshlink_handle_t *mesh, node_t *n);
 
 static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 	switch(mesh->proxytype) {

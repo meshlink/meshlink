@@ -33,6 +33,8 @@
 #include "utils.h"
 #include "xalloc.h"
 
+extern bool node_write_dclass(meshlink_handle_t *mesh, node_t *n);
+
 bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
 	bool x;
 	char *address, *port;
