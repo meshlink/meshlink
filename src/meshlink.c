@@ -1868,8 +1868,9 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, size_t *
 			copy = xzalloc(sizeof *copy);
 			copy->from = (meshlink_node_t*)e->from;
 			copy->to = (meshlink_node_t*)e->to;
-			//TODO fix conversion from sockaddr_t to sockaddr_storage
-			//copy->address = e->address.ss;
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
+			copy->address = e->address.storage;
+#endif
 			copy->options = e->options;
 			copy->weight = e->weight;
 			*p++ = copy;

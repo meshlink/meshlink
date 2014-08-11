@@ -100,13 +100,22 @@ struct meshlink_channel {
 
 #endif // MESHLINK_INTERNAL_H
 
-// TODO documentation
+/// An edge in the meshlink network.
 struct meshlink_edge {
-	struct meshlink_node *from;
-	struct meshlink_node *to;
-	struct sockaddr_storage address;
-	uint32_t options;
-	int weight;
+	struct meshlink_node *from;     ///< Pointer to a node. Node memory is
+				        //   owned by meshlink and should not be
+				        //   deallocated. Node contents may be
+				        //   changed by meshlink.
+	struct meshlink_node *to;       ///< Pointer to a node. Node memory is
+                                        //   owned by meshlink and should not be
+                                        //   deallocated. Node contents may be
+                                        //   changed by meshlink.
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
+	struct sockaddr_storage address;///< The address information associated
+#endif
+					//   with this edge.
+	uint32_t options;               ///< Edge options. @TODO what are edge options?
+	int weight;                     ///< Weight assigned to this edge.
 };
 
 /// Get the text for the given MeshLink error code.
