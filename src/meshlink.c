@@ -1840,8 +1840,8 @@ void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const
  * Data captures the current state and will not be updated.
  * Caller must deallocate data when done.
  */
-meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, size_t *nmemb) {
-	if(!mesh || !nmemb) {
+meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink_edge_t **edges, size_t *nmemb) {
+	if(!mesh || !nmemb || (*nmemb && !edges)) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
 	}
@@ -1850,22 +1850,34 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, size_t *
 	
 	meshlink_edge_t **result = NULL;
 	meshlink_edge_t *copy = NULL;
+	int result_size = 0;
 
-	// mesh->edges->count is the max size
-	*nmemb = mesh->edges->count;
+	result_size = mesh->edges->count;
 
-	result = xzalloc(*nmemb * sizeof (meshlink_edge_t*));
+	// if result is smaller than edges, we have to dealloc all the excess meshlink_edge_t
+	if(result_size > *nmemb) {
+		result = realloc(edges, result_size * sizeof (meshlink_edge_t*));
+	} else {
+		result = edges;
+	}
 
 	if(result) {
 		meshlink_edge_t **p = result;
+		int n = 0;
 		for splay_each(edge_t, e, mesh->edges) {
 			// skip edges that do not represent a two-directional connection
 			if((!e->reverse) || (e->reverse->to != e->from)) {
-				*nmemb--;
+				result_size--;
 				continue;
 			}
-			// copy the edge so it can't be mutated
-			copy = xzalloc(sizeof *copy);
+			n++;
+			// the first *nmemb members of result can be re-used
+			if(n > *nmemb) {
+				copy = xzalloc(sizeof *copy);
+			}
+			else {
+				copy = *p;
+			}
 			copy->from = (meshlink_node_t*)e->from;
 			copy->to = (meshlink_node_t*)e->to;
 #ifdef HAVE_STRUCT_SOCKADDR_STORAGE
@@ -1876,9 +1888,14 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, size_t *
 			*p++ = copy;
 		}
 		// shrink result to the actual amount of memory used
-		result = realloc(result, *nmemb * sizeof (meshlink_edge_t*));
+		for(int i = *nmemb; i > result_size; i--) {
+			free(result[i - 1]);
+		}
+		result = realloc(result, result_size * sizeof (meshlink_edge_t*));
+		*nmemb = result_size;
 	} else {
 		*nmemb = 0;
+		free(result);
 		meshlink_errno = MESHLINK_ENOMEM;
 	}
 

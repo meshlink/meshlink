@@ -637,16 +637,31 @@ extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node
  *  to meshlink_get_all_nodes().
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
- *  @param nmemb        A pointer to a variable that will be filled with the number
- *  			of edges in the returned array.
- *
+ *  @param edges        A pointer to a previously allocated array of pointers to
+ *  			meshlink_edge_t, or NULL in which case MeshLink will
+ *  			allocate a new array. The application CANNOT supply an
+ *  			array it allocated itself with malloc, but CAN use
+ *  			the return value from the previous call to this function
+ *  			(which is the preferred way).
+ *                      The pointers in the array are valid until meshlink_close() is called.
+ *  @param nmemb        A pointer to a variable holding the number of nodes that
+ *  			are stored in the array. In case the @a nodes @a
+ *  			argument is not NULL, MeshLink might call realloc()
+ *  			on the array to change its size.
+ *                      The contents of this variable will be changed to reflect
+ *                      the new size of the array.
+ *  
  *  @return             A pointer to an array containing pointers to all known 
  *  			edges, or NULL in case of an error.
- *  			The caller must call free() on each element of this
+ *  			If the @a edges @a argument was not NULL, then the
+ *  			retun value can be either the same value or a different
+ *  			value. If the new values is NULL, then the old array
+ *  			will have been freed by Meshlink.
+ *			The caller must call free() on each element of this
  *  			array (but not the contents of said elements),
  *  			as well as the array itself when it is finished.
  */
-extern meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, size_t *nmemb);
+extern meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink_edge_t **edges, size_t *nmemb);
 
 #ifdef __cplusplus
 }
