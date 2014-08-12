@@ -1880,9 +1880,7 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 			}
 			copy->from = (meshlink_node_t*)e->from;
 			copy->to = (meshlink_node_t*)e->to;
-#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 			copy->address = e->address.storage;
-#endif
 			copy->options = e->options;
 			copy->weight = e->weight;
 			*p++ = copy;

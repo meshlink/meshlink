@@ -110,9 +110,7 @@ struct meshlink_edge {
                                         //   owned by meshlink and should not be
                                         //   deallocated. Node contents may be
                                         //   changed by meshlink.
-#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 	struct sockaddr_storage address;///< The address information associated
-#endif
 					//   with this edge.
 	uint32_t options;               ///< Edge options. @TODO what are edge options?
 	int weight;                     ///< Weight assigned to this edge.
