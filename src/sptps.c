@@ -565,6 +565,9 @@ bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 
 // Start a SPTPS session.
 bool sptps_start(sptps_t *s, void *handle, bool initiator, bool datagram, ecdsa_t *mykey, ecdsa_t *hiskey, const char *label, size_t labellen, send_data_t send_data, receive_record_t receive_record) {
+	if(!s || !mykey || !hiskey || !label || !labellen || !send_data || !receive_record)
+		return error(s, EINVAL, "Invalid argument to sptps_start()");
+
 	// Initialise struct sptps
 	memset(s, 0, sizeof *s);
 

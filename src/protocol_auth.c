@@ -329,11 +329,20 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			logger(mesh, MESHLINK_ERROR, "Peer %s had unknown identity (%s)", c->hostname, c->name);
 			return false;
 		}
+	}
 
-		read_ecdsa_public_key(mesh, c);
-	} else {
-		if(c->protocol_minor && !ecdsa_active(c->ecdsa))
-			c->protocol_minor = 1;
+	read_ecdsa_public_key(mesh, c);
+
+	if(!ecdsa_active(c->ecdsa)) {
+		logger(mesh, MESHLINK_ERROR, "No key known for peer %s (%s)", c->name, c->hostname);
+
+		node_t *n = lookup_node(mesh, c->name);
+		if(n && !n->status.waitingforkey) {
+			logger(mesh, MESHLINK_INFO, "Requesting key from peer %s (%s)", c->name, c->hostname);
+			send_req_key(mesh, n);
+		}
+
+		return false;
 	}
 
 	/* Forbid version rollback for nodes whose ECDSA key we know */
