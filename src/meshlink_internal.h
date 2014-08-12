@@ -158,7 +158,7 @@ extern void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
 extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
 
-/// Device class
+/// Device class traits
 typedef struct {
 	unsigned int min_connects;
 	unsigned int max_connects;

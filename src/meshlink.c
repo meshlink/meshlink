@@ -1713,7 +1713,7 @@ static void __attribute__((destructor)) meshlink_exit(void) {
 }
 
 
-/// Device class
+/// Device class traits
 dev_class_traits_t dev_class_traits[_DEV_CLASS_MAX +1] = {
 	{ .min_connects = 3, .max_connects = 10000, .edge_weight = 1 },	// DEV_CLASS_BACKBONE
 	{ .min_connects = 3, .max_connects = 100, .edge_weight = 3 },	// DEV_CLASS_STATIONARY

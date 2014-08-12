@@ -36,7 +36,9 @@
 #include "utils.h"
 #include "xalloc.h"
 #include "ed25519/sha512.h"
-    
+
+#include <assert.h>
+
 extern bool node_write_devclass(meshlink_handle_t *mesh, node_t *n);
 
 static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
@@ -443,6 +445,8 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	send_everything(mesh, c);
 
 	/* Create an edge_t for this connection */
+
+	assert(devclass >= 0 && devclass <= _DEV_CLASS_MAX);
 
 	c->edge = new_edge();
 	c->edge->from = mesh->self;

@@ -31,6 +31,7 @@
 #include "protocol.h"
 #include "xalloc.h"
 
+#include <assert.h>
 
 static const int min(int a, int b) {
 	return a < b ? a : b;
@@ -185,6 +186,102 @@ static int node_compare_devclass_desc(const void *a, const void *b)
 }
 
 
+/*
+
+
+autoconnect()
+{
+	timeout = 5
+
+	// find the best one for initial connect
+
+	if cur < min
+		newcon =
+			first from nodes
+				where dclass <= my.dclass and !connection and (timestamp - last_retry) > retry_timeout
+				order by dclass asc, last_connection desc
+		if newcon
+			timeout = 0
+			goto connect
+
+
+	// find better nodes to connect to: in case we have less than min connections within [BACKBONE, i] and there are nodes which we are not connected to within the range
+
+	if min <= cur < max
+		j = 0
+		for i = BACKBONE to my.dclass
+			j += count(from connections where node.dclass = i)
+			if j < min
+				newcon =
+					first from nodes
+						where dclass = i and !connection and (timestamp - last_retry) > retry_timeout
+						order by last_connection desc
+				if newcon
+					goto connect
+			else
+				break
+
+
+	// heal partitions
+
+	if min <= cur < max
+		newcon =
+			first from nodes
+				where dclass <= my.dclass and !reachable and (timestamp - last_retry) > retry_timeout
+				order by dclass asc, last_connection desc
+		if newcon
+			goto connect
+
+
+	// connect
+
+connect:
+	if newcon
+		connect newcon
+
+
+	// disconnect outgoing connections in case we have more than min connections within [BACKBONE, i] and there are nodes which we are connected to within the range [i, PORTABLE]
+
+	if min < cur <= max
+		j = 0
+		for i = BACKBONE to my.dclass
+			j += count(from connections where node.dclass = i)
+			if min < j
+				delcon =
+					first from nodes
+						where dclass >= i and outgoing_connection
+						order by dclass desc
+				if disconnect
+					goto disconnect
+				else
+					break
+
+
+	// disconnect connections in case we have more than enough connections
+
+	if max < cur
+		delcon =
+			first from nodes
+				where outgoing_connection
+				order by dclass desc
+		goto disconnect
+
+	// disconnect
+
+disconnect
+	if delcon
+		disconnect delcon
+
+
+	// next iteration
+	next (timeout, autoconnect)
+
+}
+
+
+ */
+
+
 static void periodic_handler(event_loop_t *loop, void *data) {
 	meshlink_handle_t *mesh = loop->data;
 
@@ -241,6 +338,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 
 		// get min_connects and max_connects
+
+		assert(mesh->devclass >= 0 && mesh->devclass <= _DEV_CLASS_MAX);
 
 		int min_connects = dev_class_traits[mesh->devclass].min_connects;
 		int max_connects = dev_class_traits[mesh->devclass].max_connects;
