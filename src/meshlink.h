@@ -65,12 +65,14 @@ typedef enum {
 	MESHLINK_EPEER, ///< A peer caused an error
 } meshlink_errno_t;
 
-// Device class
+/// Device class
 typedef enum {
-	BACKBONE = 1,
-	STATIONARY = 2,
-	PORTABLE = 3
-} dclass_t;
+	DEV_CLASS_BACKBONE = 0,
+	DEV_CLASS_STATIONARY = 1,
+	DEV_CLASS_PORTABLE = 2,
+	DEV_CLASS_UNKNOWN = 3,
+	_DEV_CLASS_MAX = 3
+} dev_class_t;
 
 /// A variable holding the last encountered error from MeshLink.
 /** This is a thread local variable that contains the error code of the most recent error
@@ -84,6 +86,8 @@ extern __thread meshlink_errno_t meshlink_errno;
 
 struct meshlink_handle {
 	const char *name;
+	char *appname;
+	dev_class_t devclass;
 	void *priv;
 };
 
@@ -130,15 +134,15 @@ extern const char *meshlink_strerror(meshlink_errno_t err);
  *                  After the function returns, the application is free to overwrite or free @a name @a.
  *  @param appname  The application name which will be used in the mesh.
  *                  After the function returns, the application is free to overwrite or free @a name @a.
- *  @param dclass   The device class which will be used in the mesh.
+ *  @param devclass The device class which will be used in the mesh.
  *
  *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink, or NULL in case of an error.
  *                  The pointer is valid until meshlink_close() is called.
  */
-extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dclass_t dclass);
+extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dev_class_t devclass);
 
 /// is used by the C++ wrapper to allocate more memory behind the handle
-extern meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, const char* appname, dclass_t dclass, size_t size);
+extern meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, const char* appname, dev_class_t devclass, size_t size);
 
 /// Start MeshLink.
 /** This function causes MeshLink to open network sockets, make outgoing connections, and

@@ -64,7 +64,7 @@ typedef struct outpacketqueue {
 struct meshlink_handle {
 	char *name;
 	char *appname;
-	dclass_t dclass;
+	dev_class_t devclass;
 	void *priv;
 
 	char *confbase;
@@ -158,17 +158,13 @@ extern void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
 extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
 
-extern int cweight_from_dclass(dclass_t dclass);
-extern int max_ccount_from_dclass(dclass_t dclass);
-extern bool dclass_ccounts_satisfied(dclass_t dclass, splay_tree_t* counts, int total_count);
-
+/// Device class
 typedef struct {
-	dclass_t dclass;
-	int ccount;
-} dclass_ccount_t;
+	unsigned int min_connects;
+	unsigned int max_connects;
+	int edge_weight;
+} dev_class_traits_t;
 
-extern int dclass_ccount_compare(const void *a, const void *b);
-extern dclass_ccount_t* dclass_ccount_alloc();
-extern void dclass_ccount_delete(void *c);
+extern dev_class_traits_t dev_class_traits[];
 
 #endif // MESHLINK_INTERNAL_H

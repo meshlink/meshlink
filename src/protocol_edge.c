@@ -33,7 +33,7 @@
 #include "utils.h"
 #include "xalloc.h"
 
-extern bool node_write_dclass(meshlink_handle_t *mesh, node_t *n);
+extern bool node_write_devclass(meshlink_handle_t *mesh, node_t *n);
 
 bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
 	bool x;
@@ -42,7 +42,7 @@ bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
 	sockaddr2str(&e->address, &address, &port);
 
 	x = send_request(mesh, c, "%d %x %s %d %s %s %s %d %x %d", ADD_EDGE, rand(),
-					 e->from->name, e->from->dclass, e->to->name, address, port, e->to->dclass,
+					 e->from->name, e->from->devclass, e->to->name, address, port, e->to->devclass,
 					 e->options, e->weight);
 	free(address);
 	free(port);
@@ -54,17 +54,17 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	edge_t *e;
 	node_t *from, *to;
 	char from_name[MAX_STRING_SIZE];
-	int from_dclass;
+	int from_devclass;
 	char to_name[MAX_STRING_SIZE];
 	char to_address[MAX_STRING_SIZE];
 	char to_port[MAX_STRING_SIZE];
-	int to_dclass;
+	int to_devclass;
 	sockaddr_t address;
 	uint32_t options;
 	int weight;
 
 	if(sscanf(request, "%*d %*x "MAX_STRING" %d "MAX_STRING" "MAX_STRING" "MAX_STRING" %d %x %d",
-			  from_name, &from_dclass, to_name, to_address, to_port, &to_dclass, &options, &weight) != 8) {
+			  from_name, &from_devclass, to_name, to_address, to_port, &to_devclass, &options, &weight) != 8) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ADD_EDGE", c->name,
 			   c->hostname);
 		return false;
@@ -75,6 +75,20 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	if(!check_id(from_name) || !check_id(to_name)) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ADD_EDGE", c->name,
 			   c->hostname, "invalid name");
+		return false;
+	}
+
+	// Check if devclasses are valid
+
+	if(from_devclass < 0 || from_devclass > _DEV_CLASS_MAX) {
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ADD_EDGE", c->name,
+			   c->hostname, "from devclass invalid");
+		return false;
+	}
+
+	if(to_devclass < 0 || to_devclass > _DEV_CLASS_MAX) {
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ADD_EDGE", c->name,
+			   c->hostname, "to devclass invalid");
 		return false;
 	}
 
@@ -92,8 +106,8 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		node_add(mesh, from);
 	}
 
-	from->dclass = from_dclass;
-	node_write_dclass(mesh, from);
+	from->devclass = from_devclass;
+	node_write_devclass(mesh, from);
 
 	if(!to) {
 		to = new_node();
@@ -101,8 +115,8 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		node_add(mesh, to);
 	}
 
-	to->dclass = to_dclass;
-	node_write_dclass(mesh, to);
+	to->devclass = to_devclass;
+	node_write_devclass(mesh, to);
 
 	/* Convert addresses */
 

@@ -387,8 +387,8 @@ namespace meshlink {
 	 *  @return         This function will return a pointer to a meshlink::mesh if MeshLink has succesfully set up its configuration files, NULL otherwise.
 	 */
 	template<class MESH>
-	static MESH* open(const char *confbase, const char *name, const char* appname, dclass_t dclass) {
-		void* mp = (void *)meshlink_open_with_size(confbase, name, appname, dclass, sizeof(MESH));
+	static MESH* open(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
+		void* mp = (void *)meshlink_open_with_size(confbase, name, appname, devclass, sizeof(MESH));
 		return new (mp) MESH;
 	}
 

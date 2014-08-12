@@ -31,6 +31,7 @@
 #include "protocol.h"
 #include "xalloc.h"
 
+
 static const int min(int a, int b) {
 	return a < b ? a : b;
 }
@@ -129,74 +130,60 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 	timeout_set(&mesh->loop, data, &(struct timeval){mesh->pingtimeout, rand() % 100000});
 }
 
-/// Utility function to establish connections based on condition check
-/** The function iterates over all nodes, but skips those that do
- *  not pass the condition check.
- *  
- *  The condition check function is passed
- *  a pointer to a random number r between 0 and rand_modulo, a pointer to the
- *  current node index i, and the node pointer n. This function should return true
- *  if a connection attempt to the node should be made.
- *  
- *  @param mesh		A pointer to the mesh structure
- *  @param rand_modulo	Random index is selected between 0 and rand_modulo
- *  @cond_check		A function pointer. This function should return true
- *  			if a connection attempt to the node should be made
- */
-static void cond_add_connection(meshlink_handle_t *mesh, int rand_modulo, bool (*cond_check)(int*, int*, node_t*)) {
-	int r = rand() % rand_modulo;
-	int i = 0;
+// devclass asc, last_connect_try desc
+static int node_compare_devclass_asc_last_connect_try_desc(const void *a, const void *b)
+{
+	const node_t *na = a, *nb = b;
 
-	for splay_each(node_t, n, mesh->nodes) {
-		/* skip nodes that do not pass condition check */
-		if(!(*cond_check)(&i, &r, n))
-			continue;
+	if(na->devclass < nb->devclass)
+		{ return -1; }
 
-		/* check if there is already a connection attempt to this node */
-		bool found = false;
-		for list_each(outgoing_t, outgoing, mesh->outgoings) {
-			if(!strcmp(outgoing->name, n->name)) {
-				found = true;
-				break;
-			}
-		}
+	if(na->devclass > nb->devclass)
+		{ return 1; }
 
-		if(!found) {
-			//TODO: if the node is blacklisted the connection will not happen, but
-			//the user will read this debug message "Autoconnecting to %s" that is misleading
-			logger(mesh, MESHLINK_INFO, "Autoconnecting to %s", n->name);
-			outgoing_t *outgoing = xzalloc(sizeof *outgoing);
-			outgoing->mesh = mesh;
-			outgoing->name = xstrdup(n->name);
-			list_insert_tail(mesh->outgoings, outgoing);
-			setup_outgoing_connection(mesh, outgoing);
-		}
-		break;
-	}
+	if(na->last_connect_try == nb->last_connect_try)
+		return 0;
+
+	if(nb->last_connect_try == 0 || na->last_connect_try < nb->last_connect_try)
+		return -1;
+
+	if(na->last_connect_try == 0 || na->last_connect_try > nb->last_connect_try)
+		return 1;
+
+	return 0;
 }
 
-static bool found_random_node(int *i, int *r, node_t *n) {
-	if((*i)++ != *r)
-		return false;
+// last_connect_try desc
+static int node_compare_last_connect_try_desc(const void *a, const void *b)
+{
+	const node_t *na = a, *nb = b;
 
-	if(n->connection)
-		return false;
-	
-	return true;
+	if(na->last_connect_try == nb->last_connect_try)
+		return 0;
+
+	if(nb->last_connect_try == 0 || na->last_connect_try < nb->last_connect_try)
+		return -1;
+
+	if(na->last_connect_try == 0 || na->last_connect_try > nb->last_connect_try)
+		return 1;
+
+	return 0;
 }
 
-static bool found_random_unreachable_node(int *i, int *r, node_t *n) {
-	if(n->status.reachable)
-		return false;
-	
-	if((*i)++ != *r)
-		return false;
+// devclass desc
+static int node_compare_devclass_desc(const void *a, const void *b)
+{
+	const node_t *na = a, *nb = b;
 
-	if(n->connection)
-		return false;
+	if(na->devclass < nb->devclass)
+		{ return -1; }
 
-	return true;
+	if(na->devclass > nb->devclass)
+		{ return 1; }
+
+	return 0;
 }
+
 
 static void periodic_handler(event_loop_t *loop, void *data) {
 	meshlink_handle_t *mesh = loop->data;
@@ -229,127 +216,212 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		logger(mesh, MESHLINK_INFO, "--- autoconnect begin ---");
 
-		splay_tree_t* ccounts = splay_alloc_tree(dclass_ccount_compare, NULL);
 
-		/* Count number of active connections per device class */
-		int num_total = 0;
-		for list_each(connection_t, c, mesh->connections) {
-			if(c->status.active)
+		int retry_timeout = min(mesh->nodes->count * 5, 60);
+
+		// connect disconnect nodes
+
+		node_t* connect_to = NULL;
+		node_t* disconnect_from = NULL;
+
+
+		// get cur_connects
+
+		int cur_connects = 0;
+
+		for list_each(connection_t, c, mesh->connections)
+		{
+			if(!c->status.remove_unused)
 			{
-				dclass_ccount_t key;
-				key.dclass = c->node->dclass;
+				cur_connects += 1;
+			}
+		}
 
-				dclass_ccount_t* ccount = splay_search(ccounts, &key);
+		logger(mesh, MESHLINK_INFO, "* cur_connects = %d", cur_connects);
 
-				if(!ccount)
+
+		// get min_connects and max_connects
+
+		int min_connects = dev_class_traits[mesh->devclass].min_connects;
+		int max_connects = dev_class_traits[mesh->devclass].max_connects;
+
+		logger(mesh, MESHLINK_INFO, "* min_connects = %d", min_connects);
+		logger(mesh, MESHLINK_INFO, "* max_connects = %d", max_connects);
+
+
+		// find the best one for initial connect
+
+		if(cur_connects < min_connects)
+		{
+			splay_tree_t *nodes = splay_alloc_tree(node_compare_devclass_asc_last_connect_try_desc, NULL);
+
+			for splay_each(node_t, n, mesh->nodes)
+			{
+				if(n->devclass <= mesh->devclass && !n->connection && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout))
+					{ splay_insert(nodes, n); }
+			}
+
+			if(nodes->head)
+			{
+				logger(mesh, MESHLINK_INFO, "* found best one for initial connect");
+
+				timeout = 0;
+				connect_to = (node_t*)nodes->head->data;
+			}
+
+			splay_free_tree(nodes);
+		}
+
+
+		// find better nodes to connect to
+
+		if(!connect_to && min_connects <= cur_connects < max_connects)
+		{
+			unsigned int connects = 0;
+
+			for(int devclass = 0; devclass <= mesh->devclass; ++devclass)
+			{
+				for list_each(connection_t, c, mesh->connections)
 				{
-					ccount = dclass_ccount_alloc();
-					ccount->dclass = c->node->dclass;
-					splay_insert(ccounts, ccount);
+					if(!c->status.remove_unused && c->node && c->node->devclass == devclass)
+						{ connects += 1; }
 				}
 
-				ccount->ccount++;
-				num_total++;
-			}
-		}
+				if( connects < min_connects )
+				{
+					splay_tree_t *nodes = splay_alloc_tree(node_compare_last_connect_try_desc, NULL);
 
-		/* Count number of unreachable nodes */
-		int num_unreachable = 0;
-		for splay_each(node_t, n, mesh->nodes) {
-			if(!n->status.reachable)
-				num_unreachable++;
-		}
+					for splay_each(node_t, n, mesh->nodes)
+					{
+						if(n->devclass == devclass && !n->connection && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout))
+							{ splay_insert(nodes, n); }
+					}
 
-		bool satisfied = dclass_ccounts_satisfied(mesh->self->dclass, ccounts, num_total);
-		int maxcc = max_ccount_from_dclass(mesh->self->dclass);
+					if(nodes->head)
+					{
+						logger(mesh, MESHLINK_INFO, "* found better node");
+						connect_to = (node_t*)nodes->head->data;
 
-		logger(mesh, MESHLINK_INFO, "* num_total = %d, satisfied = %d, maxcc = %d", num_total, satisfied, maxcc);
-
-		if(!satisfied) {
-			logger(mesh, MESHLINK_INFO, "* Not enough active connections, try to add one.");
-			/* Not enough active connections, try to add one.
-			   Choose a random node, if we don't have a connection to it,
-			   and we are not already trying to make one, create an
-			   outgoing connection to this node.
-			*/
-			cond_add_connection(mesh, mesh->nodes->count, &found_random_node);
-		}
-
-		if(satisfied && num_unreachable > 0) {
-			logger(mesh, MESHLINK_INFO, "* Min number of connections established. Now heal possible partitions.");
-			/* Min number of connections established. Now try
-			   to connect to some unreachable nodes to attempt
-			   to heal possible partitions.
-			*/
-			cond_add_connection(mesh, num_unreachable, &found_random_unreachable_node);
-		}
-		
-		if(num_total > maxcc) {
-			logger(mesh, MESHLINK_INFO, "* Too many active connections, try to remove one.");
-			/* Too many active connections, try to remove one.
-			   Choose a random outgoing connection to a node
-			   that has at least one other connection.
-			*/
-			int r = rand() % num_total;
-			int i = 0;
-
-			for list_each(connection_t, c, mesh->connections) {
-				if(!c->status.active)
-					continue;
-
-				if(i++ != r)
-					continue;
-
-				if(!c->outgoing || !c->node || c->node->edge_tree->count < 2)
-					break;
-
-				logger(mesh, MESHLINK_INFO, "Autodisconnecting from %s", c->name);
-				list_delete(mesh->outgoings, c->outgoing);
-				c->outgoing = NULL;
-				terminate_connection(mesh, c, c->status.active);
-				break;
-			}
-		}
-
-		if(satisfied) {
-			logger(mesh, MESHLINK_INFO, "* We have enough active connections, remove pending outgoing connections.");
-			/* If we have enough active connections,
-			   remove any pending outgoing connections.
-			   Do not remove pending connections to unreachable
-			   nodes.
-			*/
-			node_t *o_node = NULL;
-			for list_each(outgoing_t, o, mesh->outgoings) {
-				o_node = lookup_node(mesh, o->name);
-				/* o_node is NULL if it is not part of the graph yet */
-				if(!o_node || !o_node->status.reachable)
-					continue;
-
-				bool found = false;
-				for list_each(connection_t, c, mesh->connections) {
-					if(c->outgoing == o) {
-						found = true;
+						splay_free_tree(nodes);
 						break;
 					}
+
+					splay_free_tree(nodes);
 				}
-				if(!found) {
-					logger(mesh, MESHLINK_INFO, "Cancelled outgoing connection to %s", o->name);
-					/* The node variable is leaked in from using the list_each macro.
-					   The o variable could be used, but using node directly
-					   is more efficient.
-					*/
-					list_delete_node(mesh->outgoings, node);
+				else
+					{ break; }
+			}
+		}
+
+
+		// heal partitions
+
+		if(!connect_to && min_connects <= cur_connects < max_connects)
+		{
+			splay_tree_t *nodes = splay_alloc_tree(node_compare_devclass_asc_last_connect_try_desc, NULL);
+
+			for splay_each(node_t, n, mesh->nodes)
+			{
+				if(n->devclass <= mesh->devclass && !n->status.reachable && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout))
+					{ splay_insert(nodes, n); }
+			}
+
+			if(nodes->head)
+			{
+				logger(mesh, MESHLINK_INFO, "* try to heal partition");
+				connect_to = (node_t*)nodes->head->data;
+			}
+
+			splay_free_tree(nodes);
+		}
+
+
+		// perform connect
+
+		if(connect_to && !connect_to->connection)
+		{
+			logger(mesh, MESHLINK_INFO, "Autoconnecting to %s", connect_to->name);
+			outgoing_t *outgoing = xzalloc(sizeof(outgoing_t));
+			outgoing->mesh = mesh;
+			outgoing->name = xstrdup(connect_to->name);
+			list_insert_tail(mesh->outgoings, outgoing);
+			setup_outgoing_connection(mesh, outgoing);
+		}
+
+
+		// disconnect suboptimal outgoing connections
+
+		if(min_connects < cur_connects <= max_connects)
+		{
+			unsigned int connects = 0;
+
+			for(int devclass = 0; devclass <= mesh->devclass; ++devclass)
+			{
+				for list_each(connection_t, c, mesh->connections)
+				{
+					if(!c->status.remove_unused && c->node && c->node->devclass == devclass)
+						{ connects += 1; }
+				}
+
+				if( min_connects < connects )
+				{
+					splay_tree_t *nodes = splay_alloc_tree(node_compare_devclass_desc, NULL);
+
+					for list_each(connection_t, c, mesh->connections)
+					{
+						if(!c->status.remove_unused && c->outgoing && c->node && c->node->devclass >= devclass)
+							{ splay_insert(nodes, c->node); }
+					}
+
+					if(nodes->head)
+					{
+						logger(mesh, MESHLINK_INFO, "* disconnect suboptimal outgoing connection");
+						disconnect_from = (node_t*)nodes->head->data;
+					}
+
+					splay_free_tree(nodes);
+					break;
 				}
 			}
 		}
 
-		if (!satisfied && (num_total + mesh->outgoings->count) < mesh->nodes->count)
+
+		// disconnect connections (too many connections)
+
+		if(!disconnect_from && max_connects < cur_connects)
 		{
-			logger(mesh, MESHLINK_INFO, "* No timeout.");
-			timeout = 0;
+			splay_tree_t *nodes = splay_alloc_tree(node_compare_devclass_desc, NULL);
+
+			for list_each(connection_t, c, mesh->connections)
+			{
+				if(!c->status.remove_unused && c->node)
+					{ splay_insert(nodes, c->node); }
+			}
+
+			if(nodes->head)
+			{
+				logger(mesh, MESHLINK_INFO, "* disconnect connection (too many connections");
+
+				timeout = 0;
+				disconnect_from = (node_t*)nodes->head->data;
+			}
+
+			splay_free_tree(nodes);
 		}
 
-		splay_free_tree(ccounts);
+
+		// perform disconnect
+
+		if(disconnect_from && disconnect_from->connection)
+		{
+			logger(mesh, MESHLINK_INFO, "Autodisconnecting from %s", disconnect_from->connection->name);
+			list_delete(mesh->outgoings, disconnect_from->connection->outgoing);
+			disconnect_from->connection->outgoing = NULL;
+			terminate_connection(mesh, disconnect_from->connection, disconnect_from->connection->status.active);
+		}
+
+
+		// done!
 
 		logger(mesh, MESHLINK_INFO, "--- autoconnect end ---");
 	}

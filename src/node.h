@@ -41,7 +41,7 @@ typedef struct node_status_t {
 typedef struct node_t {
 	char *name;                             /* name of this node */
 	uint32_t options;                       /* options turned on for this node */
-	dclass_t dclass;
+	dev_class_t devclass;
 
 	struct meshlink_handle *mesh;           /* The mesh this node belongs to */
 
@@ -67,6 +67,7 @@ typedef struct node_t {
 	struct splay_tree_t *edge_tree;                /* Edges with this node as one of the endpoints */
 
 	struct connection_t *connection;        /* Connection associated with this node (if a direct connection exists) */
+	time_t last_connect_try;
 
 	uint32_t sent_seqno;                    /* Sequence number last sent to this node */
 	uint32_t received_seqno;                /* Sequence number last received from this node */

@@ -122,8 +122,8 @@ static bool read_invitation_key(meshlink_handle_t *mesh) {
 	return mesh->invitation_key;
 }
 
-bool node_read_dclass(meshlink_handle_t *mesh, node_t *n) {
-	if(n->dclass != 0)
+bool node_read_devclass(meshlink_handle_t *mesh, node_t *n) {
+	if(n->devclass != 0)
 		return true;
 
 	splay_tree_t *config_tree;
@@ -133,19 +133,23 @@ bool node_read_dclass(meshlink_handle_t *mesh, node_t *n) {
 	if(!read_host_config(mesh, config_tree, n->name))
 		goto exit;
 
-	if(get_config_string(lookup_config(config_tree, "DeviceClass"), &p)) {
-		n->dclass = atoi(p);
+	if(get_config_string(lookup_config(config_tree, "DeviceClass"), &p))
+	{
+		n->devclass = atoi(p);
 		free(p);
 	}
 
+	if(n->devclass < 0 || n->devclass > _DEV_CLASS_MAX)
+		{ n->devclass = _DEV_CLASS_MAX; }
+
 exit:
 	exit_configuration(&config_tree);
-	return n->dclass != 0;
+	return n->devclass != 0;
 }
 
-bool node_write_dclass(meshlink_handle_t *mesh, node_t *n) {
+bool node_write_devclass(meshlink_handle_t *mesh, node_t *n) {
 
-	if(n->dclass == 0)
+	if(n->devclass == 0)
 		return false;
 
 	bool result = false;
@@ -165,7 +169,7 @@ bool node_write_dclass(meshlink_handle_t *mesh, node_t *n) {
 		config_add(config_tree, cnf);
 	}
 
-	set_config_int(cnf, n->dclass);
+	set_config_int(cnf, n->devclass);
 
 	if(!write_host_config(mesh, config_tree, n->name))
 		goto fail;
@@ -199,7 +203,7 @@ void load_all_nodes(meshlink_handle_t *mesh) {
 
 		n = new_node();
 		n->name = xstrdup(ent->d_name);
-		node_read_dclass(mesh, n);
+		node_read_devclass(mesh, n);
 		node_add(mesh, n);
 	}
 
@@ -329,7 +333,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	mesh->self = new_node();
 	mesh->self->connection = new_connection();
 	mesh->self->name = name;
-	mesh->self->dclass = mesh->dclass;
+	mesh->self->devclass = mesh->devclass;
 	mesh->self->connection->name = xstrdup(name);
 	read_host_config(mesh, mesh->config, name);
 

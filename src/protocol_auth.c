@@ -37,7 +37,7 @@
 #include "xalloc.h"
 #include "ed25519/sha512.h"
     
-extern bool node_write_dclass(meshlink_handle_t *mesh, node_t *n);
+extern bool node_write_devclass(meshlink_handle_t *mesh, node_t *n);
 
 static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 	switch(mesh->proxytype) {
@@ -360,7 +360,7 @@ bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY)
 		c->options |= OPTION_PMTU_DISCOVERY;
 
-	return send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->dclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
+	return send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
 }
 
 static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
@@ -375,13 +375,19 @@ static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
 bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char hisport[MAX_STRING_SIZE];
 	char *hisaddress;
-	int dclass;
+	int devclass;
 	uint32_t options;
 	node_t *n;
 
-	if(sscanf(request, "%*d " MAX_STRING " %d %x", hisport, &dclass, &options) != 3) {
+	if(sscanf(request, "%*d " MAX_STRING " %d %x", hisport, &devclass, &options) != 3) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ACK", c->name,
 			   c->hostname);
+		return false;
+	}
+
+	if(devclass < 0 || devclass > _DEV_CLASS_MAX) {
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ACK", c->name,
+			   c->hostname, "devclass invalid");
 		return false;
 	}
 
@@ -413,8 +419,8 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		}
 	}
 
-	n->dclass = dclass;
-	node_write_dclass(mesh, n);
+	n->devclass = devclass;
+	node_write_devclass(mesh, n);
 
 	n->connection = c;
 	c->node = n;
@@ -444,7 +450,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	sockaddr2str(&c->address, &hisaddress, NULL);
 	c->edge->address = str2sockaddr(hisaddress, hisport);
 	free(hisaddress);
-	c->edge->weight = cweight_from_dclass(dclass);
+	c->edge->weight = dev_class_traits[devclass].edge_weight;
 	c->edge->connection = c;
 	c->edge->options = c->options;
 

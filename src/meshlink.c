@@ -742,11 +742,11 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	return true;
 }
 
-meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dclass_t dclass) {
-	return meshlink_open_with_size(confbase, name, appname, dclass, sizeof(meshlink_handle_t));
+meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
+	return meshlink_open_with_size(confbase, name, appname, devclass, sizeof(meshlink_handle_t));
 }
 
-meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, const char* appname, dclass_t dclass, size_t size) {
+meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, const char* appname, dev_class_t devclass, size_t size) {
 
 	// Validate arguments provided by the application
 	bool usingname = false;
@@ -776,10 +776,16 @@ meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *nam
 		} else { usingname = true;}
 	}
 
+	if(devclass < 0 || devclass > _DEV_CLASS_MAX) {
+		logger(NULL, MESHLINK_ERROR, "Invalid devclass given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
 	meshlink_handle_t *mesh = xzalloc(size);
 	mesh->confbase = xstrdup(confbase);
 	mesh->appname = xstrdup(appname);
-	mesh->dclass = dclass;
+	mesh->devclass = devclass;
 	if (usingname) mesh->name = xstrdup(name);
 	pthread_mutex_init ( &(mesh->nodes_mutex), NULL);
 	mesh->threadstarted = false;
@@ -1706,100 +1712,11 @@ static void __attribute__((destructor)) meshlink_exit(void) {
 	crypto_exit();
 }
 
-int cweight_from_dclass(dclass_t dclass)
-{
-	switch(dclass)
-	{
-	case BACKBONE:
-		return 1;
 
-	case STATIONARY:
-		return 3;
-
-	case PORTABLE:
-		return 6;
-	}
-
-	return 9;
-}
-
-int max_ccount_from_dclass(dclass_t dclass)
-{
-	switch(dclass)
-	{
-	case BACKBONE:
-		return 10000;
-
-	case STATIONARY:
-		return 100;
-
-	case PORTABLE:
-		return 3;
-	}
-
-	return 3;
-}
-
-bool dclass_ccounts_satisfied(dclass_t dclass, splay_tree_t* counts, int total_count)
-{
-	// lookup keys
-	dclass_ccount_t key_portable;
-	key_portable.dclass = PORTABLE;
-
-	dclass_ccount_t key_stationary;
-	key_stationary.dclass = STATIONARY;
-
-	dclass_ccount_t key_backbone;
-	key_backbone.dclass = BACKBONE;
-
-	// check num of portable devices
-	dclass_ccount_t* portable = splay_search(counts, &key_portable);
-
-	if(portable)
-	{
-		if(portable->ccount > 9)
-			return true;
-	}
-
-	// check num of stationary devices
-	dclass_ccount_t* stationary = splay_search(counts, &key_stationary);
-
-	if(stationary)
-	{
-		if(stationary->ccount > 6)
-			return true;
-	}
-
-	// check num of backbone devices
-	dclass_ccount_t* backbone = splay_search(counts, &key_backbone);
-
-	if(backbone)
-	{
-		if(backbone->ccount > 3)
-			return true;
-	}
-
-	// fallback
-	if(total_count >= max_ccount_from_dclass(dclass))
-		return true;
-
-	return false;
-}
-
-int dclass_ccount_compare(const void *a, const void *b)
-{
-	const dclass_ccount_t* da = a;
-	const dclass_ccount_t* db = b;
-
-	return da->dclass - db->dclass;
-}
-
-dclass_ccount_t* dclass_ccount_alloc()
-{
-	return xzalloc(sizeof(dclass_ccount_t));
-}
-
-void dclass_ccount_delete(void *c)
-{
-	free(c);
-}
+/// Device class
+dev_class_traits_t dev_class_traits[_DEV_CLASS_MAX +1] = {
+	{ .min_connects = 3, .max_connects = 10000, .edge_weight = 1 },	// DEV_CLASS_BACKBONE
+	{ .min_connects = 3, .max_connects = 100, .edge_weight = 3 },	// DEV_CLASS_STATIONARY
+	{ .min_connects = 3, .max_connects = 3, .edge_weight = 6 },		// DEV_CLASS_PORTABLE
+	{ .min_connects = 1, .max_connects = 1, .edge_weight = 9 },		// DEV_CLASS_UNKNOWN
+};
