@@ -439,12 +439,24 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		if(connect_to && !connect_to->connection)
 		{
-			logger(mesh, MESHLINK_INFO, "Autoconnecting to %s", connect_to->name);
-			outgoing_t *outgoing = xzalloc(sizeof(outgoing_t));
-			outgoing->mesh = mesh;
-			outgoing->name = xstrdup(connect_to->name);
-			list_insert_tail(mesh->outgoings, outgoing);
-			setup_outgoing_connection(mesh, outgoing);
+			/* check if there is already a connection attempt to this node */
+			bool found = false;
+			for list_each(outgoing_t, outgoing, mesh->outgoings) {
+				if(!strcmp(outgoing->name, connect_to->name)) {
+					found = true;
+					break;
+				}
+			}
+
+			if(!found)
+			{
+				logger(mesh, MESHLINK_INFO, "Autoconnecting to %s", connect_to->name);
+				outgoing_t *outgoing = xzalloc(sizeof(outgoing_t));
+				outgoing->mesh = mesh;
+				outgoing->name = xstrdup(connect_to->name);
+				list_insert_tail(mesh->outgoings, outgoing);
+				setup_outgoing_connection(mesh, outgoing);	
+			}
 		}
 
 
