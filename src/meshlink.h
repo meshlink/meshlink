@@ -85,14 +85,14 @@ extern __thread meshlink_errno_t meshlink_errno;
 #ifndef MESHLINK_INTERNAL_H
 
 struct meshlink_handle {
-	const char *name;
+	char *name;
 	char *appname;
 	dev_class_t devclass;
 	void *priv;
 };
 
 struct meshlink_node {
-	const char *name; ///< Textual name of this node. It is stored in a nul-terminated C string, which is allocated by MeshLink.
+	char *name;       ///< Textual name of this node. It is stored in a nul-terminated C string, which is allocated by MeshLink.
 	void *priv;       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 

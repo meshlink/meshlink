@@ -364,7 +364,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			{
 				logger(mesh, MESHLINK_INFO, "* found best one for initial connect");
 
-				timeout = 0;
+				//timeout = 0;
 				connect_to = (node_t*)nodes->head->data;
 			}
 
@@ -501,7 +501,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			{
 				logger(mesh, MESHLINK_INFO, "* disconnect connection (too many connections");
 
-				timeout = 0;
+				//timeout = 0;
 				disconnect_from = (node_t*)nodes->head->data;
 			}
 

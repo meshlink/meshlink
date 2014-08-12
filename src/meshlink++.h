@@ -88,7 +88,7 @@ namespace meshlink {
 	/// A class describing a MeshLink mesh.
 	class mesh: public meshlink_handle_t {
 	public:
-		mesh() {}
+		mesh() : meshlink_handle_t() {}
 	
 		virtual ~mesh() {
 			meshlink_close(this);
