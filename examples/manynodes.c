@@ -111,7 +111,7 @@ void exportmeshgraph_timer(int signum)
 	gettimeofday(&ts, NULL);
 
 	char name[1024];
-	snprintf(name, sizeof(name), "graph_%ld_%ld.json", ts.tv_sec, ts.tv_usec/1000);
+	snprintf(name, sizeof(name), "graph_%ld_%03ld.json", ts.tv_sec, ts.tv_usec/1000);
 
 	exportmeshgraph(name);
 }
@@ -154,10 +154,10 @@ static bool exportmeshgraph_begin(const char* timeout_str)
 	/* Install timer_handler as the signal handler for SIGALRM. */
 	signal(SIGALRM, exportmeshgraph_timer);
 
-	/* Configure the timer to expire after X msec... */
+	/* Configure the timer to expire immediately... */
 	struct itimerval timer;
-	timer.it_value.tv_sec = timeout_sec;
-	timer.it_value.tv_usec = timeout_msec * 1000;
+	timer.it_value.tv_sec = 0;
+	timer.it_value.tv_usec = 1000;
 
 	/* ... and every X msec after that. */
 	timer.it_interval.tv_sec = timeout_sec;
@@ -330,13 +330,14 @@ static void parse_input(char *buf) {
 int main(int argc, char *argv[]) {
 	const char *basebase = ".manynodes";
 	const char *namesprefix = "machine1";
+	const char *graphexporttimeout = NULL;
 	char buf[1024];
 
 	if(argc > 1)
 		n = atoi(argv[1]);
 
 	if(n < 1) {
-		fprintf(stderr, "Usage: %s [number of local nodes] [confbase] [prefixnodenames]\n", argv[0]);
+		fprintf(stderr, "Usage: %s [number of local nodes] [confbase] [prefixnodenames] [graphexport timeout]\n", argv[0]);
 		return 1;
 	}
 
@@ -345,6 +346,9 @@ int main(int argc, char *argv[]) {
 
 	if(argc > 3)
 		namesprefix = argv[3];
+
+	if(argc > 4)
+		graphexporttimeout = argv[4];
 
 	mesh = calloc(n, sizeof *mesh);
 
@@ -382,11 +386,16 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	if(graphexporttimeout)
+		{ exportmeshgraph_begin(graphexporttimeout); }
+
 	printf("%d nodes started.\nType /help for a list of commands.\n", started);
 
 	// handle input
 	while(fgets(buf, sizeof buf, stdin))
 		parse_input(buf);
+
+	exportmeshgraph_end(NULL);
 
 	printf("Nodes stopping.\n");
 
