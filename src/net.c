@@ -131,8 +131,8 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 	timeout_set(&mesh->loop, data, &(struct timeval){mesh->pingtimeout, rand() % 100000});
 }
 
-// devclass asc, last_connect_try desc
-static int node_compare_devclass_asc_last_connect_try_desc(const void *a, const void *b)
+// devclass asc, last_successfull_connection desc
+static int node_compare_devclass_asc_lsc_desc(const void *a, const void *b)
 {
 	const node_t *na = a, *nb = b;
 
@@ -142,13 +142,13 @@ static int node_compare_devclass_asc_last_connect_try_desc(const void *a, const 
 	if(na->devclass > nb->devclass)
 		{ return 1; }
 
-	if(na->last_connect_try == nb->last_connect_try)
+	if(na->last_successfull_connection == nb->last_successfull_connection)
 		return 0;
 
-	if(na->last_connect_try == 0 || na->last_connect_try > nb->last_connect_try)
+	if(na->last_successfull_connection == 0 || na->last_successfull_connection > nb->last_successfull_connection)
 		return -1;
 
-	if(nb->last_connect_try == 0 || na->last_connect_try < nb->last_connect_try)
+	if(nb->last_successfull_connection == 0 || na->last_successfull_connection < nb->last_successfull_connection)
 		return 1;
 
 	if(na < nb)
@@ -160,18 +160,18 @@ static int node_compare_devclass_asc_last_connect_try_desc(const void *a, const 
 	return 0;
 }
 
-// last_connect_try desc
-static int node_compare_last_connect_try_desc(const void *a, const void *b)
+// last_successfull_connection desc
+static int node_compare_lsc_desc(const void *a, const void *b)
 {
 	const node_t *na = a, *nb = b;
 
-	if(na->last_connect_try == nb->last_connect_try)
+	if(na->last_successfull_connection == nb->last_successfull_connection)
 		return 0;
 
-	if(na->last_connect_try == 0 || na->last_connect_try > nb->last_connect_try)
+	if(na->last_successfull_connection == 0 || na->last_successfull_connection > nb->last_successfull_connection)
 		return -1;
 
-	if(nb->last_connect_try == 0 || na->last_connect_try < nb->last_connect_try)
+	if(nb->last_successfull_connection == 0 || na->last_successfull_connection < nb->last_successfull_connection)
 		return 1;
 
 	if(na < nb)
@@ -372,7 +372,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		if(cur_connects < min_connects)
 		{
-			splay_tree_t *nodes = splay_alloc_tree(node_compare_devclass_asc_last_connect_try_desc, NULL);
+			splay_tree_t *nodes = splay_alloc_tree(node_compare_devclass_asc_lsc_desc, NULL);
 
 			for splay_each(node_t, n, mesh->nodes)
 			{
@@ -411,7 +411,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 				if( connects < min_connects )
 				{
-					splay_tree_t *nodes = splay_alloc_tree(node_compare_last_connect_try_desc, NULL);
+					splay_tree_t *nodes = splay_alloc_tree(node_compare_lsc_desc, NULL);
 
 					for splay_each(node_t, n, mesh->nodes)
 					{
@@ -443,7 +443,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		if(!connect_to && min_connects <= cur_connects && cur_connects < max_connects)
 		{
-			splay_tree_t *nodes = splay_alloc_tree(node_compare_devclass_asc_last_connect_try_desc, NULL);
+			splay_tree_t *nodes = splay_alloc_tree(node_compare_devclass_asc_lsc_desc, NULL);
 
 			for splay_each(node_t, n, mesh->nodes)
 			{
@@ -487,7 +487,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				outgoing->mesh = mesh;
 				outgoing->name = xstrdup(connect_to->name);
 				list_insert_tail(mesh->outgoings, outgoing);
-				setup_outgoing_connection(mesh, outgoing);	
+				setup_outgoing_connection(mesh, outgoing);
 			}
 			else
 				{ logger(mesh, MESHLINK_INFO, "* skip autoconnect since it is an outgoing connection already"); }

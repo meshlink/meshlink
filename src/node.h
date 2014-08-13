@@ -70,6 +70,7 @@ typedef struct node_t {
 
 	struct connection_t *connection;        /* Connection associated with this node (if a direct connection exists) */
 	time_t last_connect_try;
+	time_t last_successfull_connection;
 
 	uint32_t sent_seqno;                    /* Sequence number last sent to this node */
 	uint32_t received_seqno;                /* Sequence number last received from this node */
