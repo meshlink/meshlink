@@ -13,6 +13,9 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#include <sys/time.h>
+#include <signal.h>
+
 static int n = 10;
 static meshlink_handle_t **mesh;
 
@@ -101,6 +104,73 @@ static bool exportmeshgraph(const char* path)
 	return true;
 }
 
+
+void exportmeshgraph_timer(int signum)
+{
+	struct timeval ts;
+	gettimeofday(&ts, NULL);
+
+	char name[1024];
+	snprintf(name, sizeof(name), "graph_%ld_%ld.json", ts.tv_sec, ts.tv_usec/1000);
+
+	exportmeshgraph(name);
+}
+
+static bool exportmeshgraph_started = false;
+
+static bool exportmeshgraph_end(const char* none)
+{
+	if(!exportmeshgraph_started)
+		{ return false; }
+
+	struct itimerval zero_timer = { 0 };
+	setitimer (ITIMER_REAL, &zero_timer, NULL);
+
+	exportmeshgraph_started = false;
+
+	return true;
+}
+
+static bool exportmeshgraph_begin(const char* timeout_str)
+{
+	if(!timeout_str)
+		return false;
+
+	if(exportmeshgraph_started)
+	{
+		if(!exportmeshgraph_end(NULL))
+			return false;
+	}
+
+	// get timeout
+	int timeout = atoi(timeout_str);
+
+	if(timeout < 100)
+		{ timeout = 100; }
+
+	int timeout_sec = timeout / 1000;
+	int timeout_msec = timeout % 1000;
+
+	/* Install timer_handler as the signal handler for SIGALRM. */
+	signal(SIGALRM, exportmeshgraph_timer);
+
+	/* Configure the timer to expire after X msec... */
+	struct itimerval timer;
+	timer.it_value.tv_sec = timeout_sec;
+	timer.it_value.tv_usec = timeout_msec * 1000;
+
+	/* ... and every X msec after that. */
+	timer.it_interval.tv_sec = timeout_sec;
+	timer.it_interval.tv_usec = timeout_msec * 1000;
+
+	/* Start a real timer. */
+	setitimer (ITIMER_REAL, &timer, NULL);
+
+	exportmeshgraph_started = true;
+
+	return true;
+}
+
 static void parse_command(char *buf) {
 	char *arg = strchr(buf, ' ');
 	if(arg)
@@ -172,6 +242,10 @@ static void parse_command(char *buf) {
 		linkmesh();
 	} else if(!strcasecmp(buf, "eg")) {
 		exportmeshgraph(arg);
+	} else if(!strcasecmp(buf, "egb")) {
+		exportmeshgraph_begin(arg);
+	} else if(!strcasecmp(buf, "ege")) {
+		exportmeshgraph_end(NULL);
 	} else if(!strcasecmp(buf, "test")) {
 		testmesh();
 	} else if(!strcasecmp(buf, "quit")) {
@@ -274,7 +348,7 @@ int main(int argc, char *argv[]) {
 
 	mesh = calloc(n, sizeof *mesh);
 
-	meshlink_set_log_cb(NULL, MESHLINK_INFO, log_message);
+	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_message);
 	mkdir(basebase, 0750);
 
 	char filename[PATH_MAX];
@@ -284,7 +358,7 @@ int main(int argc, char *argv[]) {
 		snprintf(filename, sizeof filename, "%s/%s", basebase, nodename);
 		bool itsnew = access(filename, R_OK);
 		mesh[i] = meshlink_open(filename, nodename, "manynodes", i%_DEV_CLASS_MAX);
-		meshlink_set_log_cb(mesh[i], MESHLINK_INFO, log_message);
+		meshlink_set_log_cb(mesh[i], MESHLINK_WARNING, log_message);
 		if(itsnew)
 			meshlink_add_address(mesh[i], "localhost");
 		if(!mesh[i]) {
@@ -310,6 +384,7 @@ int main(int argc, char *argv[]) {
 
 	printf("%d nodes started.\nType /help for a list of commands.\n", started);
 
+	// handle input
 	while(fgets(buf, sizeof buf, stdin))
 		parse_input(buf);
 
