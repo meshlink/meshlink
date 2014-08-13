@@ -32,6 +32,8 @@ static void discovery_entry_group_callback(AvahiServer *server, AvahiSEntryGroup
     assert(mesh->avahi_server != NULL);
     assert(mesh->avahi_poll != NULL);
 
+    pthread_mutex_lock(&(mesh->mesh_mutex));
+
     /* Called whenever the entry group state changes */
     switch(state)
     {
@@ -55,6 +57,8 @@ static void discovery_entry_group_callback(AvahiServer *server, AvahiSEntryGroup
         case AVAHI_ENTRY_GROUP_REGISTERING:
             ;
     }
+
+    pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
 
@@ -70,6 +74,8 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     assert(mesh->avahi_poll != NULL);
     assert(mesh->avahi_servicetype != NULL);
     assert(mesh->self != NULL);
+
+    pthread_mutex_lock(&(mesh->mesh_mutex));
 
     logger(mesh, MESHLINK_DEBUG, "Adding service\n");
 
@@ -121,6 +127,8 @@ fail:
 done:
     if(txt_name)
         { free(txt_name); }
+
+    pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
 static void discovery_server_callback(AvahiServer *server, AvahiServerState state, void * userdata)
@@ -129,6 +137,8 @@ static void discovery_server_callback(AvahiServer *server, AvahiServerState stat
 
     // asserts
     assert(mesh != NULL);
+    
+    pthread_mutex_lock(&(mesh->mesh_mutex));
 
     switch(state)
     {
@@ -195,6 +205,8 @@ static void discovery_server_callback(AvahiServer *server, AvahiServerState stat
         case AVAHI_SERVER_INVALID:
             break;
     }
+
+    pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
 static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfIndex interface, AvahiProtocol protocol, AvahiResolverEvent event, const char *name, const char *type, const char *domain, const char *host_name, const AvahiAddress *address, uint16_t port, AvahiStringList *txt, AvahiLookupResultFlags flags, void* userdata)
@@ -205,6 +217,8 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
     assert(resolver != NULL);
     assert(mesh != NULL);
     assert(mesh->avahi_server != NULL);
+
+    pthread_mutex_lock(&(mesh->mesh_mutex));
 
     /* Called whenever a service has been resolved successfully or timed out */
     switch(event)
@@ -327,6 +341,8 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
     }
 
     avahi_s_service_resolver_free(resolver);
+
+    pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
 static void discovery_browse_callback(AvahiSServiceBrowser *browser, AvahiIfIndex interface, AvahiProtocol protocol, AvahiBrowserEvent event, const char *name, const char *type, const char *domain, AvahiLookupResultFlags flags, void* userdata)
@@ -337,6 +353,8 @@ static void discovery_browse_callback(AvahiSServiceBrowser *browser, AvahiIfInde
     assert(mesh != NULL);
     assert(mesh->avahi_server != NULL);
     assert(mesh->avahi_poll != NULL);
+
+    pthread_mutex_lock(&(mesh->mesh_mutex));
 
     /* Called whenever a new services becomes available on the LAN or is removed from the LAN */
     switch (event)
@@ -385,6 +403,8 @@ static void discovery_browse_callback(AvahiSServiceBrowser *browser, AvahiIfInde
             }
             break;
     }
+    
+    pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
 static void *discovery_loop(void *userdata)
