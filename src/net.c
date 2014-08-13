@@ -145,10 +145,16 @@ static int node_compare_devclass_asc_last_connect_try_desc(const void *a, const 
 	if(na->last_connect_try == nb->last_connect_try)
 		return 0;
 
-	if(nb->last_connect_try == 0 || na->last_connect_try < nb->last_connect_try)
+	if(na->last_connect_try == 0 || na->last_connect_try > nb->last_connect_try)
 		return -1;
 
-	if(na->last_connect_try == 0 || na->last_connect_try > nb->last_connect_try)
+	if(nb->last_connect_try == 0 || na->last_connect_try < nb->last_connect_try)
+		return 1;
+
+	if(na < nb)
+		return -1;
+
+	if(na > nb)
 		return 1;
 
 	return 0;
@@ -162,10 +168,16 @@ static int node_compare_last_connect_try_desc(const void *a, const void *b)
 	if(na->last_connect_try == nb->last_connect_try)
 		return 0;
 
-	if(nb->last_connect_try == 0 || na->last_connect_try < nb->last_connect_try)
+	if(na->last_connect_try == 0 || na->last_connect_try > nb->last_connect_try)
 		return -1;
 
-	if(na->last_connect_try == 0 || na->last_connect_try > nb->last_connect_try)
+	if(nb->last_connect_try == 0 || na->last_connect_try < nb->last_connect_try)
+		return 1;
+
+	if(na < nb)
+		return -1;
+
+	if(na > nb)
 		return 1;
 
 	return 0;
@@ -182,12 +194,17 @@ static int node_compare_devclass_desc(const void *a, const void *b)
 	if(na->devclass > nb->devclass)
 		{ return 1; }
 
+	if(na < nb)
+		return -1;
+
+	if(na > nb)
+		return 1;
+
 	return 0;
 }
 
 
 /*
-
 
 autoconnect()
 {
@@ -278,8 +295,7 @@ disconnect
 
 }
 
-
- */
+*/
 
 
 static void periodic_handler(event_loop_t *loop, void *data) {
@@ -313,8 +329,12 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		logger(mesh, MESHLINK_INFO, "--- autoconnect begin ---");
 
-
 		int retry_timeout = min(mesh->nodes->count * 5, 60);
+
+		logger(mesh, MESHLINK_INFO, "* devclass = %d", mesh->devclass);
+		logger(mesh, MESHLINK_INFO, "* nodes = %d", mesh->nodes->count);
+		logger(mesh, MESHLINK_INFO, "* retry_timeout = %d", retry_timeout);
+
 
 		// connect disconnect nodes
 
@@ -335,7 +355,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		}
 
 		logger(mesh, MESHLINK_INFO, "* cur_connects = %d", cur_connects);
-
+		logger(mesh, MESHLINK_INFO, "* outgoings = %d", mesh->outgoings->count);
 
 		// get min_connects and max_connects
 
@@ -356,7 +376,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 			for splay_each(node_t, n, mesh->nodes)
 			{
-				if(n->devclass <= mesh->devclass && !n->connection && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout))
+				logger(mesh, MESHLINK_INFO, "* n->devclass = %d", n->devclass);
+				if(n != mesh->self && n->devclass <= mesh->devclass && !n->connection && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout))
 					{ splay_insert(nodes, n); }
 			}
 
@@ -367,6 +388,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				//timeout = 0;
 				connect_to = (node_t*)nodes->head->data;
 			}
+			else
+				{ logger(mesh, MESHLINK_INFO, "* could not find node for initial connect"); }
 
 			splay_free_tree(nodes);
 		}
@@ -392,7 +415,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 					for splay_each(node_t, n, mesh->nodes)
 					{
-						if(n->devclass == devclass && !n->connection && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout))
+						if(n != mesh->self && n->devclass == devclass && !n->connection && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout))
 							{ splay_insert(nodes, n); }
 					}
 
@@ -410,6 +433,9 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				else
 					{ break; }
 			}
+
+			if(!connect_to)
+				{ logger(mesh, MESHLINK_INFO, "* could not find better nodes"); }
 		}
 
 
@@ -421,7 +447,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 			for splay_each(node_t, n, mesh->nodes)
 			{
-				if(n->devclass <= mesh->devclass && !n->status.reachable && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout))
+				if(n != mesh->self && n->devclass <= mesh->devclass && !n->status.reachable && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout))
 					{ splay_insert(nodes, n); }
 			}
 
@@ -430,6 +456,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				logger(mesh, MESHLINK_INFO, "* try to heal partition");
 				connect_to = (node_t*)nodes->head->data;
 			}
+			else
+				{ logger(mesh, MESHLINK_INFO, "* could not find nodes for partition healing"); }
 
 			splay_free_tree(nodes);
 		}
@@ -439,10 +467,14 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		if(connect_to && !connect_to->connection)
 		{
+			connect_to->last_connect_try = time(NULL);
+
 			/* check if there is already a connection attempt to this node */
 			bool found = false;
-			for list_each(outgoing_t, outgoing, mesh->outgoings) {
-				if(!strcmp(outgoing->name, connect_to->name)) {
+			for list_each(outgoing_t, outgoing, mesh->outgoings)
+			{
+				if(!strcmp(outgoing->name, connect_to->name))
+				{
 					found = true;
 					break;
 				}
@@ -457,6 +489,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				list_insert_tail(mesh->outgoings, outgoing);
 				setup_outgoing_connection(mesh, outgoing);	
 			}
+			else
+				{ logger(mesh, MESHLINK_INFO, "* skip autoconnect since it is an outgoing connection already"); }
 		}
 
 
@@ -494,6 +528,9 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 					break;
 				}
 			}
+
+			if(!disconnect_from)
+				{ logger(mesh, MESHLINK_INFO, "* no suboptimal outgoing connections"); }
 		}
 
 
@@ -511,11 +548,13 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 			if(nodes->head)
 			{
-				logger(mesh, MESHLINK_INFO, "* disconnect connection (too many connections");
+				logger(mesh, MESHLINK_INFO, "* disconnect connection (too many connections)");
 
 				//timeout = 0;
 				disconnect_from = (node_t*)nodes->head->data;
 			}
+			else
+				{ logger(mesh, MESHLINK_INFO, "* no node we want to disconnect, even though we have too many connections"); }
 
 			splay_free_tree(nodes);
 		}

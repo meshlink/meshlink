@@ -123,9 +123,7 @@ static bool read_invitation_key(meshlink_handle_t *mesh) {
 }
 
 bool node_read_devclass(meshlink_handle_t *mesh, node_t *n) {
-	if(n->devclass != 0)
-		return true;
-
+	
 	splay_tree_t *config_tree;
 	char *p;
 
@@ -149,7 +147,7 @@ exit:
 
 bool node_write_devclass(meshlink_handle_t *mesh, node_t *n) {
 
-	if(n->devclass == 0)
+	if(n->devclass < 0 || n->devclass > _DEV_CLASS_MAX)
 		return false;
 
 	bool result = false;
@@ -380,6 +378,8 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	mesh->self->via = mesh->self;
 	mesh->self->status.reachable = true;
 	mesh->self->last_state_change = mesh->loop.now.tv_sec;
+
+	node_write_devclass(mesh, mesh->self);
 	node_add(mesh, mesh->self);
 
 	graph(mesh);
