@@ -374,7 +374,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		// find better nodes to connect to
 
-		if(!connect_to && min_connects <= cur_connects < max_connects)
+		if(!connect_to && min_connects <= cur_connects && cur_connects < max_connects)
 		{
 			unsigned int connects = 0;
 
@@ -415,7 +415,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		// heal partitions
 
-		if(!connect_to && min_connects <= cur_connects < max_connects)
+		if(!connect_to && min_connects <= cur_connects && cur_connects < max_connects)
 		{
 			splay_tree_t *nodes = splay_alloc_tree(node_compare_devclass_asc_last_connect_try_desc, NULL);
 
@@ -462,7 +462,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		// disconnect suboptimal outgoing connections
 
-		if(min_connects < cur_connects <= max_connects)
+		if(min_connects < cur_connects && cur_connects <= max_connects)
 		{
 			unsigned int connects = 0;
 
