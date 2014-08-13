@@ -7,6 +7,11 @@
 #include <linux/limits.h>
 
 #include "../src/meshlink.h"
+#include "../src/devtools.h"
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 static int n = 10;
 static meshlink_handle_t **mesh;
@@ -60,6 +65,40 @@ static void linkmesh() {
 
 		free(datai);
 	}
+}
+
+static bool exportmeshgraph(const char* path)
+{
+	struct stat ps;
+	int psr = stat(path, &ps);
+
+	if(psr == 0 || errno != ENOENT)
+	{
+		if(psr == -1)
+			{ perror("stat"); }
+		else
+			{ fprintf(stderr, "%s exists already\n", path); }
+
+		return false;
+	}
+
+	FILE* stream = fopen(path, "w");
+
+	if(!stream)
+	{
+		perror("stream");
+		return false;
+	}
+
+	if(!devtool_export_json_all_edges_state(mesh[0], stream))
+	{
+		fclose(stream);
+		fprintf(stderr, "could not export graph\n");
+		return false;
+	}
+
+	fclose(stream);
+	return true;
 }
 
 static void parse_command(char *buf) {
@@ -131,6 +170,8 @@ static void parse_command(char *buf) {
 		}
 	} else if(!strcasecmp(buf, "link")) {
 		linkmesh();
+	} else if(!strcasecmp(buf, "eg")) {
+		exportmeshgraph(arg);
 	} else if(!strcasecmp(buf, "test")) {
 		testmesh();
 	} else if(!strcasecmp(buf, "quit")) {
@@ -145,6 +186,7 @@ static void parse_command(char *buf) {
 			"/kick <name>          Blacklist the given node.\n"
 			"/who [<name>]         List all nodes or show information about the given node.\n"
 			"/link                 Link all nodes together.\n"
+			"/eg <path>            Export graph as json file.\n"
 			"/test                 Test functionality sending some data to all nodes\n"
 			"/quit                 Exit this program.\n"
 			);

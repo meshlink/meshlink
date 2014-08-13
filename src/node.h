@@ -40,10 +40,9 @@ typedef struct node_status_t {
 
 typedef struct node_t {
 	char *name;                             /* name of this node */
-	void *priv;
-	
 	uint32_t options;                       /* options turned on for this node */
 	dev_class_t devclass;
+	void *priv;
 
 	struct meshlink_handle *mesh;           /* The mesh this node belongs to */
 

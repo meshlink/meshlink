@@ -56,7 +56,7 @@ sptps_speed_SOURCES = \
 
 lib_LTLIBRARIES = libmeshlink.la
 
-libmeshlink_la_LDFLAGS = -export-symbols-regex '^meshlink_'
+libmeshlink_la_LDFLAGS = -export-symbols-regex '^(meshlink_|devtool_)'
 
 libmeshlink_la_SOURCES = \
 	meshlink.c meshlink.h \
@@ -99,6 +99,7 @@ libmeshlink_la_SOURCES = \
 	system.h \
 	utils.c utils.h \
 	xalloc.h \
+	devtools.c devtools.h \
 	$(ed25519_SOURCES) \
 	$(chacha_poly1305_SOURCES)
 

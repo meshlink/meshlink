@@ -96,6 +96,8 @@ struct meshlink_handle {
 
 struct meshlink_node {
 	char *name;       ///< Textual name of this node. It is stored in a nul-terminated C string, which is allocated by MeshLink.
+	uint32_t options;
+	dev_class_t devclass;
 	void *priv;       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
