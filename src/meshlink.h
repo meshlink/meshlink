@@ -48,6 +48,9 @@ typedef struct meshlink_handle meshlink_handle_t;
 /// A handle for a MeshLink node.
 typedef struct meshlink_node meshlink_node_t;
 
+/// A handle for a MeshLink edge.
+typedef struct meshlink_edge meshlink_edge_t;
+
 /// A handle for a MeshLink channel.
 typedef struct meshlink_channel meshlink_channel_t;
 
@@ -100,6 +103,22 @@ struct meshlink_channel {
 };
 
 #endif // MESHLINK_INTERNAL_H
+
+/// An edge in the meshlink network.
+struct meshlink_edge {
+	struct meshlink_node *from;     ///< Pointer to a node. Node memory is
+				        //   owned by meshlink and should not be
+				        //   deallocated. Node contents may be
+				        //   changed by meshlink.
+	struct meshlink_node *to;       ///< Pointer to a node. Node memory is
+                                        //   owned by meshlink and should not be
+                                        //   deallocated. Node contents may be
+                                        //   changed by meshlink.
+	struct sockaddr_storage address;///< The address information associated
+					//   with this edge.
+	uint32_t options;               ///< Edge options. @TODO what are edge options?
+	int weight;                     ///< Weight assigned to this edge.
+};
 
 /// Get the text for the given MeshLink error code.
 /** This function returns a pointer to the string containing the description of the given error code.
@@ -611,6 +630,40 @@ extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t
  *  			this memory once meshlink returns.
  */
 extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr);
+
+/// Get a list of edges.
+/** This function returns an array with copies of all known bidirectional edges.
+ *  The edges are copied to capture the mesh state at call time, since edges
+ *  mutate frequently. The nodes pointed to within the meshlink_edge_t type
+ *  are not copies; these are the same pointers that one would get from a call
+ *  to meshlink_get_all_nodes().
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param edges        A pointer to a previously allocated array of pointers to
+ *  			meshlink_edge_t, or NULL in which case MeshLink will
+ *  			allocate a new array. The application CANNOT supply an
+ *  			array it allocated itself with malloc, but CAN use
+ *  			the return value from the previous call to this function
+ *  			(which is the preferred way).
+ *                      The pointers in the array are valid until meshlink_close() is called.
+ *  @param nmemb        A pointer to a variable holding the number of nodes that
+ *  			are stored in the array. In case the @a nodes @a
+ *  			argument is not NULL, MeshLink might call realloc()
+ *  			on the array to change its size.
+ *                      The contents of this variable will be changed to reflect
+ *                      the new size of the array.
+ *  
+ *  @return             A pointer to an array containing pointers to all known 
+ *  			edges, or NULL in case of an error.
+ *  			If the @a edges @a argument was not NULL, then the
+ *  			retun value can be either the same value or a different
+ *  			value. If the new values is NULL, then the old array
+ *  			will have been freed by Meshlink.
+ *			The caller must call free() on each element of this
+ *  			array (but not the contents of said elements),
+ *  			as well as the array itself when it is finished.
+ */
+extern meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink_edge_t **edges, size_t *nmemb);
 
 #ifdef __cplusplus
 }

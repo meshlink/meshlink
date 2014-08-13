@@ -99,6 +99,10 @@ AC_CHECK_TYPES([socklen_t, struct addrinfo, struct sockaddr_in6], , ,
   [#include "src/have.h"]
 )
 
+AC_CHECK_TYPES([struct sockaddr_storage], ,AC_MSG_ERROR([System must support struct sockaddr_storage.]),
+  [#include "src/have.h"]
+)
+
 dnl Checks for library functions.
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([asprintf fchmod fork get_current_dir_name gettimeofday random select strdup strerror time usleep],

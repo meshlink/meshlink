@@ -86,7 +86,7 @@ extern void signal_del(event_loop_t *loop, signal_t *sig);
 
 extern void event_loop_init(event_loop_t *loop);
 extern void event_loop_exit(event_loop_t *loop);
-extern bool event_loop_run(event_loop_t *loop);
+extern bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex);
 extern void event_loop_flush_output(event_loop_t *loop);
 extern void event_loop_stop(event_loop_t *loop);
 
