@@ -54,7 +54,7 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE* stream)
 	meshlink_node_t **nodes = meshlink_get_all_nodes(mesh, NULL, &node_count);
 	meshlink_edge_t **edges = meshlink_get_all_edges_state(mesh, NULL, &edge_count);
 
-	if(!nodes || !edges)
+	if((!nodes && node_count != 0) || (!edges && edge_count != 0))
 		{ goto fail; }
 
 	// export begin
@@ -145,12 +145,14 @@ fail:
 
 done:
 
-	free(nodes);
+	if(nodes)
+		{ free(nodes); }
 
 	for(size_t i = 0; edges && i < edge_count; ++i)
 		{ free(edges[i]); }
 
-	free(edges);
+	if(nodes)
+		{ free(edges); }
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 
