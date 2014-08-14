@@ -549,10 +549,10 @@ static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint
 			return sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
 
 		case 0:
-			mesh->data = xrealloc(mesh->data, mesh->thedatalen + len + 1);
-			memcpy(mesh->data + mesh->thedatalen, msg, len);
-			mesh->thedatalen += len;
-			mesh->data[mesh->thedatalen] = 0;
+			mesh->data = xrealloc(mesh->data, len + 1);
+			memcpy(mesh->data , msg, len);
+			mesh->thedatalen = len;
+			//mesh->data[mesh->thedatalen] = 0;
 			break;
 
 		case 1:
