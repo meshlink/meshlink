@@ -503,8 +503,10 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 	}
 
 	char *b64key = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
-	if(!b64key)
+	if(!b64key) {
+		fclose(fh);
 		return false;
+		}
 
 	fprintf(fh, "ECDSAPublicKey = %s\n", b64key);
 	fprintf(fh, "Port = %s\n", mesh->myport);
