@@ -103,9 +103,9 @@ libmeshlink_la_SOURCES = \
 	$(ed25519_SOURCES) \
 	$(chacha_poly1305_SOURCES)
 
-libmeshlink_la_CFLAGS = -fPIC -I../avahi/
+libmeshlink_la_CFLAGS = -fPIC -I../catta/
 
-libmeshlink_la_LIBADD = -lpthread -luuid ../avahi/avahi-core/.libs/libavahi-core.a ../avahi/avahi-common/.libs/libavahi-common.a
+libmeshlink_la_LIBADD = -lpthread -luuid ../catta/avahi-core/.libs/libavahi-core.a ../catta/avahi-common/.libs/libavahi-common.a
 
 libmeshlink_la_SOURCES += \
 	ed25519/ecdh.c \
