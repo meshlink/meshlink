@@ -2,3 +2,7 @@
 	path = avahi
 	url = git@chicago.everbase.net:meshlink/avahi-noptr.git
 	branch = noptr
+[submodule "catta"]
+	path = catta
+	url = https://github.com/everbase/catta.git
+	branch = develop
