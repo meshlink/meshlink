@@ -1836,7 +1836,10 @@ void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const
 
 	if(host && port) {
 		xasprintf(&str, "%s %s", host, port);
-		append_config_file(mesh, node->name, "Address", str);
+		if ( (strncmp ("fe80",host,4) != 0) && ( strncmp("127.",host,4) != 0 ) && ( strcmp("localhost",host) !=0 ) )
+			append_config_file(mesh, node->name, "Address", str);
+		else
+			logger(mesh, MESHLINK_DEBUG, "Not adding Link Local IPv6 Address to config\n");
 	}
 
 	free(str);
