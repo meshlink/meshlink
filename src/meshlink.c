@@ -556,6 +556,7 @@ static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint
 			break;
 
 		case 1:
+			mesh->thedatalen = 0;
 			return finalize_join(mesh);
 
 		case 2:
@@ -873,6 +874,8 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 	
 	logger(mesh, MESHLINK_DEBUG, "meshlink_start called\n");
+
+	mesh->thedatalen = 0;
 
 	// TODO: open listening sockets first
 
