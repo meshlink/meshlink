@@ -363,8 +363,6 @@ int main(int argc, char *argv[]) {
 		bool itsnew = access(filename, R_OK);
 		mesh[i] = meshlink_open(filename, nodename, "manynodes", i%_DEV_CLASS_MAX);
 		meshlink_set_log_cb(mesh[i], MESHLINK_WARNING, log_message);
-		if(itsnew)
-			meshlink_add_address(mesh[i], "localhost");
 		if(!mesh[i]) {
 			fprintf(stderr, "errno is: %d\n", meshlink_errno);
 			fprintf(stderr, "Could not open %s: %s\n", filename, meshlink_strerror(meshlink_errno));
