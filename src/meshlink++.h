@@ -86,14 +86,67 @@ namespace meshlink {
 	};
 
 	/// A class describing a MeshLink mesh.
-	class mesh: public meshlink_handle_t {
+	class mesh {
 	public:
-		mesh() : meshlink_handle_t() {}
-	
+		mesh() : handle(0) {}
+		
 		virtual ~mesh() {
-			meshlink_close(this);
+			this->close();
 		}
 		
+		bool isOpen() const {
+			return (handle!=0);
+		}
+		
+// TODO: please enable C++11 in autoconf to enable "move constructors":
+//		mesh(mesh&& other)
+//		: handle(other.handle)
+//		{
+//			if(handle)
+//				handle->priv = this;
+//			other.handle = 0;
+//		}
+
+		/// Initialize MeshLink's configuration directory.
+		/** This function causes MeshLink to initialize its configuration directory,
+		 *  if it hasn't already been initialized.
+		 *  It only has to be run the first time the application starts,
+		 *  but it is not a problem if it is run more than once, as long as
+		 *  the arguments given are the same.
+		 *
+		 *  This function does not start any network I/O yet. The application should
+		 *  first set callbacks, and then call meshlink_start().
+		 *
+		 *  @param confbase The directory in which MeshLink will store its configuration files.
+		 *  @param name     The name which this instance of the application will use in the mesh.
+		 *  @param appname  The application name which will be used in the mesh.
+		 *  @param dclass   The device class which will be used in the mesh.
+		 *
+		 *  @return         This function will return a pointer to a meshlink::mesh if MeshLink has succesfully set up its configuration files, NULL otherwise.
+		 */ 
+		bool open(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
+			handle = meshlink_open(confbase, name, appname, devclass);
+			if(handle)
+				handle->priv = this;
+			
+			return isOpen();
+		}
+		
+		mesh(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
+			open(confbase, name, appname, devclass);
+		}
+		
+		/// Close the MeshLink handle.
+		/** This function calls meshlink_stop() if necessary,
+		 *  and frees all memory allocated by MeshLink.
+		 *  Afterwards, the handle and any pointers to a struct meshlink_node are invalid.
+		 */
+		void close() {
+			if(handle)
+				meshlink_close(handle);
+			handle=0;
+		}
+	
 		/** instead of registerin callbacks you derive your own class and overwrite the following abstract member functions.
 		 *  These functions are run in MeshLink's own thread.
 		 *  It is therefore important that these functions use apprioriate methods (queues, pipes, locking, etc.)
@@ -118,10 +171,10 @@ namespace meshlink {
 		 *  @return         This function will return true if MeshLink has succesfully started its thread, false otherwise.
 		 */
 		bool start() {
-			meshlink_set_receive_cb    (this, &receive_trampoline);
-			meshlink_set_node_status_cb(this, &node_status_trampoline);
-			meshlink_set_log_cb        (this, MESHLINK_DEBUG, &log_trampoline);
-			return meshlink_start(this);
+			meshlink_set_receive_cb    (handle, &receive_trampoline);
+			meshlink_set_node_status_cb(handle, &node_status_trampoline);
+			meshlink_set_log_cb        (handle, MESHLINK_DEBUG, &log_trampoline);
+			return meshlink_start      (handle);
 		}
 
 		/// Stop MeshLink.
@@ -129,7 +182,7 @@ namespace meshlink {
 		 *  close all sockets, and shut down its own thread.
 		 */
 		void stop() {
-			meshlink_stop(this);
+			meshlink_stop(handle);
 		}
 
 		/// Send data to another node.
@@ -146,7 +199,7 @@ namespace meshlink {
 		 *                      A return value of true does not guarantee that the message will actually arrive at the destination.
 		 */
 		bool send(node *destination, const void *data, unsigned int len) {
-			return meshlink_send(this, destination, data, len);
+			return meshlink_send(handle, destination, data, len);
 		}
 
 		/// Get a handle for a specific node.
@@ -158,7 +211,7 @@ namespace meshlink {
 		 *                      or NULL if the requested node does not exist.
 		 */
 		node *get_node(const char *name) {
-			return (node *)meshlink_get_node(this, name);
+			return (node *)meshlink_get_node(handle, name);
 		}
 
 		/// Get a list of all nodes.
@@ -171,7 +224,7 @@ namespace meshlink {
 		 *                      This can be larger than nmemb, in which case not all nodes were stored in the nodes array.
 		 */
 		node **get_all_nodes(node **nodes, size_t *nmemb) {
-			return (node **)meshlink_get_all_nodes(this, (meshlink_node_t **)nodes, nmemb);
+			return (node **)meshlink_get_all_nodes(handle, (meshlink_node_t **)nodes, nmemb);
 		}
 
 		/// Sign data using the local node's MeshLink key.
@@ -186,7 +239,7 @@ namespace meshlink {
 		 *  @return             This function returns true if the signature is valid, false otherwise.
 		 */
 		bool sign(const void *data, size_t len, void *signature, size_t *siglen) {
-			return meshlink_sign(this, data, len, signature, siglen);
+			return meshlink_sign(handle, data, len, signature, siglen);
 		}
 
 		/// Verify the signature generated by another node of a piece of data.
@@ -201,7 +254,7 @@ namespace meshlink {
 		 *  @return             This function returns true if the signature is valid, false otherwise.
 		 */
 		bool verify(node *source, const void *data, size_t len, const void *signature, size_t siglen) {
-			return meshlink_verify(this, source, data, len, signature, siglen);
+			return meshlink_verify(handle, source, data, len, signature, siglen);
 		}
 
 		/// Add an Address for the local node.
@@ -212,7 +265,7 @@ namespace meshlink {
 		 *  @return             This function returns true if the address was added, false otherwise.
 		 */
 		bool add_address(const char *address) {
-			return meshlink_add_address(this, address);
+			return meshlink_add_address(handle, address);
 		}
 
 		/// Invite another node into the mesh.
@@ -227,7 +280,7 @@ namespace meshlink {
 		 *                      The application should call free() after it has finished using the URL.
 		 */
 		char *invite(const char *name) {
-			return meshlink_invite(this, name);
+			return meshlink_invite(handle, name);
 		}
 
 		/// Use an invitation to join a mesh.
@@ -240,7 +293,7 @@ namespace meshlink {
 		 *  @return             This function returns true if the local node joined the mesh it was invited to, false otherwise.
 		 */
 		bool join(const char *invitation) {
-			return meshlink_join(this, invitation);
+			return meshlink_join(handle, invitation);
 		}
 
 		/// Export the local node's key and addresses.
@@ -252,7 +305,7 @@ namespace meshlink {
 		 *                      The application should call free() after it has finished using this string.
 		 */
 		char *export_key() {
-			return meshlink_export(this);
+			return meshlink_export(handle);
 		}
 
 		/// Import another node's key and addresses.
@@ -264,7 +317,7 @@ namespace meshlink {
 		 *  @return             This function returns true if the data was valid and the other node has been granted access to the mesh, false otherwise.
 		 */
 		bool import_key(const char *data) {
-			return meshlink_import(this, data);
+			return meshlink_import(handle, data);
 		}
 
 		/// Blacklist a node from the mesh.
@@ -275,7 +328,7 @@ namespace meshlink {
 		 *  @param node         A pointer to a meshlink::node describing the node to be blacklisted.
 		 */
 		void blacklist(node *node) {
-			return meshlink_blacklist(this, node);
+			return meshlink_blacklist(handle, node);
 		}
 
 		/// Set the accept callback.
@@ -289,7 +342,7 @@ namespace meshlink {
 		 *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
 		 */
 		void set_channel_accept_cb(channel *channel, channel_accept_cb_t cb) {
-			return meshlink_set_channel_accept_cb(this, (meshlink_channel_accept_cb_t)cb);
+			return meshlink_set_channel_accept_cb(handle, (meshlink_channel_accept_cb_t)cb);
 		}
 
 		/// Open a reliable stream channel to another node.
@@ -305,7 +358,7 @@ namespace meshlink {
 		 *  @return             A handle for the channel, or NULL in case of an error.
 		 */
 		channel *channel_open(node *node, uint16_t port, channel_receive_cb_t cb, const void *data, size_t len) {
-			return (channel *)meshlink_channel_open(this, node, port, (meshlink_channel_receive_cb_t)cb, data, len);
+			return (channel *)meshlink_channel_open(handle, node, port, (meshlink_channel_receive_cb_t)cb, data, len);
 		}
 
 		/// Partially close a reliable stream channel.
@@ -317,7 +370,7 @@ namespace meshlink {
 		 *  @param direction    Must be one of SHUT_RD, SHUT_WR or SHUT_RDWR.
 		 */
 		void channel_shutdown(channel *channel, int direction) {
-			return meshlink_channel_shutdown(this, channel, direction);
+			return meshlink_channel_shutdown(handle, channel, direction);
 		}
 
 		/// Close a reliable stream channel.
@@ -328,7 +381,7 @@ namespace meshlink {
 		 *  @param channel      A handle for the channel.
 		 */
 		void channel_close(meshlink_channel_t *channel) {
-			return meshlink_channel_close(this, channel);
+			return meshlink_channel_close(handle, channel);
 		}
 
 		/// Transmit data on a channel
@@ -341,7 +394,7 @@ namespace meshlink {
 		 *  @return             The amount of data that was queued, which can be less than len, or a negative value in case of an error.
 		 */
 		ssize_t channel_send(channel *channel, void *data, size_t len) {
-			return meshlink_channel_send(this, channel, data, len);
+			return meshlink_channel_send(handle, channel, data, len);
 		}
 
 	private:
@@ -352,54 +405,24 @@ namespace meshlink {
 		/// static callback trampolines:
 		static void receive_trampoline(meshlink_handle_t* handle, meshlink_node_t* source, const void* data, size_t length)
 		{
-			mesh* that = static_cast<mesh*>(handle);
+			mesh* that = static_cast<mesh*>(handle->priv);
 			that->receive(static_cast<node*>(source), data, length);
 		}
 		
 		static void node_status_trampoline(meshlink_handle_t* handle, meshlink_node_t* peer, bool reachable)
 		{
-			mesh* that = static_cast<mesh*>(handle);
+			mesh* that = static_cast<mesh*>(handle->priv);
 			that->node_status(static_cast<node*>(peer), reachable);
 		}
 
 		static void log_trampoline(meshlink_handle_t* handle, log_level_t level, const char* message)
 		{
-			mesh* that = static_cast<mesh*>(handle);
+			mesh* that = static_cast<mesh*>(handle->priv);
 			that->log(level, message);
 		}
+		
+		meshlink_handle_t*  handle;
 	};
-
-	/// Initialize MeshLink's configuration directory.
-	/** This function causes MeshLink to initialize its configuration directory,
-	 *  if it hasn't already been initialized.
-	 *  It only has to be run the first time the application starts,
-	 *  but it is not a problem if it is run more than once, as long as
-	 *  the arguments given are the same.
-	 *
-	 *  This function does not start any network I/O yet. The application should
-	 *  first set callbacks, and then call meshlink_start().
-	 *
-	 *  @param confbase The directory in which MeshLink will store its configuration files.
-	 *  @param name     The name which this instance of the application will use in the mesh.
-	 *  @param appname  The application name which will be used in the mesh.
-	 *  @param dclass   The device class which will be used in the mesh.
-	 *
-	 *  @return         This function will return a pointer to a meshlink::mesh if MeshLink has succesfully set up its configuration files, NULL otherwise.
-	 */
-	template<class MESH>
-	static MESH* open(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
-		void* mp = (void *)meshlink_open_with_size(confbase, name, appname, devclass, sizeof(MESH));
-		return new (mp) MESH;
-	}
-
-	/// Close the MeshLink handle.
-	/** This function calls meshlink_stop() if necessary,
-	 *  and frees all memory allocated by MeshLink.
-	 *  Afterwards, the handle and any pointers to a struct meshlink_node are invalid.
-	 */
-	static void close(mesh *mesh) {
-		meshlink_close(mesh);
-	}
 
 	static const char *strerror(errno_t err = meshlink_errno) {
 		return meshlink_strerror(err);

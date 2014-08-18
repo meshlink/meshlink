@@ -162,9 +162,6 @@ extern const char *meshlink_strerror(meshlink_errno_t err);
  */
 extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dev_class_t devclass);
 
-/// is used by the C++ wrapper to allocate more memory behind the handle
-extern meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, const char* appname, dev_class_t devclass, size_t size);
-
 /// Start MeshLink.
 /** This function causes MeshLink to open network sockets, make outgoing connections, and
  *  create a new thread, which will handle all network I/O.

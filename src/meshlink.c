@@ -746,11 +746,6 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 }
 
 meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
-	return meshlink_open_with_size(confbase, name, appname, devclass, sizeof(meshlink_handle_t));
-}
-
-meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *name, const char* appname, dev_class_t devclass, size_t size) {
-
 	// Validate arguments provided by the application
 	bool usingname = false;
 	
@@ -787,7 +782,7 @@ meshlink_handle_t *meshlink_open_with_size(const char *confbase, const char *nam
 		return NULL;
 	}
 
-	meshlink_handle_t *mesh = xzalloc(size);
+	meshlink_handle_t *mesh = xzalloc(sizeof(meshlink_handle_t));
 	mesh->confbase = xstrdup(confbase);
 	mesh->appname = xstrdup(appname);
 	mesh->devclass = devclass;
