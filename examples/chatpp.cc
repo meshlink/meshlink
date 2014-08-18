@@ -187,14 +187,15 @@ int main(int argc, char *argv[]) {
 	if(argc > 2)
 		nick = argv[2];
 
-	ChatMesh* mesh = meshlink::open<ChatMesh>(confbase, nick, "chatpp", DEV_CLASS_STATIONARY);
+	ChatMesh mesh;
+	mesh.open(confbase, nick, "chatpp", DEV_CLASS_STATIONARY);
 
-	if(!mesh) {
+	if(!mesh.isOpen()) {
 		fprintf(stderr, "Could not open MeshLink: %s\n", meshlink::strerror());
 		return 1;
 	}
 
-	if(!mesh->start()) {
+	if(!mesh.start()) {
 		fprintf(stderr, "Could not start MeshLink: %s\n", meshlink::strerror());
 		return 1;
 	}
@@ -202,12 +203,12 @@ int main(int argc, char *argv[]) {
 	printf("Chat started.\nType /help for a list of commands.\n");
 
 	while(fgets(buf, sizeof buf, stdin))
-		parse_input(mesh, buf);
+		parse_input(&mesh, buf);
 
 	printf("Chat stopping.\n");
 
-	mesh->stop();
-	meshlink::close(mesh);
+	mesh.stop();
+	mesh.close();
 
 	return 0;
 }
