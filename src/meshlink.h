@@ -107,15 +107,15 @@ struct meshlink_channel {
 /// An edge in the meshlink network.
 struct meshlink_edge {
 	struct meshlink_node *from;     ///< Pointer to a node. Node memory is
-				        //   owned by meshlink and should not be
-				        //   deallocated. Node contents may be
-				        //   changed by meshlink.
+	                                //   owned by meshlink and should not be
+	                                //   deallocated. Node contents may be
+	                                //   changed by meshlink.
 	struct meshlink_node *to;       ///< Pointer to a node. Node memory is
-                                        //   owned by meshlink and should not be
-                                        //   deallocated. Node contents may be
-                                        //   changed by meshlink.
+	                                //   owned by meshlink and should not be
+	                                //   deallocated. Node contents may be
+	                                //   changed by meshlink.
 	struct sockaddr_storage address;///< The address information associated
-					//   with this edge.
+	                                //   with this edge.
 	uint32_t options;               ///< Edge options. @TODO what are edge options?
 	int weight;                     ///< Weight assigned to this edge.
 };
@@ -340,7 +340,7 @@ extern meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *n
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param node         A pointer to a meshlink_node_t describing the node.
  *
- *  @return		A nul-terminated C string containing the fingerprint of the node's public key in a printable ASCII format.
+ *  @return             A nul-terminated C string containing the fingerprint of the node's public key in a printable ASCII format.
  *                      The application should call free() after it is done using this string.
  */
 extern char *meshlink_get_fingerprint(meshlink_handle_t *mesh, meshlink_node_t *node);
@@ -655,13 +655,13 @@ extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t
 /** This function indicates to meshlink that the given hostname is likely found
  *  at the given IP address and port.
  *
- *  @param mesh		A handle which represents an instance of MeshLink.
- *  @param hostname	The hostname which can be found at the given address.
- *  			The caller is free to overwrite or free this string
- *  			once meshlink returns.
- *  @param addr		The IP address and port which should be tried for the
- *  			given hostname. The caller is free to overwrite or free
- *  			this memory once meshlink returns.
+ *  @param mesh     A handle which represents an instance of MeshLink.
+ *  @param hostname The hostname which can be found at the given address.
+ *                  The caller is free to overwrite or free this string
+ *                  once meshlink returns.
+ *  @param addr     The IP address and port which should be tried for the
+ *                  given hostname. The caller is free to overwrite or free
+ *                  this memory once meshlink returns.
  */
 extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr);
 
