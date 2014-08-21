@@ -1712,7 +1712,7 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 	fclose(f);
 	buf[len - 1] = 0;
 	
-	pthread_mutex_lock(&(mesh->mesh_mutex));
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return buf;
 }
 
