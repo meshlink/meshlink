@@ -6,14 +6,14 @@
 
 #include <pthread.h>
 
-#include <avahi-core/core.h>
-#include <avahi-core/lookup.h>
-#include <avahi-core/publish.h>
-#include <avahi-core/log.h>
-#include <avahi-common/simple-watch.h>
-#include <avahi-common/malloc.h>
-#include <avahi-common/alternative.h>
-#include <avahi-common/error.h>
+#include <catta/core.h>
+#include <catta/lookup.h>
+#include <catta/publish.h>
+#include <catta/log.h>
+#include <catta/simple-watch.h>
+#include <catta/malloc.h>
+#include <catta/alternative.h>
+#include <catta/error.h>
 
 #include <netinet/in.h>
 
@@ -23,38 +23,38 @@
 #define MESHLINK_MDNS_NAME_KEY "name"
 #define MESHLINK_MDNS_FINGERPRINT_KEY "fingerprint"
 
-static void discovery_entry_group_callback(AvahiServer *server, AvahiSEntryGroup *group, AvahiEntryGroupState state, void *userdata)
+static void discovery_entry_group_callback(CattaServer *server, CattaSEntryGroup *group, CattaEntryGroupState state, void *userdata)
 {
     meshlink_handle_t *mesh = userdata;
 
     // asserts
     assert(mesh != NULL);
-    assert(mesh->avahi_server != NULL);
-    assert(mesh->avahi_poll != NULL);
+    assert(mesh->catta_server != NULL);
+    assert(mesh->catta_poll != NULL);
 
     pthread_mutex_lock(&(mesh->mesh_mutex));
 
     /* Called whenever the entry group state changes */
     switch(state)
     {
-        case AVAHI_ENTRY_GROUP_ESTABLISHED:
+        case CATTA_ENTRY_GROUP_ESTABLISHED:
             /* The entry group has been established successfully */
-            logger(mesh, MESHLINK_DEBUG, "Avahi Service successfully established.\n");
+            logger(mesh, MESHLINK_DEBUG, "Catta Service successfully established.\n");
             break;
 
-        case AVAHI_ENTRY_GROUP_COLLISION:
-            logger(mesh, MESHLINK_WARNING, "Avahi Service collision.\n");
+        case CATTA_ENTRY_GROUP_COLLISION:
+            logger(mesh, MESHLINK_WARNING, "Catta Service collision.\n");
             // @TODO can we just set a new name and retry?
             break;
 
-        case AVAHI_ENTRY_GROUP_FAILURE :
+        case CATTA_ENTRY_GROUP_FAILURE :
             /* Some kind of failure happened while we were registering our services */
-            logger(mesh, MESHLINK_ERROR, "Avahi Entry group failure: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
-            avahi_simple_poll_quit(mesh->avahi_poll);
+            logger(mesh, MESHLINK_ERROR, "Catta Entry group failure: %s\n", catta_strerror(catta_server_errno(mesh->catta_server)));
+            catta_simple_poll_quit(mesh->catta_poll);
             break;
 
-        case AVAHI_ENTRY_GROUP_UNCOMMITED:
-        case AVAHI_ENTRY_GROUP_REGISTERING:
+        case CATTA_ENTRY_GROUP_UNCOMMITED:
+        case CATTA_ENTRY_GROUP_REGISTERING:
             ;
     }
 
@@ -70,9 +70,9 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     assert(mesh != NULL);
     assert(mesh->name != NULL);
     assert(mesh->myport != NULL);
-    assert(mesh->avahi_server != NULL);
-    assert(mesh->avahi_poll != NULL);
-    assert(mesh->avahi_servicetype != NULL);
+    assert(mesh->catta_server != NULL);
+    assert(mesh->catta_poll != NULL);
+    assert(mesh->catta_servicetype != NULL);
     assert(mesh->self != NULL);
 
     pthread_mutex_lock(&(mesh->mesh_mutex));
@@ -80,11 +80,11 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     logger(mesh, MESHLINK_DEBUG, "Adding service\n");
 
     /* Ifthis is the first time we're called, let's create a new entry group */
-    if(!mesh->avahi_group)
+    if(!mesh->catta_group)
     {
-        if(!(mesh->avahi_group = avahi_s_entry_group_new(mesh->avahi_server, discovery_entry_group_callback, mesh)))
+        if(!(mesh->catta_group = catta_s_entry_group_new(mesh->catta_server, discovery_entry_group_callback, mesh)))
         {
-            logger(mesh, MESHLINK_ERROR, "avahi_entry_group_new() failed: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+            logger(mesh, MESHLINK_ERROR, "catta_entry_group_new() failed: %s\n", catta_strerror(catta_server_errno(mesh->catta_server)));
             goto fail;
         }
     }
@@ -106,23 +106,23 @@ static void discovery_create_services(meshlink_handle_t *mesh)
 
     /* Add the service */
     int ret = 0;
-    if((ret = avahi_server_add_service(mesh->avahi_server, mesh->avahi_group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self), mesh->avahi_servicetype, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0)
+    if((ret = catta_server_add_service(mesh->catta_server, mesh->catta_group, CATTA_IF_UNSPEC, CATTA_PROTO_UNSPEC, 0, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self), mesh->catta_servicetype, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0)
     {
-        logger(mesh, MESHLINK_ERROR, "Failed to add service: %s\n", avahi_strerror(ret));
+        logger(mesh, MESHLINK_ERROR, "Failed to add service: %s\n", catta_strerror(ret));
         goto fail;
     }
 
     /* Tell the server to register the service */
-    if((ret = avahi_s_entry_group_commit(mesh->avahi_group)) < 0)
+    if((ret = catta_s_entry_group_commit(mesh->catta_group)) < 0)
     {
-        logger(mesh, MESHLINK_ERROR, "Failed to commit entry_group: %s\n", avahi_strerror(ret));
+        logger(mesh, MESHLINK_ERROR, "Failed to commit entry_group: %s\n", catta_strerror(ret));
         goto fail;
     }
 
     goto done;
 
 fail:
-    avahi_simple_poll_quit(mesh->avahi_poll);
+    catta_simple_poll_quit(mesh->catta_poll);
 
 done:
     if(txt_name)
@@ -131,7 +131,7 @@ done:
     pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
-static void discovery_server_callback(AvahiServer *server, AvahiServerState state, void * userdata)
+static void discovery_server_callback(CattaServer *server, CattaServerState state, void * userdata)
 {
 	meshlink_handle_t *mesh = userdata;
 
@@ -142,22 +142,22 @@ static void discovery_server_callback(AvahiServer *server, AvahiServerState stat
 
     switch(state)
     {
-        case AVAHI_SERVER_RUNNING:
+        case CATTA_SERVER_RUNNING:
             {
                 /* The serve has startup successfully and registered its host
                  * name on the network, so it's time to create our services */
-                if(!mesh->avahi_group)
+                if(!mesh->catta_group)
                 {
                     discovery_create_services(mesh);
                 }
             }
             break;
 
-        case AVAHI_SERVER_COLLISION:
+        case CATTA_SERVER_COLLISION:
             {
                 // asserts
-                assert(mesh->avahi_server != NULL);
-                assert(mesh->avahi_poll != NULL);
+                assert(mesh->catta_server != NULL);
+                assert(mesh->catta_poll != NULL);
 
                 /* A host name collision happened. Let's pick a new name for the server */
                 uuid_t hostname;
@@ -166,75 +166,75 @@ static void discovery_server_callback(AvahiServer *server, AvahiServerState stat
                 char hostnamestr[36+1];
                 uuid_unparse_lower(hostname, hostnamestr);
 
-                logger(mesh, MESHLINK_WARNING, "Avahi host name collision, retrying with '%s'\n", hostnamestr);
-                int result = avahi_server_set_host_name(mesh->avahi_server, hostnamestr);
+                logger(mesh, MESHLINK_WARNING, "Catta host name collision, retrying with '%s'\n", hostnamestr);
+                int result = catta_server_set_host_name(mesh->catta_server, hostnamestr);
 
                 if(result < 0)
                 {
-                    logger(mesh, MESHLINK_ERROR, "Avahi failed to set new host name: %s\n", avahi_strerror(result));
-                    avahi_simple_poll_quit(mesh->avahi_poll);
+                    logger(mesh, MESHLINK_ERROR, "Catta failed to set new host name: %s\n", catta_strerror(result));
+                    catta_simple_poll_quit(mesh->catta_poll);
                 }
             }
             break;
 
-        case AVAHI_SERVER_REGISTERING:
+        case CATTA_SERVER_REGISTERING:
             {
                 /* Let's drop our registered services. When the server is back
-                 * in AVAHI_SERVER_RUNNING state we will register them
+                 * in CATTA_SERVER_RUNNING state we will register them
                  * again with the new host name. */
-                if(mesh->avahi_group)
+                if(mesh->catta_group)
                 {
-                    avahi_s_entry_group_reset(mesh->avahi_group);
-                    mesh->avahi_group = NULL;
+                    catta_s_entry_group_reset(mesh->catta_group);
+                    mesh->catta_group = NULL;
                 }
             }
             break;
 
-        case AVAHI_SERVER_FAILURE:
+        case CATTA_SERVER_FAILURE:
             {
                 // asserts
-                assert(mesh->avahi_server != NULL);
-                assert(mesh->avahi_poll != NULL);
+                assert(mesh->catta_server != NULL);
+                assert(mesh->catta_poll != NULL);
 
                 /* Terminate on failure */
-                logger(mesh, MESHLINK_ERROR, "Avahi server failure: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
-                avahi_simple_poll_quit(mesh->avahi_poll);
+                logger(mesh, MESHLINK_ERROR, "Catta server failure: %s\n", catta_strerror(catta_server_errno(mesh->catta_server)));
+                catta_simple_poll_quit(mesh->catta_poll);
             }
             break;
 
-        case AVAHI_SERVER_INVALID:
+        case CATTA_SERVER_INVALID:
             break;
     }
 
     pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
-static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfIndex interface, AvahiProtocol protocol, AvahiResolverEvent event, const char *name, const char *type, const char *domain, const char *host_name, const AvahiAddress *address, uint16_t port, AvahiStringList *txt, AvahiLookupResultFlags flags, void* userdata)
+static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfIndex interface, CattaProtocol protocol, CattaResolverEvent event, const char *name, const char *type, const char *domain, const char *host_name, const CattaAddress *address, uint16_t port, CattaStringList *txt, CattaLookupResultFlags flags, void* userdata)
 {
     meshlink_handle_t *mesh = userdata;
 
     // asserts
     assert(resolver != NULL);
     assert(mesh != NULL);
-    assert(mesh->avahi_server != NULL);
+    assert(mesh->catta_server != NULL);
 
     pthread_mutex_lock(&(mesh->mesh_mutex));
 
     /* Called whenever a service has been resolved successfully or timed out */
     switch(event)
     {
-        case AVAHI_RESOLVER_FAILURE:
+        case CATTA_RESOLVER_FAILURE:
             {
                 // asserts
                 assert(name != NULL);
                 assert(type != NULL);
                 assert(domain != NULL);
 
-                logger(mesh, MESHLINK_WARNING, "(Resolver) Failed to resolve service '%s' of type '%s' in domain '%s': %s\n", name, type, domain, avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+                logger(mesh, MESHLINK_WARNING, "(Resolver) Failed to resolve service '%s' of type '%s' in domain '%s': %s\n", name, type, domain, catta_strerror(catta_server_errno(mesh->catta_server)));
             }
             break;
 
-        case AVAHI_RESOLVER_FOUND:
+        case CATTA_RESOLVER_FOUND:
             {
                 // asserts
                 assert(name != NULL);
@@ -244,12 +244,12 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
                 assert(address != NULL);
                 assert(txt != NULL);
         
-                char straddr[AVAHI_ADDRESS_STR_MAX], *strtxt;
+                char straddr[CATTA_ADDRESS_STR_MAX], *strtxt;
 
                 logger(mesh, MESHLINK_DEBUG, "(Resolver) Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
 
-                avahi_address_snprint(straddr, sizeof(straddr), address);
-                strtxt = avahi_string_list_to_string(txt);
+                catta_address_snprint(straddr, sizeof(straddr), address);
+                strtxt = catta_string_list_to_string(txt);
                 logger(mesh, MESHLINK_DEBUG,
                         "\t%s:%u (%s)\n"
                         "\tTXT=%s\n"
@@ -260,21 +260,21 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
                         "\tcached: %i\n",
                         host_name, port, straddr,
                         strtxt,
-                        avahi_string_list_get_service_cookie(txt),
-                        !!(flags & AVAHI_LOOKUP_RESULT_LOCAL),
-                        !!(flags & AVAHI_LOOKUP_RESULT_WIDE_AREA),
-                        !!(flags & AVAHI_LOOKUP_RESULT_MULTICAST),
-                        !!(flags & AVAHI_LOOKUP_RESULT_CACHED));
-                avahi_free(strtxt);
+                        catta_string_list_get_service_cookie(txt),
+                        !!(flags & CATTA_LOOKUP_RESULT_LOCAL),
+                        !!(flags & CATTA_LOOKUP_RESULT_WIDE_AREA),
+                        !!(flags & CATTA_LOOKUP_RESULT_MULTICAST),
+                        !!(flags & CATTA_LOOKUP_RESULT_CACHED));
+                catta_free(strtxt);
 
                 // retrieve fingerprint
-                AvahiStringList *node_name_li = avahi_string_list_find(txt, MESHLINK_MDNS_NAME_KEY);
-                AvahiStringList *node_fp_li = avahi_string_list_find(txt, MESHLINK_MDNS_FINGERPRINT_KEY);
+                CattaStringList *node_name_li = catta_string_list_find(txt, MESHLINK_MDNS_NAME_KEY);
+                CattaStringList *node_fp_li = catta_string_list_find(txt, MESHLINK_MDNS_FINGERPRINT_KEY);
 
                 if(node_name_li != NULL && node_fp_li != NULL)
                 {
-                    char *node_name = (char*)avahi_string_list_get_text(node_name_li) + strlen(MESHLINK_MDNS_NAME_KEY);
-                    char *node_fp = (char*)avahi_string_list_get_text(node_fp_li) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY);
+                    char *node_name = (char*)catta_string_list_get_text(node_name_li) + strlen(MESHLINK_MDNS_NAME_KEY);
+                    char *node_fp = (char*)catta_string_list_get_text(node_fp_li) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY);
 
                     if(node_name[0] == '=' && node_fp[0] == '=')
                     {
@@ -292,7 +292,7 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
 
                             switch(address->proto)
                             {
-                                case AVAHI_PROTO_INET:
+                                case CATTA_PROTO_INET:
                                     {
                                         naddress.in.sin_family = AF_INET;
                                         naddress.in.sin_port = htons(port);
@@ -300,7 +300,7 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
                                     }
                                     break;
 
-                                case AVAHI_PROTO_INET6:
+                                case CATTA_PROTO_INET6:
                                     {
                                         naddress.in6.sin6_family = AF_INET6;
                                         naddress.in6.sin6_port = htons(port);
@@ -340,33 +340,33 @@ static void discovery_resolve_callback(AvahiSServiceResolver *resolver, AvahiIfI
             break;
     }
 
-    avahi_s_service_resolver_free(resolver);
+    catta_s_service_resolver_free(resolver);
 
     pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
-static void discovery_browse_callback(AvahiSServiceBrowser *browser, AvahiIfIndex interface, AvahiProtocol protocol, AvahiBrowserEvent event, const char *name, const char *type, const char *domain, AvahiLookupResultFlags flags, void* userdata)
+static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfIndex interface, CattaProtocol protocol, CattaBrowserEvent event, const char *name, const char *type, const char *domain, CattaLookupResultFlags flags, void* userdata)
 {
 	meshlink_handle_t *mesh = userdata;
 
     // asserts
     assert(mesh != NULL);
-    assert(mesh->avahi_server != NULL);
-    assert(mesh->avahi_poll != NULL);
+    assert(mesh->catta_server != NULL);
+    assert(mesh->catta_poll != NULL);
 
     pthread_mutex_lock(&(mesh->mesh_mutex));
 
     /* Called whenever a new services becomes available on the LAN or is removed from the LAN */
     switch (event)
     {
-        case AVAHI_BROWSER_FAILURE:
+        case CATTA_BROWSER_FAILURE:
             {
-                logger(mesh, MESHLINK_ERROR, "(Browser) %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
-                avahi_simple_poll_quit(mesh->avahi_poll);
+                logger(mesh, MESHLINK_ERROR, "(Browser) %s\n", catta_strerror(catta_server_errno(mesh->catta_server)));
+                catta_simple_poll_quit(mesh->catta_poll);
             }
             break;
 
-        case AVAHI_BROWSER_NEW:
+        case CATTA_BROWSER_NEW:
             {
                 // asserts
                 assert(name != NULL);
@@ -378,14 +378,14 @@ static void discovery_browse_callback(AvahiSServiceBrowser *browser, AvahiIfInde
                    function we free it. Ifthe server is terminated before
                    the callback function is called the server will free
                    the resolver for us. */
-                if(!(avahi_s_service_resolver_new(mesh->avahi_server, interface, protocol, name, type, domain, AVAHI_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh)))
+                if(!(catta_s_service_resolver_new(mesh->catta_server, interface, protocol, name, type, domain, CATTA_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh)))
                 {
-                    logger(mesh, MESHLINK_DEBUG, "Failed to resolve service '%s': %s\n", name, avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+                    logger(mesh, MESHLINK_DEBUG, "Failed to resolve service '%s': %s\n", name, catta_strerror(catta_server_errno(mesh->catta_server)));
                 }
             }
             break;
 
-        case AVAHI_BROWSER_REMOVE:
+        case CATTA_BROWSER_REMOVE:
             {
                 // asserts
                 assert(name != NULL);
@@ -396,10 +396,10 @@ static void discovery_browse_callback(AvahiSServiceBrowser *browser, AvahiIfInde
             }
             break;
 
-        case AVAHI_BROWSER_ALL_FOR_NOW:
-        case AVAHI_BROWSER_CACHE_EXHAUSTED:
+        case CATTA_BROWSER_ALL_FOR_NOW:
+        case CATTA_BROWSER_CACHE_EXHAUSTED:
             {
-                logger(mesh, MESHLINK_DEBUG, "(Browser) %s\n", event == AVAHI_BROWSER_CACHE_EXHAUSTED ? "CACHE_EXHAUSTED" : "ALL_FOR_NOW");
+                logger(mesh, MESHLINK_DEBUG, "(Browser) %s\n", event == CATTA_BROWSER_CACHE_EXHAUSTED ? "CACHE_EXHAUSTED" : "ALL_FOR_NOW");
             }
             break;
     }
@@ -413,33 +413,33 @@ static void *discovery_loop(void *userdata)
 
     // asserts
     assert(mesh != NULL);
-    assert(mesh->avahi_poll != NULL);
+    assert(mesh->catta_poll != NULL);
 
-    avahi_simple_poll_loop(mesh->avahi_poll);
+    catta_simple_poll_loop(mesh->catta_poll);
 	
     return NULL;
 }
 
-static void discovery_log_cb(AvahiLogLevel level, const char *txt)
+static void discovery_log_cb(CattaLogLevel level, const char *txt)
 {
     meshlink_log_level_t mlevel = MESHLINK_CRITICAL;
 
     switch(level)
     {
-    case AVAHI_LOG_ERROR:
+    case CATTA_LOG_ERROR:
         mlevel = MESHLINK_ERROR;
         break;
 
-    case AVAHI_LOG_WARN:
+    case CATTA_LOG_WARN:
         mlevel = MESHLINK_WARNING;
         break;
 
-    case AVAHI_LOG_NOTICE:
-    case AVAHI_LOG_INFO:
+    case CATTA_LOG_NOTICE:
+    case CATTA_LOG_INFO:
         mlevel = MESHLINK_INFO;
         break;
 
-    case AVAHI_LOG_DEBUG:
+    case CATTA_LOG_DEBUG:
         mlevel = MESHLINK_DEBUG;
         break;
     }
@@ -453,29 +453,29 @@ bool discovery_start(meshlink_handle_t *mesh)
 
     // asserts
     assert(mesh != NULL);
-    assert(mesh->avahi_poll == NULL);
-    assert(mesh->avahi_server == NULL);
-    assert(mesh->avahi_browser == NULL);
+    assert(mesh->catta_poll == NULL);
+    assert(mesh->catta_server == NULL);
+    assert(mesh->catta_browser == NULL);
     assert(mesh->discovery_threadstarted == false);
-    assert(mesh->avahi_servicetype == NULL);
+    assert(mesh->catta_servicetype == NULL);
 
-    // handle avahi logs
-    avahi_set_log_function(discovery_log_cb);
+    // handle catta logs
+    catta_set_log_function(discovery_log_cb);
     
     // create service type string
     size_t servicetype_strlen = sizeof(MESHLINK_MDNS_SERVICE_TYPE) + strlen(mesh->appname) + 1;
-    mesh->avahi_servicetype = malloc(servicetype_strlen);
+    mesh->catta_servicetype = malloc(servicetype_strlen);
 
-    if(mesh->avahi_servicetype == NULL)
+    if(mesh->catta_servicetype == NULL)
     {
         logger(mesh, MESHLINK_ERROR, "Failed to allocate memory for service type string.\n");
         goto fail;
     }
 
-    snprintf(mesh->avahi_servicetype, servicetype_strlen, MESHLINK_MDNS_SERVICE_TYPE, mesh->appname);
+    snprintf(mesh->catta_servicetype, servicetype_strlen, MESHLINK_MDNS_SERVICE_TYPE, mesh->appname);
 
     // Allocate discovery loop object
-    if(!(mesh->avahi_poll = avahi_simple_poll_new()))
+    if(!(mesh->catta_poll = catta_simple_poll_new()))
     {
         logger(mesh, MESHLINK_ERROR, "Failed to create discovery poll object.\n");
 		goto fail;
@@ -489,9 +489,9 @@ bool discovery_start(meshlink_handle_t *mesh)
     uuid_unparse_lower(hostname, hostnamestr);
 
     // Let's set the host name for this server.
-    AvahiServerConfig config;
-    avahi_server_config_init(&config);
-    config.host_name = avahi_strdup(hostnamestr);
+    CattaServerConfig config;
+    catta_server_config_init(&config);
+    config.host_name = catta_strdup(hostnamestr);
     config.publish_workstation = 0;
     config.disallow_other_stacks = 0;
     config.publish_hinfo = 0;
@@ -500,22 +500,22 @@ bool discovery_start(meshlink_handle_t *mesh)
 
     /* Allocate a new server */
     int error;
-    mesh->avahi_server = avahi_server_new(avahi_simple_poll_get(mesh->avahi_poll), &config, discovery_server_callback, mesh, &error);
+    mesh->catta_server = catta_server_new(catta_simple_poll_get(mesh->catta_poll), &config, discovery_server_callback, mesh, &error);
 
     /* Free the configuration data */
-    avahi_server_config_free(&config);
+    catta_server_config_free(&config);
 
     /* Check wether creating the server object succeeded */
-    if(!mesh->avahi_server)
+    if(!mesh->catta_server)
     {
-        logger(mesh, MESHLINK_ERROR, "Failed to create discovery server: %s\n", avahi_strerror(error));
+        logger(mesh, MESHLINK_ERROR, "Failed to create discovery server: %s\n", catta_strerror(error));
         goto fail;
     }
 
     // Create the service browser
-    if(!(mesh->avahi_browser = avahi_s_service_browser_new(mesh->avahi_server, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, mesh->avahi_servicetype, NULL, 0, discovery_browse_callback, mesh)))
+    if(!(mesh->catta_browser = catta_s_service_browser_new(mesh->catta_server, CATTA_IF_UNSPEC, CATTA_PROTO_UNSPEC, mesh->catta_servicetype, NULL, 0, discovery_browse_callback, mesh)))
     {
-        logger(mesh, MESHLINK_ERROR, "Failed to create discovery service browser: %s\n", avahi_strerror(avahi_server_errno(mesh->avahi_server)));
+        logger(mesh, MESHLINK_ERROR, "Failed to create discovery service browser: %s\n", catta_strerror(catta_server_errno(mesh->catta_server)));
         goto fail;
     }
 
@@ -532,28 +532,28 @@ bool discovery_start(meshlink_handle_t *mesh)
 	return true;
 
 fail:
-    if(mesh->avahi_browser != NULL)
+    if(mesh->catta_browser != NULL)
     {
-        avahi_s_service_browser_free(mesh->avahi_browser);
-        mesh->avahi_browser = NULL;
+        catta_s_service_browser_free(mesh->catta_browser);
+        mesh->catta_browser = NULL;
     }
 
-    if(mesh->avahi_server != NULL)
+    if(mesh->catta_server != NULL)
     {
-        avahi_server_free(mesh->avahi_server);
-        mesh->avahi_server = NULL;
+        catta_server_free(mesh->catta_server);
+        mesh->catta_server = NULL;
     }
 
-    if(mesh->avahi_poll != NULL)
+    if(mesh->catta_poll != NULL)
     {
-        avahi_simple_poll_free(mesh->avahi_poll);
-        mesh->avahi_poll = NULL;
+        catta_simple_poll_free(mesh->catta_poll);
+        mesh->catta_poll = NULL;
     }
 
-    if(mesh->avahi_servicetype != NULL)
+    if(mesh->catta_servicetype != NULL)
     {
-        free(mesh->avahi_servicetype);
-        mesh->avahi_servicetype = NULL;
+        free(mesh->catta_servicetype);
+        mesh->catta_servicetype = NULL;
     }
 
     return false;
@@ -567,9 +567,9 @@ void discovery_stop(meshlink_handle_t *mesh)
     assert(mesh != NULL);
 
 	// Shut down
-    if(mesh->avahi_poll)
+    if(mesh->catta_poll)
     {
-        avahi_simple_poll_quit(mesh->avahi_poll);
+        catta_simple_poll_quit(mesh->catta_poll);
     }
 
 	// Wait for the discovery thread to finish
@@ -580,34 +580,34 @@ void discovery_stop(meshlink_handle_t *mesh)
     }
 
 	// Clean up resources
-    if(mesh->avahi_browser != NULL)
+    if(mesh->catta_browser != NULL)
     {
-        avahi_s_service_browser_free(mesh->avahi_browser);
-        mesh->avahi_browser = NULL;
+        catta_s_service_browser_free(mesh->catta_browser);
+        mesh->catta_browser = NULL;
     }
 
-    if(mesh->avahi_group)
+    if(mesh->catta_group)
     {
-        avahi_s_entry_group_reset(mesh->avahi_group);
-        avahi_s_entry_group_free(mesh->avahi_group);
-        mesh->avahi_group = NULL;
+        catta_s_entry_group_reset(mesh->catta_group);
+        catta_s_entry_group_free(mesh->catta_group);
+        mesh->catta_group = NULL;
     }
 
-    if(mesh->avahi_server != NULL)
+    if(mesh->catta_server != NULL)
     {
-        avahi_server_free(mesh->avahi_server);
-        mesh->avahi_server = NULL;
+        catta_server_free(mesh->catta_server);
+        mesh->catta_server = NULL;
     }
 
-    if(mesh->avahi_poll != NULL)
+    if(mesh->catta_poll != NULL)
     {
-        avahi_simple_poll_free(mesh->avahi_poll);
-        mesh->avahi_poll = NULL;
+        catta_simple_poll_free(mesh->catta_poll);
+        mesh->catta_poll = NULL;
     }
 
-    if(mesh->avahi_servicetype != NULL)
+    if(mesh->catta_servicetype != NULL)
     {
-        free(mesh->avahi_servicetype);
-        mesh->avahi_servicetype = NULL;
+        free(mesh->catta_servicetype);
+        mesh->catta_servicetype = NULL;
     }
 }
