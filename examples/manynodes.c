@@ -19,6 +19,8 @@
 static int n = 10;
 static meshlink_handle_t **mesh;
 
+static int nodeindex = 0;
+
 static meshlink_node_t **nodes;
 static size_t nnodes;
 
@@ -93,7 +95,7 @@ static bool exportmeshgraph(const char* path)
 		return false;
 	}
 
-	if(!devtool_export_json_all_edges_state(mesh[0], stream))
+	if(!devtool_export_json_all_edges_state(mesh[nodeindex], stream))
 	{
 		fclose(stream);
 		fprintf(stderr, "could not export graph\n");
@@ -184,7 +186,7 @@ static void parse_command(char *buf) {
 			return;
 		}
 
-		invitation = meshlink_invite(mesh[0], arg);
+		invitation = meshlink_invite(mesh[nodeindex], arg);
 		if(!invitation) {
 			fprintf(stderr, "Could not invite '%s': %s\n", arg, meshlink_strerror(meshlink_errno));
 			return;
@@ -197,12 +199,12 @@ static void parse_command(char *buf) {
 			fprintf(stderr, "/join requires an argument!\n");
 			return;
 		}
-		meshlink_stop(mesh[0]);
-		if(!meshlink_join(mesh[0], arg))
+		meshlink_stop(mesh[nodeindex]);
+		if(!meshlink_join(mesh[nodeindex], arg))
 			fprintf(stderr, "Could not join using invitation: %s\n", meshlink_strerror(meshlink_errno));
 		else {
 			fprintf(stderr, "Invitation accepted!\n");
-			meshlink_start(mesh[0]);
+			meshlink_start(mesh[nodeindex]);
 		}
 	} else if(!strcasecmp(buf, "kick")) {
 		if(!arg) {
@@ -210,18 +212,18 @@ static void parse_command(char *buf) {
 			return;
 		}
 
-		meshlink_node_t *node = meshlink_get_node(mesh[0], arg);
+		meshlink_node_t *node = meshlink_get_node(mesh[nodeindex], arg);
 		if(!node) {
 			fprintf(stderr, "Unknown node '%s'\n", arg);
 			return;
 		}
 
-		meshlink_blacklist(mesh[0], node);
+		meshlink_blacklist(mesh[nodeindex], node);
 
 		printf("Node '%s' blacklisted.\n", arg);
 	} else if(!strcasecmp(buf, "who")) {
 		if(!arg) {
-			nodes = meshlink_get_all_nodes(mesh[0], nodes, &nnodes);
+			nodes = meshlink_get_all_nodes(mesh[nodeindex], nodes, &nnodes);
 			if(!nodes) {
 				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink_strerror(meshlink_errno));
 			} else {
@@ -231,11 +233,11 @@ static void parse_command(char *buf) {
 				printf("\n");
 			}
 		} else {
-			meshlink_node_t *node = meshlink_get_node(mesh[0], arg);
+			meshlink_node_t *node = meshlink_get_node(mesh[nodeindex], arg);
 			if(!node) {
 				fprintf(stderr, "Unknown node '%s'\n", arg);
 			} else {
-				printf("Node %s found, pmtu %zd\n", arg, meshlink_get_pmtu(mesh[0], node));
+				printf("Node %s found, pmtu %zd\n", arg, meshlink_get_pmtu(mesh[nodeindex], node));
 			}
 		}
 	} else if(!strcasecmp(buf, "link")) {
@@ -248,6 +250,14 @@ static void parse_command(char *buf) {
 		exportmeshgraph_end(NULL);
 	} else if(!strcasecmp(buf, "test")) {
 		testmesh();
+	} else if(!strcasecmp(buf, "select")) {
+		if(!arg) {
+			fprintf(stderr, "/select requires an argument!\n");
+			return;
+		}
+		nodeindex = atoi(arg);
+		printf("Index is now %d\n",nodeindex);
+	
 	} else if(!strcasecmp(buf, "quit")) {
 		printf("Bye!\n");
 		fclose(stdin);
@@ -262,6 +272,7 @@ static void parse_command(char *buf) {
 			"/link                 Link all nodes together.\n"
 			"/eg <path>            Export graph as json file.\n"
 			"/test                 Test functionality sending some data to all nodes\n"
+			"/select <number>      Select the active node running the user commands\n"
 			"/quit                 Exit this program.\n"
 			);
 	} else {
@@ -307,7 +318,7 @@ static void parse_input(char *buf) {
 		if(*msg == ' ')
 			msg++;
 
-		destination = meshlink_get_node(mesh[0], buf);
+		destination = meshlink_get_node(mesh[nodeindex], buf);
 		if(!destination) {
 			fprintf(stderr, "Unknown node '%s'\n", buf);
 			return;
@@ -319,7 +330,7 @@ static void parse_input(char *buf) {
 		return;
 	}
 
-	if(!meshlink_send(mesh[0], destination, msg, strlen(msg) + 1)) {
+	if(!meshlink_send(mesh[nodeindex], destination, msg, strlen(msg) + 1)) {
 		fprintf(stderr, "Could not send message to '%s': %s\n", destination->name, meshlink_strerror(meshlink_errno));
 		return;
 	}
@@ -363,8 +374,6 @@ int main(int argc, char *argv[]) {
 		bool itsnew = access(filename, R_OK);
 		mesh[i] = meshlink_open(filename, nodename, "manynodes", i%_DEV_CLASS_MAX);
 		meshlink_set_log_cb(mesh[i], MESHLINK_WARNING, log_message);
-		if(itsnew)
-			meshlink_add_address(mesh[i], "localhost");
 		if(!mesh[i]) {
 			fprintf(stderr, "errno is: %d\n", meshlink_errno);
 			fprintf(stderr, "Could not open %s: %s\n", filename, meshlink_strerror(meshlink_errno));
