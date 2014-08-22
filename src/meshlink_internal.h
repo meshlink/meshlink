@@ -33,10 +33,10 @@
 
 #define MAXSOCKETS 8    /* Probably overkill... */
 
-struct AvahiServer;
-struct AvahiSServiceBrowser;
-struct AvahiSimplePoll;
-struct AvahiSEntryGroup;
+struct CattaServer;
+struct CattaSServiceBrowser;
+struct CattaSimplePoll;
+struct CattaSEntryGroup;
 
 typedef struct listen_socket_t {
 	struct io_t tcp;
@@ -134,11 +134,11 @@ struct meshlink_handle {
 
 	pthread_t discovery_thread;
 	bool discovery_threadstarted;
-	struct AvahiServer *avahi_server;
-	struct AvahiSServiceBrowser *avahi_browser;
-	struct AvahiSimplePoll *avahi_poll;
-	struct AvahiSEntryGroup *avahi_group;
-	char* avahi_servicetype;
+	struct CattaServer *catta_server;
+	struct CattaSServiceBrowser *catta_browser;
+	struct CattaSimplePoll *catta_poll;
+	struct CattaSEntryGroup *catta_group;
+	char* catta_servicetype;
 };
 
 /// A handle for a MeshLink node.
