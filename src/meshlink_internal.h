@@ -74,6 +74,8 @@ struct meshlink_handle {
 	meshlink_log_cb_t log_cb;
 	meshlink_log_level_t log_level;
 
+	meshlink_channel_accept_cb_t channel_accept_cb;
+
 	pthread_t thread;
 	bool threadstarted;
 	pthread_mutex_t outpacketqueue_mutex;
@@ -146,6 +148,13 @@ struct meshlink_handle {
 struct meshlink_node {
 	const char *name;
 	void *priv;
+};
+
+/// A channel.
+struct meshlink_channel {
+	struct utcp_connection *c;
+	struct node_t *node;
+	meshlink_channel_receive_cb_t receive_cb;
 };
 
 /// Header for data packets routed between nodes

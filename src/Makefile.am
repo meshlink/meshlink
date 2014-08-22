@@ -28,6 +28,9 @@ chacha_poly1305_SOURCES = \
 	chacha-poly1305/chacha-poly1305.c chacha-poly1305/chacha-poly1305.h \
 	chacha-poly1305/poly1305.c chacha-poly1305/poly1305.h
 
+utcp_SOURCES = \
+	utcp/utcp.c utcp/utcp.h
+
 sptps_test_SOURCES = \
 	crypto.c crypto.h \
 	logger.c logger.h \
@@ -101,7 +104,8 @@ libmeshlink_la_SOURCES = \
 	xalloc.h \
 	devtools.c devtools.h \
 	$(ed25519_SOURCES) \
-	$(chacha_poly1305_SOURCES)
+	$(chacha_poly1305_SOURCES) \
+	$(utcp_SOURCES)
 
 libmeshlink_la_CFLAGS = -fPIC -I../avahi/
 
