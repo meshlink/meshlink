@@ -374,7 +374,12 @@ int main(int argc, char *argv[]) {
 		snprintf(nodename, sizeof nodename, "%snode%d", namesprefix,i);
 		snprintf(filename, sizeof filename, "%s/%s", basebase, nodename);
 		bool itsnew = access(filename, R_OK);
-		mesh[i] = meshlink_open(filename, nodename, "manynodes", i%_DEV_CLASS_MAX);
+		if (n/(i+1) > n/4) {
+			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_BACKBONE);
+		}
+		else {
+			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_PORTABLE);
+		}
 		meshlink_set_log_cb(mesh[i], MESHLINK_WARNING, log_message);
 		if(!mesh[i]) {
 			fprintf(stderr, "errno is: %d\n", meshlink_errno);
