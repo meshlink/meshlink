@@ -257,7 +257,8 @@ static void parse_command(char *buf) {
 		}
 		nodeindex = atoi(arg);
 		printf("Index is now %d\n",nodeindex);
-	
+	} else if(!strcasecmp(buf, "stop")) {
+		meshlink_stop(mesh[nodeindex]);
 	} else if(!strcasecmp(buf, "quit")) {
 		printf("Bye!\n");
 		fclose(stdin);
@@ -273,6 +274,7 @@ static void parse_command(char *buf) {
 			"/eg <path>            Export graph as json file.\n"
 			"/test                 Test functionality sending some data to all nodes\n"
 			"/select <number>      Select the active node running the user commands\n"
+			"/stop		       Call meshlink_stop, use /select first to select which node to stop\n"
 			"/quit                 Exit this program.\n"
 			);
 	} else {
