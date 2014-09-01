@@ -95,7 +95,7 @@ static bool exportmeshgraph(const char* path)
 		return false;
 	}
 
-	if(!devtool_export_json_all_edges_state(mesh[nodeindex], stream))
+	if(!devtool_export_json_all_edges_state(mesh[0], stream))
 	{
 		fclose(stream);
 		fprintf(stderr, "could not export graph\n");
@@ -365,7 +365,7 @@ int main(int argc, char *argv[]) {
 
 	mesh = calloc(n, sizeof *mesh);
 
-	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_message);
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_message);
 	mkdir(basebase, 0750);
 
 	char filename[PATH_MAX];
@@ -380,7 +380,7 @@ int main(int argc, char *argv[]) {
 		else {
 			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_PORTABLE);
 		}
-		meshlink_set_log_cb(mesh[i], MESHLINK_WARNING, log_message);
+		meshlink_set_log_cb(mesh[i], MESHLINK_DEBUG, log_message);
 		if(!mesh[i]) {
 			fprintf(stderr, "errno is: %d\n", meshlink_errno);
 			fprintf(stderr, "Could not open %s: %s\n", filename, meshlink_strerror(meshlink_errno));
