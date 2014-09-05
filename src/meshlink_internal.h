@@ -153,8 +153,10 @@ struct meshlink_node {
 
 /// A channel.
 struct meshlink_channel {
-	struct utcp_connection *c;
 	struct node_t *node;
+	void *priv;
+
+	struct utcp_connection *c;
 	meshlink_channel_receive_cb_t receive_cb;
 };
 

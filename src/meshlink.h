@@ -88,8 +88,8 @@ extern __thread meshlink_errno_t meshlink_errno;
 #ifndef MESHLINK_INTERNAL_H
 
 struct meshlink_handle {
-	char *name;
-	void *priv;
+	char *name;       ///< Textual name of ourself. It is stored in a nul-terminated C string, which is allocated by MeshLink.
+	void *priv;       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
 struct meshlink_node {
@@ -98,6 +98,8 @@ struct meshlink_node {
 };
 
 struct meshlink_channel {
+	struct meshlink_node *node; ///< Pointer to the peer of this channel.
+	void *priv;                 ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
 #endif // MESHLINK_INTERNAL_H
@@ -254,6 +256,7 @@ typedef enum {
  *  @param level     An enum describing the severity level of the message.
  *  @param text      A pointer to a nul-terminated C string containing the textual log message.
  *                   This pointer is only valid for the duration of the callback.
+ *                   H
  *                   The application must not free() this pointer.
  *                   The application should strdup() the text if it has to be available outside the callback.
  */
@@ -495,8 +498,6 @@ extern void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node);
  *                      If the application rejects the incoming channel by returning false,
  *                      then this handle is invalid after the callback returns
  *                      (the callback does not need to call meshlink_channel_close() itself in this case).
- *  @param node         The node from which this channel is being initiated.
- *                      The pointer is guaranteed to be valid until meshlink_close() is called.
  *  @param port         The port number the peer wishes to connect to.
  *  @param data         A pointer to a buffer containing data already received, or NULL in case no data has been received yet. (Not yet used.)
  *                      The pointer is only valid during the lifetime of the callback.
@@ -506,7 +507,7 @@ extern void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node);
  *  @return             This function should return true if the application accepts the incoming channel, false otherwise.
  *                      If returning false, the channel is invalid and may not be used anymore.
  */
-typedef bool (*meshlink_channel_accept_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_node_t *node, uint16_t port, const void *data, size_t len);
+typedef bool (*meshlink_channel_accept_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len);
 
 /// A callback for receiving data from a channel.
 /** This function is called whenever data is received from a remote node on a channel.
