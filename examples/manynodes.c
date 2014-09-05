@@ -18,7 +18,7 @@
 
 static int n = 10;
 static meshlink_handle_t **mesh;
-
+static char* namesprefix="machine1";
 static int nodeindex = 0;
 
 static meshlink_node_t **nodes;
@@ -113,7 +113,7 @@ void exportmeshgraph_timer(int signum)
 	gettimeofday(&ts, NULL);
 
 	char name[1024];
-	snprintf(name, sizeof(name), "graph_%ld_%03ld.json", ts.tv_sec, ts.tv_usec/1000);
+	snprintf(name, sizeof(name), "%sgraph_%ld_%03ld.json", namesprefix,ts.tv_sec, ts.tv_usec/1000);
 
 	exportmeshgraph(name);
 }
@@ -342,7 +342,6 @@ static void parse_input(char *buf) {
 
 int main(int argc, char *argv[]) {
 	const char *basebase = ".manynodes";
-	const char *namesprefix = "machine1";
 	const char *graphexporttimeout = NULL;
 	char buf[1024];
 
