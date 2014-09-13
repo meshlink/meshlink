@@ -15,13 +15,13 @@ void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 int main(int argc, char *argv[]) {
 	// Open two new meshlink instance.
 
-	meshlink_handle_t *mesh1 = meshlink_open("invite_join_conf.1", "foo", "invite-join");
+	meshlink_handle_t *mesh1 = meshlink_open("invite_join_conf.1", "foo", "invite-join", DEV_CLASS_BACKBONE);
 	if(!mesh1) {
 		fprintf(stderr, "Could not initialize configuration for foo\n");
 		return 1;
 	}
 
-	meshlink_handle_t *mesh2 = meshlink_open("invite_join_conf.2", "bar", "invite-join");
+	meshlink_handle_t *mesh2 = meshlink_open("invite_join_conf.2", "bar", "invite-join", DEV_CLASS_BACKBONE);
 	if(!mesh2) {
 		fprintf(stderr, "Could not initialize configuration for bar\n");
 		return 1;

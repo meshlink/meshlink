@@ -8,7 +8,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	// Open a new meshlink instance.
 
-	meshlink::mesh *mesh = meshlink::open<meshlink::mesh>("basicpp_conf", "foo", "basicpp");
+	meshlink::mesh *mesh = meshlink::open<meshlink::mesh>("basicpp_conf", "foo", "basicpp", DEV_CLASS_BACKBONE);
 	if(!mesh) {
 		cerr << "Could not initialize configuration for foo\n";
 		return 1;
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 
 	// Check that the name is ignored now, and that we still are "foo".
 
-	mesh = meshlink::open<meshlink::mesh>("basic_conf", "bar", "basicpp");
+	mesh = meshlink::open<meshlink::mesh>("basic_conf", "bar", "basicpp", DEV_CLASS_BACKBONE);
 	if(!mesh) {
 		cerr << "Could not open configuration for foo a second time\n";
 		return 1;

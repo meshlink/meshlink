@@ -35,13 +35,13 @@ bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_no
 int main(int argc, char *argv[]) {
 	// Open two new meshlink instance.
 
-	meshlink_handle_t *mesh1 = meshlink_open("channels_conf.1", "foo", "channels");
+	meshlink_handle_t *mesh1 = meshlink_open("channels_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
 	if(!mesh1) {
 		fprintf(stderr, "Could not initialize configuration for foo\n");
 		return 1;
 	}
 
-	meshlink_handle_t *mesh2 = meshlink_open("channels_conf.2", "bar", "channels");
+	meshlink_handle_t *mesh2 = meshlink_open("channels_conf.2", "bar", "channels", DEV_CLASS_BACKBONE);
 	if(!mesh2) {
 		fprintf(stderr, "Could not initialize configuration for bar\n");
 		return 1;
