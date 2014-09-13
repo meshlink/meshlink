@@ -54,12 +54,6 @@ typedef enum proxytype_t {
 	PROXY_EXEC,
 } proxytype_t;
 
-typedef struct outpacketqueue {
-	meshlink_node_t *destination;
-	const void *data;
-	unsigned int len;
-} outpacketqueue_t;
-
 /// A handle for an instance of MeshLink.
 struct meshlink_handle {
 	char *name;

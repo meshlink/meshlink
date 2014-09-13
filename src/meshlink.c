@@ -1010,7 +1010,10 @@ void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, me
 }
 
 bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
-	if(!mesh || !destination) {
+	meshlink_packethdr_t *hdr;
+
+	// Validate arguments
+	if(!mesh || !destination || len >= MAXSIZE - sizeof *hdr) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
@@ -1023,59 +1026,45 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 		return false;
 	}
 
-	pthread_mutex_lock(&(mesh->mesh_mutex));
-
-	//add packet to the queue
-	outpacketqueue_t *packet_in_queue = xzalloc(sizeof *packet_in_queue);
-	packet_in_queue->destination=destination;
-	packet_in_queue->data=data;
-	packet_in_queue->len=len;
-	if(!meshlink_queue_push(&mesh->outpacketqueue, packet_in_queue)) {
-		free(packet_in_queue);
-		pthread_mutex_unlock(&(mesh->mesh_mutex));
+	// Prepare the packet
+	vpn_packet_t *packet = malloc(sizeof *packet);
+	if(!packet) {
+		meshlink_errno = MESHLINK_ENOMEM;
 		return false;
 	}
 
-	//notify event loop
+	packet->probe = false;
+	packet->tcp = false;
+	packet->len = len + sizeof *hdr;
+
+	hdr = (meshlink_packethdr_t *)packet->data;
+	memset(hdr, 0, sizeof *hdr);
+	memcpy(hdr->destination, destination->name, sizeof hdr->destination);
+	memcpy(hdr->source, mesh->self->name, sizeof hdr->source);
+
+	memcpy(packet->data + sizeof *hdr, data, len);
+
+	// Queue it
+	if(!meshlink_queue_push(&mesh->outpacketqueue, packet)) {
+		free(packet);
+		meshlink_errno = MESHLINK_ENOMEM;
+		return false;
+	}
+
+	// Notify event loop
 	signal_trigger(&(mesh->loop),&(mesh->datafromapp));
 	
-	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return true;
 }
 
-void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh) {
-	pthread_mutex_lock(&(mesh->mesh_mutex));
-	
-	vpn_packet_t packet;
-	meshlink_packethdr_t *hdr = (meshlink_packethdr_t *)packet.data;
-
-	outpacketqueue_t* p = meshlink_queue_pop(&mesh->outpacketqueue);
-	if(!p)
-	{
-		pthread_mutex_unlock(&(mesh->mesh_mutex));
+void meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
+	vpn_packet_t *packet = meshlink_queue_pop(&mesh->outpacketqueue);
+	if(!packet)
 		return;
-	}
 
-	if (sizeof(meshlink_packethdr_t) + p->len > MAXSIZE) {
-		pthread_mutex_unlock(&(mesh->mesh_mutex));
-		//log something
-		return;
-	}
-
-	packet.probe = false;
-	memset(hdr, 0, sizeof *hdr);
-	memcpy(hdr->destination, p->destination->name, sizeof hdr->destination);
-	memcpy(hdr->source, mesh->self->name, sizeof hdr->source);
-
-	packet.len = sizeof *hdr + p->len;
-	memcpy(packet.data + sizeof *hdr, p->data, p->len);
-
-        mesh->self->in_packets++;
-        mesh->self->in_bytes += packet.len;
-        route(mesh, mesh->self, &packet);
-	
-	pthread_mutex_unlock(&(mesh->mesh_mutex));
-	return ;
+	mesh->self->in_packets++;
+	mesh->self->in_bytes += packet->len;
+	route(mesh, mesh->self, packet);
 }
 
 ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination) {
