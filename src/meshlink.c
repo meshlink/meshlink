@@ -1947,10 +1947,6 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
 	return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? len : -1;
 }
 
-void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_accept_cb_t cb) {
-	mesh->channel_accept_cb = cb;
-}
-
 void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb) {
 	channel->receive_cb = cb;
 }
@@ -1963,6 +1959,19 @@ static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, co
 	bin2hex(data, hex, len);
 	logger(mesh, MESHLINK_WARNING, "channel_receive(%p, %p, %zu): %s\n", n->utcp, data, len, hex);
 	utcp_recv(n->utcp, data, len);
+}
+
+void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_accept_cb_t cb) {
+	pthread_mutex_lock(&mesh->mesh_mutex);
+	mesh->channel_accept_cb = cb;
+	mesh->receive_cb = channel_receive;
+	for splay_each(node_t, n, mesh->nodes) {
+		if(!n->utcp && n != mesh->self) {
+			logger(mesh, MESHLINK_WARNING, "utcp_init on node %s", n->name);
+			n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+		}
+	}
+	pthread_mutex_unlock(&mesh->mesh_mutex);
 }
 
 void meshlink_channel_init(meshlink_handle_t *mesh) {
@@ -2008,6 +2017,13 @@ ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *chann
 	return utcp_send(channel->c, data, len);
 }
 
+void update_node_status(meshlink_handle_t *mesh, node_t *n) {
+	if(n->status.reachable && mesh->channel_accept_cb && !n->utcp)
+		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+	if(mesh->node_status_cb)
+		mesh->node_status_cb(mesh, (meshlink_node_t *)n, n->status.reachable);
+}
+
 static void __attribute__((constructor)) meshlink_init(void) {
 	crypto_init();
 }
@@ -2015,7 +2031,6 @@ static void __attribute__((constructor)) meshlink_init(void) {
 static void __attribute__((destructor)) meshlink_exit(void) {
 	crypto_exit();
 }
-
 
 /// Device class traits
 dev_class_traits_t dev_class_traits[_DEV_CLASS_MAX +1] = {
