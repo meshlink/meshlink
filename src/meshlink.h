@@ -256,7 +256,6 @@ typedef enum {
  *  @param level     An enum describing the severity level of the message.
  *  @param text      A pointer to a nul-terminated C string containing the textual log message.
  *                   This pointer is only valid for the duration of the callback.
- *                   H
  *                   The application must not free() this pointer.
  *                   The application should strdup() the text if it has to be available outside the callback.
  */

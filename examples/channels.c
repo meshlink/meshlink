@@ -18,8 +18,6 @@ static void log_message(meshlink_handle_t *mesh, meshlink_log_level_t level, con
 }
 
 static void channel_receive(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	const char *msg = data;
-
 	if(!len) {
 		if(meshlink_errno)
 			fprintf(stderr, "Error while reading data from %s: %s\n", channel->node->name, meshlink_strerror(meshlink_errno));
@@ -32,12 +30,10 @@ static void channel_receive(meshlink_handle_t *mesh, meshlink_channel_t *channel
 	}
 
 	// TODO: we now have TCP semantics, don't expect exactly one message per receive call.
-	if(msg[len - 1]) {
-		fprintf(stderr, "Received invalid data from %s\n", channel->node->name);
-		return;
-	}
 
-	printf("%s says: %s\n", channel->node->name, msg);
+	printf("%s says: ", channel->node->name);
+	fwrite(data, len, 1, stdout);
+	fputc('\n', stdout);
 }
 
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
@@ -221,7 +217,7 @@ static void parse_input(meshlink_handle_t *mesh, char *buf) {
 		destination->priv = channel;
 	}
 
-	if(!meshlink_channel_send(mesh, channel, msg, len + 1)) {
+	if(!meshlink_channel_send(mesh, channel, msg, strlen(msg))) {
 		fprintf(stderr, "Could not send message to '%s': %s\n", destination->name, meshlink_strerror(meshlink_errno));
 		return;
 	}

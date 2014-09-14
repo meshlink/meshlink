@@ -1905,28 +1905,45 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 
 static bool channel_pre_accept(struct utcp *utcp, uint16_t port) {
 	//TODO: implement
-	return false;
+	return true;
 }
 
-static void channel_accept(struct utcp_connection *utcp_connection, uint16_t port) {
-	//TODO: implement
-}
-
-static int channel_recv(struct utcp_connection *connection, const void *data, size_t len) {
+static ssize_t channel_recv(struct utcp_connection *connection, const void *data, size_t len) {
 	meshlink_channel_t *channel = connection->priv;
+	if(!channel)
+		abort();
 	node_t *n = channel->node;
 	meshlink_handle_t *mesh = n->mesh;
 	if(!channel->receive_cb)
 		return -1;
 	else {
 		channel->receive_cb(mesh, channel, data, len);
-		return 0;
+		return len;
 	}
 }
 
-static int channel_send(struct utcp *utcp, const void *data, size_t len) {
+static void channel_accept(struct utcp_connection *utcp_connection, uint16_t port) {
+	node_t *n = utcp_connection->utcp->priv;
+	if(!n)
+		abort();
+	meshlink_handle_t *mesh = n->mesh;
+	if(!mesh->channel_accept_cb)
+		return;
+	meshlink_channel_t *channel = xzalloc(sizeof *channel);
+	channel->node = n;
+	channel->c = utcp_connection;
+	if(mesh->channel_accept_cb(mesh, channel, port, NULL, 0))
+		utcp_accept(utcp_connection, channel_recv, channel);
+	else
+		free(channel);
+}
+
+static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
 	node_t *n = utcp->priv;
 	meshlink_handle_t *mesh = n->mesh;
+	char hex[len * 2 + 1];
+	bin2hex(data, hex, len);
+	logger(mesh, MESHLINK_WARNING, "channel_send(%p, %p, %zu): %s\n", utcp, data, len, hex);
 	return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? len : -1;
 }
 
@@ -1938,18 +1955,36 @@ void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t
 	channel->receive_cb = cb;
 }
 
+static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
+	node_t *n = (node_t *)source;
+	if(!n->utcp)
+		abort();
+	char hex[len * 2 + 1];
+	bin2hex(data, hex, len);
+	logger(mesh, MESHLINK_WARNING, "channel_receive(%p, %p, %zu): %s\n", n->utcp, data, len, hex);
+	utcp_recv(n->utcp, data, len);
+}
+
+void meshlink_channel_init(meshlink_handle_t *mesh) {
+}
+
 meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len) {
+	logger(mesh, MESHLINK_WARNING, "meshlink_channel_open(%p, %s, %u, %p, %p, %zu)\n", mesh, node->name, port, cb, data, len);
 	node_t *n = (node_t *)node;
 	if(!n->utcp) {
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
-		if(!n->utcp)
+		mesh->receive_cb = channel_receive;
+		if(!n->utcp) {
+			meshlink_errno = errno == ENOMEM ? MESHLINK_ENOMEM : MESHLINK_EINTERNAL;
 			return NULL;
+		}
 	}
 	meshlink_channel_t *channel = xzalloc(sizeof *channel);
 	channel->node = n;
 	channel->receive_cb = cb;
 	channel->c = utcp_connect(n->utcp, port, channel_recv, channel);
 	if(!channel->c) {
+		meshlink_errno = errno == ENOMEM ? MESHLINK_ENOMEM : MESHLINK_EINTERNAL;
 		free(channel);
 		return NULL;
 	}
