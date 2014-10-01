@@ -1961,6 +1961,21 @@ static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, co
 	utcp_recv(n->utcp, data, len);
 }
 
+static void channel_poll(struct utcp_connection *connection, size_t len) {
+	meshlink_channel_t *channel = connection->priv;
+	if(!channel)
+		abort();
+	node_t *n = channel->node;
+	meshlink_handle_t *mesh = n->mesh;
+	if(channel->poll_cb)
+		channel->poll_cb(mesh, channel, len);
+}
+
+void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_poll_cb_t cb) {
+	channel->poll_cb = cb;
+	utcp_set_poll_cb(channel->c, cb ? channel_poll : NULL);
+}
+
 void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_accept_cb_t cb) {
 	pthread_mutex_lock(&mesh->mesh_mutex);
 	mesh->channel_accept_cb = cb;

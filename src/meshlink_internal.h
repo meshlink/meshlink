@@ -152,6 +152,7 @@ struct meshlink_channel {
 
 	struct utcp_connection *c;
 	meshlink_channel_receive_cb_t receive_cb;
+	meshlink_channel_poll_cb_t poll_cb;
 };
 
 /// Header for data packets routed between nodes

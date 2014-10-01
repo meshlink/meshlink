@@ -77,6 +77,13 @@ namespace meshlink {
 	 */
 	typedef void (*channel_receive_cb_t)(mesh *mesh, channel *channel, const void *data, size_t len);
 
+	/// A callback that is called when data can be send on a channel.
+	/** @param mesh         A handle which represents an instance of MeshLink.
+	 *  @param channel      A handle for the channel.
+	 *  @param len          The maximum length of data that is guaranteed to be accepted by a call to channel_send().
+	 */
+	typedef void (*channel_poll_cb_t)(mesh *mesh, channel *channel, size_t len);
+
 	/// A class describing a MeshLink node.
 	class node: public meshlink_node_t {
 	};
@@ -290,6 +297,21 @@ namespace meshlink {
 		 */
 		void set_channel_accept_cb(channel *channel, channel_accept_cb_t cb) {
 			return meshlink_set_channel_accept_cb(this, (meshlink_channel_accept_cb_t)cb);
+		}
+
+		/// Set the poll callback.
+		/** This functions sets the callback that is called whenever data can be sent to another node.
+		 *  The callback is run in MeshLink's own thread.
+		 *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+		 *  to pass data to or from the application's thread.
+		 *  The callback should also not block itself and return as quickly as possible.
+		 *
+		 *  @param channel   A handle for the channel.
+		 *  @param cb        A pointer to the function which will be called when data can be sent to another node.
+		 *                   If a NULL pointer is given, the callback will be disabled.
+		 */
+		void set_channel_poll_cb(channel *channel, channel_poll_cb_t cb) {
+			return meshlink_set_channel_poll_cb(this, (meshlink_channel_poll_cb_t)cb);
 		}
 
 		/// Open a reliable stream channel to another node.
