@@ -56,6 +56,8 @@ sptps_speed_SOURCES = \
 
 lib_LTLIBRARIES = libmeshlink.la
 
+pkginclude_HEADERS = meshlink++.h meshlink.h
+
 libmeshlink_la_LDFLAGS = -export-symbols-regex '^(meshlink_|devtool_)'
 
 libmeshlink_la_SOURCES = \
