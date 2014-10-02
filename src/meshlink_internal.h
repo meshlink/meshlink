@@ -54,18 +54,13 @@ typedef enum proxytype_t {
 	PROXY_EXEC,
 } proxytype_t;
 
-typedef struct outpacketqueue {
-	meshlink_node_t *destination;
-	const void *data;
-	unsigned int len;
-} outpacketqueue_t;
-
 /// A handle for an instance of MeshLink.
 struct meshlink_handle {
 	char *name;
+	void *priv;
+
 	char *appname;
 	dev_class_t devclass;
-	void *priv;
 
 	char *confbase;
 
@@ -73,6 +68,8 @@ struct meshlink_handle {
 	meshlink_node_status_cb_t node_status_cb;
 	meshlink_log_cb_t log_cb;
 	meshlink_log_level_t log_level;
+
+	meshlink_channel_accept_cb_t channel_accept_cb;
 
 	pthread_t thread;
 	bool threadstarted;
@@ -148,6 +145,16 @@ struct meshlink_node {
 	void *priv;
 };
 
+/// A channel.
+struct meshlink_channel {
+	struct node_t *node;
+	void *priv;
+
+	struct utcp_connection *c;
+	meshlink_channel_receive_cb_t receive_cb;
+	meshlink_channel_poll_cb_t poll_cb;
+};
+
 /// Header for data packets routed between nodes
 typedef struct meshlink_packethdr {
 	uint8_t destination[16];
@@ -155,6 +162,7 @@ typedef struct meshlink_packethdr {
 } __attribute__ ((__packed__)) meshlink_packethdr_t;
 
 extern void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
+extern void update_node_status(meshlink_handle_t *mesh, struct node_t *n);
 extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
 

@@ -18,7 +18,7 @@
 
 static int n = 10;
 static meshlink_handle_t **mesh;
-
+static char* namesprefix="machine1";
 static int nodeindex = 0;
 
 static meshlink_node_t **nodes;
@@ -95,7 +95,7 @@ static bool exportmeshgraph(const char* path)
 		return false;
 	}
 
-	if(!devtool_export_json_all_edges_state(mesh[nodeindex], stream))
+	if(!devtool_export_json_all_edges_state(mesh[0], stream))
 	{
 		fclose(stream);
 		fprintf(stderr, "could not export graph\n");
@@ -113,7 +113,7 @@ void exportmeshgraph_timer(int signum)
 	gettimeofday(&ts, NULL);
 
 	char name[1024];
-	snprintf(name, sizeof(name), "graph_%ld_%03ld.json", ts.tv_sec, ts.tv_usec/1000);
+	snprintf(name, sizeof(name), "%sgraph_%ld_%03ld.json", namesprefix,ts.tv_sec, ts.tv_usec/1000);
 
 	exportmeshgraph(name);
 }
@@ -257,7 +257,8 @@ static void parse_command(char *buf) {
 		}
 		nodeindex = atoi(arg);
 		printf("Index is now %d\n",nodeindex);
-	
+	} else if(!strcasecmp(buf, "stop")) {
+		meshlink_stop(mesh[nodeindex]);
 	} else if(!strcasecmp(buf, "quit")) {
 		printf("Bye!\n");
 		fclose(stdin);
@@ -273,6 +274,7 @@ static void parse_command(char *buf) {
 			"/eg <path>            Export graph as json file.\n"
 			"/test                 Test functionality sending some data to all nodes\n"
 			"/select <number>      Select the active node running the user commands\n"
+			"/stop		       Call meshlink_stop, use /select first to select which node to stop\n"
 			"/quit                 Exit this program.\n"
 			);
 	} else {
@@ -340,7 +342,6 @@ static void parse_input(char *buf) {
 
 int main(int argc, char *argv[]) {
 	const char *basebase = ".manynodes";
-	const char *namesprefix = "machine1";
 	const char *graphexporttimeout = NULL;
 	char buf[1024];
 
@@ -363,7 +364,7 @@ int main(int argc, char *argv[]) {
 
 	mesh = calloc(n, sizeof *mesh);
 
-	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_message);
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_message);
 	mkdir(basebase, 0750);
 
 	char filename[PATH_MAX];
@@ -372,8 +373,13 @@ int main(int argc, char *argv[]) {
 		snprintf(nodename, sizeof nodename, "%snode%d", namesprefix,i);
 		snprintf(filename, sizeof filename, "%s/%s", basebase, nodename);
 		bool itsnew = access(filename, R_OK);
-		mesh[i] = meshlink_open(filename, nodename, "manynodes", i%_DEV_CLASS_MAX);
-		meshlink_set_log_cb(mesh[i], MESHLINK_WARNING, log_message);
+		if (n/(i+1) > n/4) {
+			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_BACKBONE);
+		}
+		else {
+			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_PORTABLE);
+		}
+		meshlink_set_log_cb(mesh[i], MESHLINK_DEBUG, log_message);
 		if(!mesh[i]) {
 			fprintf(stderr, "errno is: %d\n", meshlink_errno);
 			fprintf(stderr, "Could not open %s: %s\n", filename, meshlink_strerror(meshlink_errno));

@@ -88,20 +88,18 @@ extern __thread meshlink_errno_t meshlink_errno;
 #ifndef MESHLINK_INTERNAL_H
 
 struct meshlink_handle {
-	char *name;
-	char *appname;
-	dev_class_t devclass;
-	void *priv;
+	char *name;       ///< Textual name of ourself. It is stored in a nul-terminated C string, which is allocated by MeshLink.
+	void *priv;       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
 struct meshlink_node {
 	char *name;       ///< Textual name of this node. It is stored in a nul-terminated C string, which is allocated by MeshLink.
-	uint32_t options;
-	dev_class_t devclass;
 	void *priv;       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
 struct meshlink_channel {
+	struct meshlink_node *node; ///< Pointer to the peer of this channel.
+	void *priv;                 ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
 #endif // MESHLINK_INTERNAL_H
@@ -496,8 +494,6 @@ extern void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node);
  *                      If the application rejects the incoming channel by returning false,
  *                      then this handle is invalid after the callback returns
  *                      (the callback does not need to call meshlink_channel_close() itself in this case).
- *  @param node         The node from which this channel is being initiated.
- *                      The pointer is guaranteed to be valid until meshlink_close() is called.
  *  @param port         The port number the peer wishes to connect to.
  *  @param data         A pointer to a buffer containing data already received, or NULL in case no data has been received yet. (Not yet used.)
  *                      The pointer is only valid during the lifetime of the callback.
@@ -507,7 +503,7 @@ extern void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node);
  *  @return             This function should return true if the application accepts the incoming channel, false otherwise.
  *                      If returning false, the channel is invalid and may not be used anymore.
  */
-typedef bool (*meshlink_channel_accept_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_node_t *node, uint16_t port, const void *data, size_t len);
+typedef bool (*meshlink_channel_accept_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len);
 
 /// A callback for receiving data from a channel.
 /** This function is called whenever data is received from a remote node on a channel.
@@ -524,6 +520,15 @@ typedef bool (*meshlink_channel_accept_cb_t)(meshlink_handle_t *mesh, meshlink_c
  *  @param len          The length of the data, or 0 in case of an error.
  */
 typedef void (*meshlink_channel_receive_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len);
+
+/// A callback informing the application when data can be sent on a channel.
+/** This function is called whenever there is enough free buffer space so a call to meshlink_channel_send() will succeed.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *  @param len          The maximum amount of data that is guaranteed to be accepted by meshlink_channel_send().
+ */
+typedef void (*meshlink_channel_poll_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len);
 
 /// Set the accept callback.
 /** This functions sets the callback that is called whenever another node sends data to the local node.
@@ -553,6 +558,20 @@ extern void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_cha
  *                   If a NULL pointer is given, the callback will be disabled and incoming data is ignored.
  */
 extern void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb);
+
+/// Set the poll callback.
+/** This functions sets the callback that is called whenever data can be sent to another node.
+ *  The callback is run in MeshLink's own thread.
+ *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to pass data to or from the application's thread.
+ *  The callback should also not block itself and return as quickly as possible.
+ *
+ *  @param mesh      A handle which represents an instance of MeshLink.
+ *  @param channel   A handle for the channel.
+ *  @param cb        A pointer to the function which will be called when data can be sent to another node.
+ *                   If a NULL pointer is given, the callback will be disabled.
+ */
+extern void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_poll_cb_t cb);
 
 /// Open a reliable stream channel to another node.
 /** This function is called whenever a remote node wants to open a channel to the local node.

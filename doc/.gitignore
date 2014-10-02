@@ -1,0 +1,6 @@
+html/
+latex/
+man/
+include.texi
+*.info
+*.tex

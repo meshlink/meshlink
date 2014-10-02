@@ -1005,7 +1005,10 @@ void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, me
 }
 
 bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
-	if(!mesh || !destination) {
+	meshlink_packethdr_t *hdr;
+
+	// Validate arguments
+	if(!mesh || !destination || len >= MAXSIZE - sizeof *hdr) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
@@ -1018,59 +1021,45 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 		return false;
 	}
 
-	pthread_mutex_lock(&(mesh->mesh_mutex));
-
-	//add packet to the queue
-	outpacketqueue_t *packet_in_queue = xzalloc(sizeof *packet_in_queue);
-	packet_in_queue->destination=destination;
-	packet_in_queue->data=data;
-	packet_in_queue->len=len;
-	if(!meshlink_queue_push(&mesh->outpacketqueue, packet_in_queue)) {
-		free(packet_in_queue);
-		pthread_mutex_unlock(&(mesh->mesh_mutex));
+	// Prepare the packet
+	vpn_packet_t *packet = malloc(sizeof *packet);
+	if(!packet) {
+		meshlink_errno = MESHLINK_ENOMEM;
 		return false;
 	}
 
-	//notify event loop
+	packet->probe = false;
+	packet->tcp = false;
+	packet->len = len + sizeof *hdr;
+
+	hdr = (meshlink_packethdr_t *)packet->data;
+	memset(hdr, 0, sizeof *hdr);
+	memcpy(hdr->destination, destination->name, sizeof hdr->destination);
+	memcpy(hdr->source, mesh->self->name, sizeof hdr->source);
+
+	memcpy(packet->data + sizeof *hdr, data, len);
+
+	// Queue it
+	if(!meshlink_queue_push(&mesh->outpacketqueue, packet)) {
+		free(packet);
+		meshlink_errno = MESHLINK_ENOMEM;
+		return false;
+	}
+
+	// Notify event loop
 	signal_trigger(&(mesh->loop),&(mesh->datafromapp));
 	
-	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return true;
 }
 
-void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh) {
-	pthread_mutex_lock(&(mesh->mesh_mutex));
-	
-	vpn_packet_t packet;
-	meshlink_packethdr_t *hdr = (meshlink_packethdr_t *)packet.data;
-
-	outpacketqueue_t* p = meshlink_queue_pop(&mesh->outpacketqueue);
-	if(!p)
-	{
-		pthread_mutex_unlock(&(mesh->mesh_mutex));
+void meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
+	vpn_packet_t *packet = meshlink_queue_pop(&mesh->outpacketqueue);
+	if(!packet)
 		return;
-	}
 
-	if (sizeof(meshlink_packethdr_t) + p->len > MAXSIZE) {
-		pthread_mutex_unlock(&(mesh->mesh_mutex));
-		//log something
-		return;
-	}
-
-	packet.probe = false;
-	memset(hdr, 0, sizeof *hdr);
-	memcpy(hdr->destination, p->destination->name, sizeof hdr->destination);
-	memcpy(hdr->source, mesh->self->name, sizeof hdr->source);
-
-	packet.len = sizeof *hdr + p->len;
-	memcpy(packet.data + sizeof *hdr, p->data, p->len);
-
-        mesh->self->in_packets++;
-        mesh->self->in_bytes += packet.len;
-        route(mesh, mesh->self, &packet);
-	
-	pthread_mutex_unlock(&(mesh->mesh_mutex));
-	return ;
+	mesh->self->in_packets++;
+	mesh->self->in_bytes += packet->len;
+	route(mesh, mesh->self, packet);
 }
 
 ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination) {
@@ -1909,6 +1898,142 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 	return result;
 }
 
+static bool channel_pre_accept(struct utcp *utcp, uint16_t port) {
+	//TODO: implement
+	return true;
+}
+
+static ssize_t channel_recv(struct utcp_connection *connection, const void *data, size_t len) {
+	meshlink_channel_t *channel = connection->priv;
+	if(!channel)
+		abort();
+	node_t *n = channel->node;
+	meshlink_handle_t *mesh = n->mesh;
+	if(!channel->receive_cb)
+		return -1;
+	else {
+		channel->receive_cb(mesh, channel, data, len);
+		return len;
+	}
+}
+
+static void channel_accept(struct utcp_connection *utcp_connection, uint16_t port) {
+	node_t *n = utcp_connection->utcp->priv;
+	if(!n)
+		abort();
+	meshlink_handle_t *mesh = n->mesh;
+	if(!mesh->channel_accept_cb)
+		return;
+	meshlink_channel_t *channel = xzalloc(sizeof *channel);
+	channel->node = n;
+	channel->c = utcp_connection;
+	if(mesh->channel_accept_cb(mesh, channel, port, NULL, 0))
+		utcp_accept(utcp_connection, channel_recv, channel);
+	else
+		free(channel);
+}
+
+static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
+	node_t *n = utcp->priv;
+	meshlink_handle_t *mesh = n->mesh;
+	char hex[len * 2 + 1];
+	bin2hex(data, hex, len);
+	logger(mesh, MESHLINK_WARNING, "channel_send(%p, %p, %zu): %s\n", utcp, data, len, hex);
+	return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? len : -1;
+}
+
+void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb) {
+	channel->receive_cb = cb;
+}
+
+static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
+	node_t *n = (node_t *)source;
+	if(!n->utcp)
+		abort();
+	char hex[len * 2 + 1];
+	bin2hex(data, hex, len);
+	logger(mesh, MESHLINK_WARNING, "channel_receive(%p, %p, %zu): %s\n", n->utcp, data, len, hex);
+	utcp_recv(n->utcp, data, len);
+}
+
+static void channel_poll(struct utcp_connection *connection, size_t len) {
+	meshlink_channel_t *channel = connection->priv;
+	if(!channel)
+		abort();
+	node_t *n = channel->node;
+	meshlink_handle_t *mesh = n->mesh;
+	if(channel->poll_cb)
+		channel->poll_cb(mesh, channel, len);
+}
+
+void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_poll_cb_t cb) {
+	channel->poll_cb = cb;
+	utcp_set_poll_cb(channel->c, cb ? channel_poll : NULL);
+}
+
+void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_accept_cb_t cb) {
+	pthread_mutex_lock(&mesh->mesh_mutex);
+	mesh->channel_accept_cb = cb;
+	mesh->receive_cb = channel_receive;
+	for splay_each(node_t, n, mesh->nodes) {
+		if(!n->utcp && n != mesh->self) {
+			logger(mesh, MESHLINK_WARNING, "utcp_init on node %s", n->name);
+			n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+		}
+	}
+	pthread_mutex_unlock(&mesh->mesh_mutex);
+}
+
+void meshlink_channel_init(meshlink_handle_t *mesh) {
+}
+
+meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len) {
+	logger(mesh, MESHLINK_WARNING, "meshlink_channel_open(%p, %s, %u, %p, %p, %zu)\n", mesh, node->name, port, cb, data, len);
+	node_t *n = (node_t *)node;
+	if(!n->utcp) {
+		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+		mesh->receive_cb = channel_receive;
+		if(!n->utcp) {
+			meshlink_errno = errno == ENOMEM ? MESHLINK_ENOMEM : MESHLINK_EINTERNAL;
+			return NULL;
+		}
+	}
+	meshlink_channel_t *channel = xzalloc(sizeof *channel);
+	channel->node = n;
+	channel->receive_cb = cb;
+	channel->c = utcp_connect(n->utcp, port, channel_recv, channel);
+	if(!channel->c) {
+		meshlink_errno = errno == ENOMEM ? MESHLINK_ENOMEM : MESHLINK_EINTERNAL;
+		free(channel);
+		return NULL;
+	}
+	return channel;
+}
+
+void meshlink_channel_shutdown(meshlink_handle_t *mesh, meshlink_channel_t *channel, int direction) {
+	utcp_shutdown(channel->c, direction);
+}
+
+void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel) {
+	utcp_close(channel->c);
+	free(channel);
+}
+
+ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+	// TODO: locking.
+	// Ideally we want to put the data into the UTCP connection's send buffer.
+	// Then, preferrably only if there is room in the receiver window,
+	// kick the meshlink thread to go send packets.
+	return utcp_send(channel->c, data, len);
+}
+
+void update_node_status(meshlink_handle_t *mesh, node_t *n) {
+	if(n->status.reachable && mesh->channel_accept_cb && !n->utcp)
+		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+	if(mesh->node_status_cb)
+		mesh->node_status_cb(mesh, (meshlink_node_t *)n, n->status.reachable);
+}
+
 static void __attribute__((constructor)) meshlink_init(void) {
 	crypto_init();
 }
@@ -1916,7 +2041,6 @@ static void __attribute__((constructor)) meshlink_init(void) {
 static void __attribute__((destructor)) meshlink_exit(void) {
 	crypto_exit();
 }
-
 
 /// Device class traits
 dev_class_traits_t dev_class_traits[_DEV_CLASS_MAX +1] = {

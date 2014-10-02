@@ -45,7 +45,7 @@ void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 	logger(mesh, MESHLINK_DEBUG, "Routing packet from \"%s\" to \"%s\"\n", hdr->source, hdr->destination);
 
 	//Check Lenght
-	if(!checklength(source, packet, (sizeof(meshlink_packethdr_t))))
+	if(!checklength(source, packet, sizeof *hdr))
 		return;
 
 	if(owner == NULL) {
