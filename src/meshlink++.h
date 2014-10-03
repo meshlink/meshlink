@@ -364,7 +364,7 @@ namespace meshlink {
 		 *                   If a NULL pointer is given, the callback will be disabled.
 		 */
 		void set_channel_poll_cb(channel *channel, channel_poll_cb_t cb) {
-			return meshlink_set_channel_poll_cb(this, (meshlink_channel_poll_cb_t)cb);
+			return meshlink_set_channel_poll_cb(handle, channel, (meshlink_channel_poll_cb_t)cb);
 		}
 
 		/// Open a reliable stream channel to another node.
