@@ -17,11 +17,19 @@
 
 #include <netinet/in.h>
 
-#include <uuid/uuid.h>
-
 #define MESHLINK_MDNS_SERVICE_TYPE "_%s._tcp"
 #define MESHLINK_MDNS_NAME_KEY "name"
 #define MESHLINK_MDNS_FINGERPRINT_KEY "fingerprint"
+
+static void generate_rand_string(char* buffer, size_t size)
+{
+    for(size_t i = 0; i < (size - 1); ++i)
+    {
+        buffer[i] = 'a' + (rand() % ('z' - 'a' + 1));
+    }
+
+    buffer[size-1] = '\0';
+}
 
 static void discovery_entry_group_callback(CattaServer *server, CattaSEntryGroup *group, CattaEntryGroupState state, void *userdata)
 {
@@ -160,14 +168,11 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
                 assert(mesh->catta_poll != NULL);
 
                 /* A host name collision happened. Let's pick a new name for the server */
-                uuid_t hostname;
-                uuid_generate(hostname);
+                char hostname[17];
+                generate_rand_string(hostname, sizeof(hostname));
 
-                char hostnamestr[36+1];
-                uuid_unparse_lower(hostname, hostnamestr);
-
-                logger(mesh, MESHLINK_WARNING, "Catta host name collision, retrying with '%s'\n", hostnamestr);
-                int result = catta_server_set_host_name(mesh->catta_server, hostnamestr);
+                logger(mesh, MESHLINK_WARNING, "Catta host name collision, retrying with '%s'\n", hostname);
+                int result = catta_server_set_host_name(mesh->catta_server, hostname);
 
                 if(result < 0)
                 {
@@ -461,7 +466,7 @@ bool discovery_start(meshlink_handle_t *mesh)
 
     // handle catta logs
     catta_set_log_function(discovery_log_cb);
-    
+
     // create service type string
     size_t servicetype_strlen = sizeof(MESHLINK_MDNS_SERVICE_TYPE) + strlen(mesh->appname) + 1;
     mesh->catta_servicetype = malloc(servicetype_strlen);
@@ -482,16 +487,13 @@ bool discovery_start(meshlink_handle_t *mesh)
     }
 
     // generate some unique host name (we actually do not care about it)
-    uuid_t hostname;
-    uuid_generate(hostname);
-
-    char hostnamestr[36+1];
-    uuid_unparse_lower(hostname, hostnamestr);
+    char hostname[17];
+    generate_rand_string(hostname, sizeof(hostname));
 
     // Let's set the host name for this server.
     CattaServerConfig config;
     catta_server_config_init(&config);
-    config.host_name = catta_strdup(hostnamestr);
+    config.host_name = catta_strdup(hostname);
     config.publish_workstation = 0;
     config.disallow_other_stacks = 0;
     config.publish_hinfo = 0;
