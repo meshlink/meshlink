@@ -4,7 +4,10 @@
 #include <strings.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#ifndef _WIN32
 #include <linux/limits.h>
+#endif
 
 #include "../src/meshlink.h"
 #include "../src/devtools.h"
@@ -118,6 +121,7 @@ void exportmeshgraph_timer(int signum)
 	exportmeshgraph(name);
 }
 
+#ifndef _WIN32
 static bool exportmeshgraph_started = false;
 
 static bool exportmeshgraph_end(const char* none)
@@ -172,6 +176,17 @@ static bool exportmeshgraph_begin(const char* timeout_str)
 
 	return true;
 }
+#else
+static bool exportmeshgraph_end(const char* none)
+{
+	return false;
+}
+
+static bool exportmeshgraph_begin(const char* timeout_str)
+{
+	return false;
+}
+#endif
 
 static void parse_command(char *buf) {
 	char *arg = strchr(buf, ' ');
@@ -365,7 +380,11 @@ int main(int argc, char *argv[]) {
 	mesh = calloc(n, sizeof *mesh);
 
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_message);
+#ifndef _WIN32
 	mkdir(basebase, 0750);
+#else
+	mkdir(basebase);
+#endif
 
 	char filename[PATH_MAX];
 	char nodename[100];

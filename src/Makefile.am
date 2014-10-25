@@ -111,7 +111,11 @@ libmeshlink_la_SOURCES = \
 
 libmeshlink_la_CFLAGS = -fPIC -I../catta/include/
 
-libmeshlink_la_LIBADD = -lpthread ../catta/src/.libs/libcatta.a
+if MINGW
+libmeshlink_la_CFLAGS += -I../catta/src/compat/windows/include/
+endif
+
+libmeshlink_la_LIBADD = -lpthread ../catta/src/libcatta.la
 
 libmeshlink_la_SOURCES += \
 	ed25519/ecdh.c \

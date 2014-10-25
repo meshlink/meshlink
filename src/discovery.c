@@ -1,11 +1,3 @@
-
-#include "meshlink_internal.h"
-#include "discovery.h"
-#include "sockaddr.h"
-#include "logger.h"
-
-#include <pthread.h>
-
 #include <catta/core.h>
 #include <catta/lookup.h>
 #include <catta/publish.h>
@@ -14,6 +6,13 @@
 #include <catta/malloc.h>
 #include <catta/alternative.h>
 #include <catta/error.h>
+
+#include "meshlink_internal.h"
+#include "discovery.h"
+#include "sockaddr.h"
+#include "logger.h"
+
+#include <pthread.h>
 
 #include <netinet/in.h>
 
@@ -214,7 +213,7 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
     pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
-static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfIndex interface, CattaProtocol protocol, CattaResolverEvent event, const char *name, const char *type, const char *domain, const char *host_name, const CattaAddress *address, uint16_t port, CattaStringList *txt, CattaLookupResultFlags flags, void* userdata)
+static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfIndex interface_, CattaProtocol protocol, CattaResolverEvent event, const char *name, const char *type, const char *domain, const char *host_name, const CattaAddress *address, uint16_t port, CattaStringList *txt, CattaLookupResultFlags flags, void *userdata)
 {
     meshlink_handle_t *mesh = userdata;
 
@@ -350,7 +349,7 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
     pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
-static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfIndex interface, CattaProtocol protocol, CattaBrowserEvent event, const char *name, const char *type, const char *domain, CattaLookupResultFlags flags, void* userdata)
+static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfIndex interface_, CattaProtocol protocol, CattaBrowserEvent event, const char *name, const char *type, const char *domain, CattaLookupResultFlags flags, void* userdata)
 {
 	meshlink_handle_t *mesh = userdata;
 
@@ -383,7 +382,7 @@ static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfInde
                    function we free it. Ifthe server is terminated before
                    the callback function is called the server will free
                    the resolver for us. */
-                if(!(catta_s_service_resolver_new(mesh->catta_server, interface, protocol, name, type, domain, CATTA_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh)))
+                if(!(catta_s_service_resolver_new(mesh->catta_server, interface_, protocol, name, type, domain, CATTA_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh)))
                 {
                     logger(mesh, MESHLINK_DEBUG, "Failed to resolve service '%s': %s\n", name, catta_strerror(catta_server_errno(mesh->catta_server)));
                 }
