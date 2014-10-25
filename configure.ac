@@ -36,7 +36,6 @@ case $host_os in
     mingw=true
     AC_DEFINE(HAVE_MINGW, 1, [MinGW])
     LIBS="$LIBS -lws2_32 -lgdi32 -lcrypt32"
-    CPPFLAGS="$CPPFLAGS -I./catta/src/compat/windows/include"
   ;;
 esac
 
