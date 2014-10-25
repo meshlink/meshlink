@@ -33,9 +33,11 @@
 
 #include <assert.h>
 
+#if !defined(min)
 static const int min(int a, int b) {
 	return a < b ? a : b;
 }
+#endif
 
 /*
   Terminate a connection:

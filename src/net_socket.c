@@ -36,6 +36,10 @@
 #define SOL_TCP IPPROTO_TCP
 #endif
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 int addressfamily = AF_UNSPEC;
 int seconds_till_retry = 5;
 int max_connection_burst = 100;
