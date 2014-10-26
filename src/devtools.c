@@ -31,7 +31,7 @@ static bool fstrwrite(const char* str, FILE* stream)
 	return true;
 }
 
-static const char* itoa(int value)
+static const char* __itoa(int value)
 {
 	static char buffer[sizeof(int) * 8 + 1];	// not thread safe
 
@@ -73,10 +73,10 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE* stream)
 		if(!fstrwrite("\t\t\t\"name\": \"", stream) || !fstrwrite(((node_t*)nodes[i])->name, stream) || !fstrwrite("\",\n", stream))
 			goto fail;
 
-		if(!fstrwrite("\t\t\t\"options\": ", stream) || !fstrwrite(itoa(((node_t*)nodes[i])->options), stream) || !fstrwrite(",\n", stream))
+		if(!fstrwrite("\t\t\t\"options\": ", stream) || !fstrwrite(__itoa(((node_t*)nodes[i])->options), stream) || !fstrwrite(",\n", stream))
 			goto fail;
 
-		if(!fstrwrite("\t\t\t\"devclass\": ", stream) || !fstrwrite(itoa(((node_t*)nodes[i])->devclass), stream) || !fstrwrite("\n", stream))
+		if(!fstrwrite("\t\t\t\"devclass\": ", stream) || !fstrwrite(__itoa(((node_t*)nodes[i])->devclass), stream) || !fstrwrite("\n", stream))
 			goto fail;
 
 		if(!fstrwrite((i+1) != node_count ? "\t\t},\n" : "\t\t}\n", stream))
@@ -120,10 +120,10 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE* stream)
 
 		free(address);
 
-		if(!fstrwrite("\t\t\t\"options\": ", stream) || !fstrwrite(itoa(edges[i]->options), stream) || !fstrwrite(",\n", stream))
+		if(!fstrwrite("\t\t\t\"options\": ", stream) || !fstrwrite(__itoa(edges[i]->options), stream) || !fstrwrite(",\n", stream))
 			goto fail;
 
-		if(!fstrwrite("\t\t\t\"weight\": ", stream) || !fstrwrite(itoa(edges[i]->weight), stream) || !fstrwrite("\n", stream))
+		if(!fstrwrite("\t\t\t\"weight\": ", stream) || !fstrwrite(__itoa(edges[i]->weight), stream) || !fstrwrite("\n", stream))
 			goto fail;
 
 		if(!fstrwrite((i+1) != edge_count ? "\t\t},\n" : "\t\t}\n", stream))

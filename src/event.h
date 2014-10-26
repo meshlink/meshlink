@@ -22,6 +22,7 @@
 
 #include "splay_tree.h"
 #include "system.h"
+#include <pthread.h>
 
 #define IO_READ 1
 #define IO_WRITE 2
