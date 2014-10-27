@@ -5,8 +5,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__APPLE__)
 #include <linux/limits.h>
+#elif defined(__APPLE__)
+#include <sys/syslimits.h>
 #endif
 
 #include "../src/meshlink.h"
