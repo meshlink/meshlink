@@ -170,6 +170,53 @@ namespace meshlink {
 		
 		/// This functions is called whenever MeshLink has some information to log.
 		virtual void log(log_level_t level, const char* message)            { /* do nothing */ }
+
+		/// This functions is called whenever another node attemps to open a channel to the local node.
+		/** 
+		 *  The function is run in MeshLink's own thread.
+		 *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+		 *  to pass data to or from the application's thread.
+		 *  The callback should also not block itself and return as quickly as possible.
+		 *
+		 *  @param channel      A handle for the incoming channel.
+		 *  @param node         The node from which this channel is being initiated.
+		 *  @param port         The port number the peer wishes to connect to.
+		 *  @param data         A pointer to a buffer containing data already received. (Not yet used.)
+		 *  @param len          The length of the data. (Not yet used.)
+		 *
+		 *  @return             This function should return true if the application accepts the incoming channel, false otherwise.
+		 *                      If returning false, the channel is invalid and may not be used anymore.
+		 */
+		void bool channel_accept(channel *channel, node *node, uint16_t port, const void *data, size_t len)
+		{
+		        /* by default reject all channels */
+		        return false;
+		}
+
+		/// This function is called by Meshlink for receiving data from a channel.
+		/** 
+		 *  The function is run in MeshLink's own thread.
+		 *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+		 *  to pass data to or from the application's thread.
+		 *  The callback should also not block itself and return as quickly as possible.
+		 *
+		 *  @param channel      A handle for the channel.
+		 *  @param data         A pointer to a buffer containing data sent by the source.
+		 *  @param len          The length of the data.
+		 */
+		virtual void channel_receive(channel *channel, const void *data, size_t len) { /* do nothing */ }
+
+		/// This function is called by Meshlink when data can be send on a channel.
+		/**
+		 *  The function is run in MeshLink's own thread.
+		 *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+		 *  to pass data to or from the application's thread.
+		 *
+		 *  The callback should also not block itself and return as quickly as possible.
+		 *  @param channel      A handle for the channel.
+		 *  @param len          The maximum length of data that is guaranteed to be accepted by a call to channel_send().
+		 */
+		virtual void channel_poll(channel *channel, size_t len) { /* do nothing */ }
 		
 		/// Start MeshLink.
 		/** This function causes MeshLink to open network sockets, make outgoing connections, and
@@ -178,10 +225,11 @@ namespace meshlink {
 		 *  @return         This function will return true if MeshLink has succesfully started its thread, false otherwise.
 		 */
 		bool start() {
-			meshlink_set_receive_cb    (handle, &receive_trampoline);
-			meshlink_set_node_status_cb(handle, &node_status_trampoline);
-			meshlink_set_log_cb        (handle, MESHLINK_DEBUG, &log_trampoline);
-			return meshlink_start      (handle);
+			meshlink_set_receive_cb       (handle, &receive_trampoline);
+			meshlink_set_node_status_cb   (handle, &node_status_trampoline);
+			meshlink_set_log_cb           (handle, MESHLINK_DEBUG, &log_trampoline);
+			meshlink_set_channel_accept_cb(handle, &channel_accept_trampoline);
+			return meshlink_start         (handle);
 		}
 
 		/// Stop MeshLink.
@@ -338,20 +386,6 @@ namespace meshlink {
 			return meshlink_blacklist(handle, node);
 		}
 
-		/// Set the accept callback.
-		/** This functions sets the callback that is called whenever another node sends data to the local node.
-		 *  The callback is run in MeshLink's own thread.
-		 *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
-		 *  to hand the data over to the application's thread.
-		 *  The callback should also not block itself and return as quickly as possible.
-		 *
-		 *  @param channel   A handle for the channel.
-		 *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
-		 */
-		void set_channel_accept_cb(channel *channel, channel_accept_cb_t cb) {
-			return meshlink_set_channel_accept_cb(handle, (meshlink_channel_accept_cb_t)cb);
-		}
-
 		/// Set the poll callback.
 		/** This functions sets the callback that is called whenever data can be sent to another node.
 		 *  The callback is run in MeshLink's own thread.
@@ -381,6 +415,14 @@ namespace meshlink {
 		 */
 		channel *channel_open(node *node, uint16_t port, channel_receive_cb_t cb, const void *data, size_t len) {
 			return (channel *)meshlink_channel_open(handle, node, port, (meshlink_channel_receive_cb_t)cb, data, len);
+		}
+
+		/**
+		 * @override
+		 * Sets channel_receive_trampoline as cb, which in turn calls this->channel_receive( ... ).
+		 */
+		channel *channel_open(node *node, uint16_t port, const void *data, size_t len) {
+			return (channel *)meshlink_channel_open(handle, node, port, &channel_receive_trampoline, data, len);
 		}
 
 		/// Partially close a reliable stream channel.
@@ -442,8 +484,31 @@ namespace meshlink {
 			mesh* that = static_cast<mesh*>(handle->priv);
 			that->log(level, message);
 		}
-		
-		meshlink_handle_t*  handle;
+
+		static bool channel_accept_trampoline(meshlink_handle_t *handle, channel *channel, node *node, uint16_t port, const void *data, size_t len)
+		{
+			mesh* that = static_cast<mesh*>(handle->priv);
+			bool accepted = that->channel_accept( channel, node, port, data, len );
+			if (accepted)
+			{
+				return meshlink_set_channel_poll_cb(handle, channel, &channel_poll_trampoline);
+			}
+			return accepted;
+		}
+
+		static void channel_receive_trampoline(meshlink_handle_t *mesh, channel *channel, const void* data, size_t len)
+		{
+			mesh* that = static_cast<mesh*>(handle->priv);
+			that->channel_receive( channel, data, len );
+		}
+
+		static void channel_poll_trampoline(meshlink_handle_t *mesh, channel *channel, size_t len)
+		{
+			mesh* that = static_cast<mesh*>(handle->priv);
+			that->channel_poll( channel, len );
+		}
+
+		meshlink_handle_t* handle;
 	};
 
 	static const char *strerror(errno_t err = meshlink_errno) {
