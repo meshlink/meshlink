@@ -187,7 +187,7 @@ namespace meshlink {
 		 *  @return             This function should return true if the application accepts the incoming channel, false otherwise.
 		 *                      If returning false, the channel is invalid and may not be used anymore.
 		 */
-		void bool channel_accept(channel *channel, node *node, uint16_t port, const void *data, size_t len)
+		virtual bool channel_accept(channel *channel, node *node, uint16_t port, const void *data, size_t len)
 		{
 		        /* by default reject all channels */
 		        return false;
