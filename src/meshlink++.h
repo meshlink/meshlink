@@ -59,7 +59,6 @@ namespace meshlink {
 	/// A callback for accepting incoming channels.
 	/** @param mesh         A handle which represents an instance of MeshLink.
 	 *  @param channel      A handle for the incoming channel.
-	 *  @param node         The node from which this channel is being initiated.
 	 *  @param port         The port number the peer wishes to connect to.
 	 *  @param data         A pointer to a buffer containing data already received. (Not yet used.)
 	 *  @param len          The length of the data. (Not yet used.)
@@ -67,7 +66,7 @@ namespace meshlink {
 	 *  @return             This function should return true if the application accepts the incoming channel, false otherwise.
 	 *                      If returning false, the channel is invalid and may not be used anymore.
 	 */
-	typedef bool (*channel_accept_cb_t)(mesh *mesh, channel *channel, node *node, uint16_t port, const void *data, size_t len);
+	typedef bool (*channel_accept_cb_t)(mesh *mesh, channel *channel, uint16_t port, const void *data, size_t len);
 
 	/// A callback for receiving data from a channel.
 	/** @param mesh         A handle which represents an instance of MeshLink.
@@ -179,7 +178,6 @@ namespace meshlink {
 		 *  The callback should also not block itself and return as quickly as possible.
 		 *
 		 *  @param channel      A handle for the incoming channel.
-		 *  @param node         The node from which this channel is being initiated.
 		 *  @param port         The port number the peer wishes to connect to.
 		 *  @param data         A pointer to a buffer containing data already received. (Not yet used.)
 		 *  @param len          The length of the data. (Not yet used.)
@@ -187,7 +185,7 @@ namespace meshlink {
 		 *  @return             This function should return true if the application accepts the incoming channel, false otherwise.
 		 *                      If returning false, the channel is invalid and may not be used anymore.
 		 */
-		virtual bool channel_accept(channel *channel, node *node, uint16_t port, const void *data, size_t len)
+		virtual bool channel_accept(channel *channel, uint16_t port, const void *data, size_t len)
 		{
 		        /* by default reject all channels */
 		        return false;
@@ -398,7 +396,7 @@ namespace meshlink {
 		 *                   If a NULL pointer is given, the callback will be disabled.
 		 */
 		void set_channel_poll_cb(channel *channel, channel_poll_cb_t cb) {
-			return meshlink_set_channel_poll_cb(handle, channel, (meshlink_channel_poll_cb_t)cb);
+			meshlink_set_channel_poll_cb(handle, channel, (meshlink_channel_poll_cb_t)cb);
 		}
 
 		/// Open a reliable stream channel to another node.
@@ -469,43 +467,43 @@ namespace meshlink {
 		/// static callback trampolines:
 		static void receive_trampoline(meshlink_handle_t* handle, meshlink_node_t* source, const void* data, size_t length)
 		{
-			mesh* that = static_cast<mesh*>(handle->priv);
+                        meshlink::mesh* that = static_cast<mesh*>(handle->priv);
 			that->receive(static_cast<node*>(source), data, length);
 		}
 		
 		static void node_status_trampoline(meshlink_handle_t* handle, meshlink_node_t* peer, bool reachable)
 		{
-			mesh* that = static_cast<mesh*>(handle->priv);
+                        meshlink::mesh* that = static_cast<mesh*>(handle->priv);
 			that->node_status(static_cast<node*>(peer), reachable);
 		}
 
 		static void log_trampoline(meshlink_handle_t* handle, log_level_t level, const char* message)
 		{
-			mesh* that = static_cast<mesh*>(handle->priv);
+                        meshlink::mesh* that = static_cast<mesh*>(handle->priv);
 			that->log(level, message);
 		}
 
-		static bool channel_accept_trampoline(meshlink_handle_t *handle, channel *channel, node *node, uint16_t port, const void *data, size_t len)
+		static bool channel_accept_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, uint16_t port, const void *data, size_t len)
 		{
-			mesh* that = static_cast<mesh*>(handle->priv);
-			bool accepted = that->channel_accept( channel, node, port, data, len );
+                        meshlink::mesh* that = static_cast<mesh*>(handle->priv);
+			bool accepted = that->channel_accept(static_cast<meshlink::channel*>(channel), port, data, len);
 			if (accepted)
 			{
-				return meshlink_set_channel_poll_cb(handle, channel, &channel_poll_trampoline);
+				meshlink_set_channel_poll_cb(handle, channel, &channel_poll_trampoline);
 			}
 			return accepted;
 		}
 
-		static void channel_receive_trampoline(meshlink_handle_t *mesh, channel *channel, const void* data, size_t len)
+		static void channel_receive_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, const void* data, size_t len)
 		{
-			mesh* that = static_cast<mesh*>(handle->priv);
-			that->channel_receive( channel, data, len );
+                        meshlink::mesh* that = static_cast<mesh*>(handle->priv);
+			that->channel_receive(static_cast<meshlink::channel*>(channel), data, len);
 		}
 
-		static void channel_poll_trampoline(meshlink_handle_t *mesh, channel *channel, size_t len)
+		static void channel_poll_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, size_t len)
 		{
-			mesh* that = static_cast<mesh*>(handle->priv);
-			that->channel_poll( channel, len );
+                        meshlink::mesh* that = static_cast<mesh*>(handle->priv);
+			that->channel_poll(static_cast<meshlink::channel*>(channel), len);
 		}
 
 		meshlink_handle_t* handle;
