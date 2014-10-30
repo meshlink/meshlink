@@ -455,7 +455,7 @@ namespace meshlink {
 		 *
 		 *  @return             The amount of data that was queued, which can be less than len, or a negative value in case of an error.
 		 */
-		size_t channel_send(channel *channel, void *data, size_t len) {
+		ssize_t channel_send(channel *channel, void *data, size_t len) {
 			return meshlink_channel_send(handle, channel, data, len);
 		}
 
