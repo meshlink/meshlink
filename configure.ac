@@ -75,6 +75,13 @@ AS_IF([test "x$enable_hardening" != "xno"],
   ]
 );
 
+dnl UTCP debug flags
+AC_ARG_ENABLE([utcp_debug], AS_HELP_STRING([--enable-utcp-debug], [compile utcp with debug output]))
+AS_IF([test "x$enable_utcp_debug" = "xyes"],
+  [AX_CHECK_COMPILE_FLAG([-DUTCP_DEBUG], [CPPFLAGS="$CPPFLAGS -DUTCP_DEBUG"])
+  ]
+);
+
 dnl Checks for header files.
 dnl We do this in multiple stages, because unlike Linux all the other operating systems really suck and don't include their own dependencies.
 
