@@ -295,7 +295,7 @@ namespace meshlink {
 		 *  @param channel   A handle for the channel.
 		 *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
 		 */
-		void set_channel_accept_cb(channel *channel, channel_accept_cb_t cb) {
+		void set_channel_accept_cb(channel_accept_cb_t cb) {
 			return meshlink_set_channel_accept_cb(this, (meshlink_channel_accept_cb_t)cb);
 		}
 
@@ -311,7 +311,7 @@ namespace meshlink {
 		 *                   If a NULL pointer is given, the callback will be disabled.
 		 */
 		void set_channel_poll_cb(channel *channel, channel_poll_cb_t cb) {
-			return meshlink_set_channel_poll_cb(this, (meshlink_channel_poll_cb_t)cb);
+			return meshlink_set_channel_poll_cb(this, channel, (meshlink_channel_poll_cb_t)cb);
 		}
 
 		/// Open a reliable stream channel to another node.
