@@ -172,6 +172,10 @@ namespace meshlink {
 
 		/// This functions is called whenever another node attemps to open a channel to the local node.
 		/** 
+                 *  If the channel is accepted, the poll_callback will be set to channel_poll and can be
+                 *  changed using set_channel_poll_cb(). Likewise, the receive callback is set to
+                 *  channel_receive().
+                 *
 		 *  The function is run in MeshLink's own thread.
 		 *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
 		 *  to pass data to or from the application's thread.
@@ -496,6 +500,7 @@ namespace meshlink {
 			bool accepted = that->channel_accept(static_cast<meshlink::channel*>(channel), port, data, len);
 			if (accepted)
 			{
+                                meshlink_set_receive_cb(handle, channel, &channel_receive_trampoline);
 				meshlink_set_channel_poll_cb(handle, channel, &channel_poll_trampoline);
 			}
 			return accepted;
