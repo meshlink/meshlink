@@ -500,7 +500,7 @@ namespace meshlink {
 			bool accepted = that->channel_accept(static_cast<meshlink::channel*>(channel), port, data, len);
 			if (accepted)
 			{
-                                meshlink_set_receive_cb(handle, channel, &channel_receive_trampoline);
+                                meshlink_set_channel_receive_cb(handle, channel, &channel_receive_trampoline);
 				meshlink_set_channel_poll_cb(handle, channel, &channel_poll_trampoline);
 			}
 			return accepted;
