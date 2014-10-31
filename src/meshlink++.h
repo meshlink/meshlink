@@ -172,10 +172,10 @@ namespace meshlink {
 
 		/// This functions is called whenever another node attemps to open a channel to the local node.
 		/** 
-                 *  If the channel is accepted, the poll_callback will be set to channel_poll and can be
-                 *  changed using set_channel_poll_cb(). Likewise, the receive callback is set to
-                 *  channel_receive().
-                 *
+		 *  If the channel is accepted, the poll_callback will be set to channel_poll and can be
+		 *  changed using set_channel_poll_cb(). Likewise, the receive callback is set to
+		 *  channel_receive().
+		 *
 		 *  The function is run in MeshLink's own thread.
 		 *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
 		 *  to pass data to or from the application's thread.
@@ -191,8 +191,8 @@ namespace meshlink {
 		 */
 		virtual bool channel_accept(channel *channel, uint16_t port, const void *data, size_t len)
 		{
-		        /* by default reject all channels */
-		        return false;
+			/* by default reject all channels */
+			return false;
 		}
 
 		/// This function is called by Meshlink for receiving data from a channel.
@@ -406,9 +406,9 @@ namespace meshlink {
 		/// Open a reliable stream channel to another node.
 		/** This function is called whenever a remote node wants to open a channel to the local node.
 		 *  The application then has to decide whether to accept or reject this channel.
-                 *
-                 *  This function sets the channel poll callback to channel_poll_trampoline, which in turn
-                 *  calls channel_poll. To set a differnt, channel-specific poll callback, use set_channel_poll_cb.
+		 *
+		 *  This function sets the channel poll callback to channel_poll_trampoline, which in turn
+		 *  calls channel_poll. To set a differnt, channel-specific poll callback, use set_channel_poll_cb.
 		 *
 		 *  @param node         The node to which this channel is being initiated.
 		 *  @param port         The port number the peer wishes to connect to.
@@ -420,8 +420,8 @@ namespace meshlink {
 		 */
 		channel *channel_open(node *node, uint16_t port, channel_receive_cb_t cb, const void *data, size_t len) {
 			channel *ch = (channel *)meshlink_channel_open(handle, node, port, (meshlink_channel_receive_cb_t)cb, data, len);
-                        meshlink_set_channel_poll_cb(handle, ch, &channel_poll_trampoline);
-                        return ch;
+			meshlink_set_channel_poll_cb(handle, ch, &channel_poll_trampoline);
+			return ch;
 		}
 
 		/**
@@ -430,8 +430,8 @@ namespace meshlink {
 		 */
 		channel *channel_open(node *node, uint16_t port, const void *data, size_t len) {
 			channel *ch = (channel *)meshlink_channel_open(handle, node, port, &channel_receive_trampoline, data, len);
-                        meshlink_set_channel_poll_cb(handle, ch, &channel_poll_trampoline);
-                        return ch;
+			meshlink_set_channel_poll_cb(handle, ch, &channel_poll_trampoline);
+			return ch;
 		}
 
 		/// Partially close a reliable stream channel.
@@ -500,7 +500,7 @@ namespace meshlink {
 			bool accepted = that->channel_accept(static_cast<meshlink::channel*>(channel), port, data, len);
 			if (accepted)
 			{
-                                meshlink_set_channel_receive_cb(handle, channel, &channel_receive_trampoline);
+				meshlink_set_channel_receive_cb(handle, channel, &channel_receive_trampoline);
 				meshlink_set_channel_poll_cb(handle, channel, &channel_poll_trampoline);
 			}
 			return accepted;
