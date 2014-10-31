@@ -699,6 +699,20 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 	return true;
 }
 
+static struct timeval idle(event_loop_t *loop, void *data) {
+	meshlink_handle_t *mesh = data;
+	int t, tmin = -1;
+	for splay_each(node_t, n, mesh->nodes) {
+		if(!n->utcp)
+			continue;
+		t = utcp_timeout(n->utcp);
+		if(t >= 0 && t < tmin)
+			tmin = t;
+	}
+	struct timeval tv = {.tv_sec = t};
+	return tv;
+}
+
 static bool meshlink_setup(meshlink_handle_t *mesh) {
 	if(mkdir(mesh->confbase, 0777) && errno != EEXIST) {
 		logger(mesh, MESHLINK_DEBUG, "Could not create directory %s: %s\n", mesh->confbase, strerror(errno));
@@ -839,6 +853,8 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 		meshlink_errno = MESHLINK_ENETWORK;
 		return NULL;
 	}
+
+	idle_set(&mesh->loop, idle, mesh);
 
 	logger(NULL, MESHLINK_DEBUG, "meshlink_open returning\n");
 	return mesh;

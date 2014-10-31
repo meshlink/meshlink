@@ -1,8 +1,6 @@
 TODO list for MeshLink
 ----------------------
 
-* Speed up start: immediately do outgoing connections instead of waiting 5 seconds.
-
 * meshlink_join():
   - add checks that we only join another mesh if we did not connect to any other node before.
   - only allow meshlink_join() when the library thread is not running.
@@ -15,29 +13,18 @@ TODO list for MeshLink
 * Allow meshlink_open() to be called with a NULL name, in anticipation of meshlink_join().
   - Do not allow meshlink_start() if no Name is set.
 
-* Add a logging callback.
-  - One in a meshlink_handle_t for everything that happens after meshlink_open().
-  - Add a global one for library calls that don't involve a valid meshlink_handle_t *.
-  - Get rid of "priority".
-
-* Fill in mesh->errno whenever an error happens (= when a function returns false or NULL).
-
 * Add autoconf/automake stuff to call Doxygen.
 
 * Write a manual
-  - Document API
+  - Add introduction and walkthrough how to use MeshLink in an application to
+    the doxygen manual.
   - Explain what MeshLink does and how it should be used in the application
-  - Write simple examples for common operations
+  - Import examples into the manual?
   - List possible ways of synchronisation between application and library threads
     - simple polling
     - pthread_cond?
     - pipe() to signal an event loop of the application's choice
     - whatever equivalent(s) there are on Windows
-
-* Add a "channel" library to MeshLink.
-  - Support multiple TCP- and UDP-like streams between two nodes.
-
-* Move queue code to its own source file.
 
 Not finished but being worked on:
 ---------------------------------
@@ -49,3 +36,6 @@ Not finished but being worked on:
   - Check all public API functions.
 
 * Write a test suite for the library.
+
+* Add a "channel" library to MeshLink.
+  - Support multiple TCP- and UDP-like streams between two nodes.
