@@ -402,6 +402,9 @@ namespace meshlink {
 		/// Open a reliable stream channel to another node.
 		/** This function is called whenever a remote node wants to open a channel to the local node.
 		 *  The application then has to decide whether to accept or reject this channel.
+                 *
+                 *  This function sets the channel poll callback to channel_poll_trampoline, which in turn
+                 *  calls channel_poll. To set a differnt, channel-specific poll callback, use set_channel_poll_cb.
 		 *
 		 *  @param node         The node to which this channel is being initiated.
 		 *  @param port         The port number the peer wishes to connect to.
@@ -412,7 +415,9 @@ namespace meshlink {
 		 *  @return             A handle for the channel, or NULL in case of an error.
 		 */
 		channel *channel_open(node *node, uint16_t port, channel_receive_cb_t cb, const void *data, size_t len) {
-			return (channel *)meshlink_channel_open(handle, node, port, (meshlink_channel_receive_cb_t)cb, data, len);
+			channel *ch = (channel *)meshlink_channel_open(handle, node, port, (meshlink_channel_receive_cb_t)cb, data, len);
+                        meshlink_set_channel_poll_cb(handle, ch, &channel_poll_trampoline);
+                        return ch;
 		}
 
 		/**
@@ -420,7 +425,9 @@ namespace meshlink {
 		 * Sets channel_receive_trampoline as cb, which in turn calls this->channel_receive( ... ).
 		 */
 		channel *channel_open(node *node, uint16_t port, const void *data, size_t len) {
-			return (channel *)meshlink_channel_open(handle, node, port, &channel_receive_trampoline, data, len);
+			channel *ch = (channel *)meshlink_channel_open(handle, node, port, &channel_receive_trampoline, data, len);
+                        meshlink_set_channel_poll_cb(handle, ch, &channel_poll_trampoline);
+                        return ch;
 		}
 
 		/// Partially close a reliable stream channel.
