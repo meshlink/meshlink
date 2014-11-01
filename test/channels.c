@@ -3,10 +3,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "meshlink.h"
+#include "../src/meshlink.h"
 
 volatile bool bar_reachable = false;
 volatile bool bar_responded = false;
+
+void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	if(mesh)
+		fprintf(stderr, "(%s) ", mesh->name);
+	fprintf(stderr, "[%d] %s\n", level, text);
+}
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 	if(!strcmp(node->name, "bar"))
@@ -23,7 +29,11 @@ void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const 
 	meshlink_channel_send(mesh, channel, data, len);
 }
 
-bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_node_t *node, uint16_t port, const void *data, size_t len) {
+bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	return false;
+}
+
+bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	if(port != 7)
 		return false;
 	meshlink_set_channel_receive_cb(mesh, channel, bar_receive_cb);
@@ -32,7 +42,15 @@ bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_no
 	return true;
 }
 
+void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+	meshlink_set_channel_poll_cb(mesh, channel, NULL);
+	if(meshlink_channel_send(mesh, channel, "Hello", 5) != 5)
+		fprintf(stderr, "Could not send whole message\n");
+}
+
 int main(int argc, char *argv[]) {
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
+
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("channels_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
@@ -71,7 +89,6 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-
 	if(!meshlink_import(mesh1, data)) {
 		fprintf(stderr, "Foo could not import bar's configuration\n");
 		return 1;
@@ -79,18 +96,21 @@ int main(int argc, char *argv[]) {
 
 	free(data);
 
-	// Set the channel accept callback on bar.
+	// Set the callbacks.
 	
+	meshlink_set_channel_accept_cb(mesh1, reject_cb);
 	meshlink_set_channel_accept_cb(mesh2, accept_cb);
-
-	// Start both instances
 
 	meshlink_set_node_status_cb(mesh1, status_cb);
 	
+	// Start both instances
+
 	if(!meshlink_start(mesh1)) {
 		fprintf(stderr, "Foo could not start\n");
 		return 1;
 	}
+
+	usleep(123456);
 
 	if(!meshlink_start(mesh2)) {
 		fprintf(stderr, "Bar could not start\n");
@@ -110,6 +130,8 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	sleep(1);
+
 	// Open a channel from foo to bar.
 	
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
@@ -118,7 +140,8 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, foo_receive_cb, "Hello", 5);
+	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, foo_receive_cb, NULL, 0);
+	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb);
 
 	for(int i = 0; i < 5; i++) {
 		sleep(1);
