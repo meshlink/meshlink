@@ -71,14 +71,11 @@ void free_node(node_t *n) {
 	if(n->mtutimeout.cb)
 		abort();
 
-	if(n->hostname)
-		free(n->hostname);
+	free(n->hostname);
+	free(n->name);
+	free(n->late);
 
-	if(n->name)
-		free(n->name);
-
-	if(n->late)
-		free(n->late);
+	utcp_exit(n->utcp);
 
 	free(n);
 }
