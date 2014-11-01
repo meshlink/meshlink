@@ -2076,11 +2076,18 @@ ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *chann
 		return -1;
 	}
 
-	// TODO: locking.
+	// TODO: more finegrained locking.
 	// Ideally we want to put the data into the UTCP connection's send buffer.
 	// Then, preferrably only if there is room in the receiver window,
 	// kick the meshlink thread to go send packets.
-	return utcp_send(channel->c, data, len);
+
+	pthread_mutex_lock(&mesh->mesh_mutex);
+	ssize_t retval = utcp_send(channel->c, data, len);
+	pthread_mutex_unlock(&mesh->mesh_mutex);
+
+	if(retval < 0)
+		meshlink_errno = MESHLINK_ENETWORK;
+	return retval;
 }
 
 void update_node_status(meshlink_handle_t *mesh, node_t *n) {
