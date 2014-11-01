@@ -1,6 +1,8 @@
 TESTS = \
 	basic.test \
 	basicpp.test \
+	channels.test \
+	channels-fork.test \
 	import-export.test \
 	invite-join.test \
 	sign-verify.test
@@ -9,13 +11,19 @@ dist_check_SCRIPTS = $(TESTS)
 
 AM_CPPFLAGS = -I../src
 
-check_PROGRAMS = basic basicpp import-export invite-join sign-verify
+check_PROGRAMS = basic basicpp channels channels-fork import-export invite-join sign-verify
 
 basic_SOURCES = basic.c
 basic_LDADD = ../src/libmeshlink.la
 
 basicpp_SOURCES = basicpp.cpp
 basicpp_LDADD = ../src/libmeshlink.la
+
+channels_SOURCES = channels.cpp
+channels_LDADD = ../src/libmeshlink.la
+
+channels_fork_SOURCES = channels-fork.cpp
+channels_fork_LDADD = ../src/libmeshlink.la
 
 import_export_SOURCES = import-export.c
 import_export_LDADD = ../src/libmeshlink.la
