@@ -1928,9 +1928,7 @@ static ssize_t channel_recv(struct utcp_connection *connection, const void *data
 	if(!channel->receive_cb)
 		return -1;
 	else {
-		pthread_mutex_lock(&mesh->mesh_mutex);
 		channel->receive_cb(mesh, channel, data, len);
-		pthread_mutex_unlock(&mesh->mesh_mutex);
 		return len;
 	}
 }
@@ -1945,12 +1943,10 @@ static void channel_accept(struct utcp_connection *utcp_connection, uint16_t por
 	meshlink_channel_t *channel = xzalloc(sizeof *channel);
 	channel->node = n;
 	channel->c = utcp_connection;
-	pthread_mutex_lock(&mesh->mesh_mutex);
 	if(mesh->channel_accept_cb(mesh, channel, port, NULL, 0))
 		utcp_accept(utcp_connection, channel_recv, channel);
 	else
 		free(channel);
-	pthread_mutex_unlock(&mesh->mesh_mutex);
 }
 
 static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
@@ -1988,9 +1984,7 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 	node_t *n = channel->node;
 	meshlink_handle_t *mesh = n->mesh;
 	if(channel->poll_cb)
-		pthread_mutex_lock(&mesh->mesh_mutex);
 		channel->poll_cb(mesh, channel, len);
-		pthread_mutex_unlock(&mesh->mesh_mutex);
 }
 
 void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_poll_cb_t cb) {
