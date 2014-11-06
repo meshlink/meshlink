@@ -5,6 +5,7 @@
 #include <sys/time.h>
 
 #include "../src/meshlink.h"
+#include "../src/node.h"
 
 volatile bool bar_reachable = false;
 volatile bool bar_responded = false;
@@ -150,6 +151,17 @@ int main(int argc, char *argv[]) {
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
 	if(!bar) {
 		fprintf(stderr, "Foo could not find bar\n");
+		return 1;
+	}
+
+	// XXX not enough to wait for reachable, must wait for SPTPS to complete
+	for(int i=0; i < 20; i++) {
+		sleep(1);
+		if(((node_t *)bar)->status.validkey)
+			break;
+	}
+	if(!((node_t *)bar)->status.validkey) {
+		fprintf(stderr, "No key exchange after 20 seconds\n");
 		return 1;
 	}
 
