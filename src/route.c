@@ -56,9 +56,16 @@ void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 	}
 
 	if(owner == mesh->self) {
-		logger(mesh, MESHLINK_DEBUG, "I received a packet for me with payload: %s \n", packet->data + sizeof *hdr);
+		const void *payload = packet->data + sizeof *hdr;
+		size_t len = packet->len - sizeof *hdr;
+
+		char hex[len*2 + 1];
+		if(mesh->log_level >= MESHLINK_DEBUG)
+			bin2hex(payload, hex, len);	// don't do this unless it's going to be logged
+		logger(mesh, MESHLINK_DEBUG, "I received a packet for me with payload: %s\n", hex);
+
 		if(mesh->receive_cb)
-			mesh->receive_cb(mesh, (meshlink_node_t *)source, packet->data + sizeof *hdr, packet->len - sizeof *hdr);
+			mesh->receive_cb(mesh, (meshlink_node_t *)source, payload, len);
 		return;
 	}
 
