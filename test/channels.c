@@ -68,7 +68,6 @@ int main(int argc, char *argv[]) {
 	// Import and export both side's data
 
 	meshlink_add_address(mesh1, "localhost");
-	meshlink_add_address(mesh2, "localhost");
 
 	char *data = meshlink_export(mesh1);
 	if(!data) {
@@ -110,8 +109,6 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	usleep(123456);
-
 	if(!meshlink_start(mesh2)) {
 		fprintf(stderr, "Bar could not start\n");
 		return 1;
@@ -129,8 +126,6 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Bar not reachable for foo after 20 seconds\n");
 		return 1;
 	}
-
-	sleep(1);
 
 	// Open a channel from foo to bar.
 	
