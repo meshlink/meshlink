@@ -133,8 +133,13 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 				return true;
 			}
 
-			if(from->sptps.label)
+			if(from->sptps.label) {
 				logger(mesh, MESHLINK_DEBUG, "Got REQ_KEY from %s while we already started a SPTPS session!", from->name);
+				if(strcmp(mesh->self->name, from->name) < 0) {
+					logger(mesh, MESHLINK_DEBUG, "Ignoring REQ_KEY from %s.", from->name);
+					return true;
+				}
+			}
 
 			char buf[MAX_STRING_SIZE];
 			int len;
