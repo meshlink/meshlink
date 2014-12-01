@@ -2,29 +2,42 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "../src/meshlink.h"
+#include "../src/node.h"
 
 volatile bool bar_reachable = false;
 volatile bool bar_responded = false;
 
 void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	static struct timeval tv0;
+	struct timeval tv;
+
+	if(tv0.tv_sec == 0)
+		gettimeofday(&tv0, NULL);
+	gettimeofday(&tv, NULL);
+	fprintf(stderr, "%u.%.03u ", (unsigned int)(tv.tv_sec-tv0.tv_sec), (unsigned int)tv.tv_usec/1000);
+
 	if(mesh)
 		fprintf(stderr, "(%s) ", mesh->name);
 	fprintf(stderr, "[%d] %s\n", level, text);
 }
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	printf("status_cb: %s %sreachable\n", node->name, reachable?"":"un");
 	if(!strcmp(node->name, "bar"))
 		bar_reachable = reachable;
 }
 
 void foo_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+	printf("foo_receive_cb %zu: ", len); fwrite(data, 1, len, stdout); printf("\n");
 	if(len == 5 && !memcmp(data, "Hello", 5))
 		bar_responded = true;
 }
 
 void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+	printf("bar_receive_cb %zu: ", len); fwrite(data, 1, len, stdout);
 	// Echo the data back.
 	meshlink_channel_send(mesh, channel, data, len);
 }
@@ -34,6 +47,9 @@ bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 }
 
 bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	printf("accept_cb: (from %s on port %u) ", channel->node->name, (unsigned int)port);
+	if(data) { fwrite(data, 1, len, stdout); printf("\n"); }
+
 	if(port != 7)
 		return false;
 	meshlink_set_channel_receive_cb(mesh, channel, bar_receive_cb);
@@ -64,6 +80,9 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Could not initialize configuration for bar\n");
 		return 1;
 	}
+
+	meshlink_set_log_cb(mesh1, MESHLINK_DEBUG, log_cb);
+	meshlink_set_log_cb(mesh2, MESHLINK_DEBUG, log_cb);
 
 	// Import and export both side's data
 
@@ -132,6 +151,17 @@ int main(int argc, char *argv[]) {
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
 	if(!bar) {
 		fprintf(stderr, "Foo could not find bar\n");
+		return 1;
+	}
+
+	// XXX not enough to wait for reachable, must wait for SPTPS to complete
+	for(int i=0; i < 20; i++) {
+		sleep(1);
+		if(((node_t *)bar)->status.validkey)
+			break;
+	}
+	if(!((node_t *)bar)->status.validkey) {
+		fprintf(stderr, "No key exchange after 20 seconds\n");
 		return 1;
 	}
 
