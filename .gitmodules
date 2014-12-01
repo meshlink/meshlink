@@ -4,5 +4,5 @@
 	branch = develop
 [submodule "src/utcp"]
 	path = src/utcp
-	url = https://chicago.everbase.net/meshlink/utcp.git
+	url = git@chicago.everbase.net:meshlink/utcp.git
 	branch = master
