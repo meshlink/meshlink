@@ -39,7 +39,7 @@ static void discovery_entry_group_callback(CattaServer *server, CattaSEntryGroup
     assert(mesh->catta_server != NULL);
     assert(mesh->catta_poll != NULL);
 
-    pthread_mutex_lock(&(mesh->mesh_mutex));
+    MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
     /* Called whenever the entry group state changes */
     switch(state)
@@ -65,7 +65,7 @@ static void discovery_entry_group_callback(CattaServer *server, CattaSEntryGroup
             ;
     }
 
-    pthread_mutex_unlock(&(mesh->mesh_mutex));
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 }
 
 
@@ -82,7 +82,7 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     assert(mesh->catta_servicetype != NULL);
     assert(mesh->self != NULL);
 
-    pthread_mutex_lock(&(mesh->mesh_mutex));
+    MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
     logger(mesh, MESHLINK_DEBUG, "Adding service\n");
 
@@ -135,7 +135,7 @@ done:
     if(txt_name)
         { free(txt_name); }
 
-    pthread_mutex_unlock(&(mesh->mesh_mutex));
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 }
 
 static void discovery_server_callback(CattaServer *server, CattaServerState state, void * userdata)
@@ -145,7 +145,7 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
     // asserts
     assert(mesh != NULL);
     
-    pthread_mutex_lock(&(mesh->mesh_mutex));
+    MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
     switch(state)
     {
@@ -210,7 +210,7 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
             break;
     }
 
-    pthread_mutex_unlock(&(mesh->mesh_mutex));
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 }
 
 static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfIndex interface_, CattaProtocol protocol, CattaResolverEvent event, const char *name, const char *type, const char *domain, const char *host_name, const CattaAddress *address, uint16_t port, CattaStringList *txt, CattaLookupResultFlags flags, void *userdata)
@@ -222,7 +222,7 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
     assert(mesh != NULL);
     assert(mesh->catta_server != NULL);
 
-    pthread_mutex_lock(&(mesh->mesh_mutex));
+    MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
     /* Called whenever a service has been resolved successfully or timed out */
     switch(event)
@@ -346,7 +346,7 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 
     catta_s_service_resolver_free(resolver);
 
-    pthread_mutex_unlock(&(mesh->mesh_mutex));
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 }
 
 static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfIndex interface_, CattaProtocol protocol, CattaBrowserEvent event, const char *name, const char *type, const char *domain, CattaLookupResultFlags flags, void* userdata)
@@ -358,7 +358,7 @@ static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfInde
     assert(mesh->catta_server != NULL);
     assert(mesh->catta_poll != NULL);
 
-    pthread_mutex_lock(&(mesh->mesh_mutex));
+    MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
     /* Called whenever a new services becomes available on the LAN or is removed from the LAN */
     switch (event)
@@ -408,7 +408,7 @@ static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfInde
             break;
     }
     
-    pthread_mutex_unlock(&(mesh->mesh_mutex));
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 }
 
 static void *discovery_loop(void *userdata)

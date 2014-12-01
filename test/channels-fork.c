@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -48,24 +49,14 @@ void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
 		fprintf(stderr, "Could not send whole message\n");
 }
 
-int main(int argc, char *argv[]) {
+int main1(int rfd, int wfd) {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
-
-	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("channels_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
 	if(!mesh1) {
 		fprintf(stderr, "Could not initialize configuration for foo\n");
 		return 1;
 	}
-
-	meshlink_handle_t *mesh2 = meshlink_open("channels_conf.2", "bar", "channels", DEV_CLASS_BACKBONE);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return 1;
-	}
-
-	// Import and export both side's data
 
 	meshlink_add_address(mesh1, "localhost");
 
@@ -75,46 +66,27 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	if(!meshlink_import(mesh2, data)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return 1;
-	}
-
+	size_t len = strlen(data);
+	write(wfd, &len, sizeof len);
+	write(wfd, data, len);
 	free(data);
 
-	data = meshlink_export(mesh2);
-	if(!data) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return 1;
-	}
+	read(rfd, &len, sizeof len);
+	char indata[len + 1];
+	read(rfd, indata, len);
+	indata[len] = 0;
 
-	if(!meshlink_import(mesh1, data)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return 1;
-	}
+	fprintf(stderr, "Foo exchanged data\n");
 
-	free(data);
+	meshlink_import(mesh1, indata);
 
-	// Set the callbacks.
-	
 	meshlink_set_channel_accept_cb(mesh1, reject_cb);
-	meshlink_set_channel_accept_cb(mesh2, accept_cb);
-
 	meshlink_set_node_status_cb(mesh1, status_cb);
-	
-	// Start both instances
 
 	if(!meshlink_start(mesh1)) {
 		fprintf(stderr, "Foo could not start\n");
 		return 1;
 	}
-
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return 1;
-	}
-
-	// Wait for the two to connect.
 
 	for(int i = 0; i < 20; i++) {
 		sleep(1);
@@ -153,10 +125,68 @@ int main(int argc, char *argv[]) {
 
 	// Clean up.
 
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
-	meshlink_close(mesh2);
 	meshlink_close(mesh1);
 
 	return 0;
+}
+
+
+int main2(int rfd, int wfd) {
+	sleep(1);
+
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
+
+	meshlink_handle_t *mesh2 = meshlink_open("channels_conf.2", "bar", "channels", DEV_CLASS_BACKBONE);
+	if(!mesh2) {
+		fprintf(stderr, "Could not initialize configuration for bar\n");
+		return 1;
+	}
+
+	char *data = meshlink_export(mesh2);
+	if(!data) {
+		fprintf(stderr, "Bar could not export its configuration\n");
+		return 1;
+	}
+
+	size_t len = strlen(data);
+	if(write(wfd, &len, sizeof len) <= 0) abort();
+	if(write(wfd, data, len) <= 0) abort();
+	free(data);
+
+	read(rfd, &len, sizeof len);
+	char indata[len + 1];
+	read(rfd, indata, len);
+	indata[len] = 0;
+
+	fprintf(stderr, "Bar exchanged data\n");
+
+	meshlink_import(mesh2, indata);
+
+	meshlink_set_channel_accept_cb(mesh2, accept_cb);
+
+	if(!meshlink_start(mesh2)) {
+		fprintf(stderr, "Bar could not start\n");
+		return 1;
+	}
+
+	sleep(20);
+
+	// Clean up.
+
+	meshlink_close(mesh2);
+
+	return 0;
+}
+
+
+int main(int argc, char *argv[]) {
+	int fda[2], fdb[2], result;
+
+	pipe2(fda, 0);
+	pipe2(fdb, 0);
+
+	if(fork())
+		return main1(fda[0], fdb[1]);
+	else
+		return main2(fdb[0], fda[1]);
 }

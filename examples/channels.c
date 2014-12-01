@@ -55,6 +55,11 @@ static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel,
 	return true;
 }
 
+static void channel_poll(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+	fprintf(stderr, "Channel to '%s' connected\n", channel->node->name);
+	meshlink_set_channel_poll_cb(mesh, channel, NULL);
+}
+
 static void node_status(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 	if(reachable)
 		printf("%s joined.\n", node->name);
@@ -215,6 +220,7 @@ static void parse_input(meshlink_handle_t *mesh, char *buf) {
 			return;
 		}
 		destination->priv = channel;
+		meshlink_set_channel_poll_cb(mesh, channel, channel_poll);
 	}
 
 	if(!meshlink_channel_send(mesh, channel, msg, strlen(msg))) {

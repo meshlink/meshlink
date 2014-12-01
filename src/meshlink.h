@@ -26,7 +26,7 @@
 #include <unistd.h>
 
 #if defined(_WIN32)
-#include <Winsock2.h>
+#include <winsock2.h>
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -177,6 +177,7 @@ extern bool meshlink_start(meshlink_handle_t *mesh);
  *  close all sockets, and shut down its own thread.
  *
  *  This function always succeeds. It is allowed to call meshlink_stop() even if MeshLink is already stopped or has never been started.
+ *  Channels that are still open will remain valid, but any communication via channels will stop as well.
  *
  *  @param mesh     A handle which represents an instance of MeshLink.
  */
@@ -184,7 +185,7 @@ extern void meshlink_stop(meshlink_handle_t *mesh);
 
 /// Close the MeshLink handle.
 /** This function calls meshlink_stop() if necessary,
- *  and frees the struct meshlink_handle and all associacted memory allocated by MeshLink.
+ *  and frees the struct meshlink_handle and all associacted memory allocated by MeshLink, including all channels.
  *  Afterwards, the handle and any pointers to a struct meshlink_node or struct meshlink_channel are invalid.
  *
  *  It is allowed to call this function at any time on a valid handle, except inside callback functions.

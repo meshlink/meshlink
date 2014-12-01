@@ -177,6 +177,11 @@ void signal_del(event_loop_t *loop, signal_t *sig) {
 	sig->cb = NULL;
 }
 
+void idle_set(event_loop_t *loop, idle_cb_t cb, void *data) {
+	loop->idle_cb = cb;
+	loop->idle_data = data;
+}
+
 bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 	loop->running = true;
 
@@ -185,7 +190,7 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 
 	while(loop->running) {
 		gettimeofday(&loop->now, NULL);
-		struct timeval diff, *tv = NULL;
+		struct timeval diff, it, *tv = NULL;
 
 		while(loop->timeouts.head) {
 			timeout_t *timeout = loop->timeouts.head->data;
@@ -201,6 +206,12 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 			}
 		}
 
+		if(loop->idle_cb) {
+			it = loop->idle_cb(loop, loop->idle_data);
+			if(it.tv_sec >= 0 && (!tv || timercmp(&it, tv, <)))
+				tv = &it;
+		}
+
 		memcpy(&readable, &loop->readfds, sizeof readable);
 		memcpy(&writable, &loop->writefds, sizeof writable);
 
@@ -212,11 +223,9 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		}
 
 		// release mesh mutex during select
-		if(mutex)
-			pthread_mutex_unlock(mutex);
+		MESHLINK_MUTEX_UNLOCK(mutex);
 		int n = select(fds, &readable, &writable, NULL, tv);
-		if(mutex)
-			pthread_mutex_lock(mutex);
+		MESHLINK_MUTEX_LOCK(mutex);
 
 		if(n < 0) {
 			if(sockwouldblock(errno))
