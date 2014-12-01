@@ -223,11 +223,9 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		}
 
 		// release mesh mutex during select
-		if(mutex)
-			pthread_mutex_unlock(mutex);
+		MESHLINK_MUTEX_UNLOCK(mutex);
 		int n = select(fds, &readable, &writable, NULL, tv);
-		if(mutex)
-			pthread_mutex_lock(mutex);
+		MESHLINK_MUTEX_LOCK(mutex);
 
 		if(n < 0) {
 			if(sockwouldblock(errno))

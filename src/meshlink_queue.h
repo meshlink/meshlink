@@ -25,10 +25,13 @@
 #include <stddef.h>
 #include <unistd.h>
 
+#define MESHLINK_MUTEX_LOCK(mutex)   { if(pthread_mutex_lock(mutex) != 0)   { fprintf(stderr, "%s:%d - could not lock mutex!!!\n",   __FILE__, __LINE__); abort(); } }
+#define MESHLINK_MUTEX_UNLOCK(mutex) { if(pthread_mutex_unlock(mutex) != 0) { fprintf(stderr, "%s:%d - could not unlock mutex!!!\n", __FILE__, __LINE__); abort(); } }
+
 typedef struct meshlink_queue {
 	struct meshlink_queue_item *head;	
 	struct meshlink_queue_item *tail;	
-	pthread_mutex_t mutex;
+	// pthread_mutex_t mutex;
 } meshlink_queue_t;
 
 typedef struct meshlink_queue_item {
@@ -42,25 +45,25 @@ static inline bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
 		return false;
 	item->data = data;
 	item->next = NULL;
-	pthread_mutex_lock(&queue->mutex);
+	//MESHLINK_MUTEX_LOCK(&queue->mutex);
 	if(!queue->tail)
 		queue->head = queue->tail = item;
 	else
 		queue->tail = queue->tail->next = item;
-	pthread_mutex_unlock(&queue->mutex);
+	//MESHLINK_MUTEX_UNLOCK(&queue->mutex);
 	return true;
 }
 
 static inline void *meshlink_queue_pop(meshlink_queue_t *queue) {
 	meshlink_queue_item_t *item;
 	void *data;
-	pthread_mutex_lock(&queue->mutex);
+	//MESHLINK_MUTEX_LOCK(&queue->mutex);
 	if((item = queue->head)) {
 		queue->head = item->next;
 		if(!queue->head)
 			queue->tail = NULL;
 	}
-	pthread_mutex_unlock(&queue->mutex);
+	//MESHLINK_MUTEX_UNLOCK(&queue->mutex);
 	data = item ? item->data : NULL;
 	free(item);
 	return data;
