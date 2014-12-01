@@ -1069,8 +1069,10 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 
 	hdr = (meshlink_packethdr_t *)packet->data;
 	memset(hdr, 0, sizeof *hdr);
-	strncpy(hdr->destination, destination->name, sizeof hdr->destination);
-	strncpy(hdr->source, mesh->self->name, sizeof hdr->source);
+	// leave the last byte as 0 to make sure strings are always
+	// null-terminated if they are longer than the buffer
+	strncpy(hdr->destination, destination->name, (sizeof hdr->destination) - 1);
+	strncpy(hdr->source, mesh->self->name, (sizeof hdr->source) -1 );
 
 	memcpy(packet->data + sizeof *hdr, data, len);
 
