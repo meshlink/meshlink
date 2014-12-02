@@ -506,7 +506,7 @@ namespace meshlink {
 		static bool channel_accept_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, uint16_t port, const void *data, size_t len)
 		{
 			if (!(handle->priv))
-				return;
+				return false;
 			meshlink::mesh* that = static_cast<mesh*>(handle->priv);
 			bool accepted = that->channel_accept(static_cast<meshlink::channel*>(channel), port, data, len);
 			if (accepted)
