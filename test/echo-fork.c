@@ -6,6 +6,10 @@
 
 #include "../src/meshlink.h"
 
+/*
+ * To run this test case, direct a large file to strd
+ */
+
 volatile bool bar_reachable = false;
 volatile bool bar_responded = false;
 
@@ -21,16 +25,21 @@ void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 }
 
 void foo_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	fprintf(stderr, "Foo received from Bar:\n%s", (char*)data);
+	char tmp[len+1];
+	memset( tmp, 0, sizeof tmp );
+	snprintf( tmp, len+1, "%s", (char*)data );
+	fprintf(stderr, "Foo received from Bar:\n%s\n", tmp);
 	fprintf(stderr, "==============================\n");
-	fprintf(stderr, "%s", (char*)data );
-	fprintf(stdout, "%s", (char*)data );
+	fprintf(stdout, "%s", tmp );
 }
 
 void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	// Echo the data back.
-	fprintf(stderr, "Bar received:\n%s", (char*)data);
-	fprintf(stderr, "==============================\n");
+	//char tmp[len+1];
+	//memset( tmp, 0, sizeof tmp );
+	//snprintf( tmp, len+1, "%s", (char*)data );
+	//fprintf(stderr, "Bar received:\n%s", tmp);
+	//fprintf(stderr, "==============================\n");
 	meshlink_channel_send(mesh, channel, data, len);
 }
 
@@ -142,13 +151,18 @@ int main1(int rfd, int wfd) {
 		return 1;
 	}
 
-	fprintf(stderr, "Foo sending:\n%s", content);
-	fprintf(stderr, "==============================\n");
+	//fprintf(stderr, "Foo sending:\n%s", content);
+	//fprintf(stderr, "==============================\n");
 
-	if(meshlink_channel_send(mesh1, channel, content, contentSize) != contentSize)
-		fprintf(stderr, "Could not send whole message\n");
+	size_t total = 0;
+	while ( total != contentSize )
+	{
+		ssize_t tmp = meshlink_channel_send(mesh1, channel, content + total, contentSize - total);
+		if (tmp >= 0)
+			total += tmp;
+	}
 
-	sleep(20);
+	sleep(60);
 
 	free(content);
 
@@ -200,7 +214,7 @@ int main2(int rfd, int wfd) {
 		return 1;
 	}
 
-	sleep(20);
+	sleep(60);
 
 	// Clean up.
 
