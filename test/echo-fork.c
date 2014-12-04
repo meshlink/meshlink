@@ -25,22 +25,23 @@ void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 }
 
 void foo_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	char tmp[len+1];
-	memset( tmp, 0, sizeof tmp );
-	snprintf( tmp, len+1, "%s", (char*)data );
-	fprintf(stderr, "Foo received from Bar:\n%s\n", tmp);
-	fprintf(stderr, "==============================\n");
-	fprintf(stdout, "%s", tmp );
+	//char tmp[len+1];
+	//memset( tmp, 0, sizeof tmp );
+	//snprintf( tmp, len+1, "%s", (char*)data );
+	//fprintf(stderr, "Foo received from Bar:\n%s\n", tmp);
+	//fprintf(stderr, "==============================\n");
+	//fprintf(stdout, "%s", tmp );
 }
 
 void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	// Echo the data back.
-	//char tmp[len+1];
-	//memset( tmp, 0, sizeof tmp );
-	//snprintf( tmp, len+1, "%s", (char*)data );
-	//fprintf(stderr, "Bar received:\n%s", tmp);
+	char tmp[len+1];
+	memset( tmp, 0, sizeof tmp );
+	snprintf( tmp, len+1, "%s", (char*)data );
+	//fprintf(stderr, "Bar received:\n%s\n", tmp);
 	//fprintf(stderr, "==============================\n");
-	meshlink_channel_send(mesh, channel, data, len);
+	fprintf(stdout, "%s", tmp );
+	//meshlink_channel_send(mesh, channel, data, len);
 }
 
 bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
@@ -123,7 +124,7 @@ int main1(int rfd, int wfd) {
 	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb);
 
 	// read and buffer stdin
-	int BUF_SIZE = 1024;
+	int BUF_SIZE = 1024*1024;
 	char buffer[BUF_SIZE];
 	size_t contentSize = 1;
 	char *content = malloc( sizeof(char) * BUF_SIZE );
@@ -157,12 +158,22 @@ int main1(int rfd, int wfd) {
 	size_t total = 0;
 	while ( total != contentSize )
 	{
-		ssize_t tmp = meshlink_channel_send(mesh1, channel, content + total, contentSize - total);
+		size_t to_send = contentSize - total > 2000 ? 2000 : contentSize - total;
+		ssize_t tmp = meshlink_channel_send(mesh1, channel, content + total, to_send);
 		if (tmp >= 0)
+		{
 			total += tmp;
+			if (tmp != to_send)
+				sleep(1);
+		} else {
+			fprintf(stderr, "Sending message failed\n");
+			return 1;
+		}
 	}
+	
+	fprintf(stderr, "Foo finished sending\n");
 
-	sleep(60);
+	sleep(30);
 
 	free(content);
 
@@ -214,7 +225,7 @@ int main2(int rfd, int wfd) {
 		return 1;
 	}
 
-	sleep(60);
+	sleep(30);
 
 	// Clean up.
 
