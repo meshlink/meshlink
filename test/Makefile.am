@@ -11,7 +11,7 @@ dist_check_SCRIPTS = $(TESTS)
 
 AM_CPPFLAGS = -I../src
 
-check_PROGRAMS = basic basicpp channels channels-fork import-export invite-join sign-verify
+check_PROGRAMS = basic basicpp channels channels-fork import-export invite-join sign-verify echo-fork
 
 basic_SOURCES = basic.c
 basic_LDADD = ../src/libmeshlink.la
@@ -24,6 +24,9 @@ channels_LDADD = ../src/libmeshlink.la
 
 channels_fork_SOURCES = channels-fork.cpp
 channels_fork_LDADD = ../src/libmeshlink.la
+
+echo_fork_SOURCES = echo-fork.c
+echo_fork_LDADD = ../src/libmeshlink.la
 
 import_export_SOURCES = import-export.c
 import_export_LDADD = ../src/libmeshlink.la
