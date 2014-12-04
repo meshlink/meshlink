@@ -83,7 +83,7 @@ bool read_ecdsa_private_key(meshlink_handle_t *mesh) {
 	char filename[PATH_MAX];
 
 	snprintf(filename,PATH_MAX, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
-	fp = fopen(filename, "r");
+	fp = fopen(filename, "rb");
 
 	if(!fp) {
 		logger(mesh, MESHLINK_ERROR, "Error reading ECDSA private key file: %s", strerror(errno));
@@ -110,7 +110,7 @@ static bool read_invitation_key(meshlink_handle_t *mesh) {
 
 	snprintf(filename,PATH_MAX, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
 
-	fp = fopen(filename, "r");
+	fp = fopen(filename, "rb");
 
 	if(fp) {
 		mesh->invitation_key = ecdsa_read_pem_private_key(fp);

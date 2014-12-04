@@ -660,7 +660,7 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 		logger(mesh, MESHLINK_DEBUG, "Done.\n");
 
 	snprintf(privname, sizeof privname, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
-	f = fopen(privname, "w");
+	f = fopen(privname, "wb");
 
 	if(!f) {
 		meshlink_errno = MESHLINK_ESTORAGE;
@@ -1292,7 +1292,7 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 	}
 
 	// Create a new key if necessary.
-	FILE *f = fopen(filename, "r");
+	FILE *f = fopen(filename, "rb");
 	if(!f) {
 		if(errno != ENOENT) {
 			logger(mesh, MESHLINK_DEBUG, "Could not read %s: %s\n", filename, strerror(errno));
@@ -1308,7 +1308,7 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 			pthread_mutex_unlock(&(mesh->mesh_mutex));
 			return false;
 		}
-		f = fopen(filename, "w");
+		f = fopen(filename, "wb");
 		if(!f) {
 			logger(mesh, MESHLINK_DEBUG, "Could not write %s: %s\n", filename, strerror(errno));
 			meshlink_errno = MESHLINK_ESTORAGE;
