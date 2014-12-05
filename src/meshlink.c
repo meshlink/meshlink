@@ -701,16 +701,15 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 
 static struct timeval idle(event_loop_t *loop, void *data) {
 	meshlink_handle_t *mesh = data;
-	int t, tmin = -1;
+	struct timeval t, tmin = {3600, 0};
 	for splay_each(node_t, n, mesh->nodes) {
 		if(!n->utcp)
 			continue;
 		t = utcp_timeout(n->utcp);
-		if(t >= 0 && t < tmin)
+		if(timercmp(&t, &tmin, <))
 			tmin = t;
 	}
-	struct timeval tv = {.tv_sec = t};
-	return tv;
+	return tmin;
 }
 
 static bool meshlink_setup(meshlink_handle_t *mesh) {
