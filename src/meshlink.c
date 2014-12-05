@@ -974,6 +974,9 @@ void meshlink_close(meshlink_handle_t *mesh) {
 		return;
 	}
 
+	// stop can be called even if mesh has not been started
+	meshlink_stop(mesh);
+
 	// lock is not released after this
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
