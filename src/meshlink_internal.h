@@ -156,8 +156,8 @@ struct meshlink_channel {
 
 /// Header for data packets routed between nodes
 typedef struct meshlink_packethdr {
-	uint8_t destination[16];
-	uint8_t source[16];
+	uint8_t destination[33];
+	uint8_t source[33];
 } __attribute__ ((__packed__)) meshlink_packethdr_t;
 
 extern void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
