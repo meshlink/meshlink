@@ -391,6 +391,84 @@ bool write_host_config(struct meshlink_handle *mesh, const struct splay_tree_t *
 	return write_config_file(config_tree, filename);
 }
 
+bool change_config_file(meshlink_handle_t *mesh, const char *name, const char *key, const char *value) {
+	char filename[PATH_MAX];
+	char tmpname[PATH_MAX];
+	char buf[MAX_STRING_SIZE];
+	const int keylen = strlen(key);
+
+	snprintf(filename, PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	snprintf(tmpname, PATH_MAX, "%s.tmp", filename);
+
+	FILE *in = fopen(filename, "r");
+	if(!in) {
+		// Hm, maybe the file does not exist? Try appending.
+		return append_config_file(mesh, name, key, value);
+	}
+
+	FILE *out = fopen(tmpname, "w");
+	if(!out) {
+		logger(mesh, MESHLINK_ERROR, "Failed to write `%s': %s", tmpname, strerror(errno));
+		fclose(in);
+		return false;
+	}
+
+	bool ignore = false;
+
+	while(readline(in, buf, sizeof buf)) {
+		if(ignore) {
+			if(!strncmp(buf, "-----END", 8))
+				ignore = false;
+		} else {
+			if(!strncmp(buf, "-----BEGIN", 10))
+				ignore = true;
+		}
+
+		if(!ignore && !strncmp(buf, key, keylen)) {
+			if(strchr("\t =", buf[keylen])) {
+				continue;
+			}
+		}
+
+		fputs(buf, out);
+		fputc('\n', out);
+	}	
+
+	if(ferror(in)) {
+		logger(mesh, MESHLINK_ERROR, "Failed to read `%s': %s", filename, strerror(errno));
+		fclose(in);
+		fclose(out);
+		return false;
+	}
+
+	fclose(in);
+
+	fprintf(out, "%s = %s\n", key, value);
+
+	if(ferror(out)) {
+		logger(mesh, MESHLINK_ERROR, "Failed to write `%s': %s", tmpname, strerror(errno));
+		fclose(out);
+		return false;
+	}
+
+	fclose(out);
+
+#ifdef HAVE_MINGW
+	// We cannot atomically replace files on Windows.
+	char bakname[PATH_MAX];
+	snprintf(bakname, PATH_MAX, "%s.bak", filename);
+	if(rename(tmpname, bakfile) || rename(bakfile, filename)) {
+		rename(bakfile, filename);
+#else
+	if(rename(tmpname, filename)) {
+#endif
+		logger(mesh, MESHLINK_ERROR, "Failed to update `%s': %s", filename, strerror(errno));
+		return false;
+	}
+
+	return true;
+}
+
 bool append_config_file(meshlink_handle_t *mesh, const char *name, const char *key, const char *value) {
 	char filename[PATH_MAX];
 	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
