@@ -1825,6 +1825,10 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	return;
 }
 
+void meshlink_set_default_blacklist(meshlink_handle_t *mesh, bool blacklist) {
+	mesh->default_blacklist = blacklist;
+}
+
 /* Hint that a hostname may be found at an address
  * See header file for detailed comment.
  */

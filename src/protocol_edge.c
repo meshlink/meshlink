@@ -102,6 +102,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!from) {
 		from = new_node();
+		from->status.blacklisted = mesh->default_blacklist;
 		from->name = xstrdup(from_name);
 		node_add(mesh, from);
 	}
@@ -111,6 +112,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!to) {
 		to = new_node();
+		to->status.blacklisted = mesh->default_blacklist;
 		to->name = xstrdup(to_name);
 		node_add(mesh, to);
 	}

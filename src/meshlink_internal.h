@@ -112,6 +112,8 @@ struct meshlink_handle {
 	bool localdiscovery;
 	sockaddr_t localdiscovery_address;
 
+	bool default_blacklist;
+
 	hash_t *node_udp_cache;
 	struct connection_t *everyone;
 	struct ecdsa *invitation_key;

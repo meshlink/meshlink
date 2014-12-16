@@ -479,9 +479,21 @@ extern void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node);
  *  and will send data to it and accept any data received from it.
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
- *  @param node         A pointer to a meshlink_node_t describing the node to be blacklisted.
+ *  @param node         A pointer to a meshlink_node_t describing the node to be whitelisted.
  */
-extern void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node);
+extern void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node);
+
+/// Set whether new nodes are blacklisted by default.
+/** This function sets the blacklist behaviour for newly discovered nodes.
+ *  If set to true, new nodes will be automatically blacklisted.
+ *  If set to false, which is the default, new nodes are automatically whitelisted.
+ *  The whitelist/blacklist status of a node may be changed afterwards with the
+ *  meshlink_whitelist() and meshlink_blacklist() functions.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param blacklist    True if new nodes are to be blacklisted, false if whitelisted.
+ */
+extern void meshlink_set_default_blacklist(meshlink_handle_t *mesh, bool blacklist);
 
 /// A callback for accepting incoming channels.
 /** This function is called whenever a remote node wants to open a channel to the local node.
