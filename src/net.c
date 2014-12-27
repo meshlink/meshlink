@@ -258,7 +258,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		logger(mesh, MESHLINK_DEBUG, "--- autoconnect begin ---");
 
-		int retry_timeout = min(mesh->nodes->count * 5, 60);
+		int retry_timeout = min(mesh->nodes->count * 10, 60);
 
 		logger(mesh, MESHLINK_DEBUG, "* devclass = %d", mesh->devclass);
 		logger(mesh, MESHLINK_DEBUG, "* nodes = %d", mesh->nodes->count);
@@ -316,6 +316,12 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 					{
 						connect_to = n;
 					}
+					else
+					if( n->devclass == connect_to->devclass
+						&& rand()%3 == 0 )
+					{
+						connect_to = n;
+					}
 				}
 			}
 
@@ -359,6 +365,12 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 							{
 								connect_to = n;
 							}
+							else
+							if( n->devclass == connect_to->devclass
+								&& rand()%3 == 0 )
+							{
+								connect_to = n;
+							}
 						}
 					}
 
@@ -393,6 +405,12 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 						||
 							(n->last_successfull_connection > connect_to->last_successfull_connection
 								&& n->devclass == connect_to->devclass))
+					{
+						connect_to = n;
+					}
+					else
+					if( n->devclass == connect_to->devclass
+						&& rand()%3 == 0 )
 					{
 						connect_to = n;
 					}
@@ -483,11 +501,15 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		// disconnect connections (too many connections)
 
+		// FIX: might introduce unstable conditions.
+		// try to set ".max_connects = 6" for DEV_CLASS_STATIONARY and
+		// run "./manynodes 15 .manynodes machine1 1000"
+
 		if(!connect_to && !disconnect_from && max_connects < cur_connects)
 		{
 			for list_each(connection_t, c, mesh->connections)
 			{
-				if(c->outgoing && c->status.active && c->node)
+				if(c->node)
 				{
 					if(disconnect_from == NULL
 						|| c->node->devclass > disconnect_from->devclass)
