@@ -329,13 +329,13 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 	if(mesh->nodes->count > 1) {
 
-		logger(mesh, MESHLINK_INFO, "--- autoconnect begin ---");
+		logger(mesh, MESHLINK_DEBUG, "--- autoconnect begin ---");
 
 		int retry_timeout = min(mesh->nodes->count * 5, 60);
 
-		logger(mesh, MESHLINK_INFO, "* devclass = %d", mesh->devclass);
-		logger(mesh, MESHLINK_INFO, "* nodes = %d", mesh->nodes->count);
-		logger(mesh, MESHLINK_INFO, "* retry_timeout = %d", retry_timeout);
+		logger(mesh, MESHLINK_DEBUG, "* devclass = %d", mesh->devclass);
+		logger(mesh, MESHLINK_DEBUG, "* nodes = %d", mesh->nodes->count);
+		logger(mesh, MESHLINK_DEBUG, "* retry_timeout = %d", retry_timeout);
 
 
 		// connect disconnect nodes
@@ -350,14 +350,14 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		for list_each(connection_t, c, mesh->connections)
 		{
-			if(!c->status.remove_unused)
+			if(c->status.active)
 			{
 				cur_connects += 1;
 			}
 		}
 
-		logger(mesh, MESHLINK_INFO, "* cur_connects = %d", cur_connects);
-		logger(mesh, MESHLINK_INFO, "* outgoings = %d", mesh->outgoings->count);
+		logger(mesh, MESHLINK_DEBUG, "* cur_connects = %d", cur_connects);
+		logger(mesh, MESHLINK_DEBUG, "* outgoings = %d", mesh->outgoings->count);
 
 		// get min_connects and max_connects
 
@@ -366,8 +366,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		int min_connects = dev_class_traits[mesh->devclass].min_connects;
 		int max_connects = dev_class_traits[mesh->devclass].max_connects;
 
-		logger(mesh, MESHLINK_INFO, "* min_connects = %d", min_connects);
-		logger(mesh, MESHLINK_INFO, "* max_connects = %d", max_connects);
+		logger(mesh, MESHLINK_DEBUG, "* min_connects = %d", min_connects);
+		logger(mesh, MESHLINK_DEBUG, "* max_connects = %d", max_connects);
 
 
 		// find the best one for initial connect
@@ -378,20 +378,20 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 			for splay_each(node_t, n, mesh->nodes)
 			{
-				logger(mesh, MESHLINK_INFO, "* n->devclass = %d", n->devclass);
+				logger(mesh, MESHLINK_DEBUG, "* n->devclass = %d", n->devclass);
 				if(n != mesh->self && n->devclass <= mesh->devclass && !n->connection && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout))
 					{ splay_insert(nodes, n); }
 			}
 
 			if(nodes->head)
 			{
-				logger(mesh, MESHLINK_INFO, "* found best one for initial connect");
+				logger(mesh, MESHLINK_DEBUG, "* found best one for initial connect");
 
 				//timeout = 0;
 				connect_to = (node_t*)nodes->head->data;
 			}
 			else
-				{ logger(mesh, MESHLINK_INFO, "* could not find node for initial connect"); }
+				{ logger(mesh, MESHLINK_DEBUG, "* could not find node for initial connect"); }
 
 			splay_free_tree(nodes);
 		}
@@ -407,7 +407,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			{
 				for list_each(connection_t, c, mesh->connections)
 				{
-					if(!c->status.remove_unused && c->node && c->node->devclass == devclass)
+					if(c->status.active && c->node && c->node->devclass == devclass)
 						{ connects += 1; }
 				}
 
@@ -423,7 +423,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 					if(nodes->head)
 					{
-						logger(mesh, MESHLINK_INFO, "* found better node");
+						logger(mesh, MESHLINK_DEBUG, "* found better node");
 						connect_to = (node_t*)nodes->head->data;
 
 						splay_free_tree(nodes);
@@ -437,7 +437,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			}
 
 			if(!connect_to)
-				{ logger(mesh, MESHLINK_INFO, "* could not find better nodes"); }
+				{ logger(mesh, MESHLINK_DEBUG, "* could not find better nodes"); }
 		}
 
 
@@ -455,11 +455,11 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 			if(nodes->head)
 			{
-				logger(mesh, MESHLINK_INFO, "* try to heal partition");
+				logger(mesh, MESHLINK_DEBUG, "* try to heal partition");
 				connect_to = (node_t*)nodes->head->data;
 			}
 			else
-				{ logger(mesh, MESHLINK_INFO, "* could not find nodes for partition healing"); }
+				{ logger(mesh, MESHLINK_DEBUG, "* could not find nodes for partition healing"); }
 
 			splay_free_tree(nodes);
 		}
@@ -484,7 +484,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 			if(!found)
 			{
-				logger(mesh, MESHLINK_INFO, "Autoconnecting to %s", connect_to->name);
+				logger(mesh, MESHLINK_DEBUG, "Autoconnecting to %s", connect_to->name);
 				outgoing_t *outgoing = xzalloc(sizeof(outgoing_t));
 				outgoing->mesh = mesh;
 				outgoing->name = xstrdup(connect_to->name);
@@ -492,13 +492,13 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				setup_outgoing_connection(mesh, outgoing);
 			}
 			else
-				{ logger(mesh, MESHLINK_INFO, "* skip autoconnect since it is an outgoing connection already"); }
+				{ logger(mesh, MESHLINK_DEBUG, "* skip autoconnect since it is an outgoing connection already"); }
 		}
 
 
 		// disconnect suboptimal outgoing connections
 
-		if(min_connects < cur_connects && cur_connects <= max_connects)
+		if(min_connects < cur_connects /*&& cur_connects <= max_connects*/)
 		{
 			unsigned int connects = 0;
 
@@ -506,7 +506,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			{
 				for list_each(connection_t, c, mesh->connections)
 				{
-					if(!c->status.remove_unused && c->node && c->node->devclass == devclass)
+					if(c->status.active && c->node && c->node->devclass == devclass)
 						{ connects += 1; }
 				}
 
@@ -516,13 +516,13 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 					for list_each(connection_t, c, mesh->connections)
 					{
-						if(!c->status.remove_unused && c->outgoing && c->node && c->node->devclass >= devclass)
+						if(c->outgoing && c->node && c->node->devclass >= devclass)
 							{ splay_insert(nodes, c->node); }
 					}
 
 					if(nodes->head)
 					{
-						logger(mesh, MESHLINK_INFO, "* disconnect suboptimal outgoing connection");
+						logger(mesh, MESHLINK_DEBUG, "* disconnect suboptimal outgoing connection");
 						disconnect_from = (node_t*)nodes->head->data;
 					}
 
@@ -532,7 +532,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			}
 
 			if(!disconnect_from)
-				{ logger(mesh, MESHLINK_INFO, "* no suboptimal outgoing connections"); }
+				{ logger(mesh, MESHLINK_DEBUG, "* no suboptimal outgoing connections"); }
 		}
 
 
@@ -544,19 +544,19 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 			for list_each(connection_t, c, mesh->connections)
 			{
-				if(!c->status.remove_unused && c->node)
+				if(c->status.active && c->node)
 					{ splay_insert(nodes, c->node); }
 			}
 
 			if(nodes->head)
 			{
-				logger(mesh, MESHLINK_INFO, "* disconnect connection (too many connections)");
+				logger(mesh, MESHLINK_DEBUG, "* disconnect connection (too many connections)");
 
 				//timeout = 0;
 				disconnect_from = (node_t*)nodes->head->data;
 			}
 			else
-				{ logger(mesh, MESHLINK_INFO, "* no node we want to disconnect, even though we have too many connections"); }
+				{ logger(mesh, MESHLINK_DEBUG, "* no node we want to disconnect, even though we have too many connections"); }
 
 			splay_free_tree(nodes);
 		}
@@ -566,7 +566,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		if(disconnect_from && disconnect_from->connection)
 		{
-			logger(mesh, MESHLINK_INFO, "Autodisconnecting from %s", disconnect_from->connection->name);
+			logger(mesh, MESHLINK_DEBUG, "Autodisconnecting from %s", disconnect_from->connection->name);
 			list_delete(mesh->outgoings, disconnect_from->connection->outgoing);
 			disconnect_from->connection->outgoing = NULL;
 			terminate_connection(mesh, disconnect_from->connection, disconnect_from->connection->status.active);
@@ -575,7 +575,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		// done!
 
-		logger(mesh, MESHLINK_INFO, "--- autoconnect end ---");
+		logger(mesh, MESHLINK_DEBUG, "--- autoconnect end ---");
 	}
 
 	timeout_set(&mesh->loop, data, &(struct timeval){timeout, rand() % 100000});
