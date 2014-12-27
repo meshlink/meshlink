@@ -924,9 +924,10 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 
 	mesh->threadstarted=true;
 
+	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+
 	discovery_start(mesh);
 
-	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 	return true;
 }
 
@@ -936,14 +937,13 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 		return;
 	}
 
-	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-	logger(mesh, MESHLINK_DEBUG, "meshlink_stop called\n");
-
 	// Stop discovery
 	discovery_stop(mesh);
 
-	// Shut down a listening socket to signal the main thread to shut down
+	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+	logger(mesh, MESHLINK_DEBUG, "meshlink_stop called\n");
 
+	// Shut down a listening socket to signal the main thread to shut down
 	listen_socket_t *s = &mesh->listen_socket[0];
 	shutdown(s->tcp.fd, SHUT_RDWR);
 

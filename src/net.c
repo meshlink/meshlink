@@ -144,14 +144,11 @@ static int node_compare_devclass_asc_lsc_desc(const void *a, const void *b)
 	if(na->devclass > nb->devclass)
 		{ return 1; }
 
-	if(na->last_successfull_connection == nb->last_successfull_connection)
-		return 0;
-
-	if(na->last_successfull_connection == 0 || na->last_successfull_connection > nb->last_successfull_connection)
-		return -1;
-
-	if(nb->last_successfull_connection == 0 || na->last_successfull_connection < nb->last_successfull_connection)
+	if( (na->last_successfull_connection != 0 && nb->last_successfull_connection == 0) || na->last_successfull_connection < nb->last_successfull_connection)
 		return 1;
+
+	if( (na->last_successfull_connection == 0 && nb->last_successfull_connection != 0) || na->last_successfull_connection > nb->last_successfull_connection)
+		return -1;
 
 	if(na < nb)
 		return -1;
@@ -167,14 +164,11 @@ static int node_compare_lsc_desc(const void *a, const void *b)
 {
 	const node_t *na = a, *nb = b;
 
-	if(na->last_successfull_connection == nb->last_successfull_connection)
-		return 0;
-
-	if(na->last_successfull_connection == 0 || na->last_successfull_connection > nb->last_successfull_connection)
-		return -1;
-
-	if(nb->last_successfull_connection == 0 || na->last_successfull_connection < nb->last_successfull_connection)
+	if( (na->last_successfull_connection != 0 && nb->last_successfull_connection == 0) || na->last_successfull_connection < nb->last_successfull_connection)
 		return 1;
+
+	if( (na->last_successfull_connection == 0 && nb->last_successfull_connection != 0) || na->last_successfull_connection > nb->last_successfull_connection)
+		return -1;
 
 	if(na < nb)
 		return -1;
@@ -191,10 +185,10 @@ static int node_compare_devclass_desc(const void *a, const void *b)
 	const node_t *na = a, *nb = b;
 
 	if(na->devclass < nb->devclass)
-		{ return -1; }
+		{ return 1; }
 
 	if(na->devclass > nb->devclass)
-		{ return 1; }
+		{ return -1; }
 
 	if(na < nb)
 		return -1;

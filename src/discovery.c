@@ -455,8 +455,10 @@ bool discovery_start(meshlink_handle_t *mesh)
 {
     logger(mesh, MESHLINK_DEBUG, "discovery_start called\n");
 
-    // asserts
     assert(mesh != NULL);
+    MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+
+    // asserts
     assert(mesh->catta_poll == NULL);
     assert(mesh->catta_server == NULL);
     assert(mesh->catta_browser == NULL);
@@ -530,6 +532,7 @@ bool discovery_start(meshlink_handle_t *mesh)
 
 	mesh->discovery_threadstarted = true;
 
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 	return true;
 
 fail:
@@ -557,6 +560,7 @@ fail:
         mesh->catta_servicetype = NULL;
     }
 
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
     return false;
 }
 
@@ -567,6 +571,8 @@ void discovery_stop(meshlink_handle_t *mesh)
     // asserts
     assert(mesh != NULL);
 
+    MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+
 	// Shut down
     if(mesh->catta_poll)
     {
@@ -576,7 +582,12 @@ void discovery_stop(meshlink_handle_t *mesh)
 	// Wait for the discovery thread to finish
     if(mesh->discovery_threadstarted == true)
     {
-        pthread_join(mesh->discovery_thread, NULL);
+        pthread_t thread = mesh->discovery_thread;
+
+        MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+        pthread_join(thread, NULL);
+        MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+
         mesh->discovery_threadstarted = false;
     }
 
@@ -611,4 +622,6 @@ void discovery_stop(meshlink_handle_t *mesh)
         free(mesh->catta_servicetype);
         mesh->catta_servicetype = NULL;
     }
+
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 }
