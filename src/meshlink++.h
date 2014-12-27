@@ -149,7 +149,10 @@ namespace meshlink {
 		 */
 		void close() {
 			if(handle)
+			{
+				handle->priv = 0;
 				meshlink_close(handle);
+			}
 			handle=0;
 		}
 	
@@ -478,24 +481,32 @@ namespace meshlink {
 		/// static callback trampolines:
 		static void receive_trampoline(meshlink_handle_t* handle, meshlink_node_t* source, const void* data, size_t length)
 		{
+			if (!(handle->priv))
+				return;
 			meshlink::mesh* that = static_cast<mesh*>(handle->priv);
 			that->receive(static_cast<node*>(source), data, length);
 		}
 		
 		static void node_status_trampoline(meshlink_handle_t* handle, meshlink_node_t* peer, bool reachable)
 		{
+			if (!(handle->priv))
+				return;
 			meshlink::mesh* that = static_cast<mesh*>(handle->priv);
 			that->node_status(static_cast<node*>(peer), reachable);
 		}
 
 		static void log_trampoline(meshlink_handle_t* handle, log_level_t level, const char* message)
 		{
+			if (!(handle->priv))
+				return;
 			meshlink::mesh* that = static_cast<mesh*>(handle->priv);
 			that->log(level, message);
 		}
 
 		static bool channel_accept_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, uint16_t port, const void *data, size_t len)
 		{
+			if (!(handle->priv))
+				return false;
 			meshlink::mesh* that = static_cast<mesh*>(handle->priv);
 			bool accepted = that->channel_accept(static_cast<meshlink::channel*>(channel), port, data, len);
 			if (accepted)
@@ -508,12 +519,16 @@ namespace meshlink {
 
 		static void channel_receive_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, const void* data, size_t len)
 		{
+			if (!(handle->priv))
+				return;
 			meshlink::mesh* that = static_cast<mesh*>(handle->priv);
 			that->channel_receive(static_cast<meshlink::channel*>(channel), data, len);
 		}
 
 		static void channel_poll_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, size_t len)
 		{
+			if (!(handle->priv))
+				return;
 			meshlink::mesh* that = static_cast<mesh*>(handle->priv);
 			that->channel_poll(static_cast<meshlink::channel*>(channel), len);
 		}
