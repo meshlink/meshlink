@@ -82,6 +82,12 @@ AS_IF([test "x$enable_utcp_debug" = "xyes"],
   ]
 );
 
+dnl option to not install docs by default
+AC_ARG_ENABLE([no_install_docs], AS_HELP_STRING([--enable-no-install-docs], [when enabled, docs are not installed as apart of make all]))
+AS_IF([test "x$enable_no_install_docs" = "xyes"],
+  [AUTOMAKE_OPTIONS = no-installinfo no-installman]
+);
+
 dnl Checks for header files.
 dnl We do this in multiple stages, because unlike Linux all the other operating systems really suck and don't include their own dependencies.
 
