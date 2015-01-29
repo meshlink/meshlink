@@ -536,7 +536,7 @@ namespace meshlink {
 		meshlink_handle_t* handle;
 	};
 
-	static const char *strerror(errno_t err = meshlink_errno) {
+	static inline const char *strerror(errno_t err = meshlink_errno) {
 		return meshlink_strerror(err);
 	}
 
