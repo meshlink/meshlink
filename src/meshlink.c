@@ -949,7 +949,7 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	{
 		// OS X gets ENOTCONN
 		logger(mesh, MESHLINK_ERROR, "Failed to shut down listening socket, closing instead: %s", sockstrerror(sockerrno));
-		socketclose(s->tcp.fd);
+		closesocket(s->tcp.fd);
 	}
 
 	// Wait for the main thread to finish
