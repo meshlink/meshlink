@@ -945,13 +945,12 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	// Shut down a listening socket to signal the main thread to shut down
 	listen_socket_t *s = &mesh->listen_socket[0];
-	if(shutdown(s->tcp.fd, SHUT_RDWR) != 0 )
+	if(shutdown(s->tcp.fd, SHUT_RDWR) != 0)
 	{
-		logger(mesh, MESHLINK_ERROR, "Failed to shut down listening socket: %s", sockstrerror(sockerrno));
-	} else {
-		logger(mesh, MESHLINK_DEBUG, "Shut down listening socket. Main loop should stop.\n");
+		// OS X gets ENOTCONN
+		logger(mesh, MESHLINK_ERROR, "Failed to shut down listening socket, closing instead: %s", sockstrerror(sockerrno));
+		socketclose(s->tcp.fd);
 	}
-
 
 	// Wait for the main thread to finish
 	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
