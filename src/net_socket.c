@@ -557,6 +557,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 
 	if(fd < 0) {
 		if(errno == EINVAL) { // TODO: check if Windows agrees
+			logger(mesh, MESHLINK_DEBUG, "Stopping event loop\n");
 			event_loop_stop(loop);
 			return;
 		}
