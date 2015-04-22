@@ -518,7 +518,7 @@ bool discovery_start(meshlink_handle_t *mesh)
     // Create the service browser
     if(!(mesh->catta_browser = catta_s_service_browser_new(mesh->catta_server, CATTA_IF_UNSPEC, CATTA_PROTO_UNSPEC, mesh->catta_servicetype, NULL, 0, discovery_browse_callback, mesh)))
     {
-        logger(mesh, MESHLINK_ERROR, "Failed to create discovery service browser: %s\n", catta_strerror(catta_server_errno(mesh->catta_server)));
+        logger(mesh, MESHLINK_ERROR, "Failed to create discovery service browser for service type '%s': %s\n", mesh->catta_servicetype, catta_strerror(catta_server_errno(mesh->catta_server)));
         goto fail;
     }
 
