@@ -936,6 +936,9 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
 	}
+	if(!mesh->threadstarted) {
+		return;
+	}
 
 	// Stop discovery
 	discovery_stop(mesh);
