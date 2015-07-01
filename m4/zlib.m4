@@ -4,8 +4,8 @@ AC_DEFUN([MeshLink_ZLIB],
 [
   AC_ARG_ENABLE([zlib],
     AS_HELP_STRING([--disable-zlib], [disable zlib compression support]))
-  AC_ARG_ENABLE([zlib-check],
-    AS_HELP_STRING([--disable-zlib-check], [disable checking whether zlib compression support works]))
+  AC_ARG_ENABLE([zlibcheck],
+    AS_HELP_STRING([--disable-zlibcheck], [disable checking whether zlib compression support works]))
 
   AS_IF([test "x$enable_zlib" != "xno"], [
   AC_DEFINE(HAVE_ZLIB, 1, [have zlib compression support])
@@ -33,7 +33,7 @@ AC_DEFUN([MeshLink_ZLIB],
       [AC_MSG_ERROR("zlib header files not found."); break]
     )
 
-    AS_IF([test "x$enable_zlib-check" != "xno"], [
+    AS_IF([test "x$enable_zlibcheck" != "xno"], [
       AC_CHECK_LIB(z, compress2,
         [LIBS="$LIBS -lz"],
         [AC_MSG_ERROR("zlib libraries not found.")]
