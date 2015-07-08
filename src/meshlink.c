@@ -48,7 +48,13 @@ typedef struct {
 #define MSG_NOSIGNAL 0
 #endif
 
+#ifdef __APPLE__
+// iOS does not support __thread
+meshlink_errno_t meshlink_errno;
+#else
 __thread meshlink_errno_t meshlink_errno;
+#endif
+
 meshlink_log_cb_t global_log_cb;
 meshlink_log_level_t global_log_level;
 
