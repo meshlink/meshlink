@@ -78,11 +78,12 @@ typedef enum {
 } dev_class_t;
 
 /// A variable holding the last encountered error from MeshLink.
-/** Not thread safe.
+/** This is a thread local variable that contains the error code of the most recent error
+ *  encountered by a MeshLink API function called in the current thread.
  *  The variable is only updated when an error is encountered, and is not reset to MESHLINK_OK
  *  if a function returned succesfully.
  */
-extern meshlink_errno_t meshlink_errno;
+extern __thread meshlink_errno_t meshlink_errno;
 
 #ifndef MESHLINK_INTERNAL_H
 

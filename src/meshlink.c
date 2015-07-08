@@ -48,7 +48,7 @@ typedef struct {
 #define MSG_NOSIGNAL 0
 #endif
 
-meshlink_errno_t meshlink_errno;
+__thread meshlink_errno_t meshlink_errno;
 meshlink_log_cb_t global_log_cb;
 meshlink_log_level_t global_log_level;
 
