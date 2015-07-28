@@ -1,8 +1,8 @@
 [submodule "catta"]
 	path = catta
-	url = https://github.com/everbase/catta.git
+	url = git@github.com:catta-x/catta.git
 	branch = develop
 [submodule "src/utcp"]
 	path = src/utcp
-	url = git@chicago.everbase.net:meshlink/utcp.git
+	url = git@github.com:meshlink/utcp.git
 	branch = master
