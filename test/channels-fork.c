@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../src/meshlink.h"
+#include "meshlink/meshlink.h"
 
 volatile bool bar_reachable = false;
 volatile bool bar_responded = false;

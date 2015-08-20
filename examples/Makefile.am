@@ -1,6 +1,9 @@
 bin_PROGRAMS = meshlinkapp chat chatpp manynodes channels
 
-AM_CPPFLAGS = -I../src
+AM_CPPFLAGS = -I../include -I../src
+if MINGW
+AM_CPPFLAGS += -I../catta/include/catta/compat/windows
+endif
 
 meshlinkapp_SOURCES = meshlinkapp.c
 meshlinkapp_LDADD = ../src/libmeshlink.la ../catta/src/libcatta.la

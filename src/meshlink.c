@@ -48,8 +48,9 @@ typedef struct {
 #define MSG_NOSIGNAL 0
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 // iOS does not support __thread
+// Windows doesn't support to use __declspec(thread) variables with dynamic linkage
 meshlink_errno_t meshlink_errno;
 #else
 __thread meshlink_errno_t meshlink_errno;

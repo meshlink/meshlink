@@ -2,8 +2,8 @@ PROJECT_NAME            = MeshLink
 PROJECT_NUMBER          = 0.1
 PROJECT_BRIEF           = "Mesh networking library"
 OUTPUT_DIRECTORY        = .
-INPUT                   = ../src/meshlink.h \
-                          ../src/meshlink++.h
+INPUT                   = ../include/meshlink/meshlink.h \
+                          ../include/meshlink/meshlink++.h
 LATEX_BATCHMODE         = YES
 GENERATE_MAN            = YES
 EXTRACT_ALL             = YES

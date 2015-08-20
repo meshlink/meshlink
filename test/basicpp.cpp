@@ -1,7 +1,7 @@
 #include <cstring>
 #include <iostream>
 
-#include "meshlink++.h"
+#include "meshlink/meshlink++.h"
 
 using namespace std;
 

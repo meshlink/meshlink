@@ -9,7 +9,10 @@ TESTS = \
 
 dist_check_SCRIPTS = $(TESTS)
 
-AM_CPPFLAGS = -I../src
+AM_CPPFLAGS = -I../include -I../src
+if MINGW
+AM_CPPFLAGS += -I../catta/include/catta/compat/windows
+endif
 
 check_PROGRAMS = basic basicpp channels channels-fork import-export invite-join sign-verify echo-fork
 

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "meshlink.h"
+#include "meshlink/meshlink.h"
 
 volatile bool baz_reachable = false;
 
