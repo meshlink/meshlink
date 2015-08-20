@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "meshlink.h"
+#include "meshlink/meshlink.h"
 
 int main(int argc, char *argv[]) {
 	// Open two new meshlink instance.

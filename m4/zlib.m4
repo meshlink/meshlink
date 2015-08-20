@@ -33,11 +33,11 @@ AC_DEFUN([MeshLink_ZLIB],
       [AC_MSG_ERROR("zlib header files not found."); break]
     )
 
-    AS_IF([test "x$enable_zlibcheck" != "xno"], [
-      AC_CHECK_LIB(z, compress2,
-        [LIBS="$LIBS -lz"],
-        [AC_MSG_ERROR("zlib libraries not found.")]
-      )
-    ])
+#    AS_IF([test "x$enable_zlibcheck" != "xno"], [
+#      AC_CHECK_LIB(z, compress2,
+#        [LIBS="$LIBS -lz"],
+#        [AC_MSG_ERROR("zlib libraries not found.")]
+#      )
+#    ])
   ])
 ])

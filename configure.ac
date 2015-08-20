@@ -135,6 +135,6 @@ dnl These are defined in files in m4/
 
 MeshLink_ZLIB
 
-AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile m4/Makefile test/Makefile examples/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile include/Makefile doc/Makefile m4/Makefile test/Makefile examples/Makefile])
 
 AC_OUTPUT

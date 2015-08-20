@@ -20,7 +20,7 @@
 #ifndef MESHLINKPP_H
 #define MESHLINKPP_H
 
-#include <meshlink.h>
+#include <meshlink/meshlink.h>
 #include <new> // for 'placement new'
 
 namespace meshlink {

@@ -23,7 +23,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+
+#ifdef _MSC_VER
+#include <meshlink/compat/wincompat.h>
+#else
 #include <unistd.h>
+#endif
 
 #if defined(_WIN32)
 #include <winsock2.h>
@@ -78,13 +83,15 @@ typedef enum {
 } dev_class_t;
 
 /// A variable holding the last encountered error from MeshLink.
-/** Is not thread-local on APPLE.
+/** Is not thread-local on APPLE and Windows.
  *  On other platforms, this is a thread local variable that contains the error code of the most recent error
  *  encountered by a MeshLink API function called in the current thread.
  *  The variable is only updated when an error is encountered, and is not reset to MESHLINK_OK
  *  if a function returned succesfully.
  */
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
+// iOS does not support __thread
+// Windows does not support to use __declspec(thread) variables with dynamic linkage
 extern meshlink_errno_t meshlink_errno;
 #else
 extern __thread meshlink_errno_t meshlink_errno;

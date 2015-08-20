@@ -11,7 +11,7 @@
 #include <sys/syslimits.h>
 #endif
 
-#include "../src/meshlink.h"
+#include "meshlink/meshlink.h"
 #include "../src/devtools.h"
 
 #include <sys/types.h>

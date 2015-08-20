@@ -1,5 +1,7 @@
 ## Produce this file with automake to get Makefile.in
 
+AM_CFLAGS=-I$(top_srcdir)/include
+
 sbin_PROGRAMS = sptps_test sptps_keypair
 
 if LINUX
@@ -59,12 +61,11 @@ sptps_speed_SOURCES = \
 
 lib_LTLIBRARIES = libmeshlink.la
 
-pkginclude_HEADERS = meshlink++.h meshlink.h
-
-libmeshlink_la_LDFLAGS = -export-symbols-regex '^(meshlink_|devtool_)'
+# -lz passed by LDFLAGS to allow link static lib to dynamic build with libtool (windows)
+libmeshlink_la_LDFLAGS = -export-symbols-regex '^(meshlink_|devtool_)' -Wl,-lz
 
 libmeshlink_la_SOURCES = \
-	meshlink.c meshlink.h \
+	meshlink.c \
 	buffer.c buffer.h \
 	cipher.h \
 	conf.c conf.h \
@@ -91,7 +92,7 @@ libmeshlink_la_SOURCES = \
 	net_setup.c \
 	net_socket.c \
 	netutl.c netutl.h \
-	node.c node.h \
+	node.c \
 	prf.c prf.h \
 	protocol.c protocol.h \
 	protocol_auth.c \
@@ -109,11 +110,12 @@ libmeshlink_la_SOURCES = \
 	$(chacha_poly1305_SOURCES) \
 	$(utcp_SOURCES)
 
-libmeshlink_la_CFLAGS = -fPIC -I../catta/include/
-
 if MINGW
-libmeshlink_la_CFLAGS += -I../catta/src/compat/windows/include/
+AM_CFLAGS += -I../catta/include/catta/compat/windows
+libmeshlink_la_LDFLAGS += -no-undefined -Wl,--kill-at,--output-def=.libs/libmeshlink-0.def
 endif
+
+libmeshlink_la_CFLAGS = $(AM_CFLAGS) -fPIC -I../catta/include/
 
 libmeshlink_la_LIBADD = -lpthread ../catta/src/libcatta.la
 
@@ -135,4 +137,4 @@ sptps_speed_LDADD = -lrt
 
 LIBS = @LIBS@
 
-AM_CFLAGS = -DCONFDIR=\"$(sysconfdir)\" -DLOCALSTATEDIR=\"$(localstatedir)\" -DSBINDIR=\"$(sbindir)\"
+AM_CFLAGS += -DCONFDIR=\"$(sysconfdir)\" -DLOCALSTATEDIR=\"$(localstatedir)\" -DSBINDIR=\"$(sbindir)\"

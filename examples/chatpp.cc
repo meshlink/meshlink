@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include "../src/meshlink++.h"
+#include "meshlink/meshlink++.h"
 
 class ChatMesh : public meshlink::mesh
 {

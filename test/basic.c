@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "meshlink.h"
+#include "meshlink/meshlink.h"
 
 int main(int argc, char *argv[]) {
 	// Open a new meshlink instance.

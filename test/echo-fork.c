@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../src/meshlink.h"
+#include "meshlink/meshlink.h"
 
 /*
  * To run this test case, direct a large file to strd
