@@ -21,11 +21,6 @@
 #define __MESHLINK_HAVE_H__
 
 #ifdef HAVE_MINGW
-#ifdef WITH_WINDOWS2000
-#define WINVER Windows2000
-#else
-#define WINVER WindowsXP
-#endif
 #define WIN32_LEAN_AND_MEAN
 #endif
 

@@ -111,7 +111,8 @@ libmeshlink_la_SOURCES = \
 	$(utcp_SOURCES)
 
 if MINGW
-AM_CFLAGS += -I../catta/include/catta/compat/windows
+# require Windows Vista or above (for winsock2)
+AM_CFLAGS += -DWINVER=0x0600 -D_WIN32_WINNT=0x0600
 libmeshlink_la_LDFLAGS += -no-undefined -Wl,--kill-at,--output-def=.libs/libmeshlink-0.def
 endif
 

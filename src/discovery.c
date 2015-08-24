@@ -14,7 +14,9 @@
 
 #include <pthread.h>
 
+#ifndef _WIN32
 #include <netinet/in.h>
+#endif
 
 #define MESHLINK_MDNS_SERVICE_TYPE "_%s._tcp"
 #define MESHLINK_MDNS_NAME_KEY "name"

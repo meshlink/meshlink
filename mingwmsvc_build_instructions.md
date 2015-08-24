@@ -46,7 +46,6 @@ make
 
 
 ## install:
-windows compat headers need to be copied manually<br/>
 ```
 catta/make install
 make install
