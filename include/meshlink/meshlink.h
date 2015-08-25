@@ -37,6 +37,18 @@
 #include <sys/socket.h>
 #endif
 
+#ifdef _WIN32
+  #ifdef MESHLINK_DLLEXPORT
+    #define MESHLINK_API __declspec(dllexport)
+  #elif MESHLINK_DLLIMPORT
+    #define MESHLINK_API __declspec(dllimport)
+  #else
+    #define MESHLINK_API
+  #endif
+#else
+  #define MESHLINK_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -92,7 +104,7 @@ typedef enum {
 #if defined(__APPLE__) || defined(_WIN32)
 // iOS does not support __thread
 // Windows does not support to use __declspec(thread) variables with dynamic linkage
-extern meshlink_errno_t meshlink_errno;
+MESHLINK_API extern meshlink_errno_t meshlink_errno;
 #else
 extern __thread meshlink_errno_t meshlink_errno;
 #endif
