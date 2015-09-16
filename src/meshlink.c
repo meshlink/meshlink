@@ -2001,7 +2001,7 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
 
 	char* hex = xzalloc(len * 2 + 1);
 	bin2hex(data, hex, len);
-	logger(mesh, MESHLINK_WARNING, "channel_send(%p, %p, %zu): %s\n", utcp, data, len, hex);
+	logger(mesh, MESHLINK_WARNING, "channel_send(%p, %p, " PRINT_SIZE_T "): %s\n", utcp, data, len, hex);
 	free(hex);
 
 	return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? len : -1;
@@ -2027,7 +2027,7 @@ static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, co
 
 	char* hex = xzalloc(len * 2 + 1);
 	bin2hex(data, hex, len);
-	logger(mesh, MESHLINK_WARNING, "channel_receive(%p, %p, %zu): %s\n", n->utcp, data, len, hex);
+	logger(mesh, MESHLINK_WARNING, "channel_receive(%p, %p, " PRINT_SIZE_T "): %s\n", n->utcp, data, len, hex);
 	free(hex);
 
 	utcp_recv(n->utcp, data, len);
@@ -2079,7 +2079,7 @@ meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node
 
 	MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
 
-	logger(mesh, MESHLINK_WARNING, "meshlink_channel_open(%p, %s, %u, %p, %p, %zu)\n", mesh, node->name, port, cb, data, len);
+	logger(mesh, MESHLINK_WARNING, "meshlink_channel_open(%p, %s, %u, %p, %p, " PRINT_SIZE_T ")\n", mesh, node->name, port, cb, data, len);
 	node_t *n = (node_t *)node;
 	if(!n->utcp) {
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);

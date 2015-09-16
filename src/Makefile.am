@@ -31,7 +31,7 @@ chacha_poly1305_SOURCES = \
 	chacha-poly1305/poly1305.c chacha-poly1305/poly1305.h
 
 utcp_SOURCES = \
-	utcp/utcp.c utcp/utcp.h
+	utcp/utcp.c utcp/compat.h utcp/utcp.h
 
 sptps_test_SOURCES = \
 	crypto.c crypto.h \

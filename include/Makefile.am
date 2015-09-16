@@ -3,4 +3,4 @@
 nobase_include_HEADERS = \
 	meshlink/meshlink.h \
 	meshlink/meshlink++.h \
-	meshlink/compat/wincompat.h
+	meshlink/compat.h

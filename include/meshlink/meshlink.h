@@ -24,30 +24,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#ifdef _MSC_VER
-#include <meshlink/compat/wincompat.h>
-#else
-#include <unistd.h>
-#endif
-
-#if defined(_WIN32)
-#include <winsock2.h>
-#else
-#include <sys/types.h>
-#include <sys/socket.h>
-#endif
-
-#ifdef _WIN32
-  #ifdef MESHLINK_DLLEXPORT
-    #define MESHLINK_API __declspec(dllexport)
-  #elif MESHLINK_DLLIMPORT
-    #define MESHLINK_API __declspec(dllimport)
-  #else
-    #define MESHLINK_API
-  #endif
-#else
-  #define MESHLINK_API
-#endif
+#include <meshlink/compat.h>
 
 #ifdef __cplusplus
 extern "C" {
