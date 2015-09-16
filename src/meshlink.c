@@ -345,13 +345,13 @@ static bool try_bind(int port) {
 	while(ai) {
 		int fd = socket(ai->ai_family, SOCK_STREAM, IPPROTO_TCP);
 		if(!fd) {
-			freeaddrinfo(ai);
+			freeaddrinfo(ai_first);
 			return false;
 		}
 		int result = bind(fd, ai->ai_addr, ai->ai_addrlen);
 		closesocket(fd);
 		if(result) {
-			freeaddrinfo(ai);
+			freeaddrinfo(ai_first);
 			return false;
 		}
 		ai = ai->ai_next;
