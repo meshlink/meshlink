@@ -111,7 +111,9 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     snprintf(txt_name, txt_name_len, "%s=%s", MESHLINK_MDNS_NAME_KEY, mesh->name);
 
     char txt_fingerprint[sizeof(MESHLINK_MDNS_FINGERPRINT_KEY) + 1 + MESHLINK_FINGERPRINTLEN + 1];
-    snprintf(txt_fingerprint, sizeof(txt_fingerprint), "%s=%s", MESHLINK_MDNS_FINGERPRINT_KEY, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self));
+    char *fingerprint = meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self);
+    snprintf(txt_fingerprint, sizeof(txt_fingerprint), "%s=%s", MESHLINK_MDNS_FINGERPRINT_KEY, fingerprint );
+    free( fingerprint );
 
     /* Add the service */
     int ret = 0;
