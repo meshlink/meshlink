@@ -113,11 +113,10 @@ static void discovery_create_services(meshlink_handle_t *mesh)
     char txt_fingerprint[sizeof(MESHLINK_MDNS_FINGERPRINT_KEY) + 1 + MESHLINK_FINGERPRINTLEN + 1];
     char *fingerprint = meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self);
     snprintf(txt_fingerprint, sizeof(txt_fingerprint), "%s=%s", MESHLINK_MDNS_FINGERPRINT_KEY, fingerprint );
-    free( fingerprint );
 
     /* Add the service */
     int ret = 0;
-    if((ret = catta_server_add_service(mesh->catta_server, mesh->catta_group, CATTA_IF_UNSPEC, CATTA_PROTO_UNSPEC, 0, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self), mesh->catta_servicetype, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0)
+    if((ret = catta_server_add_service(mesh->catta_server, mesh->catta_group, CATTA_IF_UNSPEC, CATTA_PROTO_UNSPEC, 0, fingerprint, mesh->catta_servicetype, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0)
     {
         logger(mesh, MESHLINK_ERROR, "Failed to add service: %s\n", catta_strerror(ret));
         goto fail;
@@ -138,6 +137,8 @@ fail:
 done:
     if(txt_name)
         { free(txt_name); }
+    if(fingerprint)
+        { free(fingerprint); }
 
     MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 }
