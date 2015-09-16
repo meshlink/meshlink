@@ -47,10 +47,4 @@
   #endif
 #endif
 
-// windows doesn't support shared libraries exporting thread local variables,
-// only for static linkage it's supported
-// #ifdef _MSC_VER
-// #define __thread __declspec(thread)
-// #endif
-
 #endif // meshlink_compat_h
