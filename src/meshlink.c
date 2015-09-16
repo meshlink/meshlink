@@ -340,6 +340,8 @@ static bool try_bind(int port) {
 	if(getaddrinfo(NULL, portstr, &hint, &ai) || !ai)
 		return false;
 
+    struct addrinfo *ai_first = ai;
+
 	while(ai) {
 		int fd = socket(ai->ai_family, SOCK_STREAM, IPPROTO_TCP);
 		if(!fd) {
@@ -355,7 +357,7 @@ static bool try_bind(int port) {
 		ai = ai->ai_next;
 	}
 
-	freeaddrinfo(ai);
+	freeaddrinfo(ai_first);
 	return true;
 }
 
