@@ -24,7 +24,7 @@
   #define MESHLINK_API
 #endif
 
-#if !defined(PRINT_SIZE_T)
+#ifndef PRINT_SIZE_T
   #ifdef _WIN32
     #define PRINT_SIZE_T "%Iu"
     #define PRINT_SSIZE_T "%Id"
