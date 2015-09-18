@@ -68,6 +68,7 @@ libmeshlink_la_SOURCES = \
 	meshlink.c \
 	buffer.c buffer.h \
 	cipher.h \
+	compat/compat.h \
 	conf.c conf.h \
 	connection.c connection.h \
 	crypto.c crypto.h \
@@ -114,6 +115,7 @@ if MINGW
 # require Windows Vista or above (for winsock2)
 AM_CFLAGS += -DWINVER=0x0600 -D_WIN32_WINNT=0x0600
 libmeshlink_la_LDFLAGS += -no-undefined -Wl,--kill-at,--output-def=.libs/libmeshlink-0.def
+libmeshlink_la_SOURCES += compat/wincompat.c compat/wincompat.h
 endif
 
 libmeshlink_la_CFLAGS = $(AM_CFLAGS) -fPIC -I../catta/include/

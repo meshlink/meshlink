@@ -24,16 +24,6 @@
   #define MESHLINK_API
 #endif
 
-#ifndef PRINT_SIZE_T
-  #ifdef _WIN32
-    #define PRINT_SIZE_T "%Iu"
-    #define PRINT_SSIZE_T "%Id"
-  #else
-    #define PRINT_SIZE_T "%zu"
-    #define PRINT_SSIZE_T "%zd"
-  #endif
-#endif
-
 #ifdef _MSC_VER
   // VS2012 and up has no ssize_t defined, before it was defined as unsigned int
   #ifndef _SSIZE_T_DEFINED

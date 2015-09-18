@@ -17,6 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#include "compat/compat.h"
+
 #include "system.h"
 
 #include "dropin.h"
@@ -25,6 +27,7 @@
 #include "splay_tree.h"
 #include "utils.h"
 #include "xalloc.h"
+#include "logger.h"
 
 static int io_compare(const io_t *a, const io_t *b) {
 	return a->fd - b->fd;
@@ -130,7 +133,7 @@ static int signal_compare(const signal_t *a, const signal_t *b) {
 
 static void signalio_handler(event_loop_t *loop, void *data, int flags) {
 	unsigned char signum;
-	if(read(loop->pipefd[0], &signum, 1) != 1)
+	if(meshlink_readpipe(loop->pipefd[0], &signum, 1) != 1)
 		return;
 
 	signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = signum}));
@@ -139,14 +142,16 @@ static void signalio_handler(event_loop_t *loop, void *data, int flags) {
 }
 
 static void pipe_init(event_loop_t *loop) {
-	if(!pipe(loop->pipefd))
+	if(!meshlink_pipe(loop->pipefd))
 		io_add(loop, &loop->signalio, signalio_handler, NULL, loop->pipefd[0], IO_READ);
+	else
+		logger(NULL, MESHLINK_ERROR, "Pipe init failed: %s", sockstrerror(sockerrno));
 }
 
 void signal_trigger(event_loop_t *loop, signal_t *sig) {
 
 	uint8_t signum = sig->signum;
-	write(loop->pipefd[1], &signum, 1);
+	meshlink_writepipe(loop->pipefd[1], &signum, 1);
 	return;
 
 }
