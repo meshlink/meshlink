@@ -2,7 +2,7 @@
 
 ## build environment:
 
-### msys
+### MSYS
 * available by the MinGW Installation Manager
 * http://sourceforge.net/projects/mingw/files/latest/download?source=files
 * in msys\1.0\etc create a file 'fstab' and configure it according to fstab.sample to point to your mingw bin path
@@ -39,7 +39,7 @@ which pkg-config
 
 ## meshlink dependencies:
 
-### zlib (and crypto32?)
+### zlib
 included with mingw-w64 install
 to build zlib on yourself (-fPIC required) however proceed with:
 ```
@@ -64,13 +64,16 @@ autoreconf -fsiWnone
 ```
 
 ## configure:
+CFLAGS:
 -g for debug symbols<br/>
 -O0 for optimization level 0<br/>
 -fPIC to generate position-independent code and if supported avoid any limit on the size of the global offset table<br/>
 -fstack-protector-all add guards to check for buffer overflows, protect all functions<br/>
 -std=c99 use c99 standard (be aware, this doesn't check on missing c99 format flag support with printf in Msvcrt.dll Microsoft C-Runtime Library)<br/>
-catta/configure CFLAGS='-fPIC -fstack-protector-all -std=c99' --prefix=<INSTALL_DIR><br/>
-configure CFLAGS='-fPIC -fstack-protector-all -std=c99' --with-zlib-include=${ZLIB_INCLUDE_DIR} --with-zlib-lib=${ZLIB_LIBRARY_DIR} --prefix=<INSTALL_DIR>
+
+--with-zlib-include=${ZLIB_INCLUDE_DIR}<br/>
+--with-zlib-lib=${ZLIB_LIBRARY_DIR}<br/>
+--prefix=[INSTALL_DIR]
 
 Debug:
 ```
@@ -106,7 +109,6 @@ however another approach I found is to just make a static build and convert to d
 make sure you have the C++ compiler package installed and VC folder of Microsoft Visual Studio is added to your PATH environment variable
 
 ### generate msvc import library for meshlink + catta (using cmd shell)
-in windows cmd command shell type:
 ```
 vcvarsall amd64
 cd meshlink/catta/src/.libs
