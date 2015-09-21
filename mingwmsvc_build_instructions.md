@@ -2,7 +2,6 @@
 
 ## build environment:
 
-
 ### msys
 * available by the MinGW Installation Manager
 * http://sourceforge.net/projects/mingw/files/latest/download?source=files
@@ -97,7 +96,11 @@ however another approach I found is to just make a static build and convert to d
 ``gcc -shared -Wl,--whole-archive,--kill-at,--output-def=libmeshlink-0.def libmeshlink.a -Wl,--no-whole-archive -L../../catta/src/.libs -L/c/lib/zlib/lib -lpthread -liphlpapi -lssp -lws2_32 -lgdi32 -lcatta.dll -lz -o libmeshlink-0.dll``
 
 
-## generate msvc import library for meshlink + catta (using cmd shell)
+## MSVC compability
+make sure you have the C++ compiler package installed and VC folder of Microsoft Visual Studio is added to your PATH environment variable
+
+### generate msvc import library for meshlink + catta (using cmd shell)
+in windows cmd command shell type:
 ```
 vcvarsall amd64
 cd meshlink/catta/src/.libs
@@ -106,8 +109,7 @@ cd meshlink/src/.libs
 lib /machine:x64 /def:libmeshlink-0.def
 ```
 
-
-## MSVC project setup
+### MSVC project setup
 copy libcatta-0.lib and libmeshlink-0.lib to lib install folders<br/>
 for usage don't forget to copy gcc library dependencies to your exe path
 ```
@@ -115,6 +117,6 @@ libgcc_s_seh-1.dll
 libssp-0.dll
 libwinpthread-1.dll
 ```
-Include Directories: ``C:\lib\catta\include\catta\compat\windows;C:\lib\catta\include;C:\lib\meshlink\include;``<br/>
+Include Directories: ``C:\lib\catta\include;C:\lib\meshlink\include;``<br/>
 Library Directories: ``C:\lib\catta\lib;C:\lib\meshlink\lib;``<br/>
 Linker.Input Additional Dependencies: ``libmeshlink-0.lib;libcatta-0.lib``<br/>
