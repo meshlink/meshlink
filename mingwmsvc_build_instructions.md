@@ -1,7 +1,47 @@
 # mingw-w64 / MSVC Build Instructions
 
+## build environment:
+
+
+### msys
+* available by the MinGW Installation Manager
+* http://sourceforge.net/projects/mingw/files/latest/download?source=files
+* in msys\1.0\etc create a file 'fstab' and configure it according to fstab.sample to point to your mingw bin path
+```
+#Win32_Path		Mount_Point
+c:/mingw		/mingw
+```
+
+### autotools
+* available by the MinGW Installation Manager
+
+### pkg-config
+* Download:
+  * http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/gettext-runtime_0.18.1.1-2_win32.zip
+  * http://ftp.gnome.org/pub/gnome/binaries/win32/glib/2.28/glib_2.28.8-1_win32.zip
+  * http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/pkg-config_0.26-1_win32.zip
+* Extract to: ``/usr/local`` [``C:\MinGW\msys\1.0\local``]
+
+### Mingw-w64 for 64bit build
+* to compile 64bit install Mingw-w64 http://sourceforge.net/projects/mingw-w64/
+* add both MinGW/bin and mingw64/bin to Path environment variable (if not availabe in msys already, or figure what to copy or where else to get msys and autotools for mingw64)
+* to work along with MinGW MSYS and autotools, make sure to remove conflicting dlls and executables
+
+### Verify MSYS build environment
+```
+which x86_64-w64-mingw32-gcc
+which x86_64-w64-mingw32-g++
+which automake
+which autoconf
+which libtool
+which make
+which pkg-config
+```
+
 ## meshlink dependencies:
-zlib (and crypto32?) included with mingw-w64 install<br/>
+
+### zlib (and crypto32?)
+included with mingw-w64 install
 to build zlib on yourself (-fPIC required) however proceed with:
 ```
 cd zlib-1.2.8
