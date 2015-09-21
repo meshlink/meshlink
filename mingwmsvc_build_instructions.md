@@ -64,17 +64,23 @@ autoreconf -fsiWnone
 ```
 
 ## configure:
-for debug add: '-g -O0'<br/>
 -g for debug symbols<br/>
 -O0 for optimization level 0<br/>
 -fPIC to generate position-independent code and if supported avoid any limit on the size of the global offset table<br/>
 -fstack-protector-all add guards to check for buffer overflows, protect all functions<br/>
--std=c99 use c99 standard<br/>
+-std=c99 use c99 standard (be aware, this doesn't check on missing c99 format flag support with printf in Msvcrt.dll Microsoft C-Runtime Library)<br/>
 catta/configure CFLAGS='-fPIC -fstack-protector-all -std=c99' --prefix=<INSTALL_DIR><br/>
-configure CFLAGS='-fPIC -fstack-protector-all -std=c99' --with-zlib-include=${ZLIB_INCLUDE_DIR} --with-zlib-lib=${ZLIB_LIBRARY_DIR} --prefix=<INSTALL_DIR><br/>
+configure CFLAGS='-fPIC -fstack-protector-all -std=c99' --with-zlib-include=${ZLIB_INCLUDE_DIR} --with-zlib-lib=${ZLIB_LIBRARY_DIR} --prefix=<INSTALL_DIR>
+
+Debug:
 ```
-catta/configure CFLAGS='-fPIC -fstack-protector-all -std=c99' --prefix='/c/lib/catta'
-configure CFLAGS='-fPIC -fstack-protector-all -std=c99' --prefix='/c/lib/meshlink' --with-zlib-lib=/c/lib/zlib/lib
+catta/configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -g -O0' --prefix='/c/lib/catta'
+configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -g -O0' --prefix='/c/lib/meshlink' --with-zlib-lib=/c/lib/zlib/lib
+```
+Release:
+```
+catta/configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -O3' --prefix='/c/lib/catta'
+configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -O3' --prefix='/c/lib/meshlink' --with-zlib-lib=/c/lib/zlib/lib
 ```
 
 ## build:
