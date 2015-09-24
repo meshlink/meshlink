@@ -119,8 +119,10 @@ lib /machine:x64 /def:libmeshlink-0.def
 
 ### MSVC project setup
 copy libcatta-0.lib and libmeshlink-0.lib to lib install folders<br/>
-for usage don't forget to copy gcc library dependencies to your exe path
+for usage don't forget to copy all the library dependencies to your exe path
 ```
+libmeshlink-0.dll
+libcatta-0.dll
 libgcc_s_seh-1.dll
 libssp-0.dll
 libwinpthread-1.dll
