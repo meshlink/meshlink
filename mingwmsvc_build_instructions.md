@@ -112,7 +112,7 @@ gcc -shared -Wl,--whole-archive,--kill-at,--output-def=libcatta-0.def libcatta.a
 ```
 ```
 cat meshlink/src/.lib/
-gcc -shared -Wl,--whole-archive,--kill-at,--output-def=libmeshlink-0.def libmeshlink.a -Wl,--no-whole-archive -L../../catta/src/.libs -L/c/lib/zlib/lib -lpthread -liphlpapi -lssp -lws2_32 -lgdi32 -lcatta.dll -lz -o libmeshlink-0.dll
+gcc -shared -Wl,--whole-archive,--kill-at,--output-def=libmeshlink-0.def libmeshlink.a -Wl,--no-whole-archive -L../../catta/src/.libs -L/c/lib/zlib/lib -lpthread -liphlpapi -lssp -lws2_32 -lgdi32 -lcatta-0 -lz -o libmeshlink-0.dll
 ```
 
 
