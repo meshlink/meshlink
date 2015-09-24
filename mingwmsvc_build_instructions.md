@@ -98,17 +98,28 @@ make
 catta/make install
 make install
 ```
-just a note: libtool, used by the autotools, doesn't allow to link static libraries to dynamic ones<br/>
-even when build with -fPIC and perfectly legal it insists to link dependencies dynamicly or aborts the build<br/>
-to circumvent this, it now builds passing -lz in LDFLAGS<br/>
-however another approach I found is to just make a static build and convert to dll + def afterwards:<br/>
-``gcc -shared -Wl,--whole-archive,--kill-at,--output-def=libmeshlink-0.def libmeshlink.a -Wl,--no-whole-archive -L../../catta/src/.libs -L/c/lib/zlib/lib -lpthread -liphlpapi -lssp -lws2_32 -lgdi32 -lcatta.dll -lz -o libmeshlink-0.dll``
+
+### if make install does not generate .dll files:
+
+just a note: libtool, used by the autotools, doesn't allow to link static libraries to dynamic ones
+even when build with -fPIC and perfectly legal it insists to link dependencies dynamicly or aborts the build
+to circumvent this, it now builds passing -lz in LDFLAGS
+however another approach I found is to just make a static build and convert to dll + def afterwards:
+
+```
+cd meshlink/catta/src/.lib/
+gcc -shared -Wl,--whole-archive,--kill-at,--output-def=libcatta-0.def libcatta.a -Wl,--no-whole-archive -lpthread -liphlpapi -lssp -lws2_32 -lgdi32 -lz -o libcatta-0.dll
+```
+```
+cat meshlink/src/.lib/
+gcc -shared -Wl,--whole-archive,--kill-at,--output-def=libmeshlink-0.def libmeshlink.a -Wl,--no-whole-archive -L../../catta/src/.libs -L/c/lib/zlib/lib -lpthread -liphlpapi -lssp -lws2_32 -lgdi32 -lcatta.dll -lz -o libmeshlink-0.dll
+```
 
 
 ## MSVC compability
 make sure you have the C++ compiler package installed and VC folder of Microsoft Visual Studio is added to your PATH environment variable
 
-### generate msvc import library for meshlink + catta (using cmd shell)
+## generate msvc import library for meshlink + catta (using cmd shell or MSBuild Command Prompt for VS2015 )
 ```
 vcvarsall amd64
 cd meshlink/catta/src/.libs
@@ -117,9 +128,9 @@ cd meshlink/src/.libs
 lib /machine:x64 /def:libmeshlink-0.def
 ```
 
-### MSVC project setup
-copy libcatta-0.lib and libmeshlink-0.lib to lib install folders<br/>
-for usage don't forget to copy all the library dependencies to your exe path
+## MSVC project setup
+copy libcatta-0.lib and libmeshlink-0.lib to lib install folders
+**for usage don't forget to copy all the library dependencies the same directory as the exe** (windows searches the binary's path first when loading dlls)
 ```
 libmeshlink-0.dll
 libcatta-0.dll
@@ -127,6 +138,6 @@ libgcc_s_seh-1.dll
 libssp-0.dll
 libwinpthread-1.dll
 ```
-Include Directories: ``C:\lib\catta\include;C:\lib\meshlink\include;``<br/>
-Library Directories: ``C:\lib\catta\lib;C:\lib\meshlink\lib;``<br/>
-Linker.Input Additional Dependencies: ``libmeshlink-0.lib;libcatta-0.lib``<br/>
+Include Directories: ``C:\lib\catta\include;C:\lib\meshlink\include;``
+Library Directories: ``C:\lib\catta\lib;C:\lib\meshlink\lib;``
+Linker.Input Additional Dependencies: ``libmeshlink-0.lib;libcatta-0.lib``
