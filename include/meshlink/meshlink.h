@@ -132,6 +132,15 @@ struct meshlink_edge {
  */
 extern const char *meshlink_strerror(meshlink_errno_t err);
 
+/// Free memory allocated by Meshlink
+/** This function deallocates memory that has been allocated by meshkink.
+ *  Other Meshlink functions may return pointers to memory that the caller must
+ *  free after use. The caller should use this function to do so.
+ *
+ *  @param ptr  Pointer to the memory to be free'd. Must be allocated by Meshlink.
+ */
+extern void meshlink_free(void *ptr);
+
 /// Open or create a MeshLink instance.
 /** This function opens or creates a MeshLink instance.
  *  The state is stored in the configuration directory passed in the variable @a confbase @a.

@@ -654,6 +654,10 @@ const char *meshlink_strerror(meshlink_errno_t err) {
 	return errstr[err];
 }
 
+void meshlink_free(void *ptr) {
+	free(ptr);
+}
+
 static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 	ecdsa_t *key;
 	FILE *f;

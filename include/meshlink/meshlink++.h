@@ -337,7 +337,7 @@ namespace meshlink {
 		 *  @param name         The name that the invitee will use in the mesh.
 		 *
 		 *  @return             This function returns a string that contains the invitation URL.
-		 *                      The application should call free() after it has finished using the URL.
+		 *                      The application should call meshlink_free() after it has finished using the URL.
 		 */
 		char *invite(const char *name) {
 			return meshlink_invite(handle, name);
@@ -362,7 +362,7 @@ namespace meshlink {
 		 *  granting the local node access to the other node's mesh.
 		 *
 		 *  @return             This function returns a string that contains the exported key and addresses.
-		 *                      The application should call free() after it has finished using this string.
+		 *                      The application should call meshlink_free() after it has finished using this string.
 		 */
 		char *export_key() {
 			return meshlink_export(handle);
@@ -538,6 +538,10 @@ namespace meshlink {
 
 	static inline const char *strerror(errno_t err = meshlink_errno) {
 		return meshlink_strerror(err);
+	}
+
+	static inline void free(void *ptr) {
+		meshlink_free(ptr);
 	}
 
 }
