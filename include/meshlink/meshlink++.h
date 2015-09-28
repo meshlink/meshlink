@@ -22,6 +22,7 @@
 
 #include <meshlink/meshlink.h>
 #include <new> // for 'placement new'
+#include <string>
 
 namespace meshlink {
 	class mesh;
@@ -337,10 +338,12 @@ namespace meshlink {
 		 *  @param name         The name that the invitee will use in the mesh.
 		 *
 		 *  @return             This function returns a string that contains the invitation URL.
-		 *                      The application should call free() after it has finished using the URL.
 		 */
-		char *invite(const char *name) {
-			return meshlink_invite(handle, name);
+		std::string invite(const char *name) {
+			char* inv = meshlink_invite(handle, name);
+			std::string inv_str = std::string( inv );
+			meshlink_free( inv );
+			return inv_str;
 		}
 
 		/// Use an invitation to join a mesh.
@@ -362,10 +365,12 @@ namespace meshlink {
 		 *  granting the local node access to the other node's mesh.
 		 *
 		 *  @return             This function returns a string that contains the exported key and addresses.
-		 *                      The application should call free() after it has finished using this string.
 		 */
-		char *export_key() {
-			return meshlink_export(handle);
+		std::string export_key() {
+			char* key = meshlink_export(handle);
+			std::string key_str = std::string( key );
+			meshlink_free( key );
+			return key_str;
 		}
 
 		/// Import another node's key and addresses.
@@ -539,7 +544,6 @@ namespace meshlink {
 	static inline const char *strerror(errno_t err = meshlink_errno) {
 		return meshlink_strerror(err);
 	}
-
 }
 
 #endif // MESHLINKPP_H

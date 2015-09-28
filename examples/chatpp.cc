@@ -40,7 +40,7 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 		*arg++ = 0;
 
 	if(!strcasecmp(buf, "invite")) {
-		char *invitation;
+		std::string invitation;
 
 		if(!arg) {
 			fprintf(stderr, "/invite requires an argument!\n");
@@ -48,13 +48,12 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 		}
 
 		invitation = mesh->invite(arg);
-		if(!invitation) {
+		if(invitation.empty()) {
 			fprintf(stderr, "Could not invite '%s': %s\n", arg, meshlink::strerror());
 			return;
 		}
 
-		printf("Invitation for %s: %s\n", arg, invitation);
-		free(invitation);
+		printf("Invitation for %s: %s\n", arg, invitation.c_str());
 	} else if(!strcasecmp(buf, "join")) {
 		if(!arg) {
 			fprintf(stderr, "/join requires an argument!\n");
