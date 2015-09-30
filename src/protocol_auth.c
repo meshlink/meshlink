@@ -128,7 +128,7 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 }
 
 bool send_id(meshlink_handle_t *mesh, connection_t *c) {
-	
+
 	int minor = mesh->self->connection->protocol_minor;
 
 	if(mesh->proxytype && c->outgoing)
@@ -152,7 +152,7 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 		return false;
 	}
 
-	FILE *f = fopen(filename, "w");
+	FILE *f = fopen(filename, "wb");
 	if(!f) {
 		logger(mesh, MESHLINK_ERROR, "Error trying to create %s: %s\n", filename, strerror(errno));
 		return false;
@@ -210,7 +210,7 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	}
 
 	// Open the renamed file
-	FILE *f = fopen(usedname, "r");
+	FILE *f = fopen(usedname, "rb");
 	if(!f) {
 		logger(mesh, MESHLINK_ERROR, "Error trying to open invitation %s\n", cookie);
 		return false;

@@ -274,12 +274,12 @@ int main(int argc, char *argv[]) {
 
 	crypto_init();
 
-	FILE *fp = fopen(argv[1], "r");
+	FILE *fp = fopen(argv[1], "rb");
 	if(!(mykey = ecdsa_read_pem_private_key(fp)))
 		return 1;
 	fclose(fp);
 
-	fp = fopen(argv[2], "r");
+	fp = fopen(argv[2], "rb");
 	if(!(hiskey = ecdsa_read_pem_public_key(fp)))
 		return 1;
 	fclose(fp);
