@@ -77,8 +77,8 @@ int main(int argc, char *argv[]) {
 	ecdsa_t *key = ecdsa_generate();
 	if(!key)
 		return 1;
-	
-	FILE *fp = fopen(argv[1], "w");
+
+	FILE *fp = fopen(argv[1], "wb");
 	if(fp) {
 		ecdsa_write_pem_private_key(key, fp);
 		fclose(fp);
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	fp = fopen(argv[2], "w");
+	fp = fopen(argv[2], "wb");
 	if(fp) {
 		ecdsa_write_pem_public_key(key, fp);
 		fclose(fp);

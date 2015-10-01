@@ -124,7 +124,7 @@ const var_t variables[] = {
 };
 
 static bool fcopy(FILE *out, const char *filename) {
-	FILE *in = fopen(filename, "r");
+	FILE *in = fopen(filename, "rb");
 	if(!in) {
 		logger(NULL, MESHLINK_ERROR, "Could not open %s: %s\n", filename, strerror(errno));
 		return false;
@@ -150,7 +150,7 @@ static void scan_for_hostname(const char *filename, char **hostname, char **port
 	if(!filename || (*hostname && *port))
 		return;
 
-	FILE *f = fopen(filename, "r");
+	FILE *f = fopen(filename, "rb");
 	if(!f)
 		return;
 
@@ -254,7 +254,7 @@ static char *get_my_hostname(meshlink_handle_t* mesh) {
 	if(!hostname)
 		return NULL;
 
-	f = fopen(filename, "a");
+	f = fopen(filename, "ab");
 	if(f) {
 		fprintf(f, "\nAddress = %s\n", hostname);
 		fclose(f);
@@ -367,7 +367,7 @@ static int check_port(meshlink_handle_t *mesh) {
 		if(try_bind(port)) {
 			char filename[PATH_MAX];
 			snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->name);
-			FILE *f = fopen(filename, "a");
+			FILE *f = fopen(filename, "ab");
 			if(!f) {
 				logger(mesh, MESHLINK_DEBUG, "Please change MeshLink's Port manually.\n");
 				return 0;
@@ -398,7 +398,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 	char filename[PATH_MAX];
 	snprintf(filename, sizeof filename, "%s" SLASH "meshlink.conf", mesh->confbase);
 
-	FILE *f = fopen(filename, "w");
+	FILE *f = fopen(filename, "wb");
 	if(!f) {
 		logger(mesh, MESHLINK_DEBUG, "Could not create file %s: %s\n", filename, strerror(errno));
 		return false;
@@ -407,7 +407,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 	fprintf(f, "Name = %s\n", name);
 
 	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
-	FILE *fh = fopen(filename, "w");
+	FILE *fh = fopen(filename, "wb");
 	if(!fh) {
 		logger(mesh, MESHLINK_DEBUG, "Could not create file %s: %s\n", filename, strerror(errno));
 		fclose(f);
@@ -480,7 +480,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 		}
 
 		snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, value);
-		f = fopen(filename, "w");
+		f = fopen(filename, "wb");
 
 		if(!f) {
 			logger(mesh, MESHLINK_DEBUG, "Could not create file %s: %s\n", filename, strerror(errno));
@@ -695,7 +695,7 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 	fclose(f);
 
 	snprintf(pubname, sizeof pubname, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->name);
-	f = fopen(pubname, "a");
+	f = fopen(pubname, "ab");
 
 	if(!f) {
 		meshlink_errno = MESHLINK_ESTORAGE;
@@ -755,7 +755,7 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 		return false;
 	}
 
-	FILE *f = fopen(filename, "w");
+	FILE *f = fopen(filename, "wb");
 	if(!f) {
 		logger(mesh, MESHLINK_DEBUG, "Could not create file %s: %s\n", filename, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
@@ -782,7 +782,7 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
 	// Validate arguments provided by the application
 	bool usingname = false;
-	
+
 	logger(NULL, MESHLINK_DEBUG, "meshlink_open called\n");
 
 	if(!confbase || !*confbase) {
@@ -829,7 +829,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	pthread_mutex_init(&(mesh->mesh_mutex), &attr);
 
 	MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
-	
+
 	mesh->threadstarted = false;
 	event_loop_init(&mesh->loop);
 	mesh->loop.data = mesh;
@@ -910,7 +910,7 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 		return false;
 	}
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-	
+
 	logger(mesh, MESHLINK_DEBUG, "meshlink_start called\n");
 
 	mesh->thedatalen = 0;
@@ -976,7 +976,7 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	mesh->threadstarted = false;
 
 	// Fix the socket
-	
+
 	closesocket(s->tcp.fd);
 	io_del(&mesh->loop, &s->tcp);
 	s->tcp.fd = setup_listen_socket(&s->sa);
@@ -984,7 +984,7 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 		logger(mesh, MESHLINK_ERROR, "Could not repair listenen socket!");
 	else
 		io_add(&mesh->loop, &s->tcp, handle_new_meta_connection, s, s->tcp.fd, IO_READ);
-	
+
 	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 }
 
@@ -1141,7 +1141,7 @@ ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination)
 	if(!n->status.reachable) {
 		MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 		return 0;
-	
+
 	}
 	else if(n->mtuprobes > 30 && n->minmtu) {
 		MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
@@ -1273,7 +1273,7 @@ bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const voi
 
 static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 	char filename[PATH_MAX];
-	
+
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
 	snprintf(filename, sizeof filename, "%s" SLASH "invitations", mesh->confbase);
@@ -1386,7 +1386,7 @@ bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
-	
+
 	bool rval = false;
 
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
@@ -1410,7 +1410,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
 	}
-	
+
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
 	// Check validity of the new node's name
@@ -1498,7 +1498,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 
 	// Copy Broadcast and Mode
 	snprintf(filename, sizeof filename, "%s" SLASH "meshlink.conf", mesh->confbase);
-	FILE *tc = fopen(filename,  "r");
+	FILE *tc = fopen(filename,  "rb");
 	if(tc) {
 		char buf[1024];
 		while(fgets(buf, sizeof buf, tc)) {
@@ -1539,7 +1539,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
-	
+
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
 	//TODO: think of a better name for this variable, or of a different way to tokenize the invitation URL.
@@ -1735,10 +1735,10 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 	}
 
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-	
+
 	char filename[PATH_MAX];
 	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
-	FILE *f = fopen(filename, "r");
+	FILE *f = fopen(filename, "rb");
 	if(!f) {
 		logger(mesh, MESHLINK_DEBUG, "Could not open %s: %s\n", filename, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
@@ -1763,7 +1763,7 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 
 	fclose(f);
 	buf[len - 1] = 0;
-	
+
 	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 	return buf;
 }
@@ -1773,7 +1773,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
-	
+
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
 	if(strncmp(data, "Name = ", 7)) {
@@ -1818,7 +1818,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 		return false;
 	}
 
-	FILE *f = fopen(filename, "w");
+	FILE *f = fopen(filename, "wb");
 	if(!f) {
 		logger(mesh, MESHLINK_DEBUG, "Could not create %s: %s\n", filename, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
@@ -1842,7 +1842,7 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	}
 
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-	
+
 	node_t *n;
 	n = (node_t*)node;
 	n->status.blacklisted=true;
@@ -1862,7 +1862,7 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	}
 
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-	
+
 	node_t *n = (node_t *)node;
 	n->status.blacklisted = false;
 
@@ -1878,9 +1878,9 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr) {
 	if(!mesh || !node || !addr)
 		return;
-	
+
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-	
+
 	char *host = NULL, *port = NULL, *str = NULL;
 	sockaddr2str((const sockaddr_t *)addr, &host, &port);
 
@@ -1911,7 +1911,7 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 	}
 
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-	
+
 	meshlink_edge_t **result = NULL;
 	meshlink_edge_t *copy = NULL;
 	int result_size = 0;

@@ -277,7 +277,7 @@ bool read_config_file(splay_tree_t *config_tree, const char *fname) {
 	config_t *cfg;
 	bool result = false;
 
-	fp = fopen(fname, "r");
+	fp = fopen(fname, "rb");
 
 	if(!fp) {
 		logger(NULL, MESHLINK_ERROR, "Cannot open config file %s: %s", fname, strerror(errno));
@@ -324,7 +324,7 @@ bool write_config_file(const struct splay_tree_t *config_tree, const char *fname
 {
 	FILE *fp;
 
-	fp = fopen(fname, "w+");
+	fp = fopen(fname, "wb+");
 
 	if(!fp) {
 		logger(NULL, MESHLINK_ERROR, "Cannot open config file %s: %s", fname, strerror(errno));
@@ -395,7 +395,7 @@ bool append_config_file(meshlink_handle_t *mesh, const char *name, const char *k
 	char filename[PATH_MAX];
 	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 
-	FILE *fp = fopen(filename, "a");
+	FILE *fp = fopen(filename, "ab");
 
 	if(!fp) {
 		logger(mesh, MESHLINK_ERROR, "Cannot open config file %s: %s", filename, strerror(errno));
