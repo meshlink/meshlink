@@ -39,6 +39,10 @@ typedef struct meshlink_queue_item {
 	struct meshlink_queue_item *next;
 } meshlink_queue_item_t;
 
+/**
+ * Insert data into first-in-first-out queue.
+ * Caller of meshlink_queue_pop is respsonsible for free-ing data.
+ */
 static inline bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
 	meshlink_queue_item_t *item = malloc(sizeof *item);
 	if(!item)
@@ -54,8 +58,13 @@ static inline bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
 	return true;
 }
 
-static inline meshlink_queue_item_t* meshlink_queue_pop_item(meshlink_queue_t* queue)
-{
+/**
+ * Internal function to get next meshlink_queue_item from queue.
+ * Caller must free() returned meshlink_queue_item AND item->data (or do something with data).
+ *
+ * Use meshlink_queue_pop(queue) if you just want the data, not the queue_item.
+ */
+static inline void *meshlink_queue_pop(meshlink_queue_t *queue) {
 	meshlink_queue_item_t *item;
 	void *data;
 	//MESHLINK_MUTEX_LOCK(&queue->mutex);
@@ -65,19 +74,14 @@ static inline meshlink_queue_item_t* meshlink_queue_pop_item(meshlink_queue_t* q
 			queue->tail = NULL;
 	}
 	//MESHLINK_MUTEX_UNLOCK(&queue->mutex);
-	return item;
-}
-
-static inline void *meshlink_queue_pop(meshlink_queue_t *queue) {
-	meshlink_queue_item_t *item;
-	void *data;
-
-	item = meshlink_queue_pop_item(queue);
 	data = item ? item->data : NULL;
 	free(item);
 	return data;
 }
 
+/**
+ * Deallocate all data in queue using given deleter function.
+ */
 static inline void exit_meshlink_queue(meshlink_queue_t *queue, void(*deleter)(void*)) {
 	void* data;
 	do {
