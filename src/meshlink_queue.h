@@ -54,7 +54,8 @@ static inline bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
 	return true;
 }
 
-static inline void *meshlink_queue_pop(meshlink_queue_t *queue) {
+static inline meshlink_queue_item_t* meshlink_queue_pop_item(meshlink_queue_t* queue)
+{
 	meshlink_queue_item_t *item;
 	void *data;
 	//MESHLINK_MUTEX_LOCK(&queue->mutex);
@@ -64,9 +65,26 @@ static inline void *meshlink_queue_pop(meshlink_queue_t *queue) {
 			queue->tail = NULL;
 	}
 	//MESHLINK_MUTEX_UNLOCK(&queue->mutex);
+	return item;
+}
+
+static inline void *meshlink_queue_pop(meshlink_queue_t *queue) {
+	meshlink_queue_item_t *item;
+	void *data;
+
+	item = meshlink_queue_pop_item(queue);
 	data = item ? item->data : NULL;
 	free(item);
 	return data;
+}
+
+static inline void exit_meshlink_queue(meshlink_queue_t *queue, void(*deleter)(void*)) {
+	void* data;
+	do {
+		data = meshlink_queue_pop(queue);
+		if(data)
+			deleter(data);
+	} while (data);
 }
 
 #endif
