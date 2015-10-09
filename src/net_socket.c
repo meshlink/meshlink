@@ -522,6 +522,7 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 		return;
 	}
 
+	exit_configuration(&outgoing->config_tree); // discard old configuration if present
 	init_configuration(&outgoing->config_tree);
 	read_host_config(mesh, outgoing->config_tree, outgoing->name);
 	outgoing->cfg = lookup_config(outgoing->config_tree, "Address");
