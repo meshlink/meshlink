@@ -1006,6 +1006,7 @@ void meshlink_close(meshlink_handle_t *mesh) {
 
 	logger(mesh, MESHLINK_INFO, "Terminating");
 
+	exit_meshlink_queue(&mesh->outpacketqueue, free);
 	exit_configuration(&mesh->config);
 	event_loop_exit(&mesh->loop);
 
@@ -1126,6 +1127,7 @@ void meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
 	mesh->self->in_packets++;
 	mesh->self->in_bytes += packet->len;
 	route(mesh, mesh->self, packet);
+	free(packet);
 
 	MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 }
