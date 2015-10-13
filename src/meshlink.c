@@ -712,6 +712,65 @@ static struct timeval idle(event_loop_t *loop, void *data) {
 	return tmin;
 }
 
+// Find out what local address a socket would use if we connect to the given address.
+// We do this using connect() on a UDP socket, so the kernel has to resolve the address
+// of both endpoints, but this will actually not send any UDP packet.
+static bool getlocaladdrname(char *destaddr, char *host, socklen_t hostlen) {
+	struct addrinfo *rai = NULL;
+	const struct addrinfo hint = {
+		.ai_family = AF_UNSPEC,
+		.ai_socktype = SOCK_DGRAM,
+		.ai_protocol = IPPROTO_UDP,
+	};
+
+	if(getaddrinfo(destaddr, "80", &hint, &rai) || !rai)
+		return false;
+
+	int sock = socket(rai->ai_family, rai->ai_socktype, rai->ai_protocol);
+	if(sock == -1) {
+		freeaddrinfo(rai);
+		return false;
+	}
+
+	if(connect(sock, rai->ai_addr, rai->ai_addrlen) && !sockwouldblock(errno)) {
+		freeaddrinfo(rai);
+		return false;
+	}
+
+	freeaddrinfo(rai);
+
+	struct sockaddr_storage sn;
+	socklen_t sl = sizeof sn;
+
+	if(getsockname(sock, (struct sockaddr *)&sn, &sl))
+		return false;
+
+	if(getnameinfo((struct sockaddr *)&sn, sl, host, hostlen, NULL, 0, NI_NUMERICHOST | NI_NUMERICSERV))
+		return false;
+
+	return true;
+}
+
+// Get our local address(es) by simulating connecting to an Internet host.
+static void add_local_addresses(meshlink_handle_t *mesh) {
+	char host[NI_MAXHOST];
+	char entry[MAX_STRING_SIZE];
+
+	// IPv4 example.org
+
+	if(getlocaladdrname("93.184.216.34", host, sizeof host)) {
+		snprintf(entry, sizeof entry, "%s %s", host, mesh->myport);
+		append_config_file(mesh, mesh->name, "Address", entry);
+	}
+
+	// IPv6 example.org
+
+	if(getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", host, sizeof host)) {
+		snprintf(entry, sizeof entry, "%s %s", host, mesh->myport);
+		append_config_file(mesh, mesh->name, "Address", entry);
+	}
+}
+
 static bool meshlink_setup(meshlink_handle_t *mesh) {
 	if(mkdir(mesh->confbase, 0777) && errno != EEXIST) {
 		logger(mesh, MESHLINK_DEBUG, "Could not create directory %s: %s\n", mesh->confbase, strerror(errno));
@@ -852,6 +911,8 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 		meshlink_errno = MESHLINK_ENETWORK;
 		return NULL;
 	}
+
+	add_local_addresses(mesh);
 
 	idle_set(&mesh->loop, idle, mesh);
 
