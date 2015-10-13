@@ -2227,6 +2227,8 @@ bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_t *chan
 	utcp_set_poll_cb(channel->c, channel_poll);
 	channel_poll(channel->c, len);
 	MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+
+	return true;
 }
 
 void update_node_status(meshlink_handle_t *mesh, node_t *n) {

@@ -186,8 +186,15 @@ int main(int argc, char *argv[]) {
 	
 	// Send a large buffer of data.
 
-	meshlink_channel_aio_send(mesh1, channel, outdata, size / 2, foo_aio_cb, NULL);
-	meshlink_channel_aio_send(mesh1, channel, outdata + size / 2, size - size / 2, foo_aio_cb, NULL);
+	if(!meshlink_channel_aio_send(mesh1, channel, outdata, size / 2, foo_aio_cb, NULL)) {
+		fprintf(stderr, "meshlink_channel_aio_send(): %s\n", meshlink_strerror(meshlink_errno));
+		return 1;
+	}
+
+	if(!meshlink_channel_aio_send(mesh1, channel, outdata + size / 2, size - size / 2, foo_aio_cb, NULL)) {
+		fprintf(stderr, "meshlink_channel_aio_send(): %s\n", meshlink_strerror(meshlink_errno));
+		return 1;
+	}
 
 	for(int i = 0; i < 10; i++) {
 		sleep(1);
