@@ -235,6 +235,21 @@ namespace meshlink {
 		 *  @param len          The maximum length of data that is guaranteed to be accepted by a call to channel_send().
 		 */
 		virtual void channel_poll(channel *channel, size_t len) { /* do nothing */ }
+
+		/// This function is called by Meshlink when it is finished with a buffer given to channel_aio_send
+		/** 
+		 *  The function is run in MeshLink's own thread.
+		 *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+		 *  to pass data to or from the application's thread.
+		 *  
+		 *  The ownership of the buffer is now back into the application's hands.
+		 *
+		 *  @param channel   a handle for the channel which used this buffer.
+		 *  @param data      a pointer to a buffer containing the enqueued data.
+		 *  @param len       the length of the buffer.
+		 *  @param priv      A private pointer which was set by the application when submitting the buffer.
+		*/
+		virtual void channel_aio_finished(channel *channel, const void *data, size_t len, void* priv) { /* do nothing */ }
 		
 		/// Start MeshLink.
 		/** This function causes MeshLink to open network sockets, make outgoing connections, and
@@ -506,6 +521,14 @@ namespace meshlink {
 			return meshlink_channel_aio_send(handle, channel, data, len, cb, priv);
 		}
 
+		/**
+		 * @override
+		 * Sets the cb to channel_aio_finished_trampoline.
+		 */
+		bool channel_aio_send(channel *channel, const void *data, size_t len, void *priv) {
+			return meshlink_channel_aio_send(handle, channel, data, len, &channel_aio_finished_trampoline, priv);
+		}
+
 	private:
 		// non-copyable:
 		mesh(const mesh&) /* TODO: C++11: = delete */;
@@ -564,6 +587,14 @@ namespace meshlink {
 				return;
 			meshlink::mesh* that = static_cast<mesh*>(handle->priv);
 			that->channel_poll(static_cast<meshlink::channel*>(channel), len);
+		}
+
+		static void channel_aio_finished_trampoline(meshlink_handle_t *handle, channel *channel, const void *data, size_t len, void *priv)
+		{
+			if(!(handle->priv))
+				return;
+			meshlink::mesh* that = static_cast<mesh*>(handle->priv);
+			that->channel_aio_finished(static_cast<meshlink::channel*>(channel), data, len, priv);
 		}
 
 		meshlink_handle_t* handle;
