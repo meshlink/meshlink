@@ -589,7 +589,7 @@ namespace meshlink {
 			that->channel_poll(static_cast<meshlink::channel*>(channel), len);
 		}
 
-		static void channel_aio_finished_trampoline(meshlink_handle_t *handle, channel *channel, const void *data, size_t len, void *priv)
+		static void channel_aio_finished_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, const void *data, size_t len, void *priv)
 		{
 			if(!(handle->priv))
 				return;
