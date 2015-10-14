@@ -249,7 +249,7 @@ static bool receive_ack(sptps_t *s, const char *data, uint16_t len) {
 static bool receive_kex(sptps_t *s, const char *data, uint16_t len) {
 	// Verify length of the HELLO record
 	if(len != 1 + 32 + ECDH_SIZE)
-		return error(s, EIO, "Invalid KEX record length");
+		return error(s, EIO, "receive_key: Invalid KEX record length");
 
 	// Ignore version number for now.
 
@@ -272,7 +272,7 @@ static bool receive_sig(sptps_t *s, const char *data, uint16_t len) {
 
 	// Verify length of KEX record.
 	if(len != siglen)
-		return error(s, EIO, "Invalid KEX record length");
+		return error(s, EIO, "receive_sig: Invalid KEX record length");
 
 	// Concatenate both KEX messages, plus tag indicating if it is from the connection originator
 	char msg[(1 + 32 + keylen) * 2 + 1 + s->labellen];

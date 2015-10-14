@@ -395,14 +395,33 @@ bool append_config_file(meshlink_handle_t *mesh, const char *name, const char *k
 	char filename[PATH_MAX];
 	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 
-	FILE *fp = fopen(filename, "ab");
+	FILE *fp = fopen(filename, "a+b");
 
 	if(!fp) {
 		logger(mesh, MESHLINK_ERROR, "Cannot open config file %s: %s", filename, strerror(errno));
-	} else {
-		fprintf(fp, "%s = %s\n", key, value);
-		fclose(fp);
+		return false;
 	}
 
-	return fp != NULL;
+	// Check if we don't add a duplicate entry
+
+	char entry[MAX_STRING_SIZE];
+	snprintf(entry, sizeof entry, "%s = %s", key, value);
+
+	char buffer[MAX_STRING_SIZE];
+	bool found = false;
+
+	while(readline(fp, buffer, sizeof buffer)) {
+		if(!strcmp(buffer, entry)) {
+			found = true;
+			break;
+		}
+	}
+
+	// If not, append the new entry
+
+	if(!found)
+		fprintf(fp, "%s\n", entry);
+
+	fclose(fp);
+	return true;
 }
