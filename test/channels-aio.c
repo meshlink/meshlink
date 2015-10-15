@@ -10,7 +10,7 @@
 static const size_t size = 10000000; // size of data to transfer
 volatile bool bar_reachable = false;
 volatile int foo_callbacks = 0;
-volatile size_t bar_received = 0;
+volatile int bar_callbacks = 0;
 
 void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
 	static struct timeval tv0;
@@ -27,21 +27,52 @@ void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *tex
 }
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
-	printf("status_cb: %s %sreachable\n", node->name, reachable?"":"un");
+	fprintf(stderr, "status_cb: %s %sreachable\n", node->name, reachable?"":"un");
 	if(!strcmp(node->name, "bar"))
 		bar_reachable = reachable;
 }
 
-void foo_aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, void *priv) {
-	printf("foo_receive_cb %p %zu %p\n", data, len, priv);
+void foo_aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *data, size_t len, void *priv) {
+	fprintf(stderr, "foo_aio_cb %p %zu %p\n", data, len, priv);
 	foo_callbacks++;
 }
 
+void bar_aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *data, size_t len, void *priv) {
+	fprintf(stderr, "bar_aio_cb %p %zu %p\n", data, len, priv);
+	bar_callbacks++;
+	if(!priv) { // Expecting a size_t equal to size
+		if(len != sizeof(size_t)) {
+			fprintf(stderr, "Unexpected data length\n");
+			exit(1);
+		}
+		if(*(size_t *)data != size) {
+			fprintf(stderr, "Unexpected data: %zu\n", *(size_t *)data);
+			exit(1);
+		}
+
+		// We can immediately enqueue another AIO buffer in the callback.
+		if(!meshlink_channel_aio_receive(mesh, channel, mesh->priv, size, bar_aio_cb, mesh->priv)) {
+			fprintf(stderr, "meshlink_channel_aio_receive(): %s\n", meshlink_strerror(errno));
+			exit(1);
+		}
+	} else if(priv == mesh->priv) { // The actual data.
+		if(len != size) {
+			fprintf(stderr, "Unexpected data length\n");
+			exit(1);
+		}
+	} else {
+		fprintf(stderr, "Unexpected value for priv\n");
+		exit(1);
+	}
+}
+
 void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	char *indata = mesh->priv;
-	memcpy(indata, data, len);
-	mesh->priv = indata + len;
-	bar_received += len;
+	if(!len) {
+		meshlink_channel_close(mesh, channel);
+		return ;
+	}
+	fprintf(stderr, "bar got %zu unexpected bytes via receive_cb\n", len);
+	exit(1);
 }
 
 bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
@@ -49,14 +80,22 @@ bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 }
 
 bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	printf("accept_cb: (from %s on port %u) ", channel->node->name, (unsigned int)port);
-	if(data) { fwrite(data, 1, len, stdout); printf("\n"); }
+	fprintf(stderr, "accept_cb: (from %s on port %u)\n", channel->node->name, (unsigned int)port);
 
 	if(port != 7)
 		return false;
+
+	if(data || len) {
+		fprintf(stderr, "Cannot handle data in accept_cb()\n");
+		exit(1);
+	}
+
 	meshlink_set_channel_receive_cb(mesh, channel, bar_receive_cb);
-	if(data)
-		bar_receive_cb(mesh, channel, data, len);
+
+	// Enqueue an AIO buffer for receiving the amount of data to be received.
+	char *indata = malloc(sizeof(size_t));
+	meshlink_channel_aio_receive(mesh, channel, indata, sizeof(size_t), bar_aio_cb, NULL);
+
 	return true;
 }
 
@@ -71,6 +110,7 @@ int main(int argc, char *argv[]) {
 
 	char *outdata = malloc(size);
 	char *indata = malloc(size);
+
 	if(!indata || !outdata) {
 		fprintf(stderr, "Could not allocate memory\n");
 		return 1;
@@ -184,7 +224,13 @@ int main(int argc, char *argv[]) {
 
 	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, NULL, NULL, 0);
 	
-	// Send a large buffer of data.
+	// Send a large buffer of data, preceded by the length of the data to be received.
+
+	// TODO: first bytes should be sendable using meshlink_channel_send(), however UTCP doesn't like storing data in its buffers before it has seen a SYNACK.
+	if(!meshlink_channel_aio_send(mesh1, channel, &size, sizeof size, NULL, NULL)) {
+		fprintf(stderr, "meshlink_channel_aio_send(): %s\n", meshlink_strerror(errno));
+		return 1;
+	}
 
 	if(!meshlink_channel_aio_send(mesh1, channel, outdata, size / 2, foo_aio_cb, NULL)) {
 		fprintf(stderr, "meshlink_channel_aio_send(): %s\n", meshlink_strerror(meshlink_errno));
@@ -198,19 +244,19 @@ int main(int argc, char *argv[]) {
 
 	for(int i = 0; i < 10; i++) {
 		sleep(1);
-		if(bar_received >= size)
+		if(bar_callbacks >= 2)
 			break;
 	}
 
-	printf("Callbacks: %d, data received: %zu\n", foo_callbacks, bar_received);
+	fprintf(stderr, "Callbacks: foo %d, bar %d\n", foo_callbacks, bar_callbacks);
 
 	if(foo_callbacks != 2) {
-		fprintf(stderr, "Expected 2 AIO callbacks\n");
+		fprintf(stderr, "Expected 2 AIO callbacks for foo\n");
 		return 1;
 	}
 
-	if(bar_received != size) {
-		fprintf(stderr, "Bar did not receive all data in time\n");
+	if(bar_callbacks != 2) {
+		fprintf(stderr, "Expected 2 AIO callbacks for bar\n");
 		return 1;
 	}
 

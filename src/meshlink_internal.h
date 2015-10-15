@@ -146,7 +146,7 @@ struct meshlink_node {
 
 /// An AIO buffer.
 typedef struct meshlink_aio_buffer {
-	const void *data;
+	void *data;
 	size_t len;
 	size_t done;
 	meshlink_aio_cb_t cb;
@@ -160,7 +160,8 @@ struct meshlink_channel {
 	void *priv;
 
 	struct utcp_connection *c;
-	struct meshlink_aio_buffer *aio;
+	struct meshlink_aio_buffer *aio_send;
+	struct meshlink_aio_buffer *aio_receive;
 	meshlink_channel_receive_cb_t receive_cb;
 	meshlink_channel_poll_cb_t poll_cb;
 };
