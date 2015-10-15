@@ -3,6 +3,7 @@ TESTS = \
 	basicpp.test \
 	channels.test \
 	channels-fork.test \
+	channels-aio.test \
 	import-export.test \
 	invite-join.test \
 	sign-verify.test
@@ -14,7 +15,7 @@ if MINGW
 AM_CPPFLAGS += -I../catta/include/catta/compat/windows
 endif
 
-check_PROGRAMS = basic basicpp channels channels-fork import-export invite-join sign-verify echo-fork
+check_PROGRAMS = basic basicpp channels channels-fork channels-aio import-export invite-join sign-verify echo-fork
 
 basic_SOURCES = basic.c
 basic_LDADD = ../src/libmeshlink.la
@@ -27,6 +28,9 @@ channels_LDADD = ../src/libmeshlink.la
 
 channels_fork_SOURCES = channels-fork.cpp
 channels_fork_LDADD = ../src/libmeshlink.la
+
+channels_aio_SOURCES = channels-aio.cpp
+channels_aio_LDADD = ../src/libmeshlink.la
 
 echo_fork_SOURCES = echo-fork.c
 echo_fork_LDADD = ../src/libmeshlink.la
