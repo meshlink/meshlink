@@ -73,23 +73,11 @@ typedef struct node_t {
 	time_t last_connect_try;
 	time_t last_successfull_connection;
 
-	uint32_t sent_seqno;                    /* Sequence number last sent to this node */
-	uint32_t received_seqno;                /* Sequence number last received from this node */
-	uint32_t received;                      /* Total valid packets received from this node */
-	uint32_t prev_received_seqno;
-	uint32_t prev_received;
-	unsigned char* late;                    /* Bitfield marking late packets */
-
 	uint16_t mtu;                           /* Maximum size of packets to send to this node */
 	uint16_t minmtu;                        /* Probed minimum MTU */
 	uint16_t maxmtu;                        /* Probed maximum MTU */
 	int mtuprobes;                          /* Number of probes */
 	timeout_t mtutimeout;                   /* Probe event */
-	struct timeval probe_time;              /* Time the last probe was sent or received */
-	int probe_counter;                      /* Number of probes received since last burst was sent */
-	float rtt;                              /* Last measured round trip time */
-	float bandwidth;                        /* Last measured bandwidth */
-	float packetloss;                       /* Last measured packet loss rate */
 
 	struct utcp *utcp;
 
