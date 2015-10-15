@@ -27,7 +27,7 @@
 #include "prf.h"
 #include "sptps.h"
 
-unsigned int sptps_replaywin = 16;
+unsigned int sptps_replaywin = 32;
 
 /*
    Nonce MUST be exchanged first (done)
