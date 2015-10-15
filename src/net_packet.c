@@ -40,8 +40,6 @@ int keylifetime = 0;
 
 static void send_udppacket(meshlink_handle_t *mesh, node_t *, vpn_packet_t *);
 
-unsigned replaywin = 16;
-
 #define MAX_SEQNO 1073741824
 
 /* mtuprobes == 1..30: initial discovery, send bursts with 1 second interval
@@ -138,20 +136,6 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 	}
 
 	n->status.broadcast = false;
-	n->probe_counter = 0;
-	gettimeofday(&n->probe_time, NULL);
-
-	/* Calculate the packet loss of incoming traffic by comparing the rate of
-	   packets received to the rate with which the sequence number has increased.
-	 */
-
-	if(n->received > n->prev_received)
-		n->packetloss = 1.0 - (n->received - n->prev_received) / (float)(n->received_seqno - n->prev_received_seqno);
-	else
-		n->packetloss = n->received_seqno <= n->prev_received_seqno;
-
-	n->prev_received_seqno = n->received_seqno;
-	n->prev_received = n->received;
 
 end:
 	timeout_set(&mesh->loop, &n->mtutimeout, &(struct timeval){timeout, rand() % 100000});
@@ -206,26 +190,6 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 			len = n->maxmtu;
 		if(n->minmtu < len)
 			n->minmtu = len;
-
-		/* Calculate RTT and bandwidth.
-		   The RTT is the time between the MTU probe burst was sent and the first
-		   reply is received. The bandwidth is measured using the time between the
-		   arrival of the first and third probe reply.
-		 */
-
-		struct timeval now, diff;
-		gettimeofday(&now, NULL);
-		timersub(&now, &n->probe_time, &diff);
-		
-		n->probe_counter++;
-
-		if(n->probe_counter == 1) {
-			n->rtt = diff.tv_sec + diff.tv_usec * 1e-6;
-			n->probe_time = now;
-		} else if(n->probe_counter == 3) {
-			n->bandwidth = 2.0 * len / (diff.tv_sec + diff.tv_usec * 1e-6);
-			logger(mesh, MESHLINK_DEBUG, "%s (%s) RTT %.2f ms, burst bandwidth %.3f Mbit/s, rx packet loss %.2f %%", n->name, n->hostname, n->rtt * 1e3, n->bandwidth * 8e-6, n->packetloss * 1e2);
-		}
 	}
 }
 

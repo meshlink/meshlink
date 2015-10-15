@@ -71,7 +71,6 @@ typedef struct outgoing_t {
 
 extern int maxoutbufsize;
 extern int addressfamily;
-extern unsigned replaywin;
 
 extern int keylifetime;
 extern int max_connection_burst;

@@ -50,7 +50,6 @@ void exit_nodes(meshlink_handle_t *mesh) {
 node_t *new_node(void) {
 	node_t *n = xzalloc(sizeof *n);
 
-	if(replaywin) n->late = xzalloc(replaywin);
 	n->edge_tree = new_edge_tree();
 	n->mtu = MTU;
 	n->maxmtu = MTU;
@@ -73,7 +72,6 @@ void free_node(node_t *n) {
 
 	free(n->hostname);
 	free(n->name);
-	free(n->late);
 
 	utcp_exit(n->utcp);
 
