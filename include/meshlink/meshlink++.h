@@ -84,6 +84,18 @@ namespace meshlink {
 	 */
 	typedef void (*channel_poll_cb_t)(mesh *mesh, channel *channel, size_t len);
 
+	/// A callback for cleaning up buffers submitted for asynchronous I/O.
+	/** This callbacks signals that MeshLink has finished using this buffer.
+	 *  The ownership of the buffer is now back into the application's hands.
+	 *
+	 *  @param mesh      A handle which represents an instance of MeshLink.
+	 *  @param channel   A handle for the channel which used this buffer.
+	 *  @param data      A pointer to a buffer containing the enqueued data.
+	 *  @param len       The length of the buffer.
+	 *  @param priv      A private pointer which was set by the application when submitting the buffer.
+	 */
+	typedef void (*aio_cb_t)(mesh *mesh, channel *channel, void *data, size_t len, void *priv);
+
 	/// A class describing a MeshLink node.
 	class node: public meshlink_node_t {
 	};
@@ -223,6 +235,21 @@ namespace meshlink {
 		 *  @param len          The maximum length of data that is guaranteed to be accepted by a call to channel_send().
 		 */
 		virtual void channel_poll(channel *channel, size_t len) { /* do nothing */ }
+
+		/// This function is called by Meshlink when it is finished with a buffer given to channel_aio_send
+		/** 
+		 *  The function is run in MeshLink's own thread.
+		 *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+		 *  to pass data to or from the application's thread.
+		 *  
+		 *  The ownership of the buffer is now back into the application's hands.
+		 *
+		 *  @param channel   a handle for the channel which used this buffer.
+		 *  @param data      a pointer to a buffer containing the enqueued data.
+		 *  @param len       the length of the buffer.
+		 *  @param priv      A private pointer which was set by the application when submitting the buffer.
+		*/
+		virtual void channel_aio_finished(channel *channel, const void *data, size_t len, void* priv) { /* do nothing */ }
 		
 		/// Start MeshLink.
 		/** This function causes MeshLink to open network sockets, make outgoing connections, and
@@ -478,6 +505,53 @@ namespace meshlink {
 			return meshlink_channel_send(handle, channel, data, len);
 		}
 
+		/// Transmit data on a channel asynchronously
+		/** This queues data to send to the remote node.
+		 *
+		 *  @param channel      A handle for the channel.
+		 *  @param data         A pointer to a buffer containing data sent by the source. May not be NULL.
+		 *                      After meshlink_channel_aio_send() returns, the buffer may not be modified or freed by the application
+		 *                      until the callback routine is called.
+		 *  @param len          The length of the data. May not be 0.
+		 *  @param cb           A pointer to the function which will be called when MeshLink has finished using the buffer.
+		 *
+		 *  @return             True if the buffer was enqueued, false otherwise.
+		 */
+		bool channel_aio_send(channel *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv) {
+			return meshlink_channel_aio_send(handle, channel, data, len, cb, priv);
+		}
+
+		/// Receive data on a channel asynchronously
+		/** This queues a buffer for data to be received from the remote node.
+		 *
+		 *  @param channel      A handle for the channel.
+		 *  @param data         A pointer to a buffer that will receive data sent by the channel peer. May not be NULL.
+		 *                      After meshlink_channel_aio_send() returns, the buffer may not be modified or freed by the application
+		 *                      until the callback routine is called.
+		 *  @param len          The length of the data. May not be 0.
+		 *  @param cb           A pointer to the function which will be called when MeshLink has finished using the buffer.
+		 *
+		 *  @return             True if the buffer was enqueued, false otherwise.
+		 */
+		bool channel_aio_receive(channel *channel, void *data, size_t len, meshlink_aio_cb_t cb, void *priv) {
+			return meshlink_channel_aio_receive(handle, channel, data, len, cb, priv);
+		}
+
+		/**
+		 * @override
+		 * Sets the cb to channel_aio_finished_trampoline.
+		 */
+		bool channel_aio_send(channel *channel, const void *data, size_t len, void *priv) {
+			return meshlink_channel_aio_send(handle, channel, data, len, &channel_aio_finished_trampoline, priv);
+		}
+
+		/**
+		 * @override
+		 * Sets the cb to channel_aio_finished_trampoline.
+		 */
+		bool channel_aio_receive(channel *channel, void *data, size_t len, void *priv) {
+			return meshlink_channel_aio_receive(handle, channel, data, len, &channel_aio_finished_trampoline, priv);
+		}
 	private:
 		// non-copyable:
 		mesh(const mesh&) /* TODO: C++11: = delete */;
@@ -536,6 +610,14 @@ namespace meshlink {
 				return;
 			meshlink::mesh* that = static_cast<mesh*>(handle->priv);
 			that->channel_poll(static_cast<meshlink::channel*>(channel), len);
+		}
+
+		static void channel_aio_finished_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, void *data, size_t len, void *priv)
+		{
+			if(!(handle->priv))
+				return;
+			meshlink::mesh* that = static_cast<mesh*>(handle->priv);
+			that->channel_aio_finished(static_cast<meshlink::channel*>(channel), data, len, priv);
 		}
 
 		meshlink_handle_t* handle;

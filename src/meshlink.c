@@ -2040,10 +2040,36 @@ static ssize_t channel_recv(struct utcp_connection *connection, const void *data
 		abort();
 	node_t *n = channel->node;
 	meshlink_handle_t *mesh = n->mesh;
-	if(!channel->receive_cb)
-		return -1;
-	else {
-		channel->receive_cb(mesh, channel, data, len);
+	meshlink_aio_buffer_t *aio;
+	size_t done = 0;
+
+	// If we have AIO buffers, use those first.
+	while((aio = channel->aio_receive)) {
+		// Fill the current buffer up as much as possible
+		size_t left = aio->len - aio->done;
+		if(left > (len - done))
+			left = len - done;
+		memcpy((char *)aio->data + aio->done, (char *)data + done, left);
+		aio->done += left;
+		done += left;
+
+		// AIO buffer full?
+		if(aio->done >= aio->len) {
+			if(aio->cb)
+				aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
+			channel->aio_receive = aio->next;
+			free(aio);
+		}
+
+		// Everything received processed?
+		if(done >= len)
+			return len;
+	}
+
+	if(!channel->receive_cb) {
+		return done;
+	} else {
+		channel->receive_cb(mesh, channel, data + done, len - done);
 		return len;
 	}
 }
@@ -2106,10 +2132,34 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 	meshlink_channel_t *channel = connection->priv;
 	if(!channel)
 		abort();
+
 	node_t *n = channel->node;
 	meshlink_handle_t *mesh = n->mesh;
-	if(channel->poll_cb)
-		channel->poll_cb(mesh, channel, len);
+	meshlink_aio_buffer_t *aio = channel->aio_send;
+
+	// If we have AIO buffers queued, use those.
+	if(aio) {
+		// Send as much as possible.
+		size_t left = aio->len - aio->done;
+		if(len > left)
+			len = left;
+		ssize_t sent = utcp_send(connection, aio->data + aio->done, len);
+		if(sent != -1)
+			aio->done += sent;
+
+		// If it is done, call the callback and dispose of it.
+		if(aio->done >= aio->len) {
+			if(aio->cb)
+				aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
+			channel->aio_send = aio->next;
+			free(aio);
+		}
+	} else {
+		if(channel->poll_cb)
+			channel->poll_cb(mesh, channel, len);
+		else
+			utcp_set_poll_cb(connection, NULL);
+	}
 }
 
 void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_poll_cb_t cb) {
@@ -2117,7 +2167,7 @@ void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *c
 	MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
 
 	channel->poll_cb = cb;
-	utcp_set_poll_cb(channel->c, cb ? channel_poll : NULL);
+	utcp_set_poll_cb(channel->c, (cb || channel->aio_send) ? channel_poll : NULL);
 
 	MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 }
@@ -2195,6 +2245,18 @@ void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel
 	MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
 
 	utcp_close(channel->c);
+	for(meshlink_aio_buffer_t *aio = channel->aio_send, *next; aio; aio = next) {
+		next = aio->next;
+		if(aio->cb)
+			aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
+		free(aio);
+	}
+	for(meshlink_aio_buffer_t *aio = channel->aio_receive, *next; aio; aio = next) {
+		next = aio->next;
+		if(aio->cb)
+			aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
+		free(aio);
+	}
 	free(channel);
 
 	MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
@@ -2219,13 +2281,77 @@ ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *chann
 	// Then, preferrably only if there is room in the receiver window,
 	// kick the meshlink thread to go send packets.
 
+	ssize_t retval;
+
 	MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
-	ssize_t retval = utcp_send(channel->c, data, len);
+	if(channel->aio_send)
+		retval = 0; // Don't allow direct calls to utcp_send() while we are processing AIO.
+	else
+		retval = utcp_send(channel->c, data, len);
 	MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 
 	if(retval < 0)
 		meshlink_errno = MESHLINK_ENETWORK;
 	return retval;
+}
+
+bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv) {
+	if(!mesh || !channel) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	if(!len || !data) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	struct meshlink_aio_buffer *aio = xzalloc(sizeof *aio);
+
+	aio->data = (void *)data;
+	aio->len = len;
+	aio->cb = cb;
+	aio->priv = priv;
+
+	MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
+	struct meshlink_aio_buffer **p = &channel->aio_send;
+	while(*p)
+		p = &(*p)->next;
+	*p = aio;
+
+	utcp_set_poll_cb(channel->c, channel_poll);
+	channel_poll(channel->c, len);
+	MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+
+	return true;
+}
+
+bool meshlink_channel_aio_receive(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *data, size_t len, meshlink_aio_cb_t cb, void *priv) {
+	if(!mesh || !channel) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	if(!len || !data) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	struct meshlink_aio_buffer *aio = xzalloc(sizeof *aio);
+
+	aio->data = data;
+	aio->len = len;
+	aio->cb = cb;
+	aio->priv = priv;
+
+	MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
+	struct meshlink_aio_buffer **p = &channel->aio_receive;
+	while(*p)
+		p = &(*p)->next;
+	*p = aio;
+	MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+
+	return true;
 }
 
 void update_node_status(meshlink_handle_t *mesh, node_t *n) {
