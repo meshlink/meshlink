@@ -73,12 +73,13 @@ CFLAGS:
 
 --with-zlib-include=${ZLIB_INCLUDE_DIR}<br/>
 --with-zlib-lib=${ZLIB_LIBRARY_DIR}<br/>
---prefix=[INSTALL_DIR]
+--prefix=[INSTALL_DIR]<br/>
+-DUTCP_DEBUG to enable meshlink utcp debug output
 
 Debug:
 ```
 catta/configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -g -O0' --prefix='/c/lib/catta'
-configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -g -O0' --prefix='/c/lib/meshlink' --with-zlib-lib=/c/lib/zlib/lib
+configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -g -O0 -DUTCP_DEBUG' --prefix='/c/lib/meshlink' --with-zlib-lib=/c/lib/zlib/lib
 ```
 Release:
 ```
