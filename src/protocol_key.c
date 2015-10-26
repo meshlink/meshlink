@@ -88,14 +88,14 @@ bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 	if(to->sptps.label)
 		logger(mesh, MESHLINK_DEBUG, "send_req_key(%s) called while sptps->label != NULL!", to->name);
 
-	char label[25 + strlen(mesh->self->name) + strlen(to->name)];
-	snprintf(label, sizeof label, "MeshLink UDP key expansion %s %s", mesh->self->name, to->name);
+	char label[14 + strlen(mesh->self->name) + strlen(to->name) + 1];
+	snprintf(label, sizeof label, "MeshLink UDP %s %s", mesh->self->name, to->name);
 	sptps_stop(&to->sptps);
 	to->status.validkey = false;
 	to->status.waitingforkey = true;
 	to->last_req_key = mesh->loop.now.tv_sec;
 	to->incompression = mesh->self->incompression;
-	return sptps_start(&to->sptps, to, true, true, mesh->self->connection->ecdsa, to->ecdsa, label, sizeof label, send_initial_sptps_data, receive_sptps_record);
+	return sptps_start(&to->sptps, to, true, true, mesh->self->connection->ecdsa, to->ecdsa, label, sizeof label - 1, send_initial_sptps_data, receive_sptps_record);
 }
 
 /* REQ_KEY is overloaded to allow arbitrary requests to be routed between two nodes. */
@@ -149,13 +149,13 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 				return true;
 			}
 
-			char label[25 + strlen(from->name) + strlen(mesh->self->name)];
-			snprintf(label, sizeof label, "MeshLink UDP key expansion %s %s", from->name, mesh->self->name);
+			char label[14 + strlen(from->name) + strlen(mesh->self->name) + 1];
+			snprintf(label, sizeof label, "MeshLink UDP %s %s", from->name, mesh->self->name);
 			sptps_stop(&from->sptps);
 			from->status.validkey = false;
 			from->status.waitingforkey = true;
 			from->last_req_key = mesh->loop.now.tv_sec;
-			sptps_start(&from->sptps, from, false, true, mesh->self->connection->ecdsa, from->ecdsa, label, sizeof label, send_sptps_data, receive_sptps_record);
+			sptps_start(&from->sptps, from, false, true, mesh->self->connection->ecdsa, from->ecdsa, label, sizeof label - 1, send_sptps_data, receive_sptps_record);
 			sptps_receive_data(&from->sptps, buf, len);
 			return true;
 		}
