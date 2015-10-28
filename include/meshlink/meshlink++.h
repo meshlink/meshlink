@@ -133,11 +133,16 @@ namespace meshlink {
 		 *  but it is not a problem if it is run more than once, as long as
 		 *  the arguments given are the same.
 		 *
+		 *  The name given should be a unique identifier for this instance. If the configuration already exists,
+		 *  the name must match the name given when the configuration was created, otherwise an error will be returned.
+		 *  The name can be NULL, but only if the configuration already exists.
+		 *
 		 *  This function does not start any network I/O yet. The application should
 		 *  first set callbacks, and then call meshlink_start().
 		 *
 		 *  @param confbase The directory in which MeshLink will store its configuration files.
 		 *  @param name     The name which this instance of the application will use in the mesh.
+		 *                  May be NULL if the configuration already exists.
 		 *  @param appname  The application name which will be used in the mesh.
 		 *  @param dclass   The device class which will be used in the mesh.
 		 *

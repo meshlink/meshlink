@@ -47,7 +47,15 @@ int main(int argc, char *argv[]) {
 
 	// Check that the name is ignored now, and that we still are "foo".
 
-	mesh.open("basicpp_conf", "bar", "basicpp", DEV_CLASS_BACKBONE);
+	if(mesh.open("basicpp_conf", "bar", "basicpp", DEV_CLASS_BACKBONE)) {
+		cerr << "Could reopen configuration using name bar instead of foo\n";
+		return 1;
+	}
+
+	if(!mesh.open("basicpp_conf", NULL, "basicpp", DEV_CLASS_BACKBONE)) {
+		cerr << "Could not open configuration for foo a second time\n";
+		return 1;
+	}
 
 	if(mesh.get_node("bar")) {
 		cerr << "Foo knows about bar, it shouldn't\n";
@@ -80,6 +88,11 @@ int main(int argc, char *argv[]) {
 
 	if(!access("basic.conf", F_OK) || errno != ENOENT) {
 		cerr << "Configuration not fully destroyed\n";
+		return 1;
+	}
+
+	if(mesh.open("basicpp_conf", NULL, "basicpp", DEV_CLASS_BACKBONE)) {
+		cerr << "Could open non-existing configuration with NULL name\n";
 		return 1;
 	}
 

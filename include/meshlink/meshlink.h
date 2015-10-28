@@ -148,7 +148,9 @@ extern void meshlink_free(void *ptr);
  *  this instance is opened, the configuration directory will be automatically created and initialized.
  *  However, the parent directory should already exist, otherwise an error will be returned.
  *
- *  The name given should be a unique identifier for this instance.
+ *  The name given should be a unique identifier for this instance. If the configuration already exists,
+ *  the name must match the name given when the configuration was created, otherwise an error will be returned.
+ *  The name can be NULL, but only if the configuration already exists.
  *
  *  This function returns a pointer to a struct meshlink_handle that will be allocated by MeshLink.
  *  When the application does no longer need to use this handle, it must call meshlink_close() to
@@ -160,6 +162,7 @@ extern void meshlink_free(void *ptr);
  *  @param confbase The directory in which MeshLink will store its configuration files.
  *                  After the function returns, the application is free to overwrite or free @a confbase @a.
  *  @param name     The name which this instance of the application will use in the mesh.
+ *                  May be NULL if the configuration already exists.
  *                  After the function returns, the application is free to overwrite or free @a name @a.
  *  @param appname  The application name which will be used in the mesh.
  *                  After the function returns, the application is free to overwrite or free @a name @a.

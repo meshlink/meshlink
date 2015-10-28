@@ -840,7 +840,6 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 
 meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
 	// Validate arguments provided by the application
-	bool usingname = false;
 
 	logger(NULL, MESHLINK_DEBUG, "meshlink_open called\n");
 
@@ -856,17 +855,10 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 		return NULL;
 	}
 
-	if(!name || !*name) {
-		logger(NULL, MESHLINK_ERROR, "No name given!\n");
-		//return NULL;
-	}
-	else { //check name only if there is a name != NULL
-
-		if(!check_id(name)) {
-			logger(NULL, MESHLINK_ERROR, "Invalid name given!\n");
-			meshlink_errno = MESHLINK_EINVAL;
-			return NULL;
-		} else { usingname = true;}
+	if(name && !check_id(name)) {
+		logger(NULL, MESHLINK_ERROR, "Invalid name given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
 	}
 
 	if(devclass < 0 || devclass > _DEV_CLASS_MAX) {
@@ -879,7 +871,8 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	mesh->confbase = xstrdup(confbase);
 	mesh->appname = xstrdup(appname);
 	mesh->devclass = devclass;
-	if (usingname) mesh->name = xstrdup(name);
+	if(name)
+		mesh->name = xstrdup(name);
 
 	// initialize mutex
 	pthread_mutexattr_t attr;
@@ -900,9 +893,18 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 
 	if(access(filename, R_OK)) {
 		if(errno == ENOENT) {
-			// If not, create it
+			// If not, create it, but only if someone gave us a name
+			if(!name) {
+				logger(NULL, MESHLINK_ERROR, "Configuration file %s does not exist", filename);
+				meshlink_close(mesh);
+				meshlink_errno = MESHLINK_ENOENT;
+				MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+				return NULL;
+			}
+
 			if(!meshlink_setup(mesh)) {
 				// meshlink_errno is set by meshlink_setup()
+				meshlink_close(mesh);
 				MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 				return NULL;
 			}
@@ -925,6 +927,18 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 		MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 		return NULL;
 	};
+
+	if(mesh->name) {
+		if(strcmp(mesh->name, get_name(mesh))) {
+			logger(NULL, MESHLINK_ERROR, "Given name does not match the one in %s\n", filename);
+			meshlink_close(mesh);
+			meshlink_errno = MESHLINK_EINVAL;
+			MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+			return NULL;
+		}
+	} else {
+		mesh->name = get_name(mesh);
+	}
 
 #ifdef HAVE_MINGW
 	struct WSAData wsa_state;

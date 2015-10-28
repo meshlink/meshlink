@@ -49,8 +49,19 @@ int main(int argc, char *argv[]) {
 	// Check that the name is ignored now, and that we still are "foo".
 
 	mesh = meshlink_open("basic_conf", "bar", "basic", DEV_CLASS_BACKBONE);
+	if(mesh) {
+		fprintf(stderr, "Could reopen configuration using name bar instead of foo\n");
+		return 1;
+	}
+
+	mesh = meshlink_open("basic_conf", NULL, "basic", DEV_CLASS_BACKBONE);
 	if(!mesh) {
 		fprintf(stderr, "Could not open configuration for foo a second time\n");
+		return 1;
+	}
+
+	if(strcmp(mesh->name, "foo")) {
+		fprintf(stderr, "Configuration is not for foo\n");
 		return 1;
 	}
 
@@ -90,6 +101,14 @@ int main(int argc, char *argv[]) {
 
 	if(!access("basic_conf", F_OK) || errno != ENOENT) {
 		fprintf(stderr, "Configuration not fully destroyed\n");
+		return 1;
+	}
+
+	// Check that we cannot open it anymore
+
+	mesh = meshlink_open("basic_conf", NULL, "basic", DEV_CLASS_BACKBONE);
+	if(mesh) {
+		fprintf(stderr, "Could open non-existing configuration with NULL name\n");
 		return 1;
 	}
 
