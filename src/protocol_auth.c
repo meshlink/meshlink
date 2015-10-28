@@ -112,8 +112,10 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 				logger(mesh, MESHLINK_ERROR, "Address family %hx not supported for SOCKS 5 proxies!", c->address.sa.sa_family);
 				return false;
 			}
-			if(i > len)
+			if(i > len) {
+				logger(mesh, MESHLINK_ERROR, "Error: send_proxyrequest i > len");
 				abort();
+			}
 			return send_meta(mesh, c, s5req, sizeof s5req);
 		}
 		case PROXY_SOCKS4A:

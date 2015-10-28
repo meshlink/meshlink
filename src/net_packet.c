@@ -502,8 +502,10 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 		} else {
 			inpkt.len = ulen;
 		}
-		if(inpkt.len > MAXSIZE)
+		if(inpkt.len > MAXSIZE) {
+			logger(mesh, MESHLINK_ERROR, "Error: SPTPS uncompressed packet len %d > MAXSIZE %d", inpkt.len, MAXSIZE);
 			abort();
+		}
 	} else {
 		memcpy(inpkt.data, data, len);
 		inpkt.len = len;

@@ -59,8 +59,10 @@ void free_connection(connection_t *c) {
 	buffer_clear(&c->inbuf);
 	buffer_clear(&c->outbuf);
 
-	if(c->io.cb)
+	if(c->io.cb) {
+        logger(NULL, MESHLINK_ERROR, "Error: free_connection c->io.cb");
 		abort();
+    }
 
 	if(c->socket > 0)
 		closesocket(c->socket);
