@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	if(siglen != MESHLINK_SIGLEN) {
-		fprintf(stderr, "Signature has unexpected length %zu != %zu\n", siglen, MESHLINK_SIGLEN);
+		fprintf(stderr, "Signature has unexpected length %lu != %lu\n", (unsigned long)siglen, (unsigned long)MESHLINK_SIGLEN);
 		return 1;
 	}
 

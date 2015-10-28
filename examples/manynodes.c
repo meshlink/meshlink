@@ -49,7 +49,7 @@ static void testmesh () {
 			if(!nodes) {
 				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink_strerror(meshlink_errno));
 			} else {
-				printf("%zu known nodes:\n", nnodes);
+				printf("%lu known nodes:\n", (unsigned long)nnodes);
 				for(int i = 0; i < nnodes; i++) {
 					//printf(" %s\n", nodes[i]->name);
 						if(!meshlink_send(mesh[nindex], nodes[i], "magic", strlen("magic") + 1)) {
@@ -244,7 +244,7 @@ static void parse_command(char *buf) {
 			if(!nodes) {
 				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink_strerror(meshlink_errno));
 			} else {
-				printf("%zu known nodes:", nnodes);
+				printf("%lu known nodes:", (unsigned long)nnodes);
 				for(int i = 0; i < nnodes; i++)
 					printf(" %s", nodes[i]->name);
 				printf("\n");
@@ -254,7 +254,7 @@ static void parse_command(char *buf) {
 			if(!node) {
 				fprintf(stderr, "Unknown node '%s'\n", arg);
 			} else {
-				printf("Node %s found, pmtu %zd\n", arg, meshlink_get_pmtu(mesh[nodeindex], node));
+				printf("Node %s found, pmtu %ld\n", arg, (long) meshlink_get_pmtu(mesh[nodeindex], node));
 			}
 		}
 	} else if(!strcasecmp(buf, "link")) {

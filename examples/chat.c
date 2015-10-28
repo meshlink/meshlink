@@ -93,7 +93,7 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			if(!nnodes) {
 				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink_strerror(meshlink_errno));
 			} else {
-				printf("%zu known nodes:", nnodes);
+				printf("%lu known nodes:", (unsigned long)nnodes);
 				for(int i = 0; i < nnodes; i++)
 					printf(" %s", nodes[i]->name);
 				printf("\n");
