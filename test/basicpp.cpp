@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 
 	// Check that the name is ignored now, and that we still are "foo".
 
-	mesh.open("basic_conf", "bar", "basicpp", DEV_CLASS_BACKBONE);
+	mesh.open("basicpp_conf", "bar", "basicpp", DEV_CLASS_BACKBONE);
 
 	if(mesh.get_node("bar")) {
 		cerr << "Foo knows about bar, it shouldn't\n";
