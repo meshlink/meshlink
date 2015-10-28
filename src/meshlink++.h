@@ -274,6 +274,15 @@ namespace meshlink {
 			return (node *)meshlink_get_node(handle, name);
 		}
 
+		/// Get a handle for our own node.
+		/** This function returns a handle for the local node.
+		 *
+		 *  @return             A pointer to a meshlink::node which represents the local node.
+		 */
+		node *get_self() {
+			return (node *)meshlink_get_self(handle);
+		}
+
 		/// Get a list of all nodes.
 		/** This function returns a list with handles for all known nodes.
 		 *
