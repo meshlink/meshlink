@@ -342,6 +342,16 @@ extern bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination,
  */
 extern ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination);
 
+/// Get a handle for our own node.
+/** This function returns a handle for the local node.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *
+ *  @return             A pointer to a meshlink_node_t which represents the local node.
+ *                      The pointer is guaranteed to be valid until meshlink_close() is called.
+ */
+extern meshlink_node_t *meshlink_get_self(meshlink_handle_t *mesh);
+
 /// Get a handle for a specific node.
 /** This function returns a handle for the node with the given name.
  *

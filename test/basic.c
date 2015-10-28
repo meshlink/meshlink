@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
 
 	// Check that our own node exists.
 
-	meshlink_node_t *self = meshlink_get_node(mesh, "foo");
+	meshlink_node_t *self = meshlink_get_self(mesh);
 	if(!self) {
 		fprintf(stderr, "Foo does not know about itself\n");
 		return 1;
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	self = meshlink_get_node(mesh, "foo");
+	self = meshlink_get_self(mesh);
 	if(!self) {
 		fprintf(stderr, "Foo doesn't know about itself the second time\n");
 		return 1;

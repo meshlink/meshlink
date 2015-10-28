@@ -1297,6 +1297,15 @@ char *meshlink_get_fingerprint(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	return fingerprint;
 }
 
+meshlink_node_t *meshlink_get_self(meshlink_handle_t *mesh) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	return (meshlink_node_t *)mesh->self;
+}
+
 meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
 	if(!mesh || !name) {
 		meshlink_errno = MESHLINK_EINVAL;

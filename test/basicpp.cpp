@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 
 	// Check that our own node exists.
 
-	meshlink::node *self = mesh.get_node("foo");
+	meshlink::node *self = mesh.get_self();
 	if(!self) {
 		cerr << "Foo does not know about itself\n";
 		return 1;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	self = mesh.get_node("foo");
+	self = mesh.get_self();
 	if(!self) {
 		cerr << "Foo doesn't know about itself the second time\n";
 		return 1;
