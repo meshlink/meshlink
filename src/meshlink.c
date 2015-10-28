@@ -1049,6 +1049,49 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	free(mesh);
 }
 
+static void deltree(const char *dirname) {
+	DIR *d = opendir(dirname);
+	if(d) {
+		struct dirent *ent;
+		while((ent = readdir(d))) {
+			if(ent->d_name[0] == '.')
+				continue;
+			char filename[PATH_MAX];
+			snprintf(filename, sizeof filename, "%s" SLASH "%s", dirname, ent->d_name);
+			if(unlink(filename))
+				deltree(filename);
+		}
+		closedir(d);
+	}
+	rmdir(dirname);
+	return;
+}
+
+bool meshlink_destroy(const char *confbase) {
+	if(!confbase) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	char filename[PATH_MAX];
+	snprintf(filename, sizeof filename, "%s" SLASH "meshlink.conf", confbase);
+
+	if(unlink(filename)) {
+		if(errno == ENOENT) {
+			meshlink_errno = MESHLINK_ENOENT;
+			return false;
+		} else {
+			logger(NULL, MESHLINK_ERROR, "Cannot delete %s: %s\n", filename, strerror(errno));
+			meshlink_errno = MESHLINK_ESTORAGE;
+			return false;
+		}
+	}
+
+	deltree(confbase);
+
+	return true;
+}
+
 void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) {
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;

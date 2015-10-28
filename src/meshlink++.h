@@ -540,6 +540,19 @@ namespace meshlink {
 		return meshlink_strerror(err);
 	}
 
+	/// Destroy a MeshLink instance.
+	/** This function remove all configuration files of a MeshLink instance. It should only be called when the application
+	 *  does not have an open handle to this instance. Afterwards, a call to meshlink_open() will create a completely
+	 *  new instance.
+	 *
+	 *  @param confbase The directory in which MeshLink stores its configuration files.
+	 *                  After the function returns, the application is free to overwrite or free @a confbase @a.
+	 *
+	 *  @return         This function will return true if the MeshLink instance was succesfully destroyed, false otherwise.
+	 */
+	static bool destroy(const char *confbase) {
+		return meshlink_destroy(confbase);
+	}
 }
 
 #endif // MESHLINKPP_H

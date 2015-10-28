@@ -1,5 +1,7 @@
 #include <cstring>
 #include <iostream>
+#include <unistd.h>
+#include <cerrno>
 
 #include "meshlink++.h"
 
@@ -70,6 +72,16 @@ int main(int argc, char *argv[]) {
 	}
 
 	mesh.stop();
+
+	if(!meshlink::destroy("basicpp_conf")) {
+		cerr << "Could not destroy configuration\n";
+		return 1;
+	}
+
+	if(!access("basic.conf", F_OK) || errno != ENOENT) {
+		cerr << "Configuration not fully destroyed\n";
+		return 1;
+	}
 
 	return 0;
 }
