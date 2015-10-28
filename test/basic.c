@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include "meshlink/meshlink.h"
 
@@ -78,6 +80,18 @@ int main(int argc, char *argv[]) {
 	// That's it.
 
 	meshlink_close(mesh);
+
+	// Destroy the mesh.
+
+	if(!meshlink_destroy("basic_conf")) {
+		fprintf(stderr, "Could not destroy configuration\n");
+		return 1;
+	}
+
+	if(!access("basic_conf", F_OK) || errno != ENOENT) {
+		fprintf(stderr, "Configuration not fully destroyed\n");
+		return 1;
+	}
 
 	return 0;
 }
