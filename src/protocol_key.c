@@ -238,6 +238,7 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool send_ans_key(meshlink_handle_t *mesh, node_t *to) {
+	logger(mesh, MESHLINK_ERROR, "Error: send_ans_key not implemented");
 	abort();
 }
 

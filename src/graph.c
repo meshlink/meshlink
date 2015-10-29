@@ -141,8 +141,10 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 	for list_each(node_t, n, todo_list) {                   /* "n" is the node from which we start */
 		logger(mesh, MESHLINK_DEBUG, " Examining edges from %s", n->name);
 
-		if(n->distance < 0)
-			abort();
+		if(n->distance < 0) {
+            logger(mesh, MESHLINK_ERROR, "Error: sssp_bfs n->distance < 0");
+            abort();
+        }
 
 		for splay_each(edge_t, e, n->edge_tree) {       /* "e" is the edge connected to "from" */
 			if(!e->reverse)

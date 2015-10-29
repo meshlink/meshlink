@@ -62,8 +62,10 @@ void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int fl
 
 	io_set(loop, io, flags);
 
-	if(!splay_insert_node(&loop->ios, &io->node))
+	if(!splay_insert_node(&loop->ios, &io->node)) {
+		logger(NULL, MESHLINK_ERROR, "Error: io_add splay_insert_node failed");
 		abort();
+	}
 }
 
 void io_set(event_loop_t *loop, io_t *io, int flags) {
@@ -112,8 +114,10 @@ void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv) {
 
 	timeradd(&loop->now, tv, &timeout->tv);
 
-	if(!splay_insert_node(&loop->timeouts, &timeout->node))
+	if(!splay_insert_node(&loop->timeouts, &timeout->node)) {
+		logger(NULL, MESHLINK_ERROR, "Error: timeout_set splay_insert_node failed");
 		abort();
+	}
 }
 
 void timeout_del(event_loop_t *loop, timeout_t *timeout) {
@@ -168,8 +172,10 @@ void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, u
 	if(loop->pipefd[0] == -1)
 		pipe_init(loop);
 
-	if(!splay_insert_node(&loop->signals, &sig->node))
+	if(!splay_insert_node(&loop->signals, &sig->node)) {
+		logger(NULL, MESHLINK_ERROR, "Error: signal_add splay_insert_node failed");
 		abort();
+	}
 }
 
 void signal_del(event_loop_t *loop, signal_t *sig) {

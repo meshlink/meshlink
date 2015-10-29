@@ -67,8 +67,10 @@ void free_node(node_t *n) {
 	ecdsa_free(n->ecdsa);
 	sptps_stop(&n->sptps);
 
-	if(n->mtutimeout.cb)
+	if(n->mtutimeout.cb) {
+		logger(NULL, MESHLINK_ERROR, "Error: free_node n->mtutimeout.cb");
 		abort();
+	}
 
 	free(n->hostname);
 	free(n->name);

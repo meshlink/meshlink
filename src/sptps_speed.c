@@ -50,8 +50,10 @@ static void receive_data(sptps_t *sptps) {
 	char buf[4096];
 	int fd = *(int *)sptps->handle;
 	size_t len = recv(fd, buf, sizeof buf, 0);
-	if(!sptps_receive_data(sptps, buf, len))
+	if(!sptps_receive_data(sptps, buf, len)) {
+		fprintf(stderr, "Error: sptps_receive_data failed");
 		abort();
+	}
 }
 
 struct timespec start;
@@ -156,8 +158,10 @@ int main(int argc, char *argv[]) {
 	}
 	fprintf(stderr, "SPTPS/TCP transmit for %lg seconds: ", duration);
 	for(clock_start(); clock_countto(duration);) {
-		if(!sptps_send_record(&sptps1, 0, buf1, 1451))
+		if(!sptps_send_record(&sptps1, 0, buf1, 1451)) {
+			fprintf(stderr, "Error: sptps_send_record failed");
 			abort();
+		}
 		receive_data(&sptps2);
 	}
 	rate *= 2 * 1451 * 8;
@@ -207,8 +211,10 @@ int main(int argc, char *argv[]) {
 	}
 	fprintf(stderr, "SPTPS/UDP transmit for %lg seconds: ", duration);
 	for(clock_start(); clock_countto(duration);) {
-		if(!sptps_send_record(&sptps1, 0, buf1, 1451))
+		if(!sptps_send_record(&sptps1, 0, buf1, 1451)) {
+			fprintf(stderr, "Error: sptps_send_record failed");
 			abort();
+		}
 		receive_data(&sptps2);
 	}
 	rate *= 2 * 1451 * 8;
