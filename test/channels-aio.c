@@ -33,12 +33,12 @@ void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 }
 
 void foo_aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *data, size_t len, void *priv) {
-	fprintf(stderr, "foo_aio_cb %p %zu %p\n", data, len, priv);
+	fprintf(stderr, "foo_aio_cb %p %lu %p\n", data, (unsigned long)len, priv);
 	foo_callbacks++;
 }
 
 void bar_aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *data, size_t len, void *priv) {
-	fprintf(stderr, "bar_aio_cb %p %zu %p\n", data, len, priv);
+	fprintf(stderr, "bar_aio_cb %p %lu %p\n", data, (unsigned long)len, priv);
 	bar_callbacks++;
 	if(!priv) { // Expecting a size_t equal to size
 		if(len != sizeof(size_t)) {
@@ -46,7 +46,7 @@ void bar_aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *data
 			exit(1);
 		}
 		if(*(size_t *)data != size) {
-			fprintf(stderr, "Unexpected data: %zu\n", *(size_t *)data);
+			fprintf(stderr, "Unexpected data: %lu\n", (unsigned long)(*(size_t *)data));
 			exit(1);
 		}
 
@@ -71,7 +71,7 @@ void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const 
 		meshlink_channel_close(mesh, channel);
 		return ;
 	}
-	fprintf(stderr, "bar got %zu unexpected bytes via receive_cb\n", len);
+	fprintf(stderr, "bar got %lu unexpected bytes via receive_cb\n", (unsigned long)len);
 	exit(1);
 }
 
@@ -172,12 +172,12 @@ int main(int argc, char *argv[]) {
 	free(data);
 
 	// Set the callbacks.
-	
+
 	meshlink_set_channel_accept_cb(mesh1, reject_cb);
 	meshlink_set_channel_accept_cb(mesh2, accept_cb);
 
 	meshlink_set_node_status_cb(mesh1, status_cb);
-	
+
 	// Start both instances
 
 	if(!meshlink_start(mesh1)) {
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Open a channel from foo to bar.
-	
+
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
 	if(!bar) {
 		fprintf(stderr, "Foo could not find bar\n");
@@ -223,7 +223,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, NULL, NULL, 0);
-	
+
 	// Send a large buffer of data, preceded by the length of the data to be received.
 
 	// TODO: first bytes should be sendable using meshlink_channel_send(), however UTCP doesn't like storing data in its buffers before it has seen a SYNACK.
@@ -264,7 +264,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Received data does not match transmitted data\n");
 		for(size_t i = 0; i < size; i++) {
 			if(indata[i] != outdata[i]) {
-				fprintf(stderr, "Difference at position %zu: %x != %x\n", i, indata[i], outdata[i]);
+				fprintf(stderr, "Difference at position %lu: %x != %x\n", (unsigned long)i, indata[i], outdata[i]);
 				break;
 			}
 		}
