@@ -64,27 +64,29 @@ autoreconf -fsiWnone
 ```
 
 ## configure:
-CFLAGS:
+CFLAGS:<br/>
 -g for debug symbols<br/>
 -O0 for optimization level 0<br/>
 -fPIC to generate position-independent code and if supported avoid any limit on the size of the global offset table<br/>
 -fstack-protector-all add guards to check for buffer overflows, protect all functions<br/>
 -std=c99 use c99 standard (be aware, this doesn't check on missing c99 format flag support with printf in Msvcrt.dll Microsoft C-Runtime Library)<br/>
-
---with-zlib-include=${ZLIB_INCLUDE_DIR}<br/>
---with-zlib-lib=${ZLIB_LIBRARY_DIR}<br/>
---prefix=[INSTALL_DIR]<br/>
 -DUTCP_DEBUG to enable meshlink utcp debug output
+
+--prefix=[INSTALL_DIR]
+
+zlib is already included with mingw-w64 but for your own build use:<br/>
+--with-zlib-include=${ZLIB_INCLUDE_DIR}<br/>
+--with-zlib-lib=${ZLIB_LIBRARY_DIR}
 
 Debug:
 ```
-catta/configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -g -O0' --prefix='/c/lib/catta'
-configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -g -O0 -DUTCP_DEBUG' --prefix='/c/lib/meshlink' --with-zlib-lib=/c/lib/zlib/lib
+catta/configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -g -O0' --prefix='/c/lib/catta/debug'
+configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -g -O0 -DUTCP_DEBUG' --prefix='/c/lib/meshlink/debug'
 ```
 Release:
 ```
-catta/configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -O3' --prefix='/c/lib/catta'
-configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -O3' --prefix='/c/lib/meshlink' --with-zlib-lib=/c/lib/zlib/lib
+catta/configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -O3' --prefix='/c/lib/catta/release'
+configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -O3' --prefix='/c/lib/meshlink/release'
 ```
 
 ## build:
