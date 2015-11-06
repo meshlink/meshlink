@@ -944,6 +944,12 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 	
 	logger(mesh, MESHLINK_DEBUG, "meshlink_start called\n");
 
+	if(mesh->listen_socket[0].tcp.fd < 0) {
+		logger(mesh, MESHLINK_ERROR, "Listening socket not open\n");
+		meshlink_errno = MESHLINK_ENETWORK;
+		return false;
+	}
+
 	mesh->thedatalen = 0;
 
 	// TODO: open listening sockets first
