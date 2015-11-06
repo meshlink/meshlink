@@ -903,21 +903,18 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 				logger(NULL, MESHLINK_ERROR, "Configuration file %s does not exist", filename);
 				meshlink_close(mesh);
 				meshlink_errno = MESHLINK_ENOENT;
-				MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 				return NULL;
 			}
 
 			if(!meshlink_setup(mesh)) {
 				// meshlink_errno is set by meshlink_setup()
 				meshlink_close(mesh);
-				MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 				return NULL;
 			}
 		} else {
 			logger(NULL, MESHLINK_ERROR, "Cannot not read from %s: %s\n", filename, strerror(errno));
 			meshlink_close(mesh);
 			meshlink_errno = MESHLINK_ESTORAGE;
-			MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 			return NULL;
 		}
 	}
@@ -929,7 +926,6 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	if(!read_server_config(mesh)) {
 		meshlink_close(mesh);
 		meshlink_errno = MESHLINK_ESTORAGE;
-		MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 		return NULL;
 	};
 
@@ -938,7 +934,6 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 			logger(NULL, MESHLINK_ERROR, "Given name does not match the one in %s\n", filename);
 			meshlink_close(mesh);
 			meshlink_errno = MESHLINK_EINVAL;
-			MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 			return NULL;
 		}
 	} else {
@@ -956,7 +951,6 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	if(!setup_network(mesh)) {
 		meshlink_close(mesh);
 		meshlink_errno = MESHLINK_ENETWORK;
-		MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 		return NULL;
 	}
 
