@@ -1058,7 +1058,7 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	closesocket(s->tcp.fd);
 	io_del(&mesh->loop, &s->tcp);
-	s->tcp.fd = setup_listen_socket(&s->sa);
+	s->tcp.fd = setup_listen_socket(mesh, &s->sa);
 	if(s->tcp.fd < 0)
 		logger(mesh, MESHLINK_ERROR, "Could not repair listenen socket!");
 	else

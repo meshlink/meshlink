@@ -100,7 +100,7 @@ static bool bind_to_address(meshlink_handle_t *mesh, connection_t *c) {
 	return true;
 }
 
-int setup_listen_socket(const sockaddr_t *sa) {
+int setup_listen_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	int nfd;
 	char *addrstr;
 	int option;
@@ -108,7 +108,7 @@ int setup_listen_socket(const sockaddr_t *sa) {
 	nfd = socket(sa->sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 
 	if(nfd < 0) {
-		logger(NULL, MESHLINK_ERROR, "Creating metasocket failed: %s", sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Creating metasocket failed: %s", sockstrerror(sockerrno));
 		return -1;
 	}
 
@@ -129,14 +129,14 @@ int setup_listen_socket(const sockaddr_t *sa) {
 	if(bind(nfd, &sa->sa, SALEN(sa->sa))) {
 		closesocket(nfd);
 		addrstr = sockaddr2hostname(sa);
-		logger(NULL, MESHLINK_ERROR, "Can't bind to %s/tcp: %s", addrstr, sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Can't bind to %s/tcp: %s", addrstr, sockstrerror(sockerrno));
 		free(addrstr);
 		return -1;
 	}
 
 	if(listen(nfd, 3)) {
 		closesocket(nfd);
-		logger(NULL, MESHLINK_ERROR, "System call `%s' failed: %s", "listen", sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "listen", sockstrerror(sockerrno));
 		return -1;
 	}
 
