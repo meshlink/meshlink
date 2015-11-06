@@ -286,7 +286,7 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 			return false;
 		}
 
-		int tcp_fd = setup_listen_socket((sockaddr_t *) aip->ai_addr);
+		int tcp_fd = setup_listen_socket(mesh, (sockaddr_t *) aip->ai_addr);
 
 		if(tcp_fd < 0)
 			continue;
