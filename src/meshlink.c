@@ -39,6 +39,7 @@ typedef struct {
 #include "node.h"
 #include "protocol.h"
 #include "route.h"
+#include "sockaddr.h"
 #include "utils.h"
 #include "xalloc.h"
 #include "ed25519/sha512.h"
@@ -1044,14 +1045,14 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 	logger(mesh, MESHLINK_DEBUG, "meshlink_stop called\n");
 
-	// Shut down a listening socket to signal the main thread to shut down
+	// Shut down the main thread
+	event_loop_stop(&mesh->loop);
+
+	// Fake a connection to kick the event loop
 	listen_socket_t *s = &mesh->listen_socket[0];
-	if(shutdown(s->tcp.fd, SHUT_RDWR) != 0)
-	{
-		// OS X gets ENOTCONN
-		logger(mesh, MESHLINK_ERROR, "Failed to shut down listening socket, closing instead: %s", sockstrerror(sockerrno));
-		closesocket(s->tcp.fd);
-	}
+	int fd = socket(s->sa.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
+	connect(fd, &s->sa.sa, SALEN(s->sa.sa));
+	close(fd);
 
 	// Wait for the main thread to finish
 	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
@@ -1059,16 +1060,6 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
 	mesh->threadstarted = false;
-
-	// Fix the socket
-
-	closesocket(s->tcp.fd);
-	io_del(&mesh->loop, &s->tcp);
-	s->tcp.fd = setup_listen_socket(mesh, &s->sa);
-	if(s->tcp.fd < 0)
-		logger(mesh, MESHLINK_ERROR, "Could not repair listenen socket!");
-	else
-		io_add(&mesh->loop, &s->tcp, handle_new_meta_connection, s, s->tcp.fd, IO_READ);
 
 	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 }
