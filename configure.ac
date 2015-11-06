@@ -14,14 +14,14 @@ AC_GNU_SOURCE
 AC_DEFINE([__USE_BSD], 1, [Enable BSD extensions])
 
 dnl Checks for programs.
+AM_PROG_CC_C_O
+AM_PROG_AR
 AC_PROG_CC_C99
 AC_PROG_CXX
 AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_LIBTOOL
-
-AM_PROG_CC_C_O
 
 dnl Check and set OS
 
