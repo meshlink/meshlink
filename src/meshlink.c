@@ -999,11 +999,10 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	// Shut down the main thread
 	event_loop_stop(&mesh->loop);
 
-	// Fake a connection to kick the event loop
+	// Send ourselves a UDP packet to kick the event loop
 	listen_socket_t *s = &mesh->listen_socket[0];
-	int fd = socket(s->sa.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
-	connect(fd, &s->sa.sa, SALEN(s->sa.sa));
-	close(fd);
+	if(sendto(s->udp.fd, "", 1, MSG_NOSIGNAL, &s->sa.sa, SALEN(s->sa.sa)) == -1)
+		logger(mesh, MESHLINK_ERROR, "Could not send a UDP packet to ourself");
 
 	// Wait for the main thread to finish
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
