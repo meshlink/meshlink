@@ -15,7 +15,7 @@ AC_DEFINE([__USE_BSD], 1, [Enable BSD extensions])
 
 dnl Checks for programs.
 AM_PROG_CC_C_O
-AM_PROG_AR
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR]) dnl Workaround for mingw
 AC_PROG_CC_C99
 AC_PROG_CXX
 AC_PROG_CPP
