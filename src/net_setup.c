@@ -293,7 +293,7 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 
 		int udp_fd = setup_vpn_in_socket(mesh, (sockaddr_t *) aip->ai_addr);
 
-		if(tcp_fd < 0) {
+		if(udp_fd < 0) {
 			close(tcp_fd);
 			continue;
 		}
