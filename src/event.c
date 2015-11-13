@@ -183,8 +183,6 @@ void idle_set(event_loop_t *loop, idle_cb_t cb, void *data) {
 }
 
 bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
-	loop->running = true;
-
 	fd_set readable;
 	fd_set writable;
 
@@ -264,6 +262,10 @@ void event_flush_output(event_loop_t *loop) {
 	for splay_each(io_t, io, &loop->ios)
 		if(FD_ISSET(io->fd, &loop->writefds))
 			io->cb(loop, io->data, IO_WRITE);
+}
+
+void event_loop_start(event_loop_t *loop) {
+	loop->running = true;
 }
 
 void event_loop_stop(event_loop_t *loop) {

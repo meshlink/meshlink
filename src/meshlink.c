@@ -965,6 +965,8 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 
 	// Start the main thread
 
+	event_loop_start(&mesh->loop);
+
 	if(pthread_create(&mesh->thread, NULL, meshlink_main_loop, mesh) != 0) {
 		logger(mesh, MESHLINK_DEBUG, "Could not start thread: %s\n", strerror(errno));
 		memset(&mesh->thread, 0, sizeof mesh->thread);
