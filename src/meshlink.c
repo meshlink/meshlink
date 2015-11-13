@@ -983,9 +983,15 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
-	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
 	logger(mesh, MESHLINK_DEBUG, "meshlink_start called\n");
+
+	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+
+	if(mesh->threadstarted) {
+		logger(mesh, MESHLINK_DEBUG, "thread was already running\n");
+		return true;
+	}
 
 	if(mesh->listen_socket[0].tcp.fd < 0) {
 		logger(mesh, MESHLINK_ERROR, "Listening socket not open\n");
