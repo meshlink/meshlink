@@ -2042,7 +2042,6 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 		*nmemb = result_size;
 	} else {
 		*nmemb = 0;
-		free(result);
 		meshlink_errno = MESHLINK_ENOMEM;
 	}
 
