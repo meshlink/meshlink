@@ -333,30 +333,26 @@ bool write_config_file(const struct splay_tree_t *config_tree, const char *fname
 
 	for splay_each(config_t, cnf, config_tree)
 	{
-		if(fwrite(cnf->variable, sizeof(char), strlen(cnf->variable), fp) < strlen(cnf->variable)) {
-			logger(NULL, MESHLINK_ERROR, "Cannot write to config file %s: %s", fname, strerror(errno));
-			return false;
-		}
+		if(fwrite(cnf->variable, sizeof(char), strlen(cnf->variable), fp) < strlen(cnf->variable))
+			goto error;
 
-		if(fwrite(" = ", sizeof(char), 3, fp) < 3) {
-			logger(NULL, MESHLINK_ERROR, "Cannot write to config file %s: %s", fname, strerror(errno));
-			return false;
-		}
+		if(fwrite(" = ", sizeof(char), 3, fp) < 3)
+			goto error;
 
-		if(fwrite(cnf->value, sizeof(char), strlen(cnf->value), fp) < strlen(cnf->value)) {
-			logger(NULL, MESHLINK_ERROR, "Cannot write to config file %s: %s", fname, strerror(errno));
-			return false;
-		}
+		if(fwrite(cnf->value, sizeof(char), strlen(cnf->value), fp) < strlen(cnf->value))
+			goto error;
 
-		if(fwrite("\n", sizeof(char), 1, fp) < 1) {
-			logger(NULL, MESHLINK_ERROR, "Cannot write to config file %s: %s", fname, strerror(errno));
-			return false;
-		}
+		if(fwrite("\n", sizeof(char), 1, fp) < 1)
+			goto error;
 	}
 
 	fclose(fp);
-
 	return true;
+
+error:
+	logger(NULL, MESHLINK_ERROR, "Cannot write to config file %s: %s", fname, strerror(errno));
+	fclose(fp);
+	return false;
 }
 
 bool read_server_config(meshlink_handle_t *mesh) {
