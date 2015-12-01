@@ -437,7 +437,7 @@ namespace meshlink {
 		 *		this memory once meshlink returns.
 		 */
 		void hint_address(node *node, const struct sockaddr *addr) {
-			meshkink_hint_address(handle, node, addr);
+			meshlink_hint_address(handle, node, addr);
 		}
 
 		/// Blacklist a node from the mesh.
