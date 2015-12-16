@@ -930,12 +930,15 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	};
 
 	if(mesh->name) {
-		if(strcmp(mesh->name, get_name(mesh))) {
+		char* existing_name = get_name(mesh);
+		if(strcmp(mesh->name, existing_name)) {
 			logger(NULL, MESHLINK_ERROR, "Given name does not match the one in %s\n", filename);
+			free(existing_name);
 			meshlink_close(mesh);
 			meshlink_errno = MESHLINK_EINVAL;
 			return NULL;
 		}
+		free(existing_name);
 	} else {
 		mesh->name = get_name(mesh);
 	}
