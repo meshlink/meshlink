@@ -478,37 +478,35 @@ begin:
 
 // Find edges pointing to this node, and use them to build a list of unique, known addresses.
 static struct addrinfo *get_known_addresses(node_t *n) {
-	return NULL;
+	struct addrinfo *ai = NULL;
 
-	// struct addrinfo *ai = NULL;
+	for splay_each(edge_t, e, n->edge_tree) {
+		if(!e->reverse)
+			continue;
 
-	// for splay_each(edge_t, e, n->edge_tree) {
-	// 	if(!e->reverse)
-	// 		continue;
+		bool found = false;
+		for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
+			if(!sockaddrcmp(&e->reverse->address, (sockaddr_t *)aip->ai_addr)) {
+				found = true;
+				break;
+			}
+		}
+		if(found)
+			continue;
 
-	// 	bool found = false;
-	// 	for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
-	// 		if(!sockaddrcmp(&e->reverse->address, (sockaddr_t *)aip->ai_addr)) {
-	// 			found = true;
-	// 			break;
-	// 		}
-	// 	}
-	// 	if(found)
-	// 		continue;
+		struct addrinfo *nai = xzalloc(sizeof *nai);
+		if(ai)
+			ai->ai_next = nai;
+		ai = nai;
+		ai->ai_family = e->reverse->address.sa.sa_family;
+		ai->ai_socktype = SOCK_STREAM;
+		ai->ai_protocol = IPPROTO_TCP;
+		ai->ai_addrlen = SALEN(e->reverse->address.sa);
+		ai->ai_addr = xmalloc(ai->ai_addrlen);
+		memcpy(ai->ai_addr, &e->reverse->address, ai->ai_addrlen);
+	}
 
-	// 	struct addrinfo *nai = xzalloc(sizeof *nai);
-	// 	if(ai)
-	// 		ai->ai_next = nai;
-	// 	ai = nai;
-	// 	ai->ai_family = e->reverse->address.sa.sa_family;
-	// 	ai->ai_socktype = SOCK_STREAM;
-	// 	ai->ai_protocol = IPPROTO_TCP;
-	// 	ai->ai_addrlen = SALEN(e->reverse->address.sa);
-	// 	ai->ai_addr = xmalloc(ai->ai_addrlen);
-	// 	memcpy(ai->ai_addr, &e->reverse->address, ai->ai_addrlen);
-	// }
-
-	// return ai;
+	return ai;
 }
 
 void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
