@@ -355,13 +355,55 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 		handle_meta_connection_data(mesh, c);
 }
 
+// Find edges pointing to this node, and use them to build a list of unique, known addresses.
+static struct addrinfo *get_known_addresses(node_t *n) {
+	struct addrinfo *ai = NULL;
+
+	for splay_each(edge_t, e, n->edge_tree) {
+		if(!e->reverse)
+			continue;
+
+		bool found = false;
+		for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
+			if(!sockaddrcmp(&e->reverse->address, (sockaddr_t *)aip->ai_addr)) {
+				found = true;
+				break;
+			}
+		}
+		if(found)
+			continue;
+
+		// Create a new struct addrinfo, and put it at the head of the list.
+		struct addrinfo *nai = xzalloc(sizeof *nai + SALEN(e->reverse->address.sa));
+		nai->ai_next = ai;
+		ai = nai;
+
+		ai->ai_family = e->reverse->address.sa.sa_family;
+		ai->ai_socktype = SOCK_STREAM;
+		ai->ai_protocol = IPPROTO_TCP;
+		ai->ai_addrlen = SALEN(e->reverse->address.sa);
+		ai->ai_addr = (struct sockaddr *)(nai + 1);
+		memcpy(ai->ai_addr, &e->reverse->address, ai->ai_addrlen);
+	}
+
+	return ai;
+}
+
+// Free struct addrinfo list from get_known_addresses().
+static void free_known_addresses(struct addrinfo *ai) {
+	for(struct addrinfo *aip = ai, *next; aip; aip = next) {
+		next = aip->ai_next;
+		free(aip);
+	}
+}
+
 bool do_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	char *address, *port, *space;
 	struct addrinfo *proxyai = NULL;
 	int result;
 
 begin:
-	if(!outgoing->ai) {
+	if(!outgoing->ai && !outgoing->nai) {
 		if(!outgoing->cfg) {
 			logger(mesh, MESHLINK_ERROR, "Could not set up a meta connection to %s", outgoing->name);
 			retry_outgoing(mesh, outgoing);
@@ -395,6 +437,11 @@ begin:
 		if(outgoing->ai)
 			freeaddrinfo(outgoing->ai);
 		outgoing->ai = NULL;
+
+		if(outgoing->nai)
+			free_known_addresses(outgoing->nai);
+		outgoing->nai = NULL;
+
 		goto begin;
 	}
 
@@ -476,39 +523,6 @@ begin:
 	return true;
 }
 
-// Find edges pointing to this node, and use them to build a list of unique, known addresses.
-static struct addrinfo *get_known_addresses(node_t *n) {
-	struct addrinfo *ai = NULL;
-
-	for splay_each(edge_t, e, n->edge_tree) {
-		if(!e->reverse)
-			continue;
-
-		bool found = false;
-		for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
-			if(!sockaddrcmp(&e->reverse->address, (sockaddr_t *)aip->ai_addr)) {
-				found = true;
-				break;
-			}
-		}
-		if(found)
-			continue;
-
-		struct addrinfo *nai = xzalloc(sizeof *nai);
-		if(ai)
-			ai->ai_next = nai;
-		ai = nai;
-		ai->ai_family = e->reverse->address.sa.sa_family;
-		ai->ai_socktype = SOCK_STREAM;
-		ai->ai_protocol = IPPROTO_TCP;
-		ai->ai_addrlen = SALEN(e->reverse->address.sa);
-		ai->ai_addr = xmalloc(ai->ai_addrlen);
-		memcpy(ai->ai_addr, &e->reverse->address, ai->ai_addrlen);
-	}
-
-	return ai;
-}
-
 void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	bool blacklisted = false;
 	timeout_del(&mesh->loop, &outgoing->ev);
@@ -532,8 +546,8 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 
 	if(!outgoing->cfg) {
 		if(n)
-			outgoing->aip = outgoing->ai = get_known_addresses(n);
-		if(!outgoing->ai) {
+			outgoing->aip = outgoing->nai = get_known_addresses(n);
+		if(!outgoing->nai) {
 			logger(mesh, MESHLINK_ERROR, "No address known for %s", outgoing->name);
 			return;
 		}
@@ -648,6 +662,9 @@ static void free_outgoing(outgoing_t *outgoing) {
 
 	if(outgoing->ai)
 		freeaddrinfo(outgoing->ai);
+
+	if(outgoing->nai)
+		free_known_addresses(outgoing->nai);
 
 	if(outgoing->config_tree)
 		exit_configuration(&outgoing->config_tree);
