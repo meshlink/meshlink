@@ -298,9 +298,9 @@ static char *get_line(const char **data) {
 		return NULL;
 	}
 	if(len && !isprint(**data)) {
-        logger(NULL, MESHLINK_ERROR, "Error: get_line len && !isprint(**data)");
-        abort();
-    }
+		logger(NULL, MESHLINK_ERROR, "Error: get_line len && !isprint(**data)");
+		abort();
+	}
 
 	memcpy(line, *data, len);
 	line[len] = 0;
@@ -343,7 +343,7 @@ static bool try_bind(int port) {
 	if(getaddrinfo(NULL, portstr, &hint, &ai) || !ai)
 		return false;
 
-    struct addrinfo *ai_first = ai;
+	struct addrinfo *ai_first = ai;
 
 	while(ai) {
 		int fd = socket(ai->ai_family, SOCK_STREAM, IPPROTO_TCP);
@@ -586,9 +586,9 @@ static bool recvline(meshlink_handle_t* mesh, size_t len) {
 	char *newline = NULL;
 
 	if(!mesh->sock) {
-        logger(mesh, MESHLINK_ERROR, "Error: recvline !mesh->sock");
-        abort();
-    }
+		logger(mesh, MESHLINK_ERROR, "Error: recvline !mesh->sock");
+		abort();
+	}
 
 	while(!(newline = memchr(mesh->buffer, '\n', mesh->blen))) {
 		int result = recv(mesh->sock, mesh->buffer + mesh->blen, sizeof mesh->buffer - mesh->blen, 0);
@@ -1622,9 +1622,9 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	}
 	FILE *f = fdopen(ifd, "w");
 	if(!f) {
-        logger(mesh, MESHLINK_ERROR, "Error: meshlink_invite failed to open file");
-        abort();
-    }
+		logger(mesh, MESHLINK_ERROR, "Error: meshlink_invite failed to open file");
+		abort();
+	}
 
 	// Fill in the details.
 	fprintf(f, "Name = %s\n", name);
@@ -2109,9 +2109,9 @@ static bool channel_pre_accept(struct utcp *utcp, uint16_t port) {
 static ssize_t channel_recv(struct utcp_connection *connection, const void *data, size_t len) {
 	meshlink_channel_t *channel = connection->priv;
 	if(!channel) {
-        logger(NULL, MESHLINK_ERROR, "Error: channel_recv no channel");
-        abort();
-    }
+		logger(NULL, MESHLINK_ERROR, "Error: channel_recv no channel");
+		abort();
+	}
 	node_t *n = channel->node;
 	meshlink_handle_t *mesh = n->mesh;
 	meshlink_aio_buffer_t *aio;
@@ -2151,9 +2151,9 @@ static ssize_t channel_recv(struct utcp_connection *connection, const void *data
 static void channel_accept(struct utcp_connection *utcp_connection, uint16_t port) {
 	node_t *n = utcp_connection->utcp->priv;
 	if(!n) {
-        logger(NULL, MESHLINK_ERROR, "Error: channel_accept no node");
-        abort();
-    }
+		logger(NULL, MESHLINK_ERROR, "Error: channel_accept no node");
+		abort();
+	}
 	meshlink_handle_t *mesh = n->mesh;
 	if(!mesh->channel_accept_cb)
 		return;
@@ -2194,9 +2194,9 @@ void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t
 static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
 	node_t *n = (node_t *)source;
 	if(!n->utcp) {
-        logger(NULL, MESHLINK_ERROR, "Error: channel_receive !n->utcp");
-        abort();
-    }
+		logger(NULL, MESHLINK_ERROR, "Error: channel_receive !n->utcp");
+		abort();
+	}
 
 	char* hex = xzalloc(len * 2 + 1);
 	bin2hex(data, hex, len);
@@ -2209,9 +2209,9 @@ static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, co
 static void channel_poll(struct utcp_connection *connection, size_t len) {
 	meshlink_channel_t *channel = connection->priv;
 	if(!channel) {
-        logger(NULL, MESHLINK_ERROR, "Error: channel_poll no channel");
-        abort();
-    }
+		logger(NULL, MESHLINK_ERROR, "Error: channel_poll no channel");
+		abort();
+	}
 
 	node_t *n = channel->node;
 	meshlink_handle_t *mesh = n->mesh;
