@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 
 	// Start and stop the mesh.
 
-	if(!mesh.start()) {
+	if(!mesh.start(MESHLINK_DEBUG)) {
 		cerr << "Foo could not start\n";
 		return 1;
 	}
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 
 	// Make sure we can start and stop the mesh again.
 
-	if(!mesh.start()) {
+	if(!mesh.start(MESHLINK_DEBUG)) {
 		cerr << "Foo could not start twice\n";
 		return 1;
 	}
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
 
 	// Start and stop the mesh.
 
-	if(!mesh.start()) {
+	if(!mesh.start(MESHLINK_DEBUG)) {
 		cerr << "Foo could not start a third time\n";
 		return 1;
 	}
