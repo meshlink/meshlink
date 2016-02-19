@@ -18,6 +18,7 @@
 */
 
 #include "system.h"
+#include "xalloc.h"
 
 #include "logger.h"
 #include "meshlink_internal.h"
@@ -59,10 +60,13 @@ void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 		const void *payload = packet->data + sizeof *hdr;
 		size_t len = packet->len - sizeof *hdr;
 
-		char hex[len*2 + 1];
-		if(mesh->log_level >= MESHLINK_DEBUG)
-			bin2hex(payload, hex, len);	// don't do this unless it's going to be logged
-		logger(mesh, MESHLINK_DEBUG, "I received a packet for me with payload: %s\n", hex);
+		// check log level before calling bin2hex since that's an expensive call
+		if(mesh->log_level <= MESHLINK_DEBUG) {
+			char* hex = xzalloc(len * 2 + 1);
+			bin2hex(payload, hex, len);
+			logger(mesh, MESHLINK_DEBUG, "I received a packet for me with payload: %s\n", hex);
+			free(hex);
+		}
 
 		if(mesh->receive_cb)
 			mesh->receive_cb(mesh, (meshlink_node_t *)source, payload, len);

@@ -2170,10 +2170,14 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
 	node_t *n = utcp->priv;
 	meshlink_handle_t *mesh = n->mesh;
 
-	char* hex = xzalloc(len * 2 + 1);
-	bin2hex(data, hex, len);
-	logger(mesh, MESHLINK_WARNING, "channel_send(%p, %p, " PRINT_SIZE_T "): %s\n", utcp, data, len, hex);
-	free(hex);
+	// check log level before calling bin2hex since that's an expensive call
+	if(mesh->log_level <= MESHLINK_DEBUG) {
+		// only do this if it will be logged
+		char* hex = xzalloc(len * 2 + 1);
+		bin2hex(data, hex, len);
+		logger(mesh, MESHLINK_DEBUG, "channel_send(%p, %p, " PRINT_SIZE_T "): %s\n", utcp, data, len, hex);
+		free(hex);
+	}
 
 	return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? len : -1;
 }
@@ -2198,10 +2202,13 @@ static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, co
 		abort();
 	}
 
-	char* hex = xzalloc(len * 2 + 1);
-	bin2hex(data, hex, len);
-	logger(mesh, MESHLINK_WARNING, "channel_receive(%p, %p, " PRINT_SIZE_T "): %s\n", n->utcp, data, len, hex);
-	free(hex);
+	// check log level before calling bin2hex since that's an expensive call
+	if(mesh->log_level <= MESHLINK_DEBUG) {
+		char* hex = xzalloc(len * 2 + 1);
+		bin2hex(data, hex, len);
+		logger(mesh, MESHLINK_DEBUG, "channel_receive(%p, %p, " PRINT_SIZE_T "): %s\n", n->utcp, data, len, hex);
+		free(hex);
+	}
 
 	utcp_recv(n->utcp, data, len);
 }

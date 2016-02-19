@@ -194,7 +194,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	if(!mesh.start()) {
+	if(!mesh.start(MESHLINK_DEBUG)) {
 		fprintf(stderr, "Could not start MeshLink: %s\n", meshlink::strerror());
 		return 1;
 	}
