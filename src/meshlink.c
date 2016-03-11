@@ -1512,6 +1512,66 @@ bool meshlink_add_external_address(meshlink_handle_t *mesh) {
 	return rval;
 }
 
+int meshlink_get_port(meshlink_handle_t *mesh) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return -1;
+	}
+
+	if(!mesh->myport) {
+		meshlink_errno = MESHLINK_EINTERNAL;
+		return -1;
+	}
+
+	return atoi(mesh->myport);
+}
+
+bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
+	if(!mesh || port < 0 || port >= 65536 || mesh->threadstarted) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	if(mesh->myport && port == atoi(mesh->myport))
+		return true;
+
+	if(!try_bind(port)) {
+		meshlink_errno = MESHLINK_ENETWORK;
+		return false;
+	}
+
+	bool rval = false;
+
+	pthread_mutex_lock(&(mesh->mesh_mutex));
+	if(mesh->threadstarted) {
+		meshlink_errno = MESHLINK_EINVAL;
+		goto done;
+	}
+
+	close_network_connections(mesh);
+	exit_configuration(&mesh->config);
+
+	char portstr[10];
+	snprintf(portstr, sizeof portstr, "%d", port);
+	portstr[sizeof portstr - 1] = 0;
+
+	modify_config_file(mesh, mesh->name, "Port", portstr, true);
+
+	init_configuration(&mesh->config);
+
+	if(!read_server_config(mesh))
+		meshlink_errno = MESHLINK_ESTORAGE;
+	else if(!setup_network(mesh))
+		meshlink_errno = MESHLINK_ENETWORK;
+	else
+		rval = true;
+
+done:
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
+
+	return rval;
+}
+
 char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
