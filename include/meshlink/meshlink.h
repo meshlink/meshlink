@@ -449,7 +449,6 @@ extern bool meshlink_add_address(meshlink_handle_t *mesh, const char *address);
  *  there is no guarantee that the external address will be valid for an extended period of time.
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
- *  @param address      A nul-terminated C string containing the address, which can be either in numeric format or a hostname.
  *
  *  @return             This function returns a pointer to a C string containing the discovered external address,
  *                      or NULL if there was an error looking up the address.
