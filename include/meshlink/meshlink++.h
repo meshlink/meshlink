@@ -259,13 +259,15 @@ namespace meshlink {
 		/// Start MeshLink.
 		/** This function causes MeshLink to open network sockets, make outgoing connections, and
 		 *  create a new thread, which will handle all network I/O.
+                 *
+                 *  @param loglevel Sets the meshlink log level. The applications logging callback can filter further as desired.
 		 *
 		 *  @return         This function will return true if MeshLink has succesfully started its thread, false otherwise.
 		 */
-		bool start() {
+		bool start(meshlink_log_level_t loglevel) {
 			meshlink_set_receive_cb       (handle, &receive_trampoline);
 			meshlink_set_node_status_cb   (handle, &node_status_trampoline);
-			meshlink_set_log_cb           (handle, MESHLINK_DEBUG, &log_trampoline);
+			meshlink_set_log_cb           (handle, loglevel, &log_trampoline);
 			meshlink_set_channel_accept_cb(handle, &channel_accept_trampoline);
 			return meshlink_start         (handle);
 		}
