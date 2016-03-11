@@ -18,6 +18,7 @@
 */
 
 #include "system.h"
+#include <assert.h>
 
 #include "splay_tree.h"
 #include "connection.h"
@@ -387,115 +388,110 @@ bool write_host_config(struct meshlink_handle *mesh, const struct splay_tree_t *
 	return write_config_file(config_tree, filename);
 }
 
-bool change_config_file(meshlink_handle_t *mesh, const char *name, const char *key, const char *value) {
+bool modify_config_file(struct meshlink_handle *mesh, const char *name, const char *key, const char *value, bool replace) {
+	assert(mesh && name && key && (replace || value));
+
 	char filename[PATH_MAX];
 	char tmpname[PATH_MAX];
-	char buf[MAX_STRING_SIZE];
-	const int keylen = strlen(key);
+	bool error = false;
 
-	snprintf(filename, PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
-	snprintf(tmpname, PATH_MAX, "%s.tmp", filename);
+	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	snprintf(tmpname, sizeof tmpname, "%s.tmp", filename);
 
-	FILE *in = fopen(filename, "r");
-	if(!in) {
-		// Hm, maybe the file does not exist? Try appending.
-		return append_config_file(mesh, name, key, value);
-	}
+	FILE *fr = fopen(filename, "r");
 
-	FILE *out = fopen(tmpname, "w");
-	if(!out) {
-		logger(mesh, MESHLINK_ERROR, "Failed to write `%s': %s", tmpname, strerror(errno));
-		fclose(in);
-		return false;
-	}
-
-	bool ignore = false;
-
-	while(readline(in, buf, sizeof buf)) {
-		if(ignore) {
-			if(!strncmp(buf, "-----END", 8))
-				ignore = false;
-		} else {
-			if(!strncmp(buf, "-----BEGIN", 10))
-				ignore = true;
-		}
-
-		if(!ignore && !strncmp(buf, key, keylen)) {
-			if(strchr("\t =", buf[keylen])) {
-				continue;
-			}
-		}
-
-		fputs(buf, out);
-		fputc('\n', out);
-	}	
-
-	if(ferror(in)) {
-		logger(mesh, MESHLINK_ERROR, "Failed to read `%s': %s", filename, strerror(errno));
-		fclose(in);
-		fclose(out);
-		return false;
-	}
-
-	fclose(in);
-
-	fprintf(out, "%s = %s\n", key, value);
-
-	if(ferror(out)) {
-		logger(mesh, MESHLINK_ERROR, "Failed to write `%s': %s", tmpname, strerror(errno));
-		fclose(out);
-		return false;
-	}
-
-	fclose(out);
-
-#ifdef HAVE_MINGW
-	// We cannot atomically replace files on Windows.
-	char bakname[PATH_MAX];
-	snprintf(bakname, PATH_MAX, "%s.bak", filename);
-	if(rename(tmpname, bakfile) || rename(bakfile, filename)) {
-		rename(bakfile, filename);
-#else
-	if(rename(tmpname, filename)) {
-#endif
-		logger(mesh, MESHLINK_ERROR, "Failed to update `%s': %s", filename, strerror(errno));
-		return false;
-	}
-
-	return true;
-}
-
-bool append_config_file(meshlink_handle_t *mesh, const char *name, const char *key, const char *value) {
-	char filename[PATH_MAX];
-	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
-
-	FILE *fp = fopen(filename, "a");
-
-	if(!fp) {
+	if(!fr) {
 		logger(mesh, MESHLINK_ERROR, "Cannot open config file %s: %s", filename, strerror(errno));
 		return false;
 	}
 
-	// Check if we don't add a duplicate entry
+	FILE *fw = fopen(tmpname, "w");
 
-	char entry[MAX_STRING_SIZE];
-	snprintf(entry, sizeof entry, "%s = %s", key, value);
-
-	char buffer[MAX_STRING_SIZE];
-	bool found = false;
-
-	while(readline(fp, buffer, sizeof buffer)) {
-		if(!strcmp(buffer, entry)) {
-			found = true;
-			break;
-		}
+	if(!fw) {
+		logger(mesh, MESHLINK_ERROR, "Cannot open temporary file %s: %s", tmpname, strerror(errno));
+		fclose(fr);
+		return false;
 	}
 
-	// If not, append the new entry
+	char buf[4096];
+	char *sep;
+	bool found = false;
 
-	if(!found)
-		fprintf(fp, "%s\n", entry);
+	while(readline(fr, buf, sizeof buf)) {
+		if(!*buf || *buf == '#')
+			goto copy;
 
-	fclose(fp);
-	return true;
+		sep = strchr(buf, ' ');
+		if(!sep)
+			goto copy;
+
+		*sep = 0;
+		if(strcmp(buf, key)) {
+			*sep = ' ';
+			goto copy;
+		}
+
+		if(!value) {
+			found = true;
+			continue;
+		}
+
+		// We found the key and the value. Keep one copy around.
+		if(sep[1] == '=' && sep[2] == ' ' && !strcmp(sep + 3, value)) {
+			if(found)
+				continue;
+			found = true;
+		}
+
+		// We found the key but with a different value, delete it if wanted.
+		if(!found && replace)
+			continue;
+
+		*sep = ' ';
+
+copy:
+		fprintf(fw, "%s\n", buf);
+	}
+
+	if(ferror(fr))
+		error = true;
+
+	fclose(fr);
+
+	// Add new key/value pair if necessary
+	if(!found && value)
+		fprintf(fw, "%s = %s\n", key, value);
+
+	if(ferror(fw))
+		error = true;
+
+	if(fclose(fw))
+		error = true;
+
+	// If any error occured during reading or writing, exit.
+	if(error) {
+		unlink(tmpname);
+		return false;
+	}
+
+	// Try to atomically replace the old config file with the new one.
+#ifdef HAVE_MINGW
+	char bakname[PATH_MAX];
+	snprintf(bakname, sizeof bakname, "%s.bak", filename);
+	if(rename(filename, bakname) || rename(tmpname, filename)) {
+		rename(bakname, filename);
+#else
+	if(rename(tmpname, filename)) {
+#endif
+		return false;
+	} else {
+#ifdef HAVE_MINGW
+		unlink(bakname);
+#endif
+		return true;
+	}
+}
+
+bool append_config_file(meshlink_handle_t *mesh, const char *name, const char *key, const char *value) {
+	return modify_config_file(mesh, name, key, value, false);
 }
