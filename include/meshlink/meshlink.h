@@ -470,6 +470,33 @@ extern char *meshlink_get_external_address(meshlink_handle_t *mesh);
  */
 extern bool meshlink_add_external_address(meshlink_handle_t *mesh);
 
+/// Get the network port used by the local node.
+/** This function returns the network port that the local node is listening on.
+ *
+ *  @param mesh          A handle which represents an instance of MeshLink.
+ *
+ *  @return              This function returns the port number, or -1 in case of an error.
+ */
+extern int meshlink_get_port(meshlink_handle_t *mesh);
+
+/// Set the network port used by the local node.
+/** This function sets the network port that the local node is listening on.
+ *  It may only be called when the mesh is not running.
+ *  If unsure, call meshlink_stop() before calling this function.
+ *  Also note that if your node is already part of a mesh with other nodes,
+ *  that the other nodes may no longer be able to initiate connections to the local node,
+ *  since they will try to connect to the previously configured port.
+ *
+ *  @param mesh          A handle which represents an instance of MeshLink.
+ *  @param port          The port number to listen on. This must be between 0 and 65535.
+ *                       If the port is set to 0, then MeshLink will listen on a port
+ *                       that is randomly assigned by the operating system every time meshlink_open() is called.
+ *
+ *  @return              This function returns true if the port was succesfully changed, false otherwise.
+ */
+
+extern bool meshlink_set_port(meshlink_handle_t *mesh, int port);
+
 /// Invite another node into the mesh.
 /** This function generates an invitation that can be used by another node to join the same mesh as the local node.
  *  The generated invitation is a string containing a URL.
