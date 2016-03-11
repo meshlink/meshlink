@@ -188,27 +188,24 @@ static void scan_for_hostname(const char *filename, char **hostname, char **port
 
 	fclose(f);
 }
-static char *get_my_hostname(meshlink_handle_t* mesh) {
+
+static bool is_valid_hostname(const char *hostname) {
+	for(const char *p = hostname; *p; p++) {
+		if(!(isalnum(*p) || *p == '-' || *p == '.' || *p == ':'))
+			return false;
+	}
+
+	return true;
+}
+
+char *meshlink_get_external_address(meshlink_handle_t *mesh) {
 	char *hostname = NULL;
-	char *port = NULL;
-	char *hostport = NULL;
-	char *name = mesh->self->name;
-	char filename[PATH_MAX] = "";
-	char line[4096];
-	FILE *f;
 
-	// Use first Address statement in own host config file
-	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
-	scan_for_hostname(filename, &hostname, &port);
-
-	if(hostname)
-		goto done;
-
-	// If that doesn't work, guess externally visible hostname
 	logger(mesh, MESHLINK_DEBUG, "Trying to discover externally visible hostname...\n");
 	struct addrinfo *ai = str2addrinfo("meshlink.io", "80", SOCK_STREAM);
 	struct addrinfo *aip = ai;
 	static const char request[] = "GET http://www.meshlink.io/host.cgi HTTP/1.0\r\n\r\n";
+	char line[256];
 
 	while(aip) {
 		int s = socket(aip->ai_family, aip->ai_socktype, aip->ai_protocol);
@@ -241,17 +238,33 @@ static char *get_my_hostname(meshlink_handle_t* mesh) {
 		freeaddrinfo(ai);
 
 	// Check that the hostname is reasonable
-	if(hostname) {
-		for(char *p = hostname; *p; p++) {
-			if(isalnum(*p) || *p == '-' || *p == '.' || *p == ':')
-				continue;
-			// If not, forget it.
-			free(hostname);
-			hostname = NULL;
-			break;
-		}
+	if(hostname && !is_valid_hostname(hostname)) {
+		free(hostname);
+		hostname = NULL;
 	}
 
+	if(!hostname)
+		meshlink_errno = MESHLINK_ERESOLV;
+
+	return hostname;
+}
+
+static char *get_my_hostname(meshlink_handle_t* mesh) {
+	char *hostname = NULL;
+	char *port = NULL;
+	char *hostport = NULL;
+	char *name = mesh->self->name;
+	char filename[PATH_MAX] = "";
+	FILE *f;
+
+	// Use first Address statement in own host config file
+	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	scan_for_hostname(filename, &hostname, &port);
+
+	if(hostname)
+		goto done;
+
+	hostname = meshlink_get_external_address(mesh);
 	if(!hostname)
 		return NULL;
 
@@ -1521,21 +1534,38 @@ bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
 		return false;
 	}
 
-	bool rval = false;
-
-	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-
-	for(const char *p = address; *p; p++) {
-		if(isalnum(*p) || *p == '-' || *p == '.' || *p == ':')
-			continue;
+	if(!is_valid_hostname(address)) {
 		logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s\n", address);
 		meshlink_errno = MESHLINK_EINVAL;
-		MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 		return false;
 	}
 
+	bool rval = false;
+
+	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 	rval = append_config_file(mesh, mesh->self->name, "Address", address);
 	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+
+	return rval;
+}
+
+bool meshlink_add_external_address(meshlink_handle_t *mesh) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	char *address = meshlink_get_external_address(mesh);
+	if(!address)
+		return false;
+
+	bool rval = false;
+
+	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+	rval = append_config_file(mesh, mesh->self->name, "Address", address);
+	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+
+	free(address);
 	return rval;
 }
 
