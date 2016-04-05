@@ -88,10 +88,17 @@ namespace meshlink {
 	/** This callbacks signals that MeshLink has finished using this buffer.
 	 *  The ownership of the buffer is now back into the application's hands.
 	 *
+	 *  In case an error occurs on the channel while receiving into an AIO buffer,
+	 *  the len parameter will be zero.
+	 *  In that case, if there are any other outstanding AIO buffers,
+	 *  they all will have their callback function called with len set to zero,
+	 *  and finally the channel receive callback will also be called with len set to zero.
+	 *  Do not call channel_close() from inside this callback; only do this in the channel receive callback.
+	 *
 	 *  @param mesh      A handle which represents an instance of MeshLink.
 	 *  @param channel   A handle for the channel which used this buffer.
 	 *  @param data      A pointer to a buffer containing the enqueued data.
-	 *  @param len       The length of the buffer.
+ 	 *  @param len       The length of the buffer, or 0 in case an error occured before the whole buffer has been used.
 	 *  @param priv      A private pointer which was set by the application when submitting the buffer.
 	 */
 	typedef void (*aio_cb_t)(mesh *mesh, channel *channel, void *data, size_t len, void *priv);
@@ -501,6 +508,10 @@ namespace meshlink {
 		/** This informs the remote node that the local node has finished sending all data on the channel.
 		 *  It also causes the local node to stop accepting incoming data from the remote node.
 		 *  Afterwards, the channel handle is invalid and must not be used any more.
+		 *
+		 *  It is allowed to call this function at any time on a valid handle, except inside callback functions.
+		 *  If called at a proper time with a valid handle, this function always succeeds.
+		 *  If called within a callback or with an invalid handle, the result is undefined.
 		 *
 		 *  @param channel      A handle for the channel.
 		 */

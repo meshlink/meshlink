@@ -2119,6 +2119,15 @@ static ssize_t channel_recv(struct utcp_connection *connection, const void *data
 
 	// If we have AIO buffers, use those first.
 	while((aio = channel->aio_receive)) {
+		// Call all outstanding AIO callbacks in case of an error
+		if(len <= 0) {
+			if(aio->cb)
+				aio->cb(mesh, channel, aio->data, 0, aio->priv);
+			channel->aio_receive = aio->next;
+			free(aio);
+			continue;
+		};
+
 		// Fill the current buffer up as much as possible
 		size_t left = aio->len - aio->done;
 		if(left > (len - done))
@@ -2370,13 +2379,13 @@ void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel
 	for(meshlink_aio_buffer_t *aio = channel->aio_send, *next; aio; aio = next) {
 		next = aio->next;
 		if(aio->cb)
-			aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
+			aio->cb(mesh, channel, aio->data, 0, aio->priv);
 		free(aio);
 	}
 	for(meshlink_aio_buffer_t *aio = channel->aio_receive, *next; aio; aio = next) {
 		next = aio->next;
 		if(aio->cb)
-			aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
+			aio->cb(mesh, channel, aio->data, 0, aio->priv);
 		free(aio);
 	}
 	free(channel);
