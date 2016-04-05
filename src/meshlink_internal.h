@@ -147,8 +147,9 @@ struct meshlink_node {
 /// An AIO buffer.
 typedef struct meshlink_aio_buffer {
 	void *data;
-	size_t len;
-	size_t done;
+	size_t len;  // total len of data
+	size_t done; // data sent
+        size_t ackd; // data ACKd
 	meshlink_aio_cb_t cb;
 	void *priv;
 	struct meshlink_aio_buffer *next;
