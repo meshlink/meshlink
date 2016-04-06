@@ -2278,8 +2278,9 @@ static void channel_ack(struct utcp_connection *connection, size_t len) {
 	while(aio)
 	{
 		size_t unackd = aio->len - aio->ackd;
+
 		// ACK may cover some of aio and some of aio->next
-		size_t ackd = len <= unackd ? len : len - unackd;
+		size_t ackd = len <= unackd ? len : unackd;
 		aio->ackd += ackd;
 		len -= ackd;
 
