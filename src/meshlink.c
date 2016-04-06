@@ -2235,7 +2235,7 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 
 	// If we have AIO buffers queued, use those.
 	if(aio) {
-		while(aio) {
+		while(aio && len > 0) {
 			// AIO buffers are kept until they are ACKd, so some
 			// buffers might be completely sent already
 			if(aio->done >= aio->len) {
@@ -2245,11 +2245,13 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 
 			// Send as much as possible.
 			size_t left = aio->len - aio->done;
-			if(len > left)
-				len = left;
-			ssize_t sent = utcp_send(connection, aio->data + aio->done, len);
-			if(sent != -1)
+			if(len < left)
+				left = len;
+			ssize_t sent = utcp_send(connection, aio->data + aio->done, left);
+			if(sent != -1) {
 				aio->done += sent;
+				len -= sent;
+			}
 
 			aio = aio->next;
 		}
