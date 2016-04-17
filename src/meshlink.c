@@ -2209,6 +2209,15 @@ static ssize_t channel_recv(struct utcp_connection *connection, const void *data
 
 	// If we have AIO buffers, use those first.
 	while((aio = channel->aio_receive)) {
+		// Call all outstanding AIO callbacks in case of an error
+		if(len <= 0) {
+			if(aio->cb)
+				aio->cb(mesh, channel, aio->data, 0, aio->priv);
+			channel->aio_receive = aio->next;
+			free(aio);
+			continue;
+		};
+
 		// Fill the current buffer up as much as possible
 		size_t left = aio->len - aio->done;
 		if(left > (len - done))
@@ -2316,26 +2325,68 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 
 	// If we have AIO buffers queued, use those.
 	if(aio) {
-		// Send as much as possible.
-		size_t left = aio->len - aio->done;
-		if(len > left)
-			len = left;
-		ssize_t sent = utcp_send(connection, aio->data + aio->done, len);
-		if(sent != -1)
-			aio->done += sent;
+		while(aio && len > 0) {
+			// AIO buffers are kept until they are ACKd, so some
+			// buffers might be completely sent already
+			if(aio->done >= aio->len) {
+				aio = aio->next;
+				continue;
+			}
 
-		// If it is done, call the callback and dispose of it.
-		if(aio->done >= aio->len) {
-			if(aio->cb)
-				aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
-			channel->aio_send = aio->next;
-			free(aio);
+			// Send as much as possible.
+			size_t left = aio->len - aio->done;
+			if(len < left)
+				left = len;
+			ssize_t sent = utcp_send(connection, aio->data + aio->done, left);
+			if(sent != -1) {
+				aio->done += sent;
+				len -= sent;
+			}
+
+			aio = aio->next;
 		}
 	} else {
 		if(channel->poll_cb)
 			channel->poll_cb(mesh, channel, len);
 		else
 			utcp_set_poll_cb(connection, NULL);
+	}
+}
+
+static void channel_ack(struct utcp_connection *connection, size_t len) {
+	meshlink_channel_t *channel = connection->priv;
+	if(!channel) {
+		logger(NULL, MESHLINK_ERROR, "Error: channel_ack no channel");
+		abort();
+	}
+
+	node_t *n = channel->node;
+	meshlink_handle_t *mesh = n->mesh;
+	meshlink_aio_buffer_t *aio = channel->aio_send;
+	meshlink_aio_buffer_t *next = NULL;
+	if(!aio)
+		return;
+
+	while(aio)
+	{
+		size_t unackd = aio->len - aio->ackd;
+
+		// ACK may cover some of aio and some of aio->next
+		size_t ackd = len <= unackd ? len : unackd;
+		aio->ackd += ackd;
+		len -= ackd;
+
+		next = aio->next;
+		// If all data has been ACKd, call the callback and dispose of it.
+		if(aio->ackd >= aio->len) {
+			// TODO differentiate between 'all ACKd' and 'all sent' callbacks
+			// to allow freeing aio->data once it is in utcp send buffer
+			if(aio->cb)
+				aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
+			channel->aio_send = aio->next;
+			free(aio);
+		}
+		aio = next;
 	}
 }
 
@@ -2425,13 +2476,13 @@ void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel
 	for(meshlink_aio_buffer_t *aio = channel->aio_send, *next; aio; aio = next) {
 		next = aio->next;
 		if(aio->cb)
-			aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
+			aio->cb(mesh, channel, aio->data, 0, aio->priv);
 		free(aio);
 	}
 	for(meshlink_aio_buffer_t *aio = channel->aio_receive, *next; aio; aio = next) {
 		next = aio->next;
 		if(aio->cb)
-			aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
+			aio->cb(mesh, channel, aio->data, 0, aio->priv);
 		free(aio);
 	}
 	free(channel);
@@ -2497,6 +2548,7 @@ bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_t *chan
 	*p = aio;
 
 	utcp_set_poll_cb(channel->c, channel_poll);
+	utcp_set_ack_cb(channel->c, channel_ack);
 	channel_poll(channel->c, len);
 	MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 

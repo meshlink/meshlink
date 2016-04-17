@@ -709,7 +709,8 @@ extern void meshlink_channel_shutdown(meshlink_handle_t *mesh, meshlink_channel_
  *  It will free the struct meshlink_channel and all associated resources.
  *  Afterwards, the channel handle is invalid and must not be used any more.
  *
- *  It is allowed to call this function at any time on a valid handle, even inside callback functions.
+ *  It is allowed to call this function at any time on a valid handle, even inside callback functions,
+ *  except in AIO callback functions.
  *  If called with a valid handle, this function always succeeds, otherwise the result is undefined.
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
@@ -734,10 +735,17 @@ extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t
 /** This callbacks signals that MeshLink has finished using this buffer.
  *  The ownership of the buffer is now back into the application's hands.
  *
+ *  In case an error occurs on the channel while receiving into an AIO buffer,
+ *  the len parameter will be zero.
+ *  In that case, if there are any other outstanding AIO buffers,
+ *  they all will have their callback function called with len set to zero,
+ *  and finally the channel receive callback will also be called with len set to zero.
+ *  Do not call meshlink_channel_close() from inside this callback; only do this in the channel receive callback.
+ *
  *  @param mesh      A handle which represents an instance of MeshLink.
  *  @param channel   A handle for the channel which used this buffer.
  *  @param data      A pointer to a buffer containing the data that has been sent or received.
- *  @param len       The length of the buffer.
+ *  @param len       The length of the buffer, or 0 in case an error occured before the whole buffer has been used.
  *  @param priv      A private pointer which was set by the application when submitting the buffer.
 };
  */
