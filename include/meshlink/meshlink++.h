@@ -88,10 +88,17 @@ namespace meshlink {
 	/** This callbacks signals that MeshLink has finished using this buffer.
 	 *  The ownership of the buffer is now back into the application's hands.
 	 *
+	 *  In case an error occurs on the channel while receiving into an AIO buffer,
+	 *  the len parameter will be zero.
+	 *  In that case, if there are any other outstanding AIO buffers,
+	 *  they all will have their callback function called with len set to zero,
+	 *  and finally the channel receive callback will also be called with len set to zero.
+	 *  Do not call channel_close() from inside this callback; only do this in the channel receive callback.
+	 *
 	 *  @param mesh      A handle which represents an instance of MeshLink.
 	 *  @param channel   A handle for the channel which used this buffer.
 	 *  @param data      A pointer to a buffer containing the enqueued data.
-	 *  @param len       The length of the buffer.
+ 	 *  @param len       The length of the buffer, or 0 in case an error occured before the whole buffer has been used.
 	 *  @param priv      A private pointer which was set by the application when submitting the buffer.
 	 */
 	typedef void (*aio_cb_t)(mesh *mesh, channel *channel, void *data, size_t len, void *priv);
@@ -372,6 +379,66 @@ namespace meshlink {
 			return meshlink_add_address(handle, address);
 		}
 
+		/** This function performs tries to discover the local node's external address
+		 *  by contacting the meshlink.io server. If a reverse lookup of the address works,
+		 *  the FQDN associated with the address will be returned.
+		 *
+		 *  Please note that this is function only returns a single address,
+		 *  even if the local node might have more than one external address.
+		 *  In that case, there is no control over which address will be selected.
+		 *  Also note that if you have a dynamic IP address, or are behind carrier-grade NAT,
+		 *  there is no guarantee that the external address will be valid for an extended period of time.
+		 *
+		 *  @return             This function returns a pointer to a C string containing the discovered external address,
+		 *                      or NULL if there was an error looking up the address.
+		 *                      After get_external_address() returns, the application is free to overwrite or free this string.
+		 */
+		bool get_external_address() {
+			return meshlink_get_external_address(handle);
+		}
+
+		/// Try to discover the external address for the local node, and add it to its list of addresses.
+		/** This function is equivalent to:
+		 *
+		 *    mesh->add_address(mesh->get_external_address());
+		 *
+		 *  Read the description of get_external_address() for the limitations of this function.
+		 *
+		 *  @return             This function returns true if the address was added, false otherwise.
+		 */
+		bool add_external_address() {
+			return meshlink_add_external_address(handle);
+		}
+
+		/// Get the network port used by the local node.
+		/** This function returns the network port that the local node is listening on.
+		 *
+		 *  @param mesh          A handle which represents an instance of MeshLink.
+		 *
+		 *  @return              This function returns the port number, or -1 in case of an error.
+		 */
+		int get_port() {
+			return meshlink_get_port(handle);
+		}
+
+		/// Set the network port used by the local node.
+		/** This function sets the network port that the local node is listening on.
+		 *  It may only be called when the mesh is not running.
+		 *  If unsure, call stop() before calling this function.
+		 *  Also note that if your node is already part of a mesh with other nodes,
+		 *  that the other nodes may no longer be able to initiate connections to the local node,
+		 *  since they will try to connect to the previously configured port.
+		 *
+		 *  @param port          The port number to listen on. This must be between 0 and 65535.
+		 *                       If the port is set to 0, then MeshLink will listen on a port
+		 *                       that is randomly assigned by the operating system every time open() is called.
+		 *
+		 *  @return              This function returns true if the port was succesfully changed, false otherwise.
+		 */
+		bool set_port(int port) {
+			return meshlink_set_port(handle, port);
+		}
+
 		/// Invite another node into the mesh.
 		/** This function generates an invitation that can be used by another node to join the same mesh as the local node.
 		 *  The generated invitation is a string containing a URL.
@@ -515,6 +582,10 @@ namespace meshlink {
 		/** This informs the remote node that the local node has finished sending all data on the channel.
 		 *  It also causes the local node to stop accepting incoming data from the remote node.
 		 *  Afterwards, the channel handle is invalid and must not be used any more.
+		 *
+		 *  It is allowed to call this function at any time on a valid handle, except inside callback functions.
+		 *  If called at a proper time with a valid handle, this function always succeeds.
+		 *  If called within a callback or with an invalid handle, the result is undefined.
 		 *
 		 *  @param channel      A handle for the channel.
 		 */

@@ -188,27 +188,24 @@ static void scan_for_hostname(const char *filename, char **hostname, char **port
 
 	fclose(f);
 }
-static char *get_my_hostname(meshlink_handle_t* mesh) {
+
+static bool is_valid_hostname(const char *hostname) {
+	for(const char *p = hostname; *p; p++) {
+		if(!(isalnum(*p) || *p == '-' || *p == '.' || *p == ':'))
+			return false;
+	}
+
+	return true;
+}
+
+char *meshlink_get_external_address(meshlink_handle_t *mesh) {
 	char *hostname = NULL;
-	char *port = NULL;
-	char *hostport = NULL;
-	char *name = mesh->self->name;
-	char filename[PATH_MAX] = "";
-	char line[4096];
-	FILE *f;
 
-	// Use first Address statement in own host config file
-	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
-	scan_for_hostname(filename, &hostname, &port);
-
-	if(hostname)
-		goto done;
-
-	// If that doesn't work, guess externally visible hostname
 	logger(mesh, MESHLINK_DEBUG, "Trying to discover externally visible hostname...\n");
 	struct addrinfo *ai = str2addrinfo("meshlink.io", "80", SOCK_STREAM);
 	struct addrinfo *aip = ai;
 	static const char request[] = "GET http://www.meshlink.io/host.cgi HTTP/1.0\r\n\r\n";
+	char line[256];
 
 	while(aip) {
 		int s = socket(aip->ai_family, aip->ai_socktype, aip->ai_protocol);
@@ -241,17 +238,33 @@ static char *get_my_hostname(meshlink_handle_t* mesh) {
 		freeaddrinfo(ai);
 
 	// Check that the hostname is reasonable
-	if(hostname) {
-		for(char *p = hostname; *p; p++) {
-			if(isalnum(*p) || *p == '-' || *p == '.' || *p == ':')
-				continue;
-			// If not, forget it.
-			free(hostname);
-			hostname = NULL;
-			break;
-		}
+	if(hostname && !is_valid_hostname(hostname)) {
+		free(hostname);
+		hostname = NULL;
 	}
 
+	if(!hostname)
+		meshlink_errno = MESHLINK_ERESOLV;
+
+	return hostname;
+}
+
+static char *get_my_hostname(meshlink_handle_t* mesh) {
+	char *hostname = NULL;
+	char *port = NULL;
+	char *hostport = NULL;
+	char *name = mesh->self->name;
+	char filename[PATH_MAX] = "";
+	FILE *f;
+
+	// Use first Address statement in own host config file
+	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	scan_for_hostname(filename, &hostname, &port);
+
+	if(hostname)
+		goto done;
+
+	hostname = meshlink_get_external_address(mesh);
 	if(!hostname)
 		return NULL;
 
@@ -1521,21 +1534,98 @@ bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
 		return false;
 	}
 
-	bool rval = false;
-
-	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-
-	for(const char *p = address; *p; p++) {
-		if(isalnum(*p) || *p == '-' || *p == '.' || *p == ':')
-			continue;
+	if(!is_valid_hostname(address)) {
 		logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s\n", address);
 		meshlink_errno = MESHLINK_EINVAL;
-		MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 		return false;
 	}
 
+	bool rval = false;
+
+	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 	rval = append_config_file(mesh, mesh->self->name, "Address", address);
 	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+
+	return rval;
+}
+
+bool meshlink_add_external_address(meshlink_handle_t *mesh) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	char *address = meshlink_get_external_address(mesh);
+	if(!address)
+		return false;
+
+	bool rval = false;
+
+	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+	rval = append_config_file(mesh, mesh->self->name, "Address", address);
+	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+
+	free(address);
+	return rval;
+}
+
+int meshlink_get_port(meshlink_handle_t *mesh) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return -1;
+	}
+
+	if(!mesh->myport) {
+		meshlink_errno = MESHLINK_EINTERNAL;
+		return -1;
+	}
+
+	return atoi(mesh->myport);
+}
+
+bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
+	if(!mesh || port < 0 || port >= 65536 || mesh->threadstarted) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	if(mesh->myport && port == atoi(mesh->myport))
+		return true;
+
+	if(!try_bind(port)) {
+		meshlink_errno = MESHLINK_ENETWORK;
+		return false;
+	}
+
+	bool rval = false;
+
+	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+	if(mesh->threadstarted) {
+		meshlink_errno = MESHLINK_EINVAL;
+		goto done;
+	}
+
+	close_network_connections(mesh);
+	exit_configuration(&mesh->config);
+
+	char portstr[10];
+	snprintf(portstr, sizeof portstr, "%d", port);
+	portstr[sizeof portstr - 1] = 0;
+
+	modify_config_file(mesh, mesh->name, "Port", portstr, true);
+
+	init_configuration(&mesh->config);
+
+	if(!read_server_config(mesh))
+		meshlink_errno = MESHLINK_ESTORAGE;
+	else if(!setup_network(mesh))
+		meshlink_errno = MESHLINK_ENETWORK;
+	else
+		rval = true;
+
+done:
+	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+
 	return rval;
 }
 
@@ -2119,6 +2209,15 @@ static ssize_t channel_recv(struct utcp_connection *connection, const void *data
 
 	// If we have AIO buffers, use those first.
 	while((aio = channel->aio_receive)) {
+		// Call all outstanding AIO callbacks in case of an error
+		if(len <= 0) {
+			if(aio->cb)
+				aio->cb(mesh, channel, aio->data, 0, aio->priv);
+			channel->aio_receive = aio->next;
+			free(aio);
+			continue;
+		};
+
 		// Fill the current buffer up as much as possible
 		size_t left = aio->len - aio->done;
 		if(left > (len - done))
@@ -2226,26 +2325,68 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 
 	// If we have AIO buffers queued, use those.
 	if(aio) {
-		// Send as much as possible.
-		size_t left = aio->len - aio->done;
-		if(len > left)
-			len = left;
-		ssize_t sent = utcp_send(connection, aio->data + aio->done, len);
-		if(sent != -1)
-			aio->done += sent;
+		while(aio && len > 0) {
+			// AIO buffers are kept until they are ACKd, so some
+			// buffers might be completely sent already
+			if(aio->done >= aio->len) {
+				aio = aio->next;
+				continue;
+			}
 
-		// If it is done, call the callback and dispose of it.
-		if(aio->done >= aio->len) {
-			if(aio->cb)
-				aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
-			channel->aio_send = aio->next;
-			free(aio);
+			// Send as much as possible.
+			size_t left = aio->len - aio->done;
+			if(len < left)
+				left = len;
+			ssize_t sent = utcp_send(connection, aio->data + aio->done, left);
+			if(sent != -1) {
+				aio->done += sent;
+				len -= sent;
+			}
+
+			aio = aio->next;
 		}
 	} else {
 		if(channel->poll_cb)
 			channel->poll_cb(mesh, channel, len);
 		else
 			utcp_set_poll_cb(connection, NULL);
+	}
+}
+
+static void channel_ack(struct utcp_connection *connection, size_t len) {
+	meshlink_channel_t *channel = connection->priv;
+	if(!channel) {
+		logger(NULL, MESHLINK_ERROR, "Error: channel_ack no channel");
+		abort();
+	}
+
+	node_t *n = channel->node;
+	meshlink_handle_t *mesh = n->mesh;
+	meshlink_aio_buffer_t *aio = channel->aio_send;
+	meshlink_aio_buffer_t *next = NULL;
+	if(!aio)
+		return;
+
+	while(aio)
+	{
+		size_t unackd = aio->len - aio->ackd;
+
+		// ACK may cover some of aio and some of aio->next
+		size_t ackd = len <= unackd ? len : unackd;
+		aio->ackd += ackd;
+		len -= ackd;
+
+		next = aio->next;
+		// If all data has been ACKd, call the callback and dispose of it.
+		if(aio->ackd >= aio->len) {
+			// TODO differentiate between 'all ACKd' and 'all sent' callbacks
+			// to allow freeing aio->data once it is in utcp send buffer
+			if(aio->cb)
+				aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
+			channel->aio_send = aio->next;
+			free(aio);
+		}
+		aio = next;
 	}
 }
 
@@ -2335,13 +2476,13 @@ void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel
 	for(meshlink_aio_buffer_t *aio = channel->aio_send, *next; aio; aio = next) {
 		next = aio->next;
 		if(aio->cb)
-			aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
+			aio->cb(mesh, channel, aio->data, 0, aio->priv);
 		free(aio);
 	}
 	for(meshlink_aio_buffer_t *aio = channel->aio_receive, *next; aio; aio = next) {
 		next = aio->next;
 		if(aio->cb)
-			aio->cb(mesh, channel, aio->data, aio->len, aio->priv);
+			aio->cb(mesh, channel, aio->data, 0, aio->priv);
 		free(aio);
 	}
 	free(channel);
@@ -2407,6 +2548,7 @@ bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_t *chan
 	*p = aio;
 
 	utcp_set_poll_cb(channel->c, channel_poll);
+	utcp_set_ack_cb(channel->c, channel_ack);
 	channel_poll(channel->c, len);
 	MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 
