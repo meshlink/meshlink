@@ -495,6 +495,20 @@ namespace meshlink {
 			return meshlink_import(handle, data);
 		}
 
+		/// Hint that a node may be found at an address
+		/** This function indicates to meshlink that the given node is likely found
+		 *  at the given IP address and port.
+		 *
+		 *  @param mesh A handle which represents an instance of MeshLink.
+		 *  @param node The node which can be found at the given address.
+		 *  @param addr The IP address and port which should be tried for the
+		 *		given node. The caller is free to overwrite or free
+		 *		this memory once meshlink returns.
+		 */
+		void hint_address(node *node, const struct sockaddr *addr) {
+			meshlink_hint_address(handle, node, addr);
+		}
+
 		/// Blacklist a node from the mesh.
 		/** This function causes the local node to blacklist another node.
 		 *  The local node will drop any existing connections to that node,
