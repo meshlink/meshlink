@@ -1547,7 +1547,7 @@ bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *
 			return false;
 		}
 
-		xasprintf(&hostport, "%s %s", address->hostname, address->port);
+		xasprintf(&hostport, "%s %d", address->hostname, address->port);
 
 		MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 		rval = append_config_file(mesh, node->name, "Address", hostport);
