@@ -105,6 +105,7 @@ const var_t variables[] = {
 	{"VDEPort", VAR_SERVER},
 	/* Host configuration */
 	{"Address", VAR_HOST | VAR_MULTIPLE},
+	{"AddressHint", VAR_HOST | VAR_MULTIPLE},
 	{"Cipher", VAR_SERVER | VAR_HOST},
 	{"ClampMSS", VAR_SERVER | VAR_HOST},
 	{"Compression", VAR_SERVER | VAR_HOST},
@@ -791,14 +792,14 @@ static void add_local_addresses(meshlink_handle_t *mesh) {
 
 	if(getlocaladdrname("93.184.216.34", host, sizeof host)) {
 		snprintf(entry, sizeof entry, "%s %s", host, mesh->myport);
-		append_config_file(mesh, mesh->name, "Address", entry);
+		append_config_file(mesh, mesh->name, "AddressHint", entry);
 	}
 
 	// IPv6 example.org
 
 	if(getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", host, sizeof host)) {
 		snprintf(entry, sizeof entry, "%s %s", host, mesh->myport);
-		append_config_file(mesh, mesh->name, "Address", entry);
+		append_config_file(mesh, mesh->name, "AddressHint", entry);
 	}
 }
 
@@ -1528,23 +1529,36 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 	return mesh->invitation_key;
 }
 
-bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
-	if(!mesh || !address) {
-		meshlink_errno = MESHLINK_EINVAL;
-		return false;
-	}
-
-	if(!is_valid_hostname(address)) {
-		logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s\n", address);
+bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t **addresses, size_t nmemb) {
+	if(!mesh || !node || !addresses) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
 
 	bool rval = false;
+	char *hostport = NULL;
 
-	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-	rval = append_config_file(mesh, mesh->self->name, "Address", address);
-	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+	for(size_t i = 0; i < nmemb; i++) {
+		meshlink_canonical_address_t const *address = addresses[i];
+
+		if(!is_valid_hostname(address->hostname)) {
+			logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s\n", address->hostname);
+			meshlink_errno = MESHLINK_EINVAL;
+			return false;
+		}
+
+		xasprintf(&hostport, "%s %s", address->hostname, address->port);
+
+		MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+		rval = append_config_file(mesh, node->name, "Address", hostport);
+		MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+
+		free(hostport);
+		hostport = NULL;
+
+		if(!rval)
+			break;
+	}
 
 	return rval;
 }
@@ -2101,7 +2115,7 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 /* Hint that a hostname may be found at an address
  * See header file for detailed comment.
  */
-void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr) {
+void meshlink_add_address_hint(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr) {
 	if(!mesh || !node || !addr)
 		return;
 
@@ -2113,7 +2127,7 @@ void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const
 	if(host && port) {
 		xasprintf(&str, "%s %s", host, port);
 		if ( (strncmp ("fe80",host,4) != 0) && ( strncmp("127.",host,4) != 0 ) && ( strcmp("localhost",host) !=0 ) )
-			append_config_file(mesh, node->name, "Address", str);
+			append_config_file(mesh, node->name, "AddressHint", str);
 		else
 			logger(mesh, MESHLINK_DEBUG, "Not adding Link Local IPv6 Address to config\n");
 	}

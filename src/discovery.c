@@ -324,7 +324,7 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 
                             if(naddress.unknown.family != AF_UNKNOWN)
                             {
-                                meshlink_hint_address(mesh, (meshlink_node_t *)node, (struct sockaddr*)&naddress);
+                                meshlink_add_address_hint(mesh, (meshlink_node_t *)node, (struct sockaddr*)&naddress);
                             }
                             else
                             {

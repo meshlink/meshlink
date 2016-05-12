@@ -368,17 +368,6 @@ namespace meshlink {
 			return meshlink_verify(handle, source, data, len, signature, siglen);
 		}
 
-		/// Add an Address for the local node.
-		/** This function adds an Address for the local node, which will be used for invitation URLs.
-		 *
-		 *  @param address      A string containing the address, which can be either in numeric format or a hostname.
-		 *
-		 *  @return             This function returns true if the address was added, false otherwise.
-		 */
-		bool add_address(const char *address) {
-			return meshlink_add_address(handle, address);
-		}
-
 		/** This function performs tries to discover the local node's external address
 		 *  by contacting the meshlink.io server. If a reverse lookup of the address works,
 		 *  the FQDN associated with the address will be returned.
@@ -393,7 +382,7 @@ namespace meshlink {
 		 *                      or NULL if there was an error looking up the address.
 		 *                      After get_external_address() returns, the application is free to overwrite or free this string.
 		 */
-		bool get_external_address() {
+		const char* get_external_address() {
 			return meshlink_get_external_address(handle);
 		}
 
@@ -495,18 +484,19 @@ namespace meshlink {
 			return meshlink_import(handle, data);
 		}
 
-		/// Hint that a node may be found at an address
-		/** This function indicates to meshlink that the given node is likely found
-		 *  at the given IP address and port.
+		/// Add an Address for the given node.
+		/** This function adds an Address for the given node, which will be used for invitation URLs.
 		 *
-		 *  @param mesh A handle which represents an instance of MeshLink.
-		 *  @param node The node which can be found at the given address.
-		 *  @param addr The IP address and port which should be tried for the
-		 *		given node. The caller is free to overwrite or free
-		 *		this memory once meshlink returns.
+		 *  @param mesh         A handle which represents an instance of MeshLink.
+		 *  @param node         A pointer to a meshlink_node_t describing the node.
+		 *  @param addresses    Array of hostnames at which this node should be available.
+		 *			The caller must free the array when this function returns.
+		 *  @param nmemb	Number of elements in the addresses array.
+		 *
+		 *  @return             This function returns true if the address was added, false otherwise.
 		 */
-		void hint_address(node *node, const struct sockaddr *addr) {
-			meshlink_hint_address(handle, node, addr);
+		bool set_canonical_addresses(node *node, const meshlink_canonical_address_t **addresses, size_t nmemb) {
+			return meshlink_set_canonical_addresses(handle, node, addresses, nmemb);
 		}
 
 		/// Blacklist a node from the mesh.
