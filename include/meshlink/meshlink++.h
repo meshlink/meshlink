@@ -501,7 +501,8 @@ namespace meshlink {
 		 *  @return             This function returns true if the address was added, false otherwise.
 		 */
 		bool set_canonical_addresses(node *node, const canonical_address **addresses, size_t nmemb) {
-			return meshlink_set_canonical_addresses(handle, node, addresses, nmemb);
+			// cast is necessary due to double pointer
+			return meshlink_set_canonical_addresses(handle, node, (const meshlink_canonical_address_t**)addresses, nmemb);
 		}
 
 		/// Blacklist a node from the mesh.
