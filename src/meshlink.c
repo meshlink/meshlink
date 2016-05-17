@@ -791,14 +791,14 @@ static void add_local_addresses(meshlink_handle_t *mesh) {
 	// IPv4 example.org
 
 	if(getlocaladdrname("93.184.216.34", host, sizeof host)) {
-		snprintf(entry, sizeof entry, "%s %s", host, mesh->myport);
+		snprintf(entry, sizeof entry, "%s", host);
 		append_config_file(mesh, mesh->name, "AddressHint", entry);
 	}
 
 	// IPv6 example.org
 
 	if(getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", host, sizeof host)) {
-		snprintf(entry, sizeof entry, "%s %s", host, mesh->myport);
+		snprintf(entry, sizeof entry, "%s", host);
 		append_config_file(mesh, mesh->name, "AddressHint", entry);
 	}
 }
