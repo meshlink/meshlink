@@ -105,7 +105,7 @@ const var_t variables[] = {
 	{"VDEPort", VAR_SERVER},
 	/* Host configuration */
 	{"Address", VAR_HOST | VAR_MULTIPLE},
-	{"AddressHint", VAR_HOST | VAR_MULTIPLE},
+	{"CanonicalAddress", VAR_HOST | VAR_MULTIPLE},
 	{"Cipher", VAR_SERVER | VAR_HOST},
 	{"ClampMSS", VAR_SERVER | VAR_HOST},
 	{"Compression", VAR_SERVER | VAR_HOST},
@@ -792,14 +792,14 @@ static void add_local_addresses(meshlink_handle_t *mesh) {
 
 	if(getlocaladdrname("93.184.216.34", host, sizeof host)) {
 		snprintf(entry, sizeof entry, "%s", host);
-		append_config_file(mesh, mesh->name, "AddressHint", entry);
+		append_config_file(mesh, mesh->name, "Address", entry);
 	}
 
 	// IPv6 example.org
 
 	if(getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", host, sizeof host)) {
 		snprintf(entry, sizeof entry, "%s", host);
-		append_config_file(mesh, mesh->name, "AddressHint", entry);
+		append_config_file(mesh, mesh->name, "Address", entry);
 	}
 }
 
@@ -2127,7 +2127,7 @@ void meshlink_add_address_hint(meshlink_handle_t *mesh, meshlink_node_t *node, c
 	if(host && port) {
 		xasprintf(&str, "%s %s", host, port);
 		if ( (strncmp ("fe80",host,4) != 0) && ( strncmp("127.",host,4) != 0 ) && ( strcmp("localhost",host) !=0 ) )
-			append_config_file(mesh, node->name, "AddressHint", str);
+			append_config_file(mesh, node->name, "Address", str);
 		else
 			logger(mesh, MESHLINK_DEBUG, "Not adding Link Local IPv6 Address to config\n");
 	}
