@@ -48,6 +48,8 @@ typedef struct meshlink_edge meshlink_edge_t;
 /// A handle for a MeshLink channel.
 typedef struct meshlink_channel meshlink_channel_t;
 
+typedef struct meshlink_canonical_address meshlink_canonical_address_t;
+
 /// Code of most recent error encountered.
 typedef enum {
 	MESHLINK_OK,     ///< Everything is fine
@@ -119,6 +121,12 @@ struct meshlink_edge {
 	                                //   with this edge.
 	uint32_t options;               ///< Edge options. @TODO what are edge options?
 	int weight;                     ///< Weight assigned to this edge.
+};
+
+/// Simple struct for address-port pair
+struct meshlink_canonical_address {
+	char *hostname;	///< A nul-terminated C string containing the hostname.
+	int port;
 };
 
 /// Get the text for the given MeshLink error code.
@@ -427,15 +435,18 @@ extern bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len,
  */
 extern bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len, const void *signature, size_t siglen);
 
-/// Add an Address for the local node.
-/** This function adds an Address for the local node, which will be used for invitation URLs.
+/// Add an Address for the given node.
+/** This function adds an Address for the given node, which will be used for invitation URLs.
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
- *  @param address      A nul-terminated C string containing the address, which can be either in numeric format or a hostname.
+ *  @param node         A pointer to a meshlink_node_t describing the node.
+ *  @param addresses    Array of hostnames at which this node should be available.
+ *			The caller must free the array when this function returns.
+ *  @param nmemb	Number of elements in the addresses array.
  *
  *  @return             This function returns true if the address was added, false otherwise.
  */
-extern bool meshlink_add_address(meshlink_handle_t *mesh, const char *address);
+extern bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t **addresses, size_t nmemb);
 
 /// Try to discover the external address for the local node.
 /** This function performs tries to discover the local node's external address
@@ -457,9 +468,7 @@ extern bool meshlink_add_address(meshlink_handle_t *mesh, const char *address);
 extern char *meshlink_get_external_address(meshlink_handle_t *mesh);
 
 /// Try to discover the external address for the local node, and add it to its list of addresses.
-/** This function is equivalent to:
- *
- *    meshlink_add_address(mesh, meshlink_get_external_address(mesh));
+/** This function adds the local address to the list of canonical addresses.
  *
  *  Read the description of meshlink_get_external_address() for the limitations of this function.
  *
@@ -791,7 +800,7 @@ extern bool meshlink_channel_aio_receive(meshlink_handle_t *mesh, meshlink_chann
  *                  given node. The caller is free to overwrite or free
  *                  this memory once meshlink returns.
  */
-extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr);
+extern void meshlink_add_address_hint(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr);
 
 /// Get a list of edges.
 /** This function returns an array with copies of all known bidirectional edges.

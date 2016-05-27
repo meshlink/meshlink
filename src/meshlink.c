@@ -105,6 +105,7 @@ const var_t variables[] = {
 	{"VDEPort", VAR_SERVER},
 	/* Host configuration */
 	{"Address", VAR_HOST | VAR_MULTIPLE},
+	{"CanonicalAddress", VAR_HOST | VAR_MULTIPLE},
 	{"Cipher", VAR_SERVER | VAR_HOST},
 	{"ClampMSS", VAR_SERVER | VAR_HOST},
 	{"Compression", VAR_SERVER | VAR_HOST},
@@ -1528,23 +1529,36 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 	return mesh->invitation_key;
 }
 
-bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
-	if(!mesh || !address) {
-		meshlink_errno = MESHLINK_EINVAL;
-		return false;
-	}
-
-	if(!is_valid_hostname(address)) {
-		logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s\n", address);
+bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t **addresses, size_t nmemb) {
+	if(!mesh || !node || !addresses) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
 
 	bool rval = false;
+	char *hostport = NULL;
 
-	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-	rval = append_config_file(mesh, mesh->self->name, "Address", address);
-	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+	for(size_t i = 0; i < nmemb; i++) {
+		meshlink_canonical_address_t const *address = addresses[i];
+
+		if(!is_valid_hostname(address->hostname)) {
+			logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s\n", address->hostname);
+			meshlink_errno = MESHLINK_EINVAL;
+			return false;
+		}
+
+		xasprintf(&hostport, "%s %d", address->hostname, address->port);
+
+		MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+		rval = append_config_file(mesh, node->name, "Address", hostport);
+		MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+
+		free(hostport);
+		hostport = NULL;
+
+		if(!rval)
+			break;
+	}
 
 	return rval;
 }
@@ -2101,7 +2115,7 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 /* Hint that a hostname may be found at an address
  * See header file for detailed comment.
  */
-void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr) {
+void meshlink_add_address_hint(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr) {
 	if(!mesh || !node || !addr)
 		return;
 
