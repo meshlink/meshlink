@@ -372,7 +372,7 @@ static bool try_bind(meshlink_handle_t *mesh, int port) {
 		closesocket(fd);
 		if(result) {
 			freeaddrinfo(ai_first);
-			logger(mesh, MESHLINK_DEBUG, "Failed to bind port: failed to bind socket, %s\n", strerror(errno));
+			logger(mesh, MESHLINK_DEBUG, "Failed to bind port: failed to bind socket, %s\n", sockstrerror(sockerrno));
 			return false;
 		}
 		ai = ai->ai_next;
