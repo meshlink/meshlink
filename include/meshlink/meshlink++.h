@@ -156,14 +156,17 @@ namespace meshlink {
 		 *  @param name     The name which this instance of the application will use in the mesh.
 		 *                  May be NULL if the configuration already exists.
 		 *  @param appname  The application name which will be used in the mesh.
-		 *  @param dclass   The device class which will be used in the mesh.
+		 *  @param devclass The device class which will be used in the mesh.
+		 *  @param loglevel Sets the meshlink log level. The applications logging callback can filter further as desired.
 		 *
 		 *  @return         This function will return a pointer to a meshlink::mesh if MeshLink has succesfully set up its configuration files, NULL otherwise.
 		 */ 
-		bool open(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
+		bool open(const char *confbase, const char *name, const char* appname, dev_class_t devclass, meshlink_log_level_t loglevel) {
 			handle = meshlink_open(confbase, name, appname, devclass);
-			if(handle)
+			if(handle) {
 				handle->priv = this;
+			        meshlink_set_log_cb(handle, loglevel, &log_trampoline);
+                        }
 			
 			return isOpen();
 		}
@@ -272,14 +275,11 @@ namespace meshlink {
 		/** This function causes MeshLink to open network sockets, make outgoing connections, and
 		 *  create a new thread, which will handle all network I/O.
 		 *
-		 *  @param loglevel Sets the meshlink log level. The applications logging callback can filter further as desired.
-		 *
 		 *  @return         This function will return true if MeshLink has succesfully started its thread, false otherwise.
 		 */
-		bool start(meshlink_log_level_t loglevel) {
+		bool start() {
 			meshlink_set_receive_cb       (handle, &receive_trampoline);
 			meshlink_set_node_status_cb   (handle, &node_status_trampoline);
-			meshlink_set_log_cb           (handle, loglevel, &log_trampoline);
 			meshlink_set_channel_accept_cb(handle, &channel_accept_trampoline);
 			return meshlink_start         (handle);
 		}
