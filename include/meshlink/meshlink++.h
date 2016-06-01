@@ -171,8 +171,8 @@ namespace meshlink {
 			return isOpen();
 		}
 		
-		mesh(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
-			open(confbase, name, appname, devclass);
+		mesh(const char *confbase, const char *name, const char* appname, dev_class_t devclass, meshlink_log_level_t loglevel) {
+			open(confbase, name, appname, devclass, loglevel);
 		}
 		
 		/// Close the MeshLink handle.
