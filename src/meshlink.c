@@ -1604,14 +1604,17 @@ int meshlink_get_port(meshlink_handle_t *mesh) {
 bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 	if(!mesh || port < 0 || port >= 65536 || mesh->threadstarted) {
 		meshlink_errno = MESHLINK_EINVAL;
+		logger(mesh, MESHLINK_DEBUG, "Failed to set port: port invalid, or thread already started.\n");
 		return false;
 	}
 
-	if(mesh->myport && port == atoi(mesh->myport))
+	if(mesh->myport && port == atoi(mesh->myport)) {
 		return true;
+	}
 
 	if(!try_bind(mesh, port)) {
 		meshlink_errno = MESHLINK_ENETWORK;
+		logger(mesh, MESHLINK_DEBUG, "Failed to set port: could not bind port.\n");
 		return false;
 	}
 
@@ -1620,6 +1623,7 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 	if(mesh->threadstarted) {
 		meshlink_errno = MESHLINK_EINVAL;
+		logger(mesh, MESHLINK_DEBUG, "Failed to set port: thread already started.\n");
 		goto done;
 	}
 
@@ -1634,12 +1638,15 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 
 	init_configuration(&mesh->config);
 
-	if(!read_server_config(mesh))
+	if(!read_server_config(mesh)) {
+		logger(mesh, MESHLINK_DEBUG, "Failed to set port: could not read config.\n");
 		meshlink_errno = MESHLINK_ESTORAGE;
-	else if(!setup_network(mesh))
+	} else if(!setup_network(mesh)) {
+		logger(mesh, MESHLINK_DEBUG, "Failed to set port: could not set up network.\n");
 		meshlink_errno = MESHLINK_ENETWORK;
-	else
+	} else {
 		rval = true;
+	}
 
 done:
 	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
