@@ -367,17 +367,17 @@ static bool try_bind(meshlink_handle_t *mesh, int port) {
 		option = 1;
 		setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof option);
 		if(!fd) {
-			freeaddrinfo(ai_first);
 			logger(mesh, MESHLINK_DEBUG, "Failed to bind port: could not initialize socket.\n");
-			return false;
-		}
-		int result = bind(fd, ai->ai_addr, ai->ai_addrlen);
-		closesocket(fd);
-		if(result) {
 			freeaddrinfo(ai_first);
-			logger(mesh, MESHLINK_DEBUG, "Failed to bind port: failed to bind socket, %s\n", sockstrerror(sockerrno));
 			return false;
 		}
+		if(bind(fd, ai->ai_addr, ai->ai_addrlen)) {
+			logger(mesh, MESHLINK_DEBUG, "Failed to bind port: failed to bind socket, %s\n", sockstrerror(sockerrno));
+			closesocket(fd);
+			freeaddrinfo(ai_first);
+			return false;
+		}
+		closesocket(fd);
 		ai = ai->ai_next;
 	}
 
