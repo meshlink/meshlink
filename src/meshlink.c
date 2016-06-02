@@ -350,7 +350,6 @@ static bool try_bind(meshlink_handle_t *mesh, int port) {
 		.ai_socktype = SOCK_STREAM,
 		.ai_protocol = IPPROTO_TCP,
 	};
-	int option;
 
 	char portstr[16];
 	snprintf(portstr, sizeof portstr, "%d", port);
@@ -364,8 +363,6 @@ static bool try_bind(meshlink_handle_t *mesh, int port) {
 
 	while(ai) {
 		int fd = socket(ai->ai_family, SOCK_STREAM, IPPROTO_TCP);
-		option = 1;
-		setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof option);
 		if(!fd) {
 			logger(mesh, MESHLINK_DEBUG, "Failed to bind port: could not initialize socket.\n");
 			freeaddrinfo(ai_first);
