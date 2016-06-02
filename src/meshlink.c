@@ -1073,8 +1073,9 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	// Send ourselves a UDP packet to kick the event loop
 	listen_socket_t *s = &mesh->listen_socket[0];
-	if(sendto(s->udp.fd, "", 1, MSG_NOSIGNAL, &s->sa.sa, SALEN(s->sa.sa)) == -1)
-		logger(mesh, MESHLINK_ERROR, "Could not send a UDP packet to ourself");
+	if(sendto(s->udp.fd, "", 1, MSG_NOSIGNAL, &s->sa.sa, SALEN(s->sa.sa)) == -1) {
+		logger(mesh, MESHLINK_ERROR, "Could not send a UDP packet to ourself. Error: ", sockstrerror(sockerrno));
+	}
 
 	// Wait for the main thread to finish
 	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
