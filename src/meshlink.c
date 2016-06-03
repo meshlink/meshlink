@@ -1076,14 +1076,24 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	sockaddr_t self;
 	memset(&self, 0, sizeof(sockaddr_t));
 	memcpy(&self, &s->sa, sizeof(sockaddr_t));
-	self.sa.sa_family = AF_INET;
-	self.in.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	if(sendto(s->udp.fd, "", 1, MSG_NOSIGNAL, &self.sa, SALEN(self.sa)) == -1) {
+	logger(mesh, MESHLINK_DEBUG, "Setting address to loopback.");
+	if(s->sa.sa.sa_family == AF_INET) {
+		self.in.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	} else if(s->sa.sa.sa_family == AF_INET6) {
+		self.in6.sin6_addr = in6addr_loopback;
+	} else {
+		abort();
+	}
+	logger(mesh, MESHLINK_DEBUG, "Trying to send to loopback, port %d.", ntohs(self.in.sin_port));
+	// send at least 1 byte, otherwise receive function throws error
+	if(sendto(s->udp.fd, "\0", 1, MSG_NOSIGNAL, &self.sa, SALEN(self.sa)) == -1) {
 		logger(mesh, MESHLINK_ERROR, "Could not send a UDP packet to ourself. Error: %s", sockstrerror(sockerrno));
 	}
 
+	logger(mesh, MESHLINK_DEBUG, "Sent kick to self.");
 	// Wait for the main thread to finish
 	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+	logger(mesh, MESHLINK_DEBUG, "Waiting for thread to finish.");
 	pthread_join(mesh->thread, NULL);
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 

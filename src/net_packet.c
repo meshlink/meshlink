@@ -605,6 +605,7 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 	}
 
 	pkt.len = len;
+	logger(mesh, MESHLINK_DEBUG, "Received %d bytes of vpn data.", pkt.len);
 
 	sockaddrunmap(&from); /* Some braindead IPv6 implementations do stupid things. */
 
