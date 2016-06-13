@@ -355,7 +355,7 @@ static bool try_bind(meshlink_handle_t *mesh, int port) {
 	snprintf(portstr, sizeof portstr, "%d", port);
 
 	if(getaddrinfo(NULL, portstr, &hint, &ai) || !ai) {
-		logger(mesh, MESHLINK_DEBUG, "Failed to bind port: could got parse address info.\n");
+		logger(mesh, MESHLINK_DEBUG, "Failed to bind port: could not parse address info.\n");
 		return false;
 	}
 
