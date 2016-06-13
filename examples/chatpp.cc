@@ -187,14 +187,14 @@ int main(int argc, char *argv[]) {
 		nick = argv[2];
 
 	ChatMesh mesh;
-	mesh.open(confbase, nick, "chatpp", DEV_CLASS_STATIONARY);
+	mesh.open(confbase, nick, "chatpp", DEV_CLASS_STATIONARY, MESHLINK_DEBUG);
 
 	if(!mesh.isOpen()) {
 		fprintf(stderr, "Could not open MeshLink: %s\n", meshlink::strerror());
 		return 1;
 	}
 
-	if(!mesh.start(MESHLINK_DEBUG)) {
+	if(!mesh.start()) {
 		fprintf(stderr, "Could not start MeshLink: %s\n", meshlink::strerror());
 		return 1;
 	}

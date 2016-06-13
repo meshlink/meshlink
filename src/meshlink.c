@@ -342,7 +342,7 @@ static char *get_value(const char *data, const char *var) {
 	return val;
 }
 
-static bool try_bind(int port) {
+static bool try_bind(meshlink_handle_t *mesh, int port) {
 	struct addrinfo *ai = NULL;
 	struct addrinfo hint = {
 		.ai_flags = AI_PASSIVE,
@@ -354,23 +354,27 @@ static bool try_bind(int port) {
 	char portstr[16];
 	snprintf(portstr, sizeof portstr, "%d", port);
 
-	if(getaddrinfo(NULL, portstr, &hint, &ai) || !ai)
+	if(getaddrinfo(NULL, portstr, &hint, &ai) || !ai) {
+		logger(mesh, MESHLINK_DEBUG, "Failed to bind port: could not parse address info.\n");
 		return false;
+	}
 
 	struct addrinfo *ai_first = ai;
 
 	while(ai) {
 		int fd = socket(ai->ai_family, SOCK_STREAM, IPPROTO_TCP);
 		if(!fd) {
+			logger(mesh, MESHLINK_DEBUG, "Failed to bind port: could not initialize socket.\n");
 			freeaddrinfo(ai_first);
 			return false;
 		}
-		int result = bind(fd, ai->ai_addr, ai->ai_addrlen);
+		if(bind(fd, ai->ai_addr, ai->ai_addrlen)) {
+			logger(mesh, MESHLINK_DEBUG, "Failed to bind port: failed to bind socket, %s\n", sockstrerror(sockerrno));
+			closesocket(fd);
+			freeaddrinfo(ai_first);
+			return false;
+		}
 		closesocket(fd);
-		if(result) {
-			freeaddrinfo(ai_first);
-			return false;
-		}
 		ai = ai->ai_next;
 	}
 
@@ -381,7 +385,7 @@ static bool try_bind(int port) {
 static int check_port(meshlink_handle_t *mesh) {
 	for(int i = 0; i < 1000; i++) {
 		int port = 0x1000 + (rand() & 0x7fff);
-		if(try_bind(port)) {
+		if(try_bind(mesh, port)) {
 			char filename[PATH_MAX];
 			snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->name);
 			FILE *f = fopen(filename, "ab");
@@ -1069,8 +1073,20 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	// Send ourselves a UDP packet to kick the event loop
 	listen_socket_t *s = &mesh->listen_socket[0];
-	if(sendto(s->udp.fd, "", 1, MSG_NOSIGNAL, &s->sa.sa, SALEN(s->sa.sa)) == -1)
-		logger(mesh, MESHLINK_ERROR, "Could not send a UDP packet to ourself");
+	sockaddr_t self;
+	memset(&self, 0, sizeof(sockaddr_t));
+	memcpy(&self, &s->sa, sizeof(sockaddr_t));
+	if(s->sa.sa.sa_family == AF_INET) {
+		self.in.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	} else if(s->sa.sa.sa_family == AF_INET6) {
+		self.in6.sin6_addr = in6addr_loopback;
+	} else {
+		abort();
+	}
+	// send at least 1 byte, otherwise receive function throws error
+	if(sendto(s->udp.fd, "\0", 1, MSG_NOSIGNAL, &self.sa, SALEN(self.sa)) == -1) {
+		logger(mesh, MESHLINK_ERROR, "Could not send a UDP packet to ourself. Error: %s", sockstrerror(sockerrno));
+	}
 
 	// Wait for the main thread to finish
 	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
@@ -1600,14 +1616,17 @@ int meshlink_get_port(meshlink_handle_t *mesh) {
 bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 	if(!mesh || port < 0 || port >= 65536 || mesh->threadstarted) {
 		meshlink_errno = MESHLINK_EINVAL;
+		logger(mesh, MESHLINK_DEBUG, "Failed to set port: port invalid, or thread already started.\n");
 		return false;
 	}
 
-	if(mesh->myport && port == atoi(mesh->myport))
+	if(mesh->myport && port == atoi(mesh->myport)) {
 		return true;
+	}
 
-	if(!try_bind(port)) {
+	if(!try_bind(mesh, port)) {
 		meshlink_errno = MESHLINK_ENETWORK;
+		logger(mesh, MESHLINK_DEBUG, "Failed to set port: could not bind port.\n");
 		return false;
 	}
 
@@ -1616,6 +1635,7 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 	MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 	if(mesh->threadstarted) {
 		meshlink_errno = MESHLINK_EINVAL;
+		logger(mesh, MESHLINK_DEBUG, "Failed to set port: thread already started.\n");
 		goto done;
 	}
 
@@ -1630,12 +1650,15 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 
 	init_configuration(&mesh->config);
 
-	if(!read_server_config(mesh))
+	if(!read_server_config(mesh)) {
+		logger(mesh, MESHLINK_DEBUG, "Failed to set port: could not read config.\n");
 		meshlink_errno = MESHLINK_ESTORAGE;
-	else if(!setup_network(mesh))
+	} else if(!setup_network(mesh)) {
+		logger(mesh, MESHLINK_DEBUG, "Failed to set port: could not set up network.\n");
 		meshlink_errno = MESHLINK_ENETWORK;
-	else
+	} else {
 		rval = true;
+	}
 
 done:
 	MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
