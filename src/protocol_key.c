@@ -80,6 +80,9 @@ static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data
 
 bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 	if(!node_read_ecdsa_public_key(mesh, to)) {
+		if(!to->nexthop) {
+			return false;
+		}
 		logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s (%s)", to->name, to->hostname);
 		send_request(mesh, to->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY);
 		return true;
