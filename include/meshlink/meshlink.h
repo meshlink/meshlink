@@ -699,6 +699,28 @@ extern void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_chann
  */
 extern meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len);
 
+/// Set maximum congestion window size for a channel.
+/** This sets the maximum congestion window size for the channel.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *  @param max          Max congestion window size. Set to 0 for no maximum.
+ *
+ *  @return             True on success, false on failure.
+ */
+extern bool meshlink_channel_set_cwnd_max(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint32_t max);
+
+/// Get maximum congestion window size.
+/**
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *  @param max          Will be set to the maximum congestion window size, or 0 if no maximum is set.
+ *
+ *  @return             True on success, false on error. On error, meshlink_errno is set and max parameter
+ *                      is not set to a valid value.
+ */
+extern bool meshlink_channel_get_cwnd_max(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint32_t *max);
+
 /// Partially close a reliable stream channel.
 /** This shuts down the read or write side of a channel, or both, without closing the handle.
  *  It can be used to inform the remote node that the local node has finished sending all data on the channel,

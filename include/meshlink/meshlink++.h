@@ -562,6 +562,30 @@ namespace meshlink {
 			return ch;
 		}
 
+		/// Set maximum congestion window size for a channel.
+		/** This sets the maximum congestion window size for the channel.
+		 *
+		 *  @param channel      A handle for the channel.
+		 *  @param max	        Max congestion window size. Set to 0 for no maximum.
+		 *
+		 *  @return	     True on success, false on failure.
+		 */
+		bool channel_set_cwnd_max(channel *channel, uint32_t max) {
+			return meshlink_channel_set_cwnd_max(handle, channel, max);
+		}
+
+		/// Get maximum congestion window size.
+		/**
+		 *  @param channel      A handle for the channel.
+		 *  @param max	        Will be set to the maximum congestion window size, or 0 if no maximum is set.
+		 *
+		 *  @return	     True on success, false on error. On error, meshlink_errno is set and max parameter
+		 *		      is not set to a valid value.
+		 */
+		bool channel_get_cwnd_max(channel *channel, uint32_t *max) {
+			return meshlink_channel_get_cwnd_max(handle, channel, max);
+		}
+
 		/// Partially close a reliable stream channel.
 		/** This shuts down the read or write side of a channel, or both, without closing the handle.
 		 *  It can be used to inform the remote node that the local node has finished sending all data on the channel,
