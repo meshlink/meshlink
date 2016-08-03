@@ -1,4 +1,4 @@
-bin_PROGRAMS = meshlinkapp chat chatpp manynodes channels
+bin_PROGRAMS = meshlinkapp chat chatpp manynodes channels channelsaio
 
 AM_CPPFLAGS = -I../include -I../src
 
@@ -16,3 +16,6 @@ manynodes_LDADD = ../src/libmeshlink.la ../catta/src/libcatta.la
 
 channels_SOURCES = channels.c
 channels_LDADD = ../src/libmeshlink.la ../catta/src/libcatta.la
+
+channelsaio_SOURCES = channelsaio.c
+channelsaio_LDADD = ../src/libmeshlink.la ../catta/src/libcatta.la
