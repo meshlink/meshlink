@@ -2377,9 +2377,15 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 			if(len < left)
 				left = len;
 			ssize_t sent = utcp_send(connection, aio->data + aio->done, left);
-			if(sent != -1) {
+			if(sent == -1) {
+				logger(mesh, MESHLINK_ERROR, "Error: channel_poll could not pass data to utcp: utcp_send returned -1");
+				break;
+			} else if(sent == 0) {
+				// utcp send buffer is full
+				break;
+			} else {
 				aio->done += sent;
-				len -= sent;
+				len = sent > len ? 0 : len - sent;
 			}
 
 			aio = aio->next;
