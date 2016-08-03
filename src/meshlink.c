@@ -2412,7 +2412,7 @@ static void channel_ack(struct utcp_connection *connection, size_t len) {
 	if(!aio)
 		return;
 
-	while(aio)
+	while(aio && len > 0)
 	{
 		size_t unackd = aio->len - aio->ackd;
 
