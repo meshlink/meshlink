@@ -2360,6 +2360,8 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 	meshlink_handle_t *mesh = n->mesh;
 	meshlink_aio_buffer_t *aio = channel->aio_send;
 
+	logger(mesh, MESHLINK_DEBUG, "channel_poll(%p, " PRINT_SIZE_T ")\n", connection, len);
+
 	// If we have AIO buffers queued, use those.
 	if(aio) {
 		while(aio && len > 0) {
