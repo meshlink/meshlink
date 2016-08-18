@@ -729,7 +729,7 @@ extern bool meshlink_channel_get_cwnd_max(meshlink_handle_t *mesh, meshlink_chan
  *
  *  @return             True on success, false on failure.
  */
-extern bool meshlink_channel_set_rtrx_tolerance(channel *channel, uint32_t tolerance);
+extern bool meshlink_channel_set_rtrx_tolerance(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint32_t tolerance);
 
 /// Get retransmit tolerance.
 /**
@@ -738,7 +738,7 @@ extern bool meshlink_channel_set_rtrx_tolerance(channel *channel, uint32_t toler
  *
  *  @return             True on success, false on error. On error, meshlink_errno is set.
  */
-extern bool meshlink_channel_get_rtrx_tolerance(channel *channel, uint32_t *tolerance);
+extern bool meshlink_channel_get_rtrx_tolerance(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint32_t *tolerance);
 
 /// Partially close a reliable stream channel.
 /** This shuts down the read or write side of a channel, or both, without closing the handle.
