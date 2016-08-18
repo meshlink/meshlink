@@ -2520,7 +2520,7 @@ bool meshlink_channel_set_rtrx_tolerance(meshlink_handle_t *mesh, meshlink_chann
         return false;
     }
 
-    return utcp_set_cwnd_max(channel->c, tolerance);
+    return utcp_set_rtrx_tolerance(channel->c, tolerance);
 }
 
 bool meshlink_channel_get_rtrx_tolerance(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint32_t *tolerance) {
@@ -2529,7 +2529,7 @@ bool meshlink_channel_get_rtrx_tolerance(meshlink_handle_t *mesh, meshlink_chann
         return false;
     }
 
-    return utcp_get_cwnd_max(channel->c, tolerance);
+    return utcp_get_rtrx_tolerance(channel->c, tolerance);
 }
 
 void meshlink_channel_shutdown(meshlink_handle_t *mesh, meshlink_channel_t *channel, int direction) {

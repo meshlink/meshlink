@@ -595,7 +595,7 @@ namespace meshlink {
          *  @return             True on success, false on failure.
          */
         bool channel_set_rtrx_tolerance(channel *channel, uint32_t tolerance) {
-            return meshlink_channel_set_cwnd_max(handle, channel, tolerance);
+            return meshlink_channel_set_rtrx_tolerance(handle, channel, tolerance);
         }
 
         /// Get retransmit tolerance.
@@ -606,7 +606,7 @@ namespace meshlink {
          *  @return             True on success, false on error. On error, meshlink_errno is set.
          */
         bool channel_get_rtrx_tolerance(channel *channel, uint32_t *tolerance) {
-            return meshlink_channel_get_cwnd_max(handle, channel, tolerance);
+            return meshlink_channel_get_rtrx_tolerance(handle, channel, tolerance);
         }
 
         /// Partially close a reliable stream channel.
