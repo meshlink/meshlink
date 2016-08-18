@@ -721,6 +721,25 @@ extern bool meshlink_channel_set_cwnd_max(meshlink_handle_t *mesh, meshlink_chan
  */
 extern bool meshlink_channel_get_cwnd_max(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint32_t *max);
 
+/// Set retransmit tolerance for a channel.
+/** This sets the additional timeout tolerance for the channel.
+ *
+ *  @param channel      A handle for the channel.
+ *  @param max          The additional retransmit tolerance in usec.
+ *
+ *  @return             True on success, false on failure.
+ */
+extern bool meshlink_channel_set_rtrx_tolerance(channel *channel, uint32_t tolerance);
+
+/// Get retransmit tolerance.
+/**
+ *  @param channel      A handle for the channel.
+ *  @param max          Will be set to the retransmit tolerance in usec.
+ *
+ *  @return             True on success, false on error. On error, meshlink_errno is set.
+ */
+extern bool meshlink_channel_get_rtrx_tolerance(channel *channel, uint32_t *tolerance);
+
 /// Partially close a reliable stream channel.
 /** This shuts down the read or write side of a channel, or both, without closing the handle.
  *  It can be used to inform the remote node that the local node has finished sending all data on the channel,

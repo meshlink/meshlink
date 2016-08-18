@@ -2514,6 +2514,24 @@ bool meshlink_channel_get_cwnd_max(meshlink_handle_t *mesh, meshlink_channel_t *
 	return utcp_get_cwnd_max(channel->c, max);
 }
 
+bool meshlink_channel_set_rtrx_tolerance(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint32_t tolerance) {
+	if(!mesh || !channel) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	return utcp_set_cwnd_max(channel->c, tolerance);
+}
+
+bool meshlink_channel_get_rtrx_tolerance(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint32_t *tolerance) {
+	if(!mesh || !channel || !channel->c) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	return utcp_get_cwnd_max(channel->c, tolerance);
+}
+
 void meshlink_channel_shutdown(meshlink_handle_t *mesh, meshlink_channel_t *channel, int direction) {
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
