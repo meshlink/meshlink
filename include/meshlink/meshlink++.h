@@ -568,7 +568,7 @@ namespace meshlink {
 		 *  @param channel      A handle for the channel.
 		 *  @param max	        Max congestion window size. Set to 0 for no maximum.
 		 *
-		 *  @return	     True on success, false on failure.
+		 *  @return	     		True on success, false on failure.
 		 */
 		bool channel_set_cwnd_max(channel *channel, uint32_t max) {
 			return meshlink_channel_set_cwnd_max(handle, channel, max);
@@ -579,8 +579,8 @@ namespace meshlink {
 		 *  @param channel      A handle for the channel.
 		 *  @param max	        Will be set to the maximum congestion window size, or 0 if no maximum is set.
 		 *
-		 *  @return	     True on success, false on error. On error, meshlink_errno is set and max parameter
-		 *		      is not set to a valid value.
+		 *  @return	     		True on success, false on error. On error, meshlink_errno is set and max parameter
+		 *		      			is not set to a valid value.
 		 */
 		bool channel_get_cwnd_max(channel *channel, uint32_t *max) {
 			return meshlink_channel_get_cwnd_max(handle, channel, max);
