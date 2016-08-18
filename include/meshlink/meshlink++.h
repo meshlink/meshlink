@@ -590,7 +590,7 @@ namespace meshlink {
         /** This sets the additional timeout tolerance for the channel.
          *
          *  @param channel      A handle for the channel.
-         *  @param max          The additional retransmit tolerance in usec.
+         *  @param tolerance    The additional retransmit tolerance in usec.
          *
          *  @return             True on success, false on failure.
          */
@@ -601,7 +601,7 @@ namespace meshlink {
         /// Get retransmit tolerance.
         /**
          *  @param channel      A handle for the channel.
-         *  @param max          Will be set to the retransmit tolerance in usec.
+         *  @param tolerance    Will be set to the retransmit tolerance in usec.
          *
          *  @return             True on success, false on error. On error, meshlink_errno is set.
          */

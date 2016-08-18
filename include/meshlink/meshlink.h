@@ -725,7 +725,7 @@ extern bool meshlink_channel_get_cwnd_max(meshlink_handle_t *mesh, meshlink_chan
 /** This sets the additional timeout tolerance for the channel.
  *
  *  @param channel      A handle for the channel.
- *  @param max          The additional retransmit tolerance in usec.
+ *  @param tolerance    The additional retransmit tolerance in usec.
  *
  *  @return             True on success, false on failure.
  */
@@ -734,7 +734,7 @@ extern bool meshlink_channel_set_rtrx_tolerance(meshlink_handle_t *mesh, meshlin
 /// Get retransmit tolerance.
 /**
  *  @param channel      A handle for the channel.
- *  @param max          Will be set to the retransmit tolerance in usec.
+ *  @param tolerance    Will be set to the retransmit tolerance in usec.
  *
  *  @return             True on success, false on error. On error, meshlink_errno is set.
  */
