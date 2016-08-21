@@ -52,25 +52,25 @@ typedef struct meshlink_canonical_address meshlink_canonical_address_t;
 
 /// Code of most recent error encountered.
 typedef enum {
-	MESHLINK_OK,     ///< Everything is fine
-	MESHLINK_EINVAL, ///< Invalid parameter(s) to function call
-	MESHLINK_ENOMEM, ///< Out of memory
-	MESHLINK_ENOENT, ///< Node is not known
-	MESHLINK_EEXIST, ///< Node already exists
-	MESHLINK_EINTERNAL, ///< MeshLink internal error
-	MESHLINK_ERESOLV, ///< MeshLink could not resolve a hostname
-	MESHLINK_ESTORAGE, ///< MeshLink coud not load or write data from/to disk
-	MESHLINK_ENETWORK, ///< MeshLink encountered a network error
-	MESHLINK_EPEER, ///< A peer caused an error
+    MESHLINK_OK,     ///< Everything is fine
+    MESHLINK_EINVAL, ///< Invalid parameter(s) to function call
+    MESHLINK_ENOMEM, ///< Out of memory
+    MESHLINK_ENOENT, ///< Node is not known
+    MESHLINK_EEXIST, ///< Node already exists
+    MESHLINK_EINTERNAL, ///< MeshLink internal error
+    MESHLINK_ERESOLV, ///< MeshLink could not resolve a hostname
+    MESHLINK_ESTORAGE, ///< MeshLink coud not load or write data from/to disk
+    MESHLINK_ENETWORK, ///< MeshLink encountered a network error
+    MESHLINK_EPEER, ///< A peer caused an error
 } meshlink_errno_t;
 
 /// Device class
 typedef enum {
-	DEV_CLASS_BACKBONE = 0,
-	DEV_CLASS_STATIONARY = 1,
-	DEV_CLASS_PORTABLE = 2,
-	DEV_CLASS_UNKNOWN = 3,
-	_DEV_CLASS_MAX = 3
+    DEV_CLASS_BACKBONE = 0,
+    DEV_CLASS_STATIONARY = 1,
+    DEV_CLASS_PORTABLE = 2,
+    DEV_CLASS_UNKNOWN = 3,
+    _DEV_CLASS_MAX = 3
 } dev_class_t;
 
 /// A variable holding the last encountered error from MeshLink.
@@ -91,42 +91,42 @@ extern __thread meshlink_errno_t meshlink_errno;
 #ifndef MESHLINK_INTERNAL_H
 
 struct meshlink_handle {
-	char *name;       ///< Textual name of ourself. It is stored in a nul-terminated C string, which is allocated by MeshLink.
-	void *priv;       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
+    char *name;       ///< Textual name of ourself. It is stored in a nul-terminated C string, which is allocated by MeshLink.
+    void *priv;       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
 struct meshlink_node {
-	char *name;       ///< Textual name of this node. It is stored in a nul-terminated C string, which is allocated by MeshLink.
-	void *priv;       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
+    char *name;       ///< Textual name of this node. It is stored in a nul-terminated C string, which is allocated by MeshLink.
+    void *priv;       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
 struct meshlink_channel {
-	struct meshlink_node *node; ///< Pointer to the peer of this channel.
-	void *priv;                 ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
+    struct meshlink_node *node; ///< Pointer to the peer of this channel.
+    void *priv;                 ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
 #endif // MESHLINK_INTERNAL_H
 
 /// An edge in the meshlink network.
 struct meshlink_edge {
-	struct meshlink_node *from;     ///< Pointer to a node. Node memory is
-	                                //   owned by meshlink and should not be
-	                                //   deallocated. Node contents may be
-	                                //   changed by meshlink.
-	struct meshlink_node *to;       ///< Pointer to a node. Node memory is
-	                                //   owned by meshlink and should not be
-	                                //   deallocated. Node contents may be
-	                                //   changed by meshlink.
-	struct sockaddr_storage address;///< The address information associated
-	                                //   with this edge.
-	uint32_t options;               ///< Edge options. @TODO what are edge options?
-	int weight;                     ///< Weight assigned to this edge.
+    struct meshlink_node *from;     ///< Pointer to a node. Node memory is
+                                    //   owned by meshlink and should not be
+                                    //   deallocated. Node contents may be
+                                    //   changed by meshlink.
+    struct meshlink_node *to;       ///< Pointer to a node. Node memory is
+                                    //   owned by meshlink and should not be
+                                    //   deallocated. Node contents may be
+                                    //   changed by meshlink.
+    struct sockaddr_storage address;///< The address information associated
+                                    //   with this edge.
+    uint32_t options;               ///< Edge options. @TODO what are edge options?
+    int weight;                     ///< Weight assigned to this edge.
 };
 
 /// Simple struct for address-port pair
 struct meshlink_canonical_address {
-	char *hostname;	///< A nul-terminated C string containing the hostname.
-	int port;
+    char *hostname;    ///< A nul-terminated C string containing the hostname.
+    int port;
 };
 
 /// Get the text for the given MeshLink error code.
@@ -275,11 +275,11 @@ extern void meshlink_set_node_status_cb(meshlink_handle_t *mesh, meshlink_node_s
 
 /// Severity of log messages generated by MeshLink.
 typedef enum {
-	MESHLINK_DEBUG,    ///< Internal debugging messages. Only useful during application development.
-	MESHLINK_INFO,     ///< Informational messages.
-	MESHLINK_WARNING,  ///< Warnings which might indicate problems, but which are not real errors.
-	MESHLINK_ERROR,    ///< Errors which hamper correct functioning of MeshLink, without causing it to fail completely.
-	MESHLINK_CRITICAL, ///< Critical errors which cause MeshLink to fail completely.
+    MESHLINK_DEBUG,    ///< Internal debugging messages. Only useful during application development.
+    MESHLINK_INFO,     ///< Informational messages.
+    MESHLINK_WARNING,  ///< Warnings which might indicate problems, but which are not real errors.
+    MESHLINK_ERROR,    ///< Errors which hamper correct functioning of MeshLink, without causing it to fail completely.
+    MESHLINK_CRITICAL, ///< Critical errors which cause MeshLink to fail completely.
 } meshlink_log_level_t;
 
 /// A callback for receiving log messages generated by MeshLink.
@@ -441,8 +441,8 @@ extern bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, co
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param node         A pointer to a meshlink_node_t describing the node.
  *  @param addresses    Array of hostnames at which this node should be available.
- *			The caller must free the array when this function returns.
- *  @param nmemb	Number of elements in the addresses array.
+ *            The caller must free the array when this function returns.
+ *  @param nmemb    Number of elements in the addresses array.
  *
  *  @return             This function returns true if the address was added, false otherwise.
  */
@@ -720,6 +720,25 @@ extern bool meshlink_channel_set_cwnd_max(meshlink_handle_t *mesh, meshlink_chan
  *                      is not set to a valid value.
  */
 extern bool meshlink_channel_get_cwnd_max(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint32_t *max);
+
+/// Set retransmit tolerance for a channel.
+/** This sets the additional timeout tolerance for the channel.
+ *
+ *  @param channel      A handle for the channel.
+ *  @param tolerance    The additional retransmit tolerance in usec.
+ *
+ *  @return             True on success, false on failure.
+ */
+extern bool meshlink_channel_set_rtrx_tolerance(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint32_t tolerance);
+
+/// Get retransmit tolerance.
+/**
+ *  @param channel      A handle for the channel.
+ *  @param tolerance    Will be set to the retransmit tolerance in usec.
+ *
+ *  @return             True on success, false on error. On error, meshlink_errno is set.
+ */
+extern bool meshlink_channel_get_rtrx_tolerance(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint32_t *tolerance);
 
 /// Partially close a reliable stream channel.
 /** This shuts down the read or write side of a channel, or both, without closing the handle.
