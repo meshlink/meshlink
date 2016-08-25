@@ -29,7 +29,8 @@
 #include "utils.h"
 #include "xalloc.h"
 
-#define DEFAULT_MTU SPTPS_DATAGRAM_MTU
+// lower the default mtu a bit, just in case
+#define DEFAULT_MTU (SPTPS_DATAGRAM_MTU - 100)
 
 static int node_compare(const node_t *a, const node_t *b) {
 	return strcmp(a->name, b->name);
