@@ -83,6 +83,9 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 		n->mtuprobes = 1;
 		n->minmtu = 0;
 		n->maxmtu = sptps_maxmtu(n->sptps);
+
+		// reduce mtu a bit as well
+		n->mtu > 1000? n->mtu -= 100;
 	}
 
 	if(n->mtuprobes >= 10 && n->mtuprobes < 32 && !n->minmtu) {
@@ -193,6 +196,14 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 			len = n->maxmtu;
 		if(n->minmtu < len)
 			n->minmtu = len;
+
+		// raise mtu along with the minmtu
+		if(n->mtu < n->minmtu) {
+			n->mtu = n->minmtu;
+
+			// update meshlink and utcp for the mtu change
+			update_node_mtu(mesh, n);
+		}
 	}
 }
 
