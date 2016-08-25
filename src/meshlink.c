@@ -1298,13 +1298,13 @@ ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination)
         return 0;
 
     }
-    else if(n->mtuprobes > 30 && n->minmtu) {
+    else if(n->utcp) {
         MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
-        return n->minmtu;
+        return utcp_get_mtu(n->utcp);
     }
     else {
         MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
-        return MTU;
+        return sptps_maxmtu(n->sptps) - sizeof(meshlink_packethdr_t);
     }
 }
 
