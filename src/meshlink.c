@@ -2435,6 +2435,20 @@ static void channel_ack(struct utcp_connection *connection, size_t len) {
     }
 }
 
+static bool init_utcp(meshlink_handle_t *mesh, node_t *n) {
+    logger(mesh, MESHLINK_WARNING, "utcp_init on node %s", n->name);
+
+    n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+    if(!n->utcp) {
+        meshlink_errno = errno == ENOMEM ? MESHLINK_ENOMEM : MESHLINK_EINTERNAL;
+        return false;
+    }
+
+    update_node_mtu(mesh, n);
+
+    return true;
+}
+
 void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_poll_cb_t cb) {
 
     MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
@@ -2456,8 +2470,7 @@ void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_ac
     mesh->receive_cb = channel_receive;
     for splay_each(node_t, n, mesh->nodes) {
         if(!n->utcp && n != mesh->self) {
-            logger(mesh, MESHLINK_WARNING, "utcp_init on node %s", n->name);
-            n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+            init_utcp(mesh, n);
         }
     }
     MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
@@ -2474,13 +2487,12 @@ meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node
     logger(mesh, MESHLINK_WARNING, "meshlink_channel_open(%p, %s, %u, %p, %p, " PRINT_SIZE_T ")\n", mesh, node->name, port, cb, data, len);
     node_t *n = (node_t *)node;
     if(!n->utcp) {
-        n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
-        mesh->receive_cb = channel_receive;
-        if(!n->utcp) {
-            meshlink_errno = errno == ENOMEM ? MESHLINK_ENOMEM : MESHLINK_EINTERNAL;
+        if(!init_utcp(mesh, n)) {
             MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
             return NULL;
         }
+
+        mesh->receive_cb = channel_receive;
     }
     meshlink_channel_t *channel = xzalloc(sizeof *channel);
     channel->node = n;
@@ -2666,7 +2678,7 @@ bool meshlink_channel_aio_receive(meshlink_handle_t *mesh, meshlink_channel_t *c
 
 void update_node_status(meshlink_handle_t *mesh, node_t *n) {
     if(n->status.reachable && mesh->channel_accept_cb && !n->utcp)
-        n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+        init_utcp(mesh, n);
     if(mesh->node_status_cb)
         mesh->node_status_cb(mesh, (meshlink_node_t *)n, n->status.reachable);
 }
