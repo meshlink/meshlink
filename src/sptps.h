@@ -39,6 +39,14 @@
 #define SPTPS_SIG 3           // Waiting for a SIGnature record
 #define SPTPS_ACK 4           // Waiting for an ACKnowledgement record
 
+// max transmission unit size
+// 1500 bytes usable space for the ethernet frame or 9000 for the jumbograms
+// - 20 bytes IPv4-Header
+// -  8 bytes UDP-Header
+// - 19 to 21 bytes encryption (sptps.c send_record_priv / send_record_priv_datagram)
+#define SPTPS_MTU (PAYLOAD_MTU - 47)
+#define SPTPS_DATAGRAM_MTU (PAYLOAD_MTU - 49)
+
 typedef bool (*send_data_t)(void *handle, uint8_t type, const void *data, size_t len);
 typedef bool (*receive_record_t)(void *handle, uint8_t type, const void *data, uint16_t len);
 
@@ -87,5 +95,6 @@ extern bool sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16
 extern bool sptps_receive_data(sptps_t *s, const void *data, size_t len);
 extern bool sptps_force_kex(sptps_t *s);
 extern bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len);
+extern uint16_t sptps_maxmtu(sptps_t *s);
 
 #endif
