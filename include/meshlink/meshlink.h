@@ -304,10 +304,6 @@ typedef void (*meshlink_log_cb_t)(meshlink_handle_t *mesh, meshlink_log_level_t 
  *  to hand the data over to the application's thread.
  *  The callback should also not block itself and return as quickly as possible.
  *
- *  The @a mesh @a parameter can either be a valid MeshLink handle, or NULL.
- *  In case it is NULL, the callback will be called for errors that happen outside the context of a valid mesh instance.
- *  Otherwise, it will be called for errors that happen in the context of the given mesh instance.
- *
  *  @param mesh      A handle which represents an instance of MeshLink, or NULL.
  *  @param level     An enum describing the minimum severity level. Debugging information with a lower level will not trigger the callback.
  *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
