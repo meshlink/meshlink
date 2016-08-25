@@ -219,7 +219,7 @@ static void check_reachability(meshlink_handle_t *mesh) {
 			n->last_req_key = 0;
 
 			n->status.udp_confirmed = false;
-			n->maxmtu = sptps_maxmtu(n->sptps);
+			n->maxmtu = sptps_maxmtu(&n->sptps);
 			n->minmtu = 0;
 			n->mtuprobes = 0;
 
