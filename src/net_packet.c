@@ -82,7 +82,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 		n->status.udp_confirmed = false;
 		n->mtuprobes = 1;
 		n->minmtu = 0;
-		n->maxmtu = MTU;
+		n->maxmtu = sptps_maxmtu(n->sptps);
 	}
 
 	if(n->mtuprobes >= 10 && n->mtuprobes < 32 && !n->minmtu) {
@@ -111,7 +111,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 		int len;
 
 		if(i == 0) {
-			if(n->mtuprobes < 30 || n->maxmtu + 8 >= MTU)
+			if(n->mtuprobes < 30 || n->maxmtu + 8 >= sptps_maxmtu(n->sptps))
 				continue;
 			len = n->maxmtu + 8;
 		} else if(n->maxmtu <= n->minmtu) {
@@ -173,7 +173,7 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 		if(n->mtuprobes > 30) {
 			if (len == n->maxmtu + 8) {
 				logger(mesh, MESHLINK_INFO, "Increase in PMTU to %s (%s) detected, restarting PMTU discovery", n->name, n->hostname);
-				n->maxmtu = MTU;
+				n->maxmtu = sptps_maxmtu(n->sptps);
 				n->mtuprobes = 10;
 				return;
 			}
@@ -473,7 +473,7 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 		return true;
 	}
 
-	if(len > MTU) {
+	if(len > sptps_maxmtu(from->sptps)) {
 		logger(mesh, MESHLINK_ERROR, "Packet from %s (%s) larger than maximum supported size (%d > %d)", from->name, from->hostname, len, MTU);
 		return false;
 	}
