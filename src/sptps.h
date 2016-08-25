@@ -25,6 +25,7 @@
 #include "chacha-poly1305/chacha-poly1305.h"
 #include "ecdh.h"
 #include "ecdsa.h"
+#include "net_defines.h"
 
 #define SPTPS_VERSION 0
 
