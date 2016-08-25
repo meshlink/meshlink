@@ -1315,7 +1315,7 @@ ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination)
     }
     else {
         MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
-        return sptps_maxmtu(n->sptps) - sizeof(meshlink_packethdr_t);
+        return sptps_maxmtu(&n->sptps) - sizeof(meshlink_packethdr_t);
     }
 }
 

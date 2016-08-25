@@ -335,7 +335,7 @@ extern bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination,
  /* @param mesh         A handle which represents an instance of MeshLink.
  *  @param node         A pointer to a meshlink_node_t describing the node for that the mtu changed.
  */
-typedef void (*meshlink_node_pmtu_t)(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t mtu);
+typedef void (*meshlink_node_pmtu_cb_t)(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t mtu);
 
 /// Set the mtu callback.
 /** This functions sets the callback that is called whenever MeshLink detects a maximum transmition unit (MTU) size change for a node.
@@ -349,7 +349,7 @@ typedef void (*meshlink_node_pmtu_t)(meshlink_handle_t *mesh, meshlink_node_t *n
  *  @param cb        A pointer to the function which will be called when another node's mtu changed.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-extern void meshlink_set_node_pmtu_cb(meshlink_handle_t *mesh, meshlink_node_pmtu_t cb);
+extern void meshlink_set_node_pmtu_cb(meshlink_handle_t *mesh, meshlink_node_pmtu_cb_t cb);
 
 /// Query the maximum packet size that can be sent to a node.
 /** This functions returns the maximum size of packets (path MTU) that can be sent to a specific node with meshlink_send().
