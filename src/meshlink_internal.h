@@ -68,6 +68,7 @@ struct meshlink_handle {
 	meshlink_node_status_cb_t node_status_cb;
 	meshlink_log_cb_t log_cb;
 	meshlink_log_level_t log_level;
+	meshlink_node_pmtu_cb_t node_pmtu_cb;
 
 	meshlink_channel_accept_cb_t channel_accept_cb;
 

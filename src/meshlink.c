@@ -1214,6 +1214,17 @@ void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, me
     }
 }
 
+void meshlink_set_node_pmtu_cb(meshlink_handle_t *mesh, meshlink_node_pmtu_cb_t cb) {
+    if(!mesh) {
+        meshlink_errno = MESHLINK_EINVAL;
+        return;
+    }
+
+    MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+    mesh->node_pmtu_cb = cb;
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+}
+
 bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
     meshlink_packethdr_t *hdr;
 
