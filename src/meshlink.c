@@ -2671,6 +2671,23 @@ void update_node_status(meshlink_handle_t *mesh, node_t *n) {
         mesh->node_status_cb(mesh, (meshlink_node_t *)n, n->status.reachable);
 }
 
+void update_node_mtu(meshlink_handle_t *mesh, node_t *n) {
+    uint16_t mtu = n->mtu > sizeof(meshlink_packethdr_t)? n->mtu - sizeof(meshlink_packethdr_t): 0;
+
+    // set utcp maximum transmission unit size, determined by net_packet.c probing packets via send_sptps_packet
+    // 1500 bytes usable space for the ethernet frame
+    // - 20 bytes IPv4-Header
+    // -  8 bytes UDP-Header
+    // - 19 to 21 bytes encryption (sptps.c send_record_priv / send_record_priv_datagram)
+    // - 66 bytes Meshlink packet header ( source & destination node names )
+    // - 20 bytes UTCP-Header size subtracted internally by utcp
+    // = about 1365 bytes payload left
+    mtu = utcp_update_mtu(n->utcp, mtu);
+
+    if(mesh->node_pmtu_cb)
+        mesh->node_pmtu_cb(mesh, (meshlink_node_t *)n, mtu);
+}
+
 static void __attribute__((constructor)) meshlink_init(void) {
     crypto_init();
 }

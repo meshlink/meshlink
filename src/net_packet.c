@@ -98,6 +98,9 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 		n->mtu = n->minmtu;
 		logger(mesh, MESHLINK_INFO, "Fixing MTU of %s (%s) to %d after %d probes", n->name, n->hostname, n->mtu, n->mtuprobes);
 		n->mtuprobes = 31;
+
+		// update meshlink and utcp for the mtu change
+		update_node_mtu(mesh, n);
 	}
 
 	if(n->mtuprobes == 31) {
@@ -449,8 +452,11 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 		if(sockmsgsize(sockerrno)) {
 			if(to->maxmtu >= len)
 				to->maxmtu = len - 1;
-			if(to->mtu >= len)
+			if(to->mtu >= len) {
 				to->mtu = len - 1;
+				// update meshlink and utcp for the mtu change
+				update_node_mtu(mesh, n);
+			}
 		} else {
 			logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s (%s): %s", to->name, to->hostname, sockstrerror(sockerrno));
 			return false;

@@ -175,6 +175,7 @@ typedef struct meshlink_packethdr {
 
 extern void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
 extern void update_node_status(meshlink_handle_t *mesh, struct node_t *n);
+extern void update_node_mtu(meshlink_handle_t *mesh, struct node_t *n);
 extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
 
