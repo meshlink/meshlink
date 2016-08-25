@@ -422,7 +422,7 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 
 	/* Send it via TCP if it is a handshake packet, TCPOnly is in use, or this packet is larger than the MTU. */
 
-	if(type >= SPTPS_HANDSHAKE || ((mesh->self->options | to->options) & OPTION_TCPONLY) || (type != PKT_PROBE && len > to->minmtu)) {
+	if(type >= SPTPS_HANDSHAKE || ((mesh->self->options | to->options) & OPTION_TCPONLY) || (type != PKT_PROBE && to->mtu && len > to->mtu)) {
 		char buf[len * 4 / 3 + 5];
 		b64encode(data, buf, len);
 		/* If no valid key is known yet, send the packets using ANS_KEY requests,
