@@ -450,6 +450,7 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 
 	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
 		if(sockmsgsize(sockerrno)) {
+			// if failed, lessen mtu to at least one less than the failed length
 			if(to->maxmtu >= len)
 				to->maxmtu = len - 1;
 			if(to->mtu >= len) {
