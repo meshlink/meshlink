@@ -1315,7 +1315,7 @@ ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination)
     }
     else {
         MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
-	// return the usable payload size for API users
+        // return the usable payload size for API users
         return sptps_maxmtu(&n->sptps) - sizeof(meshlink_packethdr_t);
     }
 }
@@ -2696,6 +2696,9 @@ void update_node_status(meshlink_handle_t *mesh, node_t *n) {
 }
 
 void update_node_mtu(meshlink_handle_t *mesh, node_t *n) {
+    if(!mesh||!n)
+        return;
+
     uint16_t mtu = n->mtu > sizeof(meshlink_packethdr_t)? n->mtu - sizeof(meshlink_packethdr_t): 0;
 
     // set utcp maximum transmission unit size, determined by net_packet.c probing packets via send_sptps_packet
@@ -2706,7 +2709,8 @@ void update_node_mtu(meshlink_handle_t *mesh, node_t *n) {
     // - 66 bytes Meshlink packet header ( source & destination node names )
     // - 20 bytes UTCP-Header size subtracted internally by utcp
     // = about 1365 bytes payload left
-    mtu = utcp_update_mtu(n->utcp, mtu);
+    if(n->utcp)
+        mtu = utcp_update_mtu(n->utcp, mtu);
 
     if(mesh->node_pmtu_cb)
         mesh->node_pmtu_cb(mesh, (meshlink_node_t *)n, mtu);
