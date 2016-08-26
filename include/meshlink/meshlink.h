@@ -304,10 +304,6 @@ typedef void (*meshlink_log_cb_t)(meshlink_handle_t *mesh, meshlink_log_level_t 
  *  to hand the data over to the application's thread.
  *  The callback should also not block itself and return as quickly as possible.
  *
- *  The @a mesh @a parameter can either be a valid MeshLink handle, or NULL.
- *  In case it is NULL, the callback will be called for errors that happen outside the context of a valid mesh instance.
- *  Otherwise, it will be called for errors that happen in the context of the given mesh instance.
- *
  *  @param mesh      A handle which represents an instance of MeshLink, or NULL.
  *  @param level     An enum describing the minimum severity level. Debugging information with a lower level will not trigger the callback.
  *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
@@ -334,6 +330,26 @@ extern void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t le
  *                      A return value of true does not guarantee that the message will actually arrive at the destination.
  */
 extern bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len);
+
+/// A callback for maximum transmission unit changes for a node
+ /* @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A pointer to a meshlink_node_t describing the node for that the mtu changed.
+ */
+typedef void (*meshlink_node_pmtu_cb_t)(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t mtu);
+
+/// Set the mtu callback.
+/** This functions sets the callback that is called whenever MeshLink detects a maximum transmition unit (MTU) size change for a node.
+ *
+ *  The callback is run in MeshLink's own thread.
+ *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to hand the data over to the application's thread.
+ *  The callback should also not block itself and return as quickly as possible.
+ *
+ *  @param mesh      A handle which represents an instance of MeshLink, or NULL.
+ *  @param cb        A pointer to the function which will be called when another node's mtu changed.
+ *                   If a NULL pointer is given, the callback will be disabled.
+ */
+extern void meshlink_set_node_pmtu_cb(meshlink_handle_t *mesh, meshlink_node_pmtu_cb_t cb);
 
 /// Query the maximum packet size that can be sent to a node.
 /** This functions returns the maximum size of packets (path MTU) that can be sent to a specific node with meshlink_send().

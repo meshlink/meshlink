@@ -1214,6 +1214,17 @@ void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, me
     }
 }
 
+void meshlink_set_node_pmtu_cb(meshlink_handle_t *mesh, meshlink_node_pmtu_cb_t cb) {
+    if(!mesh) {
+        meshlink_errno = MESHLINK_EINVAL;
+        return;
+    }
+
+    MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+    mesh->node_pmtu_cb = cb;
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+}
+
 bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
     meshlink_packethdr_t *hdr;
 
@@ -1298,13 +1309,14 @@ ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination)
         return 0;
 
     }
-    else if(n->mtuprobes > 30 && n->minmtu) {
+    else if(n->utcp) {
         MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
-        return n->minmtu;
+        return utcp_get_mtu(n->utcp);
     }
     else {
         MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
-        return MTU;
+        // return the usable payload size for API users
+        return sptps_maxmtu(&n->sptps) - sizeof(meshlink_packethdr_t);
     }
 }
 
@@ -2435,6 +2447,20 @@ static void channel_ack(struct utcp_connection *connection, size_t len) {
     }
 }
 
+static bool init_utcp(meshlink_handle_t *mesh, node_t *n) {
+    logger(mesh, MESHLINK_WARNING, "utcp_init on node %s", n->name);
+
+    n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+    if(!n->utcp) {
+        meshlink_errno = errno == ENOMEM ? MESHLINK_ENOMEM : MESHLINK_EINTERNAL;
+        return false;
+    }
+
+    update_node_mtu(mesh, n);
+
+    return true;
+}
+
 void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_poll_cb_t cb) {
 
     MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
@@ -2456,8 +2482,7 @@ void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_ac
     mesh->receive_cb = channel_receive;
     for splay_each(node_t, n, mesh->nodes) {
         if(!n->utcp && n != mesh->self) {
-            logger(mesh, MESHLINK_WARNING, "utcp_init on node %s", n->name);
-            n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+            init_utcp(mesh, n);
         }
     }
     MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
@@ -2474,13 +2499,12 @@ meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node
     logger(mesh, MESHLINK_WARNING, "meshlink_channel_open(%p, %s, %u, %p, %p, " PRINT_SIZE_T ")\n", mesh, node->name, port, cb, data, len);
     node_t *n = (node_t *)node;
     if(!n->utcp) {
-        n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
-        mesh->receive_cb = channel_receive;
-        if(!n->utcp) {
-            meshlink_errno = errno == ENOMEM ? MESHLINK_ENOMEM : MESHLINK_EINTERNAL;
+        if(!init_utcp(mesh, n)) {
             MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
             return NULL;
         }
+
+        mesh->receive_cb = channel_receive;
     }
     meshlink_channel_t *channel = xzalloc(sizeof *channel);
     channel->node = n;
@@ -2666,9 +2690,30 @@ bool meshlink_channel_aio_receive(meshlink_handle_t *mesh, meshlink_channel_t *c
 
 void update_node_status(meshlink_handle_t *mesh, node_t *n) {
     if(n->status.reachable && mesh->channel_accept_cb && !n->utcp)
-        n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+        init_utcp(mesh, n);
     if(mesh->node_status_cb)
         mesh->node_status_cb(mesh, (meshlink_node_t *)n, n->status.reachable);
+}
+
+void update_node_mtu(meshlink_handle_t *mesh, node_t *n) {
+    if(!mesh||!n)
+        return;
+
+    uint16_t mtu = n->mtu > sizeof(meshlink_packethdr_t)? n->mtu - sizeof(meshlink_packethdr_t): 0;
+
+    // set utcp maximum transmission unit size, determined by net_packet.c probing packets via send_sptps_packet
+    // 1500 bytes usable space for the ethernet frame
+    // - 20 bytes IPv4-Header
+    // -  8 bytes UDP-Header
+    // - 19 to 21 bytes encryption (sptps.c send_record_priv / send_record_priv_datagram)
+    // - 66 bytes Meshlink packet header ( source & destination node names )
+    // - 20 bytes UTCP-Header size subtracted internally by utcp
+    // = about 1365 bytes payload left
+    if(n->utcp)
+        mtu = utcp_update_mtu(n->utcp, mtu);
+
+    if(mesh->node_pmtu_cb)
+        mesh->node_pmtu_cb(mesh, (meshlink_node_t *)n, mtu);
 }
 
 static void __attribute__((constructor)) meshlink_init(void) {

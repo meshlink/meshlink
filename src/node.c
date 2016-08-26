@@ -29,6 +29,9 @@
 #include "utils.h"
 #include "xalloc.h"
 
+// lower the default mtu a bit, just in case
+#define DEFAULT_MTU (SPTPS_DATAGRAM_MTU - 100)
+
 static int node_compare(const node_t *a, const node_t *b) {
 	return strcmp(a->name, b->name);
 }
@@ -51,8 +54,8 @@ node_t *new_node(void) {
 	node_t *n = xzalloc(sizeof *n);
 
 	n->edge_tree = new_edge_tree();
-	n->mtu = MTU;
-	n->maxmtu = MTU;
+	n->mtu = DEFAULT_MTU;
+	n->maxmtu = DEFAULT_MTU;
 	n->devclass = _DEV_CLASS_MAX;
 
 	return n;

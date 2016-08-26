@@ -25,6 +25,7 @@
 #include "chacha-poly1305/chacha-poly1305.h"
 #include "ecdh.h"
 #include "ecdsa.h"
+#include "net_defines.h"
 
 #define SPTPS_VERSION 0
 
@@ -38,6 +39,12 @@
 #define SPTPS_SECONDARY_KEX 2 // Ready to receive a secondary Key EXchange record
 #define SPTPS_SIG 3           // Waiting for a SIGnature record
 #define SPTPS_ACK 4           // Waiting for an ACKnowledgement record
+
+// max payload size when using SPTPS
+// PAYLOAD_MTU
+// - 19 to 21 bytes encryption (sptps.c send_record_priv / send_record_priv_datagram)
+#define SPTPS_MTU (PAYLOAD_MTU - 19)
+#define SPTPS_DATAGRAM_MTU (PAYLOAD_MTU - 21)
 
 typedef bool (*send_data_t)(void *handle, uint8_t type, const void *data, size_t len);
 typedef bool (*receive_record_t)(void *handle, uint8_t type, const void *data, uint16_t len);
@@ -87,5 +94,6 @@ extern bool sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16
 extern bool sptps_receive_data(sptps_t *s, const void *data, size_t len);
 extern bool sptps_force_kex(sptps_t *s);
 extern bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len);
+extern uint16_t sptps_maxmtu(sptps_t *s);
 
 #endif

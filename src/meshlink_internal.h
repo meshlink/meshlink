@@ -68,6 +68,7 @@ struct meshlink_handle {
 	meshlink_node_status_cb_t node_status_cb;
 	meshlink_log_cb_t log_cb;
 	meshlink_log_level_t log_level;
+	meshlink_node_pmtu_cb_t node_pmtu_cb;
 
 	meshlink_channel_accept_cb_t channel_accept_cb;
 
@@ -175,6 +176,7 @@ typedef struct meshlink_packethdr {
 
 extern void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
 extern void update_node_status(meshlink_handle_t *mesh, struct node_t *n);
+extern void update_node_mtu(meshlink_handle_t *mesh, struct node_t *n);
 extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
 

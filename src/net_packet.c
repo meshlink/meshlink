@@ -82,7 +82,11 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 		n->status.udp_confirmed = false;
 		n->mtuprobes = 1;
 		n->minmtu = 0;
-		n->maxmtu = MTU;
+		n->maxmtu = sptps_maxmtu(&n->sptps);
+
+		// reduce mtu a bit as well
+		if(n->mtu > 1000)
+			n->mtu -= 100;
 	}
 
 	if(n->mtuprobes >= 10 && n->mtuprobes < 32 && !n->minmtu) {
@@ -98,6 +102,9 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 		n->mtu = n->minmtu;
 		logger(mesh, MESHLINK_INFO, "Fixing MTU of %s (%s) to %d after %d probes", n->name, n->hostname, n->mtu, n->mtuprobes);
 		n->mtuprobes = 31;
+
+		// update meshlink and utcp for the mtu change
+		update_node_mtu(mesh, n);
 	}
 
 	if(n->mtuprobes == 31) {
@@ -111,7 +118,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 		int len;
 
 		if(i == 0) {
-			if(n->mtuprobes < 30 || n->maxmtu + 8 >= MTU)
+			if(n->mtuprobes < 30 || n->maxmtu + 8 >= sptps_maxmtu(&n->sptps))
 				continue;
 			len = n->maxmtu + 8;
 		} else if(n->maxmtu <= n->minmtu) {
@@ -173,7 +180,7 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 		if(n->mtuprobes > 30) {
 			if (len == n->maxmtu + 8) {
 				logger(mesh, MESHLINK_INFO, "Increase in PMTU to %s (%s) detected, restarting PMTU discovery", n->name, n->hostname);
-				n->maxmtu = MTU;
+				n->maxmtu = sptps_maxmtu(&n->sptps);
 				n->mtuprobes = 10;
 				return;
 			}
@@ -190,6 +197,14 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 			len = n->maxmtu;
 		if(n->minmtu < len)
 			n->minmtu = len;
+
+		// raise mtu along with the minmtu
+		if(n->mtu < n->minmtu) {
+			n->mtu = n->minmtu;
+
+			// update meshlink and utcp for the mtu change
+			update_node_mtu(mesh, n);
+		}
 	}
 }
 
@@ -422,7 +437,7 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 
 	/* Send it via TCP if it is a handshake packet, TCPOnly is in use, or this packet is larger than the MTU. */
 
-	if(type >= SPTPS_HANDSHAKE || ((mesh->self->options | to->options) & OPTION_TCPONLY) || (type != PKT_PROBE && len > to->minmtu)) {
+	if(type >= SPTPS_HANDSHAKE || ((mesh->self->options | to->options) & OPTION_TCPONLY) || (type != PKT_PROBE && to->mtu && len > to->mtu)) {
 		char buf[len * 4 / 3 + 5];
 		b64encode(data, buf, len);
 		/* If no valid key is known yet, send the packets using ANS_KEY requests,
@@ -447,10 +462,14 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 
 	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
 		if(sockmsgsize(sockerrno)) {
+			// if failed, lessen mtu to at least one less than the failed length
 			if(to->maxmtu >= len)
 				to->maxmtu = len - 1;
-			if(to->mtu >= len)
+			if(to->mtu >= len) {
 				to->mtu = len - 1;
+				// update meshlink and utcp for the mtu change
+				update_node_mtu(mesh, to);
+			}
 		} else {
 			logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s (%s): %s", to->name, to->hostname, sockstrerror(sockerrno));
 			return false;
@@ -473,8 +492,8 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 		return true;
 	}
 
-	if(len > MTU) {
-		logger(mesh, MESHLINK_ERROR, "Packet from %s (%s) larger than maximum supported size (%d > %d)", from->name, from->hostname, len, MTU);
+	if(len > sptps_maxmtu(&from->sptps)) {
+		logger(mesh, MESHLINK_ERROR, "Packet from %s (%s) larger than maximum supported size (%d > %d)", from->name, from->hostname, len, sptps_maxmtu(&from->sptps));
 		return false;
 	}
 
