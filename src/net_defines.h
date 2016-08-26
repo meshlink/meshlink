@@ -26,7 +26,11 @@
 #define MTU 1518        /* 1500 bytes payload + 14 bytes ethernet header + 4 bytes VLAN tag */
 #endif
 
-#define PAYLOAD_MTU (MTU - 18)  /* MTU - (14 bytes ethernet header + 4 bytes VLAN tag) */
+// max payload size
+// MTU - (14 bytes ethernet header + 4 bytes VLAN tag)
+// - 20 bytes IPv4-Header (IPv4 header is smallest, larger IP header will be compensated for in PMTU probing)
+// -  8 bytes UDP-Header
+#define PAYLOAD_MTU (MTU - 18 - 20 - 8)
 
 /* MAXSIZE is the maximum size of an encapsulated packet: MTU + seqno + HMAC + compressor overhead */
 #define MAXSIZE (MTU + 4 + 32 + MTU/64 + 20)
