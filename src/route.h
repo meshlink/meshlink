@@ -25,6 +25,6 @@
 
 extern bool decrement_ttl;
 
-extern void route(struct meshlink_handle *mesh, struct node_t *, struct vpn_packet_t *);
+extern int route(struct meshlink_handle *mesh, struct node_t *, struct vpn_packet_t *);
 
 #endif /* __MESHLINK_ROUTE_H__ */

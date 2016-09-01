@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
 	}
 	fprintf(stderr, "SPTPS/TCP transmit for %lg seconds: ", duration);
 	for(clock_start(); clock_countto(duration);) {
-		if(!sptps_send_record(&sptps1, 0, buf1, 1451)) {
+		if(0 != sptps_send_record(&sptps1, 0, buf1, 1451)) {
 			fprintf(stderr, "Error: sptps_send_record failed");
 			abort();
 		}
@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
 	}
 	fprintf(stderr, "SPTPS/UDP transmit for %lg seconds: ", duration);
 	for(clock_start(); clock_countto(duration);) {
-		if(!sptps_send_record(&sptps1, 0, buf1, 1451)) {
+		if(0 != sptps_send_record(&sptps1, 0, buf1, 1451)) {
 			fprintf(stderr, "Error: sptps_send_record failed");
 			abort();
 		}

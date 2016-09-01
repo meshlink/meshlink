@@ -574,7 +574,7 @@ static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint
     meshlink_handle_t* mesh = handle;
     switch(type) {
         case SPTPS_HANDSHAKE:
-            return sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
+            return !sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
 
         case 0:
             mesh->data = xrealloc(mesh->data, mesh->thedatalen + len + 1);
@@ -1231,14 +1231,19 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
     // Validate arguments
     if(!mesh || !destination || len >= MAXSIZE - sizeof *hdr) {
         meshlink_errno = MESHLINK_EINVAL;
+        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send invalid arguments");
         return false;
     }
 
     if(!len)
+    {
+        logger(mesh, MESHLINK_WARNING, "Warning: meshlink_send empty packet dropped");
         return true;
+    }
 
     if(!data) {
         meshlink_errno = MESHLINK_EINVAL;
+        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send missing data");
         return false;
     }
 
@@ -1246,6 +1251,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
     vpn_packet_t *packet = malloc(sizeof *packet);
     if(!packet) {
         meshlink_errno = MESHLINK_ENOMEM;
+        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send packet memory allocation failed");
         return false;
     }
 
@@ -1269,11 +1275,14 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
         free(packet);
         meshlink_errno = MESHLINK_ENOMEM;
         MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send failed to queue packet");
         return false;
     }
 
     // Notify event loop
-    signal_trigger(&(mesh->loop),&(mesh->datafromapp));
+    if(!signal_trigger(&(mesh->loop),&(mesh->datafromapp))) {
+        logger(mesh, MESHLINK_WARNING, "Warning: meshlink_send packet queued but signal_trigger failed");
+    }
 
     MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 
@@ -1284,14 +1293,35 @@ bool meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
 
     MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
 
-    vpn_packet_t *packet = meshlink_queue_pop(&mesh->outpacketqueue);
-    if(!packet)
+    vpn_packet_t *packet = meshlink_queue_peek(&mesh->outpacketqueue);
+    if(!packet) {
+        logger(mesh, MESHLINK_DEBUG, "Warning: no packet queued to be sent");
+        MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
         return false;
+    }
 
     mesh->self->in_packets++;
     mesh->self->in_bytes += packet->len;
-    route(mesh, mesh->self, packet);
-    free(packet);
+    int err = route(mesh, mesh->self, packet);
+    if(0 != err) {
+        if(sockwouldblock(err)) {
+            logger(mesh, MESHLINK_WARNING, "Warning: socket would block, retrying to send packet from queue later");
+            MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+            return false;
+        }
+        else {
+            logger(mesh, MESHLINK_ERROR, "Error: failed to send packet from queue, dropping the packet");
+        }
+    }
+
+    // remove sent packet from queue
+    vpn_packet_t *popped = meshlink_queue_pop(&mesh->outpacketqueue);
+    if( popped != packet ) {
+        // this should never happen but should be recovered by the utcp retransmit anyhow
+        logger(mesh, MESHLINK_ERROR, "Error: popped different packet from the queue than sent");
+    }
+
+    free(popped);
 
     MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 
