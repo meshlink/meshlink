@@ -242,8 +242,11 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 				return false;
 		}
 
-		if(!n)
+		if(!n) {
+			// sleep 1 ms
+			usleep(1000LL);
 			continue;
+		}
 
 		// Normally, splay_each allows the current node to be deleted. However,
 		// it can be that one io callback triggers the deletion of another io,
@@ -251,15 +254,27 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 
 		loop->deletion = false;
 
+		bool progress = false;
 		for splay_each(io_t, io, &loop->ios) {
-			if(FD_ISSET(io->fd, &writable) && io->cb)
-				io->cb(loop, io->data, IO_WRITE);
+			if(FD_ISSET(io->fd, &writable) && io->cb) {
+				// assume progress when the callback got handled to write new data
+				progress |= io->cb(loop, io->data, IO_WRITE);
+			}
 			if(loop->deletion)
 				break;
-			if(FD_ISSET(io->fd, &readable) && io->cb)
+			if(FD_ISSET(io->fd, &readable) && io->cb) {
 				io->cb(loop, io->data, IO_READ);
+				// always assume progress when incoming packets are received
+				// as there might be more in the queue
+				progress = true;
+			}
 			if(loop->deletion)
 				break;
+		}
+
+		// when there's no progress, sleep 1ms to keep cpu processing time low
+		if(!progress) {
+			usleep(1000LL);
 		}
 	}
 
