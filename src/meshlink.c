@@ -574,7 +574,7 @@ static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint
     meshlink_handle_t* mesh = handle;
     switch(type) {
         case SPTPS_HANDSHAKE:
-            return sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
+            return !sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
 
         case 0:
             mesh->data = xrealloc(mesh->data, mesh->thedatalen + len + 1);
@@ -1302,10 +1302,16 @@ bool meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
 
     mesh->self->in_packets++;
     mesh->self->in_bytes += packet->len;
-    if(!route(mesh, mesh->self, packet)){
-        logger(mesh, MESHLINK_WARNING, "Warning: failed to send packet from queue");
-        MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
-        return false;
+    int err = route(mesh, mesh->self, packet);
+    if(0 != err) {
+        if(sockwouldblock(err)) {
+            logger(mesh, MESHLINK_WARNING, "Warning: socket would block, retrying to send packet from queue later");
+            MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+            return false;
+        }
+        else {
+            logger(mesh, MESHLINK_ERROR, "Error: failed to send packet from queue, dropping the packet");
+        }
     }
 
     // remove sent packet from queue

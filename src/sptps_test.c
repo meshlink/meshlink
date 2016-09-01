@@ -328,7 +328,7 @@ int main(int argc, char *argv[]) {
 				if(len > 1)
 					sptps_send_record(&s, 0, buf, len);
 			} else
-			if(!sptps_send_record(&s, buf[0] == '!' ? 1 : 0, buf, (len == 1 && buf[0] == '\n') ? 0 : buf[0] == '*' ? sizeof buf : len))
+			if(0 != sptps_send_record(&s, buf[0] == '!' ? 1 : 0, buf, (len == 1 && buf[0] == '\n') ? 0 : buf[0] == '*' ? sizeof buf : len))
 				return 1;
 		}
 

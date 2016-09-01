@@ -38,7 +38,7 @@
 
 int keylifetime = 0;
 
-static bool send_udppacket(meshlink_handle_t *mesh, node_t *, vpn_packet_t *);
+static int send_udppacket(meshlink_handle_t *mesh, node_t *, vpn_packet_t *);
 
 #define MAX_SEQNO 1073741824
 
@@ -139,7 +139,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 
 		logger(mesh, MESHLINK_DEBUG, "Sending MTU probe length %d to %s (%s)", len, n->name, n->hostname);
 
-		if(!send_udppacket(mesh, n, &packet)) {
+		if(0 != send_udppacket(mesh, n, &packet)) {
 			logger(mesh, MESHLINK_WARNING, "Sending MTU probe with length %d to %s (%s) failed", len, n->name, n->hostname);
 		}
 	}
@@ -168,7 +168,7 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 
 		bool udp_confirmed = n->status.udp_confirmed;
 		n->status.udp_confirmed = true;
-		if(!send_udppacket(mesh, n, packet)) {
+		if(0 != send_udppacket(mesh, n, packet)) {
 			logger(mesh, MESHLINK_WARNING, "Sending MTU probe reply with length %d to %s (%s) failed", packet->len, n->name, n->hostname);
 		}
 		n->status.udp_confirmed = udp_confirmed;
@@ -299,7 +299,7 @@ void receive_tcppacket(meshlink_handle_t *mesh, connection_t *c, const char *buf
 	receive_packet(mesh, c->node, &outpkt);
 }
 
-static bool send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
+static int send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
 	if(!n->status.validkey) {
 		logger(mesh, MESHLINK_INFO, "No valid key known yet for %s (%s)", n->name, n->hostname);
 		if(!n->status.waitingforkey)
@@ -310,7 +310,7 @@ static bool send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 			n->status.waitingforkey = false;
 			send_req_key(mesh, n);
 		}
-		return false;
+		return -1;
 	}
 
 	uint8_t type = 0;
@@ -424,18 +424,19 @@ static void choose_broadcast_address(meshlink_handle_t *mesh, const node_t *n, c
 	}
 }
 
-static bool send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
+static int send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
 	if(!n->status.reachable) {
 		logger(mesh, MESHLINK_INFO, "Trying to send UDP packet to unreachable node %s (%s)", n->name, n->hostname);
-		return false;
+		return -1;
 	}
 
 	return send_sptps_packet(mesh, n, origpkt);
 }
 
-bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
+int send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	node_t *to = handle;
 	meshlink_handle_t *mesh = to->mesh;
+	int err = 0;
 
 	/* Send it via TCP if it is a handshake packet, TCPOnly is in use, or this packet is larger than the MTU. */
 
@@ -446,9 +447,9 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 		   to ensure we get to learn the reflexive UDP address. */
 		if(!to->status.validkey) {
 			to->incompression = mesh->self->incompression;
-			return send_request(mesh, to->nexthop->connection, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, to->incompression);
+			return send_request(mesh, to->nexthop->connection, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, to->incompression)? 0: -1;
 		} else {
-			return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_SPTPS, buf);
+			return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_SPTPS, buf)? 0: -1;
 		}
 	}
 
@@ -463,10 +464,12 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 		choose_udp_address(mesh, to, &sa, &sock);
 
 	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0) {
-		logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s (%s): %s", to->name, to->hostname, sockstrerror(sockerrno));
+		err = sockerrno;
+
+		logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s (%s): %s", to->name, to->hostname, sockstrerror(err));
 
 		// if message is reported to be too long, lessen mtu to at least one less than the failed length
-		if(sockmsgsize(sockerrno)) {
+		if(sockmsgsize(err)) {
 			if(to->maxmtu >= len)
 				to->maxmtu = len - 1;
 			if(to->mtu >= len) {
@@ -475,10 +478,9 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 				update_node_mtu(mesh, to);
 			}
 		}
-		return false;
 	}
 
-	return true;
+	return err;
 }
 
 bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t len) {
@@ -539,12 +541,12 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 /*
   send a packet to the given vpn ip.
 */
-bool send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
+int send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	if(n == mesh->self) {
 		n->out_packets++;
 		n->out_bytes += packet->len;
 		// TODO: send to application
-		return true;
+		return 0;
 	}
 
 	logger(mesh, MESHLINK_DEBUG, "Sending packet of %d bytes to %s (%s)",
@@ -553,7 +555,7 @@ bool send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	if(!n->status.reachable) {
 		logger(mesh, MESHLINK_WARNING, "Node %s (%s) is not reachable",
 				   n->name, n->hostname);
-		return false;
+		return -1;
 	}
 
 	n->out_packets++;

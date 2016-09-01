@@ -36,7 +36,7 @@ static bool checklength(node_t *source, vpn_packet_t *packet, uint16_t length) {
 		return true;
 }
 
-bool route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
+int route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 	// TODO: route on name or key
 
 	node_t *owner = NULL;
@@ -47,13 +47,13 @@ bool route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 
 	//Check Lenght
 	if(!checklength(source, packet, sizeof *hdr))
-		return false;
+		return -1;
 
 	if(owner == NULL) {
 		//Lookup failed
 		logger(mesh, MESHLINK_WARNING, "Cant lookup the owner of a packet in the route() function. This should never happen!\n");
 		logger(mesh, MESHLINK_WARNING, "Destination was: %s\n", hdr->destination);
-		return false;
+		return -1;
 	}
 
 	if(owner == mesh->self) {
@@ -70,19 +70,19 @@ bool route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 
 		if(mesh->receive_cb)
 			mesh->receive_cb(mesh, (meshlink_node_t *)source, payload, len);
-		return true;
+		return 0;
 	}
 
 	if(!owner->status.reachable) {
 		//TODO: check what to do here, not just print a warning
 		logger(mesh, MESHLINK_WARNING, "The owner of a packet in the route() function is unreachable. Dropping packet.\n");
-		return false;
+		return -1;
 	}
 
 	via = (owner->via == mesh->self) ? owner->nexthop : owner->via;
 	if(via == source) {
 		logger(mesh, MESHLINK_ERROR, "Routing loop for packet from %s (%s)!", source->name, source->hostname);
-		return false;
+		return -1;
 	}
 
 	return send_packet(mesh, owner, packet);
