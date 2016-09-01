@@ -1231,14 +1231,19 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
     // Validate arguments
     if(!mesh || !destination || len >= MAXSIZE - sizeof *hdr) {
         meshlink_errno = MESHLINK_EINVAL;
+        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send invalid arguments");
         return false;
     }
 
     if(!len)
+    {
+        logger(mesh, MESHLINK_WARNING, "Warning: meshlink_send empty packet dropped");
         return true;
+    }
 
     if(!data) {
         meshlink_errno = MESHLINK_EINVAL;
+        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send missing data");
         return false;
     }
 
@@ -1246,6 +1251,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
     vpn_packet_t *packet = malloc(sizeof *packet);
     if(!packet) {
         meshlink_errno = MESHLINK_ENOMEM;
+        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send packet memory allocation failed");
         return false;
     }
 
@@ -1269,11 +1275,17 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
         free(packet);
         meshlink_errno = MESHLINK_ENOMEM;
         MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send failed to queue packet");
         return false;
     }
 
     // Notify event loop
-    signal_trigger(&(mesh->loop),&(mesh->datafromapp));
+    if(!signal_trigger(&(mesh->loop),&(mesh->datafromapp))) {
+        meshlink_errno = MESHLINK_EINTERNAL;
+        MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send failed by the signal_trigger");
+        return false;
+    }
 
     MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 
