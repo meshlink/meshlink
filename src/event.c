@@ -135,14 +135,13 @@ static int signal_compare(const signal_t *a, const signal_t *b) {
 	return (int)a->signum - (int)b->signum;
 }
 
-static void signalio_handler(event_loop_t *loop, void *data, int flags) {
+static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
 	unsigned char signum;
 	if(meshlink_readpipe(loop->pipefd[0], &signum, 1) != 1)
-		return;
+		return false;
 
 	signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = signum}));
-	if(sig)
-		sig->cb(loop, sig->data);
+	return sig? sig->cb(loop, sig->data): false;
 }
 
 static void pipe_init(event_loop_t *loop) {

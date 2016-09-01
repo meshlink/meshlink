@@ -329,7 +329,7 @@ static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 		io_set(&mesh->loop, &c->io, IO_READ);
 }
 
-static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
+static bool handle_meta_io(event_loop_t *loop, void *data, int flags) {
 	meshlink_handle_t *mesh = loop->data;
 	connection_t *c = data;
 
@@ -345,7 +345,7 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 		else {
 			logger(mesh, MESHLINK_DEBUG, "Error while connecting to %s (%s): %s", c->name, c->hostname, sockstrerror(result));
 			terminate_connection(mesh, c, false);
-			return;
+			return true;
 		}
 	}
 
@@ -353,6 +353,8 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 		handle_meta_write(mesh, c);
 	else
 		handle_meta_connection_data(mesh, c);
+
+	return true;
 }
 
 // Find edges pointing to this node, and use them to build a list of unique, known addresses.
@@ -560,7 +562,7 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
   accept a new tcp connect and create a
   new connection
 */
-void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
+bool handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	meshlink_handle_t *mesh = loop->data;
 	listen_socket_t *l = data;
 	connection_t *c;
@@ -574,11 +576,11 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 		if(errno == EINVAL) { // TODO: check if Windows agrees
 			logger(mesh, MESHLINK_DEBUG, "Stopping event loop\n");
 			event_loop_stop(loop);
-			return;
+			return false;
 		}
 
 		logger(mesh, MESHLINK_ERROR, "Accepting a new connection failed: %s", sockstrerror(sockerrno));
-		return;
+		return false;
 	}
 
 	sockaddrunmap(&sa);
@@ -607,7 +609,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 
 		if(samehost_burst > max_connection_burst) {
 			tarpit = fd;
-			return;
+			return false;
 		}
 	}
 
@@ -629,7 +631,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	if(connection_burst >= max_connection_burst) {
 		connection_burst = max_connection_burst;
 		tarpit = fd;
-		return;
+		return false;
 	}
 
 	// Accept the new connection
@@ -653,6 +655,8 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 
 	c->allow_request = ID;
 	send_id(mesh, c);
+
+	return true;
 }
 
 static void free_outgoing(outgoing_t *outgoing) {

@@ -605,7 +605,7 @@ static node_t *try_harder(meshlink_handle_t *mesh, const sockaddr_t *from, const
 	return n;
 }
 
-void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
+bool handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 	meshlink_handle_t *mesh = loop->data;
 	listen_socket_t *ls = data;
 	vpn_packet_t pkt;
@@ -620,7 +620,7 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 	if(len <= 0 || len > MAXSIZE) {
 		if(!sockwouldblock(sockerrno))
 			logger(mesh, MESHLINK_ERROR, "Receiving packet failed: %s", sockstrerror(sockerrno));
-		return;
+		return false;
 	}
 
 	pkt.len = len;
@@ -638,17 +638,19 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 			hostname = sockaddr2hostname(&from);
 			logger(mesh, MESHLINK_WARNING, "Received UDP packet from unknown source %s", hostname);
 			free(hostname);
-			return;
+			return false;
 		}
 		else
-			return;
+			return false;
 	}
 
     if (n->status.blacklisted) {
 			logger(mesh, MESHLINK_WARNING, "Dropping packet from blacklisted node %s", n->name);
-            return;
+            return true;
     }
 	n->sock = ls - mesh->listen_socket;
 
 	receive_udppacket(mesh, n, &pkt);
+
+	return true;
 }

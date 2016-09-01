@@ -1280,13 +1280,13 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
     return true;
 }
 
-void meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
+bool meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
 
     MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
 
     vpn_packet_t *packet = meshlink_queue_pop(&mesh->outpacketqueue);
     if(!packet)
-        return;
+        return false;
 
     mesh->self->in_packets++;
     mesh->self->in_bytes += packet->len;
@@ -1294,6 +1294,8 @@ void meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
     free(packet);
 
     MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+
+    return true;
 }
 
 ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination) {
