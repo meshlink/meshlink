@@ -1281,10 +1281,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 
     // Notify event loop
     if(!signal_trigger(&(mesh->loop),&(mesh->datafromapp))) {
-        meshlink_errno = MESHLINK_EINTERNAL;
-        MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
-        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send failed by the signal_trigger");
-        return false;
+        logger(mesh, MESHLINK_WARNING, "Warning: meshlink_send packet queued but signal_trigger failed");
     }
 
     MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
