@@ -305,9 +305,9 @@ static void do_outgoing_pipe(meshlink_handle_t *mesh, connection_t *c, char *com
 #endif
 }
 
-static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
+static bool handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 	if(c->outbuf.len <= c->outbuf.offset)
-		return;
+		return false;
 
 	ssize_t outlen = send(c->socket, c->outbuf.data + c->outbuf.offset, c->outbuf.len - c->outbuf.offset, MSG_NOSIGNAL);
 	if(outlen <= 0) {
@@ -315,18 +315,20 @@ static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 			logger(mesh, MESHLINK_INFO, "Connection closed by %s (%s)", c->name, c->hostname);
 		} else if(sockwouldblock(sockerrno)) {
 			logger(mesh, MESHLINK_DEBUG, "Sending %d bytes to %s (%s) would block", c->outbuf.len - c->outbuf.offset, c->name, c->hostname);
-			return;
+			return false;
 		} else {
 			logger(mesh, MESHLINK_ERROR, "Could not send %d bytes of data to %s (%s): %s", c->outbuf.len - c->outbuf.offset, c->name, c->hostname, strerror(errno));
 		}
 
 		terminate_connection(mesh, c, c->status.active);
-		return;
+		return false;
 	}
 
 	buffer_read(&c->outbuf, outlen);
 	if(!c->outbuf.len)
 		io_set(&mesh->loop, &c->io, IO_READ);
+
+	return true;
 }
 
 static bool handle_meta_io(event_loop_t *loop, void *data, int flags) {
@@ -349,12 +351,13 @@ static bool handle_meta_io(event_loop_t *loop, void *data, int flags) {
 		}
 	}
 
-	if(flags & IO_WRITE)
-		handle_meta_write(mesh, c);
-	else
+	if(flags & IO_WRITE) {
+		return handle_meta_write(mesh, c);
+	}
+	else {
 		handle_meta_connection_data(mesh, c);
-
-	return true;
+		return true;
+	}
 }
 
 // Find edges pointing to this node, and use them to build a list of unique, known addresses.
