@@ -1294,24 +1294,28 @@ bool meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
     MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
 
     vpn_packet_t *packet = meshlink_queue_peek(&mesh->outpacketqueue);
-    if(!packet)
+    if(!packet) {
+        logger(mesh, MESHLINK_DEBUG, "Warning: no packet queued to be sent");
+        MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
         return false;
+    }
 
     mesh->self->in_packets++;
     mesh->self->in_bytes += packet->len;
-    if(route(mesh, mesh->self, packet)) {
-        // remove sent packet from queue
-        vpn_packet_t *popped = meshlink_queue_pop(&mesh->outpacketqueue);
-        if( popped != packet ) {
-            // this should never happen
-            logger(mesh, MESHLINK_ERROR, "Error: popped different packet from the queue than sent");
-        }
-
-        free(popped);
-    }
-    else {
+    if(!route(mesh, mesh->self, packet)){
         logger(mesh, MESHLINK_WARNING, "Warning: failed to send packet from queue");
+        MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+        return false;
     }
+
+    // remove sent packet from queue
+    vpn_packet_t *popped = meshlink_queue_pop(&mesh->outpacketqueue);
+    if( popped != packet ) {
+        // this should never happen but should be recovered by the utcp retransmit anyhow
+        logger(mesh, MESHLINK_ERROR, "Error: popped different packet from the queue than sent");
+    }
+
+    free(popped);
 
     MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 
