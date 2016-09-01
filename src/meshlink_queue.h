@@ -60,7 +60,7 @@ static inline bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
 
 /**
  * Internal function to get next meshlink_queue_item from queue.
- * Caller must free() returned meshlink_queue_item AND item->data (or do something with data).
+ * Caller must free() returned meshlink_queue_item->data (or do something with it).
  *
  * Use meshlink_queue_pop(queue) if you just want the data, not the queue_item.
  */
@@ -77,6 +77,16 @@ static inline void *meshlink_queue_pop(meshlink_queue_t *queue) {
 	data = item ? item->data : NULL;
 	free(item);
 	return data;
+}
+
+/**
+ * Internal function to peek next meshlink_queue_item from queue.
+ * Caller must NOT free() returned meshlink_queue_item->data!
+ *
+ * Use meshlink_queue_peek(queue) if you just want the data, not the queue_item.
+ */
+static inline void *meshlink_queue_peek(meshlink_queue_t *queue) {
+    return queue->head ? queue->head->data : NULL;
 }
 
 /**
