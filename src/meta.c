@@ -58,7 +58,7 @@ bool send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int
 		return true;
 	}
 
-	return sptps_send_record(&c->sptps, 0, buffer, length);
+	return !sptps_send_record(&c->sptps, 0, buffer, length);
 }
 
 void broadcast_meta(meshlink_handle_t *mesh, connection_t *from, const char *buffer, int length) {
