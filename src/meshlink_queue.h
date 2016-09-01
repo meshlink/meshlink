@@ -80,6 +80,13 @@ static inline void *meshlink_queue_pop(meshlink_queue_t *queue) {
 }
 
 /**
+ * Internal function to check whether there's something in the queue.
+ */
+static inline bool meshlink_queue_empty(meshlink_queue_t *queue) {
+    return queue->head != NULL;
+}
+
+/**
  * Deallocate all data in queue using given deleter function.
  */
 static inline void exit_meshlink_queue(meshlink_queue_t *queue, void(*deleter)(void*)) {
