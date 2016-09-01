@@ -460,9 +460,11 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	else
 		choose_udp_address(mesh, to, &sa, &sock);
 
-	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
+	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0) {
+		logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s (%s): %s", to->name, to->hostname, sockstrerror(sockerrno));
+
+		// if message is reported to be too long, lessen mtu to at least one less than the failed length
 		if(sockmsgsize(sockerrno)) {
-			// if failed, lessen mtu to at least one less than the failed length
 			if(to->maxmtu >= len)
 				to->maxmtu = len - 1;
 			if(to->mtu >= len) {
@@ -470,10 +472,8 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 				// update meshlink and utcp for the mtu change
 				update_node_mtu(mesh, to);
 			}
-		} else {
-			logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s (%s): %s", to->name, to->hostname, sockstrerror(sockerrno));
-			return false;
 		}
+		return false;
 	}
 
 	return true;
