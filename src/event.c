@@ -161,34 +161,34 @@ static int signal_compare(const signal_t *a, const signal_t *b) {
 
 // called from event_loop_run to process queued data from the outpacketqueue
 static bool signalio_handler(event_loop_t *loop, void *packet, int flags) {
-	if(!pending_queue_data) {
-		// read signaled event id removing the event
-		if(meshlink_readpipe(loop->pipefd[0], &pending_queue_signum, 1) != 1)
-			return false;
+    if(!pending_queue_data) {
+        // read signaled event id removing the event
+        if(meshlink_readpipe(loop->pipefd[0], &pending_queue_signum, 1) != 1)
+            return false;
 
-	    MESHLINK_MUTEX_LOCK(&queue_mutex);
+        MESHLINK_MUTEX_LOCK(&queue_mutex);
 
-	    pending_queue_data = meshlink_queue_pop(&outpacketqueue);
+        pending_queue_data = meshlink_queue_pop(&outpacketqueue);
 
-	    MESHLINK_MUTEX_UNLOCK(&queue_mutex);
+        MESHLINK_MUTEX_UNLOCK(&queue_mutex);
 
-	    if(!pending_queue_data) {
-	        logger(NULL, MESHLINK_DEBUG, "Warning: no packet queued to be sent");
-	        return false;
-	    }
-	}
+        if(!pending_queue_data) {
+            logger(NULL, MESHLINK_DEBUG, "Warning: no packet queued to be sent");
+            return false;
+        }
+    }
 
-	// find signal event handler and call it
-	signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = pending_queue_signum}));
-	bool cbres = sig? sig->cb(loop, sig->data, packet): false;
+    // find signal event handler and call it
+    signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = pending_queue_signum}));
+    bool cbres = sig? sig->cb(loop, sig->data, packet): false;
 
-	// on success clean the processed data, else keep it to retry later
-	if(cbres) {
-    	free(pending_queue_data);
-    	pending_queue_data = NULL;
-	}
+    // on success clean the processed data, else keep it to retry later
+    if(cbres) {
+        free(pending_queue_data);
+        pending_queue_data = NULL;
+    }
 
-	return cbres;
+    return cbres;
 }
 
 static void pipe_init(event_loop_t *loop) {
@@ -207,7 +207,7 @@ static void pipe_init(event_loop_t *loop) {
 
 // called from external to push data to the outpacketqueue
 bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
-	MESHLINK_MUTEX_LOCK(&queue_mutex);
+    MESHLINK_MUTEX_LOCK(&queue_mutex);
 
     // Queue it
     if(!meshlink_queue_push(&outpacketqueue, data)) {
@@ -220,17 +220,17 @@ bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
     // Notify event loop
     // this should block when the queue's event notification send buffer is full
     // which however would mean there are more messages in the queue than the SO_SNDBUF can hold
-	uint8_t signum = sig->signum;
-	if(meshlink_writepipe(loop->pipefd[1], &signum, 1) != 1) {
+    uint8_t signum = sig->signum;
+    if(meshlink_writepipe(loop->pipefd[1], &signum, 1) != 1) {
         MESHLINK_MUTEX_UNLOCK(&queue_mutex);
-		logger(NULL, MESHLINK_ERROR, "Error: signalio_queue failed to trigger the queue event");
-		// TODO: drop data from queue
-		return false;
-	}
+        logger(NULL, MESHLINK_ERROR, "Error: signalio_queue failed to trigger the queue event");
+        // TODO: drop data from queue
+        return false;
+    }
 
     MESHLINK_MUTEX_UNLOCK(&queue_mutex);
 
-	return true;
+    return true;
 }
 
 void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum) {
@@ -326,7 +326,6 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		// it can be that one io callback triggers the deletion of another io,
 		// so we have to detect this and break the loop.
 		loop->deletion = false;
-
 		bool progress = false;
 		for splay_each(io_t, io, &loop->ios) {
 			if(io->cb && FD_ISSET(io->fd, &writable)) {
@@ -394,13 +393,13 @@ void event_loop_exit(event_loop_t *loop) {
 	for splay_each(signal_t, signal, &loop->signals)
 		splay_unlink_node(&loop->signals, node);
 
-	loop->signalio.flags = 0;
-	FD_CLR(loop->signalio.fd, &loop->readfds);
-	loop->highestfd = 0;
+    loop->signalio.flags = 0;
+    FD_CLR(loop->signalio.fd, &loop->readfds);
+    loop->highestfd = 0;
 
     exit_meshlink_queue(&outpacketqueue, free);
     if(pending_queue_data) {
-    	free(pending_queue_data);
-    	pending_queue_data = NULL;
+        free(pending_queue_data);
+        pending_queue_data = NULL;
     }
 }
