@@ -164,8 +164,15 @@ static void signalio_handler(event_loop_t *loop, void *data, int flags) {
 }
 
 static void pipe_init(event_loop_t *loop) {
-	if(!meshlink_pipe(loop->pipefd))
-		io_add(loop, &loop->signalio, signalio_handler, NULL, loop->pipefd[0], IO_READ);
+	if(!meshlink_pipe(loop->pipefd)) {
+		// add the signalio_handler to the loop->readfds file descriptors but keep it out of the ios list
+		loop->signalio.fd = loop->pipefd[0];
+		loop->signalio.cb = signalio_handler;
+		loop->signalio.data = NULL;
+		loop->signalio.node.data = &loop->signalio;
+
+		io_set(loop, &loop->signalio, IO_READ);
+	}
 	else
 		logger(NULL, MESHLINK_ERROR, "Pipe init failed: %s", sockstrerror(sockerrno));
 }
@@ -273,6 +280,13 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 			if(loop->deletion)
 				break;
 		}
+
+		if(!loop->deletion) {
+			// trigger the signalio_handler last so incoming packets are processed first
+			if(loop->signalio.cb && FD_ISSET(loop->signalio.fd, &readable)) {
+				loop->signalio.cb(loop, io->data, IO_READ);
+			}
+		}
 	}
 
 	return true;
@@ -308,4 +322,8 @@ void event_loop_exit(event_loop_t *loop) {
 		splay_unlink_node(&loop->timeouts, node);
 	for splay_each(signal_t, signal, &loop->signals)
 		splay_unlink_node(&loop->signals, node);
+
+	loop->signalio.flags = 0;
+	FD_CLR(loop->signalio.fd, &loop->readfds);
+	loop->highestfd = 0;
 }
