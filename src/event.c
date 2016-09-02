@@ -264,18 +264,18 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		if(!n)
 			continue;
 
+		// loop all io_add registered sockets
 		// Normally, splay_each allows the current node to be deleted. However,
 		// it can be that one io callback triggers the deletion of another io,
 		// so we have to detect this and break the loop.
-
 		loop->deletion = false;
 
 		for splay_each(io_t, io, &loop->ios) {
-			if(FD_ISSET(io->fd, &writable) && io->cb)
+			if(io->cb && FD_ISSET(io->fd, &writable))
 				io->cb(loop, io->data, IO_WRITE);
 			if(loop->deletion)
 				break;
-			if(FD_ISSET(io->fd, &readable) && io->cb)
+			if(io->cb && FD_ISSET(io->fd, &readable))
 				io->cb(loop, io->data, IO_READ);
 			if(loop->deletion)
 				break;
