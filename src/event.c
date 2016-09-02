@@ -155,7 +155,7 @@ static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
 	    MESHLINK_MUTEX_UNLOCK(&queue_mutex);
 
 	    if(!pending_queue_data) {
-	        logger(mesh, MESHLINK_DEBUG, "Warning: no packet queued to be sent");
+	        logger(NULL, MESHLINK_DEBUG, "Warning: no packet queued to be sent");
 	        return false;
 	    }
 	}
@@ -188,7 +188,7 @@ bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
     if(!meshlink_queue_push(&outpacketqueue, data)) {
         meshlink_errno = MESHLINK_ENOMEM;
         MESHLINK_MUTEX_UNLOCK(&queue_mutex);
-        logger(mesh, MESHLINK_ERROR, "Error: signalio_queue failed to queue packet");
+        logger(NULL, MESHLINK_ERROR, "Error: signalio_queue failed to queue packet");
         return false;
     }
 
