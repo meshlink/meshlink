@@ -86,6 +86,24 @@ void io_set(event_loop_t *loop, io_t *io, int flags) {
 		FD_SET(io->fd, &loop->writefds);
 	else
 		FD_CLR(io->fd, &loop->writefds);
+
+	if(flags & (IO_READ|IO_WRITE)) {
+		if(io->fd > loop->highestfd) {
+			loop->highestfd = io->fd;
+		}
+	}
+	else {
+		// search highest file descriptor for select (may be skipped on windows)
+		// zero initialized in meshlink_open and later set by pipe_init
+		loop->highestfd = loop->signalio.fd;
+		// lookup the ios tail, with all splay_tree entries sorted for the io->fd by io_compare
+		if(loop->ios.tail) {
+			io_t *last = loop->ios.tail->data;
+			if(last->fd > loop->highestfd) {
+				loop->highestfd = last->fd;
+			}
+		}
+	}
 }
 
 void io_del(event_loop_t *loop, io_t *io) {
@@ -174,8 +192,15 @@ static bool signalio_handler(event_loop_t *loop, void *packet, int flags) {
 }
 
 static void pipe_init(event_loop_t *loop) {
-	if(!meshlink_pipe(loop->pipefd))
-		io_add(loop, &loop->signalio, signalio_handler, NULL, loop->pipefd[0], IO_READ);
+	if(!meshlink_pipe(loop->pipefd)) {
+		// add the signalio_handler to the loop->readfds file descriptors but keep it out of the ios list
+		loop->signalio.fd = loop->pipefd[0];
+		loop->signalio.cb = signalio_handler;
+		loop->signalio.data = NULL;
+		loop->signalio.node.data = &loop->signalio;
+
+		io_set(loop, &loop->signalio, IO_READ);
+	}
 	else
 		logger(NULL, MESHLINK_ERROR, "Pipe init failed: %s", sockstrerror(sockerrno));
 }
@@ -272,13 +297,6 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		memcpy(&readable, &loop->readfds, sizeof readable);
 		memcpy(&writable, &loop->writefds, sizeof writable);
 
-		int fds = 0;
-
-		if(loop->ios.tail) {
-			io_t *last = loop->ios.tail->data;
-			fds = last->fd + 1;
-		}
-
 		// release mesh mutex during select
 		MESHLINK_MUTEX_UNLOCK(mutex);
 
@@ -286,7 +304,7 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		// when there's data pending from the outpacketqueue just peek the current socket status
 		// note that there's only the meta connections registering to the writable sockets,
 		// data queued to the outpacketqueue instead is signaled by the IO_READ pipefd[0] to try send it out
-		int n = select(fds, &readable, &writable, NULL, pending_queue_data? &(struct timeval){0, 0}: tv);
+		int n = select(loop->highestfd + 1, &readable, &writable, NULL, pending_queue_data? &(struct timeval){0, 0}: tv);
 
 		MESHLINK_MUTEX_LOCK(mutex);
 
@@ -303,21 +321,21 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 			continue;
 		}
 
+		// loop all io_add registered sockets
 		// Normally, splay_each allows the current node to be deleted. However,
 		// it can be that one io callback triggers the deletion of another io,
 		// so we have to detect this and break the loop.
-
 		loop->deletion = false;
 
 		bool progress = false;
 		for splay_each(io_t, io, &loop->ios) {
-			if(FD_ISSET(io->fd, &writable) && io->cb) {
+			if(io->cb && FD_ISSET(io->fd, &writable)) {
 				// assume progress when the callback got handled to write new data
 				progress |= io->cb(loop, io->data, IO_WRITE);
 			}
 			if(loop->deletion)
 				break;
-			if(FD_ISSET(io->fd, &readable) && io->cb) {
+			if(io->cb && FD_ISSET(io->fd, &readable)) {
 				io->cb(loop, io->data, IO_READ);
 				// always assume progress when incoming packets are received
 				// as there might be more in the queue
@@ -325,6 +343,13 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 			}
 			if(loop->deletion)
 				break;
+		}
+
+		if(!loop->deletion) {
+			// trigger the signalio_handler last so incoming packets are processed first
+			if(loop->signalio.cb && FD_ISSET(loop->signalio.fd, &readable)) {
+				loop->signalio.cb(loop, io->data, IO_READ);
+			}
 		}
 
 		// when there's no progress, sleep 1ms to keep cpu processing time low
@@ -367,6 +392,10 @@ void event_loop_exit(event_loop_t *loop) {
 	for splay_each(signal_t, signal, &loop->signals)
 		splay_unlink_node(&loop->signals, node);
 
+	loop->signalio.flags = 0;
+	FD_CLR(loop->signalio.fd, &loop->readfds);
+	loop->highestfd = 0;
+	
     exit_meshlink_queue(&outpacketqueue, free);
     if(pending_queue_data) {
     	free(pending_queue_data);
