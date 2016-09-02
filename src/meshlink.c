@@ -1116,7 +1116,6 @@ void meshlink_close(meshlink_handle_t *mesh) {
 
     logger(mesh, MESHLINK_INFO, "Terminating");
 
-    exit_meshlink_queue(&mesh->outpacketqueue, free);
     exit_configuration(&mesh->config);
     event_loop_exit(&mesh->loop);
 
@@ -1259,46 +1258,33 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
     packet->tcp = false;
     packet->len = len + sizeof *hdr;
 
-    MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
-
     hdr = (meshlink_packethdr_t *)packet->data;
     memset(hdr, 0, sizeof *hdr);
+
+    MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
+
     // leave the last byte as 0 to make sure strings are always
     // null-terminated if they are longer than the buffer
     strncpy(hdr->destination, destination->name, (sizeof hdr->destination) - 1);
     strncpy(hdr->source, mesh->self->name, (sizeof hdr->source) -1 );
 
+    MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+
     memcpy(packet->data + sizeof *hdr, data, len);
 
     // Queue it
-    if(!meshlink_queue_push(&mesh->outpacketqueue, packet)) {
+    if(!signalio_queue(&(mesh->loop), &(mesh->datafromapp), packet)) {
         free(packet);
         meshlink_errno = MESHLINK_ENOMEM;
-        MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
         logger(mesh, MESHLINK_ERROR, "Error: meshlink_send failed to queue packet");
         return false;
     }
 
-    // Notify event loop
-    if(!signal_trigger(&(mesh->loop),&(mesh->datafromapp))) {
-        logger(mesh, MESHLINK_WARNING, "Warning: meshlink_send packet queued but signal_trigger failed");
-    }
-
-    MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
-
     return true;
 }
 
-bool meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
-
-    MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
-
-    vpn_packet_t *packet = meshlink_queue_peek(&mesh->outpacketqueue);
-    if(!packet) {
-        logger(mesh, MESHLINK_DEBUG, "Warning: no packet queued to be sent");
-        MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
-        return false;
-    }
+bool meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh, vpn_packet_t *packet) {
+    MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
     mesh->self->in_packets++;
     mesh->self->in_bytes += packet->len;
@@ -1306,7 +1292,7 @@ bool meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
     if(0 != err) {
         if(sockwouldblock(err)) {
             logger(mesh, MESHLINK_WARNING, "Warning: socket would block, retrying to send packet from queue later");
-            MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+            MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
             return false;
         }
         else {
@@ -1314,16 +1300,7 @@ bool meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
         }
     }
 
-    // remove sent packet from queue
-    vpn_packet_t *popped = meshlink_queue_pop(&mesh->outpacketqueue);
-    if( popped != packet ) {
-        // this should never happen but should be recovered by the utcp retransmit anyhow
-        logger(mesh, MESHLINK_ERROR, "Error: popped different packet from the queue than sent");
-    }
-
-    free(popped);
-
-    MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 
     return true;
 }
@@ -1336,17 +1313,16 @@ ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination)
     MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
     node_t *n = (node_t *)destination;
-    if(!n->status.reachable) {
-        MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
-        return 0;
+    bool reachable = n->status.reachable;
 
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+    if(!reachable) {
+        return 0;
     }
     else if(n->utcp) {
-        MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
         return utcp_get_mtu(n->utcp);
     }
     else {
-        MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
         // return the usable payload size for API users
         return sptps_maxmtu(&n->sptps) - sizeof(meshlink_packethdr_t);
     }

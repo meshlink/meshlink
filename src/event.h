@@ -31,7 +31,7 @@ typedef struct event_loop_t event_loop_t;
 
 typedef bool (*io_cb_t)(event_loop_t *loop, void *data, int flags);
 typedef void (*timeout_cb_t)(event_loop_t *loop, void *data);
-typedef bool (*signal_cb_t)(event_loop_t *loop, void *data);
+typedef bool (*signal_cb_t)(event_loop_t *loop, void *data, void *packet);
 typedef struct timeval (*idle_cb_t)(event_loop_t *loop, void *data);
 
 typedef struct io_t {
@@ -86,7 +86,7 @@ extern void timeout_del(event_loop_t *loop, timeout_t *timeout);
 extern void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv);
 
 extern void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum);
-extern bool signal_trigger(event_loop_t *loop, signal_t *sig);
+extern bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data);
 extern void signal_del(event_loop_t *loop, signal_t *sig);
 
 extern void idle_set(event_loop_t *loop, idle_cb_t cb, void *data);
