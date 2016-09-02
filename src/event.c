@@ -286,7 +286,7 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		// when there's data pending from the outpacketqueue just peek the current socket status
 		// note that there's only the meta connections registering to the writable sockets,
 		// data queued to the outpacketqueue instead is signaled by the IO_READ pipefd[0] to try send it out
-		int n = select(fds, &readable, &writable, NULL, pending_queue_data? {0,0}: tv);
+		int n = select(fds, &readable, &writable, NULL, pending_queue_data? &(struct timeval){0, 0}: tv);
 
 		MESHLINK_MUTEX_LOCK(mutex);
 
