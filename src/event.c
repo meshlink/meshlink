@@ -284,7 +284,7 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		if(!loop->deletion) {
 			// trigger the signalio_handler last so incoming packets are processed first
 			if(loop->signalio.cb && FD_ISSET(loop->signalio.fd, &readable)) {
-				loop->signalio.cb(loop, io->data, IO_READ);
+				loop->signalio.cb(loop, loop->signalio.data, IO_READ);
 			}
 		}
 	}
