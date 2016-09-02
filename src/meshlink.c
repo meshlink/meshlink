@@ -1259,14 +1259,17 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
     packet->tcp = false;
     packet->len = len + sizeof *hdr;
 
-    MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
-
     hdr = (meshlink_packethdr_t *)packet->data;
     memset(hdr, 0, sizeof *hdr);
+
+    MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
+
     // leave the last byte as 0 to make sure strings are always
     // null-terminated if they are longer than the buffer
     strncpy(hdr->destination, destination->name, (sizeof hdr->destination) - 1);
     strncpy(hdr->source, mesh->self->name, (sizeof hdr->source) -1 );
+
+    MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 
     memcpy(packet->data + sizeof *hdr, data, len);
 
@@ -1274,29 +1277,31 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
     if(!signalio_queue(&(mesh->loop), &(mesh->datafromapp), packet)) {
         free(packet);
         meshlink_errno = MESHLINK_ENOMEM;
-        MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
         logger(mesh, MESHLINK_ERROR, "Error: meshlink_send failed to queue packet");
         return false;
     }
-
-    MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 
     return true;
 }
 
 bool meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh, vpn_packet_t *packet) {
+    MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
+
     mesh->self->in_packets++;
     mesh->self->in_bytes += packet->len;
     int err = route(mesh, mesh->self, packet);
     if(0 != err) {
         if(sockwouldblock(err)) {
             logger(mesh, MESHLINK_WARNING, "Warning: socket would block, retrying to send packet from queue later");
+            MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
             return false;
         }
         else {
             logger(mesh, MESHLINK_ERROR, "Error: failed to send packet from queue, dropping the packet");
         }
     }
+
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 
     return true;
 }
@@ -1309,17 +1314,16 @@ ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination)
     MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
 
     node_t *n = (node_t *)destination;
-    if(!n->status.reachable) {
-        MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
-        return 0;
+    bool reachable = n->status.reachable;
 
+    MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
+    if(!reachable) {
+        return 0;
     }
     else if(n->utcp) {
-        MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
         return utcp_get_mtu(n->utcp);
     }
     else {
-        MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
         // return the usable payload size for API users
         return sptps_maxmtu(&n->sptps) - sizeof(meshlink_packethdr_t);
     }
