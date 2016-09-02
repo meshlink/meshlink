@@ -31,7 +31,7 @@ typedef struct event_loop_t event_loop_t;
 
 typedef bool (*io_cb_t)(event_loop_t *loop, void *data, int flags);
 typedef void (*timeout_cb_t)(event_loop_t *loop, void *data);
-typedef bool (*signal_cb_t)(event_loop_t *loop, void *data);
+typedef bool (*signal_cb_t)(event_loop_t *loop, void *data, void *packet);
 typedef struct timeval (*idle_cb_t)(event_loop_t *loop, void *data);
 
 typedef struct io_t {
