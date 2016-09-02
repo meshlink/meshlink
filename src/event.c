@@ -348,7 +348,9 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		if(!loop->deletion) {
 			// trigger the signalio_handler last so incoming packets are processed first
 			if(loop->signalio.cb && FD_ISSET(loop->signalio.fd, &readable)) {
-				loop->signalio.cb(loop, io->data, IO_READ);
+				// since it handles our internal meshlink_pipe, assume progress only if handled
+				// an internal send might fail with sockwouldblock to retry later
+				progress |= loop->signalio.cb(loop, io->data, IO_READ);
 			}
 		}
 
@@ -395,7 +397,7 @@ void event_loop_exit(event_loop_t *loop) {
 	loop->signalio.flags = 0;
 	FD_CLR(loop->signalio.fd, &loop->readfds);
 	loop->highestfd = 0;
-	
+
     exit_meshlink_queue(&outpacketqueue, free);
     if(pending_queue_data) {
     	free(pending_queue_data);
