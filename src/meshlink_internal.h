@@ -25,6 +25,7 @@
 #include "event.h"
 #include "hash.h"
 #include "meshlink/meshlink.h"
+#include "meshlink_queue.h"
 #include "sockaddr.h"
 #include "sptps.h"
 
