@@ -25,7 +25,6 @@
 #include "event.h"
 #include "hash.h"
 #include "meshlink/meshlink.h"
-#include "meshlink_queue.h"
 #include "sockaddr.h"
 #include "sptps.h"
 
@@ -88,8 +87,6 @@ struct meshlink_handle {
 
 	struct list_t *connections;
 	struct list_t *outgoings;
-
-	meshlink_queue_t outpacketqueue;
 
 	struct splay_tree_t *past_request_tree;
 	timeout_t past_request_timeout;
@@ -174,7 +171,7 @@ typedef struct meshlink_packethdr {
 	uint8_t source[33];
 } __attribute__ ((__packed__)) meshlink_packethdr_t;
 
-extern bool meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
+extern bool meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh, vpn_packet_t *packet);
 extern void update_node_status(meshlink_handle_t *mesh, struct node_t *n);
 extern void update_node_mtu(meshlink_handle_t *mesh, struct node_t *n);
 extern meshlink_log_level_t global_log_level;

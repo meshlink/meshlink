@@ -28,6 +28,12 @@
 #include "utils.h"
 #include "xalloc.h"
 #include "logger.h"
+#include "meshlink_queue.h"
+
+static meshlink_queue_t outpacketqueue;
+static pthread_mutex_t queue_mutex;
+static void *pending_queue_data = NULL;
+static unsigned char pending_queue_signum = 0;
 
 static int io_compare(const io_t *a, const io_t *b) {
 	return a->fd - b->fd;
@@ -135,13 +141,36 @@ static int signal_compare(const signal_t *a, const signal_t *b) {
 	return (int)a->signum - (int)b->signum;
 }
 
+// called from event_loop_run to process queued data from the outpacketqueue
 static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
-	unsigned char signum;
-	if(meshlink_readpipe(loop->pipefd[0], &signum, 1) != 1)
-		return false;
+	if(!pending_queue_data) {
+		// read signaled event id removing the event
+		if(meshlink_readpipe(loop->pipefd[0], &pending_queue_signum, 1) != 1)
+			return false;
 
-	signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = signum}));
-	return sig? sig->cb(loop, sig->data): false;
+	    MESHLINK_MUTEX_LOCK(&queue_mutex);
+
+	    pending_queue_data = meshlink_queue_pop(&outpacketqueue);
+
+	    MESHLINK_MUTEX_UNLOCK(&queue_mutex);
+
+	    if(!pending_queue_data) {
+	        logger(mesh, MESHLINK_DEBUG, "Warning: no packet queued to be sent");
+	        return false;
+	    }
+	}
+
+	// find signal event handler and call it
+	signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = pending_queue_signum}));
+	bool cbres = sig? sig->cb(loop, sig->data, data): false;
+
+	// on success clean the processed data, else keep it to retry later
+	if(cbres) {
+    	free(pending_queue_data);
+    	pending_queue_data = NULL;
+	}
+
+	return cbres;
 }
 
 static void pipe_init(event_loop_t *loop) {
@@ -151,15 +180,31 @@ static void pipe_init(event_loop_t *loop) {
 		logger(NULL, MESHLINK_ERROR, "Pipe init failed: %s", sockstrerror(sockerrno));
 }
 
-bool signal_trigger(event_loop_t *loop, signal_t *sig) {
-	uint8_t signum = sig->signum;
-	
+// called from external to push data to the outpacketqueue
+bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
+	MESHLINK_MUTEX_LOCK(&queue_mutex);
+
+    // Queue it
+    if(!meshlink_queue_push(&outpacketqueue, data)) {
+        meshlink_errno = MESHLINK_ENOMEM;
+        MESHLINK_MUTEX_UNLOCK(&queue_mutex);
+        logger(mesh, MESHLINK_ERROR, "Error: signalio_queue failed to queue packet");
+        return false;
+    }
+
+    // Notify event loop
     // this should block when the queue's event notification send buffer is full
     // which however would mean there are more messages in the queue than the SO_SNDBUF can hold
+	uint8_t signum = sig->signum;
 	if(meshlink_writepipe(loop->pipefd[1], &signum, 1) != 1) {
-		logger(NULL, MESHLINK_ERROR, "Error: signal_trigger meshlink_writepipe failed");
+        MESHLINK_MUTEX_UNLOCK(&queue_mutex);
+		logger(NULL, MESHLINK_ERROR, "Error: signalio_queue failed to trigger the queue event");
+		// TODO: drop data from queue
 		return false;
 	}
+
+    MESHLINK_MUTEX_UNLOCK(&queue_mutex);
+
 	return true;
 }
 
@@ -236,7 +281,13 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 
 		// release mesh mutex during select
 		MESHLINK_MUTEX_UNLOCK(mutex);
-		int n = select(fds, &readable, &writable, NULL, tv);
+
+		// wait for a readable or writable socket to become available
+		// when there's data pending from the outpacketqueue just peek the current socket status
+		// note that there's only the meta connections registering to the writable sockets,
+		// data queued to the outpacketqueue instead is signaled by the IO_READ pipefd[0] to try send it out
+		int n = select(fds, &readable, &writable, NULL, pending_queue_data? {0,0}: tv);
+
 		MESHLINK_MUTEX_LOCK(mutex);
 
 		if(n < 0) {

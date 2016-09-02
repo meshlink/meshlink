@@ -86,7 +86,7 @@ extern void timeout_del(event_loop_t *loop, timeout_t *timeout);
 extern void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv);
 
 extern void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum);
-extern bool signal_trigger(event_loop_t *loop, signal_t *sig);
+extern bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data);
 extern void signal_del(event_loop_t *loop, signal_t *sig);
 
 extern void idle_set(event_loop_t *loop, idle_cb_t cb, void *data);
