@@ -349,7 +349,7 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 			if(loop->signalio.cb && FD_ISSET(loop->signalio.fd, &readable)) {
 				// since it handles our internal meshlink_pipe, assume progress only if handled
 				// an internal send might fail with sockwouldblock to retry later
-				progress |= loop->signalio.cb(loop, io->data, IO_READ);
+				progress |= loop->signalio.cb(loop, loop->signalio.data, IO_READ);
 			}
 		}
 
