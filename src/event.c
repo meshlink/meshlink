@@ -366,4 +366,10 @@ void event_loop_exit(event_loop_t *loop) {
 		splay_unlink_node(&loop->timeouts, node);
 	for splay_each(signal_t, signal, &loop->signals)
 		splay_unlink_node(&loop->signals, node);
+
+    exit_meshlink_queue(&outpacketqueue, free);
+    if(pending_queue_data) {
+    	free(pending_queue_data);
+    	pending_queue_data = NULL;
+    }
 }

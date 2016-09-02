@@ -1116,7 +1116,6 @@ void meshlink_close(meshlink_handle_t *mesh) {
 
     logger(mesh, MESHLINK_INFO, "Terminating");
 
-    exit_meshlink_queue(&mesh->outpacketqueue, free);
     exit_configuration(&mesh->config);
     event_loop_exit(&mesh->loop);
 
