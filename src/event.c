@@ -80,6 +80,24 @@ void io_set(event_loop_t *loop, io_t *io, int flags) {
 		FD_SET(io->fd, &loop->writefds);
 	else
 		FD_CLR(io->fd, &loop->writefds);
+
+	if(flags & (IO_READ|IO_WRITE)) {
+		if(io->fd > loop->highestfd) {
+			loop->highestfd = io->fd;
+		}
+	}
+	else {
+		// search highest file descriptor for select (may be skipped on windows)
+		// zero initialized in meshlink_open and later set by pipe_init
+		loop->highestfd = loop->signalio.fd;
+		// lookup the ios tail, with all splay_tree entries sorted for the io->fd by io_compare
+		if(loop->ios.tail) {
+			io_t *last = loop->ios.tail->data;
+			if(last->fd > loop->highestfd) {
+				loop->highestfd = last->fd;
+			}
+		}
+	}
 }
 
 void io_del(event_loop_t *loop, io_t *io) {
@@ -224,16 +242,9 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		memcpy(&readable, &loop->readfds, sizeof readable);
 		memcpy(&writable, &loop->writefds, sizeof writable);
 
-		int fds = 0;
-
-		if(loop->ios.tail) {
-			io_t *last = loop->ios.tail->data;
-			fds = last->fd + 1;
-		}
-
 		// release mesh mutex during select
 		MESHLINK_MUTEX_UNLOCK(mutex);
-		int n = select(fds, &readable, &writable, NULL, tv);
+		int n = select(loop->highestfd + 1, &readable, &writable, NULL, tv);
 		MESHLINK_MUTEX_LOCK(mutex);
 
 		if(n < 0) {

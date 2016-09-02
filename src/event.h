@@ -73,6 +73,7 @@ struct event_loop_t {
 
 	io_t signalio;
 	int pipefd[2];
+    int highestfd;
 
 	void *data;
 };
