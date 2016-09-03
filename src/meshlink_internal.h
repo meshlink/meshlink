@@ -78,6 +78,7 @@ struct meshlink_handle {
 	event_loop_t loop;
 	listen_socket_t listen_socket[MAXSOCKETS];
 	int listen_sockets;
+	signal_t wakeup;
 	signal_t datafromapp;
 
 	struct node_t *self;

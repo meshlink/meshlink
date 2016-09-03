@@ -2746,8 +2746,12 @@ bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_t *chan
 
     utcp_set_poll_cb(channel->c, channel_poll);
     utcp_set_ack_cb(channel->c, channel_ack);
-    channel_poll(channel->c, len);
     MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+
+    // Wake event loop
+    if(!signal_trigger(&(mesh->loop),&(mesh->wakeup))) {
+        logger(mesh, MESHLINK_WARNING, "Warning: meshlink_channel_aio_send data queued but signal_trigger failed");
+    }
 
     return true;
 }
