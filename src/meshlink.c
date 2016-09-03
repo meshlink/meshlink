@@ -2344,7 +2344,29 @@ static void channel_accept(struct utcp_connection *utcp_connection, uint16_t por
         free(channel);
 }
 
+// called from utcp ack, set by init_utcp
 static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
+    meshlink_packethdr_t *hdr;
+
+    // Validate arguments
+    if(!utcp || !utcp->priv || len >= MAXSIZE - sizeof *hdr) {
+        meshlink_errno = MESHLINK_EINVAL;
+        logger(mesh, MESHLINK_ERROR, "Error: channel_send invalid arguments");
+        return false;
+    }
+
+    if(!len)
+    {
+        logger(mesh, MESHLINK_WARNING, "Warning: channel_send empty packet dropped");
+        return true;
+    }
+
+    if(!data) {
+        meshlink_errno = MESHLINK_EINVAL;
+        logger(mesh, MESHLINK_ERROR, "Error: channel_send missing data");
+        return false;
+    }
+
     node_t *n = utcp->priv;
     meshlink_handle_t *mesh = n->mesh;
 
@@ -2357,7 +2379,47 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
         free(hex);
     }
 
-    return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? len : -1;
+    // Prepare the packet
+    vpn_packet_t *packet = malloc(sizeof *packet);
+    if(!packet) {
+        meshlink_errno = MESHLINK_ENOMEM;
+        logger(mesh, MESHLINK_ERROR, "Error: channel_send packet memory allocation failed");
+        return false;
+    }
+
+    packet->probe = false;
+    packet->tcp = false;
+    packet->len = len + sizeof *hdr;
+
+    hdr = (meshlink_packethdr_t *)packet->data;
+    memset(hdr, 0, sizeof *hdr);
+
+    MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
+
+    // leave the last byte as 0 to make sure strings are always
+    // null-terminated if they are longer than the buffer
+    strncpy(hdr->destination, n->name, (sizeof hdr->destination) - 1);
+    strncpy(hdr->source, mesh->self->name, (sizeof hdr->source) -1 );
+
+    memcpy(packet->data + sizeof *hdr, data, len);
+
+    mesh->self->in_packets++;
+    mesh->self->in_bytes += packet->len;
+    int err = route(mesh, mesh->self, packet);
+    if(err) {
+        if(sockwouldblock(err)) {
+            logger(mesh, MESHLINK_WARNING, "Warning: channel_send socket would block, retry later");
+        }
+        else {
+            logger(mesh, MESHLINK_ERROR, "Error: channel_send failed to send packet");
+        }
+    }
+
+    MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+
+    free(packet);
+
+    return !err ? len : -1;
 }
 
 void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb) {
