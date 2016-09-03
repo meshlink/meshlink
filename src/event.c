@@ -160,7 +160,7 @@ static int signal_compare(const signal_t *a, const signal_t *b) {
 }
 
 // called from event_loop_run to process queued data from the outpacketqueue
-static bool signalio_handler(event_loop_t *loop, void *packet, int flags) {
+static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
     if(!pending_queue_data) {
         // read signaled event id removing the event
         if(meshlink_readpipe(loop->pipefd[0], &pending_queue_signum, 1) != 1)
@@ -180,7 +180,7 @@ static bool signalio_handler(event_loop_t *loop, void *packet, int flags) {
 
     // find signal event handler and call it
     signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = pending_queue_signum}));
-    bool cbres = sig? sig->cb(loop, sig->data, packet): false;
+    bool cbres = sig? sig->cb(loop, sig->data, pending_queue_data): false;
 
     // on success clean the processed data, else keep it to retry later
     if(cbres) {
