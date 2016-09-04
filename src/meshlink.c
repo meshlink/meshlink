@@ -2453,7 +2453,7 @@ static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, co
     utcp_recv(n->utcp, data, len);
 }
 
-static void channel_poll(struct utcp_connection *connection, size_t len) {
+static ssize_t channel_poll(struct utcp_connection *connection, size_t len) {
     meshlink_channel_t *channel = connection->priv;
     if(!channel) {
         logger(NULL, MESHLINK_ERROR, "Error: channel_poll no channel");
@@ -2466,6 +2466,7 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 
     logger(mesh, MESHLINK_DEBUG, "channel_poll(%p, " PRINT_SIZE_T ")\n", connection, len);
 
+    ssize_t total_sent = 0;
     // If we have AIO buffers queued, use those.
     if(aio) {
         while(aio && len > 0) {
@@ -2481,15 +2482,20 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
             if(len < left)
                 left = len;
             ssize_t sent = utcp_send(connection, aio->data + aio->done, left);
-            if(sent == -1) {
-                logger(mesh, MESHLINK_ERROR, "Error: channel_poll could not pass data to utcp: utcp_send returned -1");
-                break;
-            } else if(sent == 0) {
-                // utcp send buffer is full
-                break;
-            } else {
+            if(sent >= 0) {
                 aio->done += sent;
+                total_sent += sent;
                 len = sent > len ? 0 : len - sent;
+            }
+            else if(sent == UTCP_WOULDBLOCK) {
+                // utcp send buffer is full
+                total_sent = UTCP_WOULDBLOCK;
+                break;
+            }
+            else {
+                logger(mesh, MESHLINK_ERROR, "Error: channel_poll could not pass data to utcp: utcp_send returned %u", sent);
+                total_sent = sent;
+                break;
             }
 
             aio = aio->next;
@@ -2500,6 +2506,8 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
         else
             utcp_set_poll_cb(connection, NULL);
     }
+
+    return total_sent;
 }
 
 static void channel_ack(struct utcp_connection *connection, size_t len) {
