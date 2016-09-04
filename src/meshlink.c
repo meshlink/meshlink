@@ -2419,7 +2419,7 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
 
     free(packet);
 
-    return !err ? len : -1;
+    return err ? sockwouldblock(err) ? UTCP_WOULDBLOCK : UTCP_ERROR : len;
 }
 
 void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb) {
