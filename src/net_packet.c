@@ -436,7 +436,6 @@ static int send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *orig
 int send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	node_t *to = handle;
 	meshlink_handle_t *mesh = to->mesh;
-	int err = 0;
 
 	/* Send it via TCP if it is a handshake packet, TCPOnly is in use, or this packet is larger than the MTU. */
 
@@ -463,24 +462,39 @@ int send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	else
 		choose_udp_address(mesh, to, &sa, &sock);
 
-	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0) {
-		err = sockerrno;
+	int sent = sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa));
+	if(sent != len) {
+		int err = sockerrno;
+		if(!err) {
+			// This never should happen cause even though send is documented to send and return less or equal
+			// the size with no error this only counts for TCP not UDP.
+			// UDP packets never should be broken up but return an error to not break the headers and checksums.
+			logger(mesh, MESHLINK_ERROR, "Error sending UDP SPTPS packet to %s (%s), expected %u but sendto returned %u", to->name, to->hostname, len, sent);
+			return -1;
+		}
+		
+		if(sockwouldblock(err)) {
+			logger(mesh, MESHLINK_DEBUG, "Warning sending UDP SPTPS packet to %s (%s): %s", to->name, to->hostname, sockstrerror(err));
+		}
+		else {
+			logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s (%s): %s", to->name, to->hostname, sockstrerror(err));
 
-		logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s (%s): %s", to->name, to->hostname, sockstrerror(err));
-
-		// if message is reported to be too long, lessen mtu to at least one less than the failed length
-		if(sockmsgsize(err)) {
-			if(to->maxmtu >= len)
-				to->maxmtu = len - 1;
-			if(to->mtu >= len) {
-				to->mtu = len - 1;
-				// update meshlink and utcp for the mtu change
-				update_node_mtu(mesh, to);
+			// if message is reported to be too long, lessen mtu to at least one less than the failed length
+			if(sockmsgsize(err)) {
+				if(to->maxmtu >= len)
+					to->maxmtu = len - 1;
+				if(to->mtu >= len) {
+					to->mtu = len - 1;
+					// update meshlink and utcp for the mtu change
+					update_node_mtu(mesh, to);
+				}
 			}
 		}
+
+		return err;
 	}
 
-	return err;
+	return 0;
 }
 
 bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t len) {
