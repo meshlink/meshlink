@@ -2349,7 +2349,16 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
     meshlink_packethdr_t *hdr;
 
     // Validate arguments
-    if(!utcp || !utcp->priv || len >= MAXSIZE - sizeof *hdr) {
+    if(!utcp || !utcp->priv || !((node_t*)utcp->priv)->mesh) {
+        meshlink_errno = MESHLINK_EINVAL;
+        logger(NULL, MESHLINK_ERROR, "Error: channel_send invalid arguments");
+        return false;
+    }
+
+    node_t *n = utcp->priv;
+    meshlink_handle_t *mesh = n->mesh;
+
+    if(len >= MAXSIZE - sizeof *hdr) {
         meshlink_errno = MESHLINK_EINVAL;
         logger(mesh, MESHLINK_ERROR, "Error: channel_send invalid arguments");
         return false;
@@ -2366,9 +2375,6 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
         logger(mesh, MESHLINK_ERROR, "Error: channel_send missing data");
         return false;
     }
-
-    node_t *n = utcp->priv;
-    meshlink_handle_t *mesh = n->mesh;
 
     // check log level before calling bin2hex since that's an expensive call
     if(mesh->log_level <= MESHLINK_DEBUG) {
