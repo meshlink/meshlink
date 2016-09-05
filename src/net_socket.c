@@ -57,7 +57,7 @@ static bool set_non_blocking(meshlink_handle_t *mesh, int socket) {
 #else
 	int flags = fcntl(c->socket, F_GETFL);
 
-	if(fcntl(ocket, F_SETFL, flags | O_NONBLOCK) < 0) {
+	if(fcntl(socket, F_SETFL, flags | O_NONBLOCK) < 0) {
 		logger(mesh, MESHLINK_ERROR, "fcntl: %s", strerror(errno));
 		return false;
 	}
