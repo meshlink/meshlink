@@ -230,11 +230,9 @@ bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
         return false;
     }
 
-    if(!signal_trigger(loop, sig)) {
-        MESHLINK_MUTEX_UNLOCK(&queue_mutex);
-        // TODO: drop data from queue
-        return false;
-    }
+    // discard whether the event triggering worked, the data should be processed anyhow
+    // the event queue is just for notification to wake from the select
+    signal_trigger(loop, sig);
 
     MESHLINK_MUTEX_UNLOCK(&queue_mutex);
 
