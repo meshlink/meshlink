@@ -433,7 +433,7 @@ void event_loop_exit(event_loop_t *loop) {
     FD_CLR(loop->signalio.fd, &loop->readfds);
     loop->highestfd = 0;
 
-    exit_meshlink_queue(&outpacketqueue, free_event);
+    exit_meshlink_queue(&outpacketqueue, (meshlink_queue_action_t)free_event);
     if(pending_event) {
         free_event(pending_event);
         pending_event = NULL;
