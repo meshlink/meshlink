@@ -205,6 +205,19 @@ static void pipe_init(event_loop_t *loop) {
 		logger(NULL, MESHLINK_ERROR, "Pipe init failed: %s", sockstrerror(sockerrno));
 }
 
+// called from external to wake the event_loop_run loop with some signal
+bool signal_trigger(event_loop_t *loop, signal_t *sig) {
+    // Notify event loop
+    // this should block when the queue's event notification send buffer is full
+    // which however would mean there are more messages in the queue than the SO_SNDBUF can hold
+	uint8_t signum = sig->signum;
+	if(meshlink_writepipe(loop->pipefd[1], &signum, 1) != 1) {
+		logger(NULL, MESHLINK_ERROR, "Error: signal_trigger failed to trigger the queue event");
+		return false;
+	}
+	return true;
+}
+
 // called from external to push data to the outpacketqueue
 bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
     MESHLINK_MUTEX_LOCK(&queue_mutex);
@@ -217,13 +230,8 @@ bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
         return false;
     }
 
-    // Notify event loop
-    // this should block when the queue's event notification send buffer is full
-    // which however would mean there are more messages in the queue than the SO_SNDBUF can hold
-    uint8_t signum = sig->signum;
-    if(meshlink_writepipe(loop->pipefd[1], &signum, 1) != 1) {
+    if(!signal_trigger(loop, sig)) {
         MESHLINK_MUTEX_UNLOCK(&queue_mutex);
-        logger(NULL, MESHLINK_ERROR, "Error: signalio_queue failed to trigger the queue event");
         // TODO: drop data from queue
         return false;
     }
