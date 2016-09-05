@@ -326,6 +326,12 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 				tv = &it;
 		}
 
+		memcpy(&readable, &loop->readfds, sizeof readable);
+		memcpy(&writable, &loop->writefds, sizeof writable);
+
+		// release mesh mutex while waiting to select
+		MESHLINK_MUTEX_UNLOCK(mutex);
+
 		// when no progress could be made and there's no immediate timeout, wait a moment
 		// this case can occure when the signalio_handler is triggered by meshlink_send
 		// to call meshlink_send_from_queue but then fails to send with sockwouldblock
@@ -333,12 +339,6 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		if(!progress && (!tv || tv->tv_sec || tv->tv_usec)) {
 			usleep(1000LL);
 		}
-
-		memcpy(&readable, &loop->readfds, sizeof readable);
-		memcpy(&writable, &loop->writefds, sizeof writable);
-
-		// release mesh mutex during select
-		MESHLINK_MUTEX_UNLOCK(mutex);
 
 		// wait for a readable or writable socket to become available
 		// when there's data pending from the outpacketqueue just peek the current socket status
