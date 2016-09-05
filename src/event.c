@@ -202,8 +202,10 @@ static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
     }
     else {
         logger(NULL, MESHLINK_ERROR, "No matching signal handler found for signum=%u, dropping the event.", pending_event->signum);
+        // drop the event and report progress
         free_event(pending_event);
         pending_event = NULL;
+        cbres = true;
     }
 
     // if processed or dropped, retrieve the next pending event so the event loop doesn't block
