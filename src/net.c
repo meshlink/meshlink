@@ -582,8 +582,7 @@ int main_loop(meshlink_handle_t *mesh) {
 	timeout_add(&mesh->loop, &mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval){0, 0});
 
 	//Add signal handler
-	mesh->wakeup.signum = 0; // no signal callback to be triggered
-	mesh->datafromapp.signum = 1;
+	mesh->datafromapp.signum = 0;
 	signal_add(&(mesh->loop), &(mesh->datafromapp), (signal_cb_t)meshlink_send_from_queue, mesh, mesh->datafromapp.signum);
 
 	if(!event_loop_run(&(mesh->loop), &(mesh->mesh_mutex))) {
