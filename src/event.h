@@ -56,6 +56,11 @@ typedef struct signal_t {
 	struct splay_node_t node;
 } signal_t;
 
+typedef struct event_t {
+    int signum;
+    void *data;
+} event_t;
+
 struct event_loop_t {
 	fd_set readfds;
 	fd_set writefds;
