@@ -265,7 +265,7 @@ bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
     MESHLINK_MUTEX_LOCK(&queue_mutex);
 
     // Queue it
-    if(!meshlink_queue_push(&outpacketqueue, data)) {
+    if(!meshlink_queue_push(&outpacketqueue, entry)) {
         free(entry);
         meshlink_errno = MESHLINK_ENOMEM;
         MESHLINK_MUTEX_UNLOCK(&queue_mutex);
