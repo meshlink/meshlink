@@ -347,8 +347,8 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		}
 
 		if(!n) {
-			// sleep 1 ms
-			usleep(1000LL);
+			// when there are no sockets to process a timeout or interrupt must have occured
+			// e.g. we might have some events queued to process
 			continue;
 		}
 
