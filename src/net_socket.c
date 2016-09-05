@@ -46,22 +46,28 @@ int max_connection_burst = 100;
 
 /* Setup sockets */
 
-static bool set_non_blocking(meshlink_handle_t *mesh, int socket) {
+bool set_non_blocking_socket(int socket) {
 #ifdef _WIN32
 	unsigned long arg = 1;
 
 	if(ioctlsocket(socket, FIONBIO, &arg) != 0) {
-		logger(mesh, MESHLINK_ERROR, "ioctlsocket: %s", sockstrerror(sockerrno));
 		return false;
 	}
 #else
 	int flags = fcntl(c->socket, F_GETFL);
 
 	if(fcntl(socket, F_SETFL, flags | O_NONBLOCK) < 0) {
-		logger(mesh, MESHLINK_ERROR, "fcntl: %s", strerror(errno));
 		return false;
 	}
 #endif
+	return true;
+}
+
+static bool set_non_blocking(meshlink_handle_t *mesh, int socket) {
+	if(!set_non_blocking_socket(socket)) {
+		logger(mesh, MESHLINK_ERROR, "set_non_blocking: %s", sockstrerror(sockerrno));
+		return false;
+	}
 	return true;
 }
 
