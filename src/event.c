@@ -168,7 +168,7 @@ static void free_event(struct event_t *event) {
 
 // called from event_loop_run to process queued data from the outpacketqueue
 static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
-    // clear signal queue
+    // clear the signal pipe
     unsigned char signum;
     while(sizeof signum == meshlink_readpipe(loop->pipefd[0], &signum, sizeof signum))
     	continue;
@@ -202,6 +202,12 @@ static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
 
 static void pipe_init(event_loop_t *loop) {
 	if(!meshlink_pipe(loop->pipefd)) {
+		// make it non-blocking
+		if(!set_non_blocking_socket(loop->pipefd[0]) || !set_non_blocking_socket(loop->pipefd[1])) {
+			logger(NULL, MESHLINK_ERROR, "Pipe init failed to set non-blocking mode: %s", sockstrerror(sockerrno));
+			abort(); // abort since clearing the pipe would block
+		}
+
 		// add the signalio_handler to the loop->readfds file descriptors but keep it out of the ios list
 		loop->signalio.fd = loop->pipefd[0];
 		loop->signalio.cb = signalio_handler;
