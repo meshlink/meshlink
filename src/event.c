@@ -168,23 +168,23 @@ static void free_event(struct event_t *event) {
 
 // called from event_loop_run to process queued data from the outpacketqueue
 static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
-    // clear the signal pipe
-    unsigned char signum;
-    while(sizeof signum == meshlink_readpipe(loop->pipefd[0], &signum, sizeof signum))
-    	continue;
+	// check whether we got triggered by the event pipe
+    if(flags & IO_READ) {
+    	// clear the event pipe
+    	unsigned char signum;
+	    while(sizeof signum == meshlink_readpipe(loop->pipefd[0], &signum, sizeof signum));
 
+	    // retrieve the next event if none pending
+	    if(!pending_event) {
+	        MESHLINK_MUTEX_LOCK(&queue_mutex);
+	        pending_event = meshlink_queue_pop(&outpacketqueue);
+	        MESHLINK_MUTEX_UNLOCK(&queue_mutex);
+	    }
+	}
+
+    // when there's nothing to process return
     if(!pending_event) {
-
-        MESHLINK_MUTEX_LOCK(&queue_mutex);
-
-        pending_event = meshlink_queue_pop(&outpacketqueue);
-
-        MESHLINK_MUTEX_UNLOCK(&queue_mutex);
-
-        if(!pending_event) {
-            logger(NULL, MESHLINK_DEBUG, "Warning: no event queued");
-            return false;
-        }
+        return false;
     }
 
     // find signal event handler and call it
@@ -195,6 +195,11 @@ static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
     if(cbres) {
         free_event(pending_event);
         pending_event = NULL;
+
+        // retrieve next pending event so when work is left the event loop doesn't block
+        MESHLINK_MUTEX_LOCK(&queue_mutex);
+        pending_event = meshlink_queue_pop(&outpacketqueue);
+        MESHLINK_MUTEX_UNLOCK(&queue_mutex);
     }
 
     return cbres;
@@ -220,7 +225,7 @@ static void pipe_init(event_loop_t *loop) {
 		logger(NULL, MESHLINK_ERROR, "Pipe init failed: %s", sockstrerror(sockerrno));
 }
 
-// called from external to wake the event_loop_run loop with some signal
+// called from external to wake the event_loop_run loop
 bool signalio_trigger(event_loop_t *loop) {
     // Notify event loop
     // this should block when the queue's event notification send buffer is full
@@ -349,49 +354,46 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 
 		MESHLINK_MUTEX_LOCK(mutex);
 
-		if(n < 0) {
-			if(sockwouldblock(errno))
-				continue;
-			else
-				return false;
+		// when an error occures and it's not an interrupt, exit
+		if(n < 0 && !sockintr(errno)) {
+			logger(NULL, MESHLINK_ERROR, "Error: event_loop_run select failed with: [%u] %s", errno, sockstrerror(errno));
+			return false;
 		}
 
-		if(!n) {
-			// when there are no sockets to process a timeout or interrupt must have occured
-			// e.g. we might have some events queued to process
-			continue;
-		}
-
-		// loop all io_add registered sockets
-		// Normally, splay_each allows the current node to be deleted. However,
-		// it can be that one io callback triggers the deletion of another io,
-		// so we have to detect this and break the loop.
 		loop->deletion = false;
 		progress = false;
-		for splay_each(io_t, io, &loop->ios) {
-			if(io->cb && FD_ISSET(io->fd, &writable)) {
-				// assume progress when the callback got handled to write new data
-				progress |= io->cb(loop, io->data, IO_WRITE);
+
+		// process sockets if any
+		// when there are no sockets to process a timeout or interrupt must have occured
+		// e.g. we might have some events queued to process
+		if(n > 0) {
+			// loop all io_add registered sockets
+			// Normally, splay_each allows the current node to be deleted. However,
+			// it can be that one io callback triggers the deletion of another io,
+			// so we have to detect this and break the loop.
+			for splay_each(io_t, io, &loop->ios) {
+				if(io->cb && FD_ISSET(io->fd, &writable)) {
+					// assume progress when the callback got handled to write new data
+					progress |= io->cb(loop, io->data, IO_WRITE);
+				}
+				if(loop->deletion)
+					break;
+				if(io->cb && FD_ISSET(io->fd, &readable)) {
+					io->cb(loop, io->data, IO_READ);
+					// always assume progress when incoming packets are received
+					// as there might be more in the queue
+					progress = true;
+				}
+				if(loop->deletion)
+					break;
 			}
-			if(loop->deletion)
-				break;
-			if(io->cb && FD_ISSET(io->fd, &readable)) {
-				io->cb(loop, io->data, IO_READ);
-				// always assume progress when incoming packets are received
-				// as there might be more in the queue
-				progress = true;
-			}
-			if(loop->deletion)
-				break;
 		}
 
-		if(!loop->deletion) {
-			// trigger the signalio_handler last so incoming packets are processed first
-			if(loop->signalio.cb && FD_ISSET(loop->signalio.fd, &readable)) {
-				// since it handles our internal meshlink_pipe, assume progress only if handled
-				// an internal send might fail with sockwouldblock to retry later
-				progress |= loop->signalio.cb(loop, loop->signalio.data, IO_READ);
-			}
+		// trigger the signalio_handler last so incoming packets are processed first
+		if(!loop->deletion && loop->signalio.cb) {
+			// since it handles our internal meshlink_pipe, assume progress only if handled
+			// an internal send might fail with sockwouldblock to retry later
+			progress |= loop->signalio.cb(loop, loop->signalio.data, FD_ISSET(loop->signalio.fd, &readable)? IO_READ: 0);
 		}
 	}
 
