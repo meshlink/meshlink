@@ -188,15 +188,26 @@ static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
     }
 
     // find signal event handler and call it
+    bool cbres = false;
     signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = pending_event->signum}));
-    bool cbres = sig? sig->cb(loop, sig->data, pending_event->data): false;
+    if(sig && sig->cb) {
+	    // call the signal callback to process the event data
+	    cbres = sig->cb(loop, sig->data, pending_event->data);
 
-    // on success clean the processed data, else keep it to retry later
-    if(cbres) {
+	    // on success clean the processed data, else keep it to retry later
+	    if(cbres) {
+	        free_event(pending_event);
+	        pending_event = NULL;
+	    }
+	}
+	else {
+		logger(NULL, MESHLINK_ERROR, "No matching signal handler found for signum=%u, dropping the event.", pending_event->signum);
         free_event(pending_event);
         pending_event = NULL;
+    }
 
-        // retrieve next pending event so when work is left the event loop doesn't block
+    // if processed or dropped, retrieve the next pending event so the event loop doesn't block
+    if(!pending_event) {
         MESHLINK_MUTEX_LOCK(&queue_mutex);
         pending_event = meshlink_queue_pop(&outpacketqueue);
         MESHLINK_MUTEX_UNLOCK(&queue_mutex);
