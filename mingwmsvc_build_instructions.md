@@ -71,6 +71,7 @@ CFLAGS:<br/>
 -fstack-protector-all add guards to check for buffer overflows, protect all functions<br/>
 -std=c99 use c99 standard (be aware, this doesn't check on missing c99 format flag support with printf in Msvcrt.dll Microsoft C-Runtime Library)<br/>
 -DUTCP_DEBUG to enable meshlink utcp debug output
+-DO_NONBLOCK to enable non-blocking i/o build
 
 --prefix=[INSTALL_DIR]
 
@@ -81,12 +82,12 @@ zlib is already included with mingw-w64 but for your own build use:<br/>
 Debug:
 ```
 catta/configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -g -O0' --prefix='/c/lib/catta/debug'
-configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -g -O0 -DUTCP_DEBUG' --prefix='/c/lib/meshlink/debug'
+configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -g -O0 -DO_NONBLOCK -DUTCP_DEBUG' --prefix='/c/lib/meshlink/debug'
 ```
 Release:
 ```
 catta/configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -O3' --prefix='/c/lib/catta/release'
-configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -O3' --prefix='/c/lib/meshlink/release'
+configure CFLAGS='-fPIC -fstack-protector-all -std=c99 -O3 -DO_NONBLOCK' --prefix='/c/lib/meshlink/release'
 ```
 
 ## build:

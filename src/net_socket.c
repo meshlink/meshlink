@@ -46,19 +46,34 @@ int max_connection_burst = 100;
 
 /* Setup sockets */
 
-static void configure_tcp(connection_t *c) {
-#ifdef O_NONBLOCK
-	int flags = fcntl(c->socket, F_GETFL);
-
-	if(fcntl(c->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
-		logger(c->mesh, MESHLINK_ERROR, "fcntl for %s: %s", c->hostname, strerror(errno));
-	}
-#elif defined(WIN32)
+bool set_non_blocking_socket(int socket) {
+#ifdef _WIN32
 	unsigned long arg = 1;
 
-	if(ioctlsocket(c->socket, FIONBIO, &arg) != 0) {
-		logger(c->mesh, MESHLINK_ERROR, "ioctlsocket for %s: %s", c->hostname, sockstrerror(sockerrno));
+	if(ioctlsocket(socket, FIONBIO, &arg) != 0) {
+		return false;
 	}
+#else
+	int flags = fcntl(c->socket, F_GETFL);
+
+	if(fcntl(socket, F_SETFL, flags | O_NONBLOCK) < 0) {
+		return false;
+	}
+#endif
+	return true;
+}
+
+static bool set_non_blocking(meshlink_handle_t *mesh, int socket) {
+	if(!set_non_blocking_socket(socket)) {
+		logger(mesh, MESHLINK_ERROR, "set_non_blocking: %s", sockstrerror(sockerrno));
+		return false;
+	}
+	return true;
+}
+
+static void configure_tcp(connection_t *c) {
+#ifdef O_NONBLOCK
+	set_non_blocking(c->mesh, c->socket);
 #endif
 
 #if defined(SOL_TCP) && defined(TCP_NODELAY)
@@ -160,24 +175,9 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 #endif
 
 #ifdef O_NONBLOCK
-	{
-		int flags = fcntl(nfd, F_GETFL);
-
-		if(fcntl(nfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-			closesocket(nfd);
-			logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "fcntl",
-				   strerror(errno));
-			return -1;
-		}
-	}
-#elif defined(WIN32)
-	{
-		unsigned long arg = 1;
-		if(ioctlsocket(nfd, FIONBIO, &arg) != 0) {
-			closesocket(nfd);
-			logger(mesh, MESHLINK_ERROR, "Call to `%s' failed: %s", "ioctlsocket", sockstrerror(sockerrno));
-			return -1;
-		}
+	if(!set_non_blocking(mesh, nfd)) {
+		closesocket(nfd);
+		return -1;
 	}
 #endif
 
