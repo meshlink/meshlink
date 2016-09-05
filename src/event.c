@@ -354,11 +354,10 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 
 		MESHLINK_MUTEX_LOCK(mutex);
 
-		if(n < 0) {
-			if(sockwouldblock(errno))
-				continue;
-			else
-				return false;
+		// when an error occures and it's not an interrupt, exit
+		if(n < 0 && !sockintr(errno)) {
+			logger(NULL, MESHLINK_ERROR, "Error: event_loop_run select failed with: [%u] %s", errno, sockstrerror(errno));
+			return false;
 		}
 
 		if(!n) {
