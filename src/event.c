@@ -168,19 +168,19 @@ static void free_event(struct event_t *event) {
 
 // called from event_loop_run to process queued data from the outpacketqueue
 static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
-	// check whether we got triggered by the event pipe
+    // check whether we got triggered by the event pipe
     if(flags & IO_READ) {
-    	// clear the event pipe
-    	unsigned char signum;
-	    while(sizeof signum == meshlink_readpipe(loop->pipefd[0], &signum, sizeof signum));
+        // clear the event pipe
+        unsigned char signum;
+        while(sizeof signum == meshlink_readpipe(loop->pipefd[0], &signum, sizeof signum));
 
-	    // retrieve the next event if none pending
-	    if(!pending_event) {
-	        MESHLINK_MUTEX_LOCK(&queue_mutex);
-	        pending_event = meshlink_queue_pop(&outpacketqueue);
-	        MESHLINK_MUTEX_UNLOCK(&queue_mutex);
-	    }
-	}
+        // retrieve the next event if none pending
+        if(!pending_event) {
+            MESHLINK_MUTEX_LOCK(&queue_mutex);
+            pending_event = meshlink_queue_pop(&outpacketqueue);
+            MESHLINK_MUTEX_UNLOCK(&queue_mutex);
+        }
+    }
 
     // when there's nothing to process return
     if(!pending_event) {
@@ -188,15 +188,26 @@ static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
     }
 
     // find signal event handler and call it
+    bool cbres = false;
     signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = pending_event->signum}));
-    bool cbres = sig? sig->cb(loop, sig->data, pending_event->data): false;
+    if(sig && sig->cb) {
+        // call the signal callback to process the event data
+        cbres = sig->cb(loop, sig->data, pending_event->data);
 
-    // on success clean the processed data, else keep it to retry later
-    if(cbres) {
+        // on success clean the processed data, else keep it to retry later
+        if(cbres) {
+            free_event(pending_event);
+            pending_event = NULL;
+        }
+    }
+    else {
+        logger(NULL, MESHLINK_ERROR, "No matching signal handler found for signum=%u, dropping the event.", pending_event->signum);
         free_event(pending_event);
         pending_event = NULL;
+    }
 
-        // retrieve next pending event so when work is left the event loop doesn't block
+    // if processed or dropped, retrieve the next pending event so the event loop doesn't block
+    if(!pending_event) {
         MESHLINK_MUTEX_LOCK(&queue_mutex);
         pending_event = meshlink_queue_pop(&outpacketqueue);
         MESHLINK_MUTEX_UNLOCK(&queue_mutex);
@@ -230,12 +241,12 @@ bool signalio_trigger(event_loop_t *loop) {
     // Notify event loop
     // this should block when the queue's event notification send buffer is full
     // which however would mean there are more messages in the queue than the SO_SNDBUF can hold
-	uint8_t signum = 0;
-	if(meshlink_writepipe(loop->pipefd[1], &signum, 1) != 1) {
-		logger(NULL, MESHLINK_ERROR, "Error: signalio_trigger failed to trigger the queue event");
-		return false;
-	}
-	return true;
+    uint8_t signum = 0;
+    if(meshlink_writepipe(loop->pipefd[1], &signum, 1) != 1) {
+        logger(NULL, MESHLINK_ERROR, "Error: signalio_trigger failed to trigger the queue event");
+        return false;
+    }
+    return true;
 }
 
 // called from external to push data to the outpacketqueue
@@ -244,8 +255,8 @@ bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
 
     event_t *entry = malloc(sizeof(struct event_t));
     if(!entry) {
-		logger(NULL, MESHLINK_ERROR, "Error: out of memory");
-		return false;
+        logger(NULL, MESHLINK_ERROR, "Error: out of memory");
+        return false;
     }
 
     entry->signum = sig->signum;
@@ -253,7 +264,7 @@ bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
 
     // Queue it
     if(!meshlink_queue_push(&outpacketqueue, data)) {
-    	free(entry);
+        free(entry);
         meshlink_errno = MESHLINK_ENOMEM;
         MESHLINK_MUTEX_UNLOCK(&queue_mutex);
         logger(NULL, MESHLINK_ERROR, "Error: signalio_queue failed to queue packet");
