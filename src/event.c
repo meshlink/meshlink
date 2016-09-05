@@ -360,33 +360,33 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 			return false;
 		}
 
-		if(!n) {
-			// when there are no sockets to process a timeout or interrupt must have occured
-			// e.g. we might have some events queued to process
-			continue;
-		}
-
-		// loop all io_add registered sockets
-		// Normally, splay_each allows the current node to be deleted. However,
-		// it can be that one io callback triggers the deletion of another io,
-		// so we have to detect this and break the loop.
 		loop->deletion = false;
 		progress = false;
-		for splay_each(io_t, io, &loop->ios) {
-			if(io->cb && FD_ISSET(io->fd, &writable)) {
-				// assume progress when the callback got handled to write new data
-				progress |= io->cb(loop, io->data, IO_WRITE);
+
+		// process sockets if any
+		// when there are no sockets to process a timeout or interrupt must have occured
+		// e.g. we might have some events queued to process
+		if(n > 0) {
+			// loop all io_add registered sockets
+			// Normally, splay_each allows the current node to be deleted. However,
+			// it can be that one io callback triggers the deletion of another io,
+			// so we have to detect this and break the loop.
+			for splay_each(io_t, io, &loop->ios) {
+				if(io->cb && FD_ISSET(io->fd, &writable)) {
+					// assume progress when the callback got handled to write new data
+					progress |= io->cb(loop, io->data, IO_WRITE);
+				}
+				if(loop->deletion)
+					break;
+				if(io->cb && FD_ISSET(io->fd, &readable)) {
+					io->cb(loop, io->data, IO_READ);
+					// always assume progress when incoming packets are received
+					// as there might be more in the queue
+					progress = true;
+				}
+				if(loop->deletion)
+					break;
 			}
-			if(loop->deletion)
-				break;
-			if(io->cb && FD_ISSET(io->fd, &readable)) {
-				io->cb(loop, io->data, IO_READ);
-				// always assume progress when incoming packets are received
-				// as there might be more in the queue
-				progress = true;
-			}
-			if(loop->deletion)
-				break;
 		}
 
 		// trigger the signalio_handler last so incoming packets are processed first
