@@ -20,6 +20,8 @@
 #ifndef __MESHLINK_XALLOC_H__
 #define __MESHLINK_XALLOC_H__
 
+#include <stdlib.h>
+
 static inline void *xmalloc(size_t n) __attribute__ ((__malloc__));
 static inline void *xmalloc(size_t n) {
 	void *p = malloc(n);
