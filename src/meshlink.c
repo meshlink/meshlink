@@ -2740,7 +2740,7 @@ bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_t *chan
     MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 
     // Wake event loop
-    if(!signal_trigger(&(mesh->loop),&(mesh->wakeup))) {
+    if(!signalio_trigger(&(mesh->loop))) {
         logger(mesh, MESHLINK_WARNING, "Warning: meshlink_channel_aio_send data queued but signal_trigger failed");
     }
 

@@ -32,7 +32,7 @@
 
 static meshlink_queue_t outpacketqueue;
 static pthread_mutex_t queue_mutex;
-static void *pending_event = NULL;
+static event_t *pending_event = NULL;
 
 static int io_compare(const io_t *a, const io_t *b) {
 	return a->fd - b->fd;
@@ -188,7 +188,7 @@ static bool signalio_handler(event_loop_t *loop, void *data, int flags) {
     }
 
     // find signal event handler and call it
-    signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = pending_event->signnum}));
+    signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = pending_event->signum}));
     bool cbres = sig? sig->cb(loop, sig->data, pending_event->data): false;
 
     // on success clean the processed data, else keep it to retry later
@@ -227,7 +227,7 @@ bool signalio_trigger(event_loop_t *loop) {
     // which however would mean there are more messages in the queue than the SO_SNDBUF can hold
 	uint8_t signum = 0;
 	if(meshlink_writepipe(loop->pipefd[1], &signum, 1) != 1) {
-		logger(NULL, MESHLINK_ERROR, "Error: signal_trigger failed to trigger the queue event");
+		logger(NULL, MESHLINK_ERROR, "Error: signalio_trigger failed to trigger the queue event");
 		return false;
 	}
 	return true;
@@ -237,7 +237,7 @@ bool signalio_trigger(event_loop_t *loop) {
 bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
     MESHLINK_MUTEX_LOCK(&queue_mutex);
 
-    event_t *entry = malloc(sizeof event_t);
+    event_t *entry = malloc(sizeof(struct event_t));
     if(!entry) {
 		logger(NULL, MESHLINK_ERROR, "Error: out of memory");
 		return false;
@@ -257,7 +257,7 @@ bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
 
     // discard whether the event triggering worked, the data should be processed anyhow
     // the event queue is just for notification to wake from the select
-    signal_trigger(loop);
+    signalio_trigger(loop);
 
     MESHLINK_MUTEX_UNLOCK(&queue_mutex);
 
