@@ -297,6 +297,7 @@ void idle_set(event_loop_t *loop, idle_cb_t cb, void *data) {
 	loop->idle_data = data;
 }
 
+static bool progress = true; // set to true to skip initial usleep
 bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 	fd_set readable;
 	fd_set writable;
@@ -325,6 +326,14 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 				tv = &it;
 		}
 
+		// when no progress could be made and there's no immediate timeout, wait a moment
+		// this case can occure when the signalio_handler is triggered by meshlink_send
+		// to call meshlink_send_from_queue but then fails to send with sockwouldblock
+		// that case the event is left pending and select only peeks the status
+		if(!progress && (!tv || tv->tv_sec || tv->tv_usec)) {
+			usleep(1000LL);
+		}
+
 		memcpy(&readable, &loop->readfds, sizeof readable);
 		memcpy(&writable, &loop->writefds, sizeof writable);
 
@@ -333,9 +342,10 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 
 		// wait for a readable or writable socket to become available
 		// when there's data pending from the outpacketqueue just peek the current socket status
-		// note that there's only the meta connections registering to the writable sockets,
+		// note that the writable sockets should only be listened for when actually waiting to send
+		// for now it is only used by the meta connections buffering some data to be sent and unsetting the writable state once processed
 		// data queued to the outpacketqueue instead is signaled by the IO_READ pipefd[0] to try send it out
-		int n = select(loop->highestfd + 1, &readable, &writable, NULL, pending_queue_data? &(struct timeval){0, 0}: tv);
+		int n = select(loop->highestfd + 1, &readable, &writable, NULL, pending_event? &(struct timeval){0, 0}: tv);
 
 		MESHLINK_MUTEX_LOCK(mutex);
 
@@ -357,7 +367,7 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		// it can be that one io callback triggers the deletion of another io,
 		// so we have to detect this and break the loop.
 		loop->deletion = false;
-		bool progress = false;
+		progress = false;
 		for splay_each(io_t, io, &loop->ios) {
 			if(io->cb && FD_ISSET(io->fd, &writable)) {
 				// assume progress when the callback got handled to write new data
@@ -382,11 +392,6 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 				// an internal send might fail with sockwouldblock to retry later
 				progress |= loop->signalio.cb(loop, loop->signalio.data, IO_READ);
 			}
-		}
-
-		// when there's no progress, sleep 1ms to keep cpu processing time low
-		if(!progress) {
-			usleep(1000LL);
 		}
 	}
 
