@@ -28,6 +28,8 @@
 #define MESHLINK_MUTEX_LOCK(mutex)   { if(pthread_mutex_lock(mutex) != 0)   { fprintf(stderr, "%s:%d - could not lock mutex!!!\n",   __FILE__, __LINE__); abort(); } }
 #define MESHLINK_MUTEX_UNLOCK(mutex) { if(pthread_mutex_unlock(mutex) != 0) { fprintf(stderr, "%s:%d - could not unlock mutex!!!\n", __FILE__, __LINE__); abort(); } }
 
+typedef void (*meshlink_queue_action_t)(const void *);
+
 typedef struct meshlink_queue {
 	struct meshlink_queue_item *head;	
 	struct meshlink_queue_item *tail;	
@@ -99,7 +101,7 @@ static inline bool meshlink_queue_empty(meshlink_queue_t *queue) {
 /**
  * Deallocate all data in queue using given deleter function.
  */
-static inline void exit_meshlink_queue(meshlink_queue_t *queue, void(*deleter)(void*)) {
+static inline void exit_meshlink_queue(meshlink_queue_t *queue, meshlink_queue_action_t deleter) {
 	void* data;
 	do {
 		data = meshlink_queue_pop(queue);

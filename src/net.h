@@ -54,6 +54,7 @@ extern bool handle_incoming_vpn_data(struct event_loop_t *loop, void *, int);
 extern void finish_connecting(struct meshlink_handle *mesh, struct connection_t *);
 extern bool do_outgoing_connection(struct meshlink_handle *mesh, struct outgoing_t *);
 extern bool handle_new_meta_connection(struct event_loop_t *loop, void *, int);
+extern bool set_non_blocking_socket(int socket);
 extern int setup_listen_socket(struct meshlink_handle *mesh, const sockaddr_t *);
 extern int setup_vpn_in_socket(struct meshlink_handle *mesh, const sockaddr_t *);
 extern int send_sptps_data(void *handle, uint8_t type, const void *data, size_t len);

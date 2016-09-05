@@ -56,6 +56,11 @@ typedef struct signal_t {
 	struct splay_node_t node;
 } signal_t;
 
+typedef struct event_t {
+    int signum;
+    void *data;
+} event_t;
+
 struct event_loop_t {
 	fd_set readfds;
 	fd_set writefds;
@@ -87,6 +92,7 @@ extern void timeout_del(event_loop_t *loop, timeout_t *timeout);
 extern void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv);
 
 extern void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum);
+extern bool signalio_trigger(event_loop_t *loop);
 extern bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data);
 extern void signal_del(event_loop_t *loop, signal_t *sig);
 
