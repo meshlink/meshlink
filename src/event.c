@@ -253,8 +253,6 @@ bool signalio_trigger(event_loop_t *loop) {
 
 // called from external to push data to the outpacketqueue
 bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
-    MESHLINK_MUTEX_LOCK(&queue_mutex);
-
     event_t *entry = malloc(sizeof(struct event_t));
     if(!entry) {
         logger(NULL, MESHLINK_ERROR, "Error: out of memory");
@@ -263,6 +261,8 @@ bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
 
     entry->signum = sig->signum;
     entry->data = data;
+
+    MESHLINK_MUTEX_LOCK(&queue_mutex);
 
     // Queue it
     if(!meshlink_queue_push(&outpacketqueue, data)) {
@@ -273,11 +273,11 @@ bool signalio_queue(event_loop_t *loop, signal_t *sig, void *data) {
         return false;
     }
 
+    MESHLINK_MUTEX_UNLOCK(&queue_mutex);
+
     // discard whether the event triggering worked, the data should be processed anyhow
     // the event queue is just for notification to wake from the select
     signalio_trigger(loop);
-
-    MESHLINK_MUTEX_UNLOCK(&queue_mutex);
 
     return true;
 }
