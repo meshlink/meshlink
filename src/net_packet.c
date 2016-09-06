@@ -466,7 +466,7 @@ int send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	int sent = sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa));
 	if(sent != len) {
 		err = sockerrno;
-		if(!err) {
+		if(sent >= 0 || !err) {
 			// This never should happen cause even though send is documented to send and return less or equal
 			// the size with no error this only counts for TCP not UDP.
 			// UDP packets never should be broken up but return an error to not break the headers and checksums.
