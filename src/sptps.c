@@ -94,10 +94,10 @@ static int send_record_priv_datagram(sptps_t *s, uint8_t type, const void *data,
 	if(s->outstate) {
 		// If first handshake has finished, encrypt and HMAC
 		chacha_poly1305_encrypt(s->outcipher, seqno, buffer + 4, len + 1, buffer + 4, NULL);
-		return s->send_data(s->handle, type, buffer, len + 21UL);
+		return s->send_data(s->handle, type, buffer, len + 21UL)? 0: -1;
 	} else {
 		// Otherwise send as plaintext
-		return s->send_data(s->handle, type, buffer, len + 5UL);
+		return s->send_data(s->handle, type, buffer, len + 5UL)? 0: -1;
 	}
 }
 // Send a record (private version, accepts all record types, handles encryption and authentication).
@@ -118,10 +118,10 @@ static int send_record_priv(sptps_t *s, uint8_t type, const void *data, uint16_t
 	if(s->outstate) {
 		// If first handshake has finished, encrypt and HMAC
 		chacha_poly1305_encrypt(s->outcipher, seqno, buffer + 2, len + 1, buffer + 2, NULL);
-		return s->send_data(s->handle, type, buffer, len + 19UL);
+		return s->send_data(s->handle, type, buffer, len + 19UL)? 0: -1;
 	} else {
 		// Otherwise send as plaintext
-		return s->send_data(s->handle, type, buffer, len + 3UL);
+		return s->send_data(s->handle, type, buffer, len + 3UL)? 0: -1;
 	}
 }
 
