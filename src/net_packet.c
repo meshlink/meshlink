@@ -446,9 +446,9 @@ int send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 		   to ensure we get to learn the reflexive UDP address. */
 		if(!to->status.validkey) {
 			to->incompression = mesh->self->incompression;
-			return send_request(mesh, to->nexthop->connection, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, to->incompression)? 0: -1;
+			return send_request(mesh, to->nexthop->connection, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, to->incompression);
 		} else {
-			return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_SPTPS, buf)? 0: -1;
+			return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_SPTPS, buf);
 		}
 	}
 
@@ -462,10 +462,11 @@ int send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	else
 		choose_udp_address(mesh, to, &sa, &sock);
 
+	int err = 0;
 	int sent = sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa));
 	if(sent != len) {
-		int err = sockerrno;
-		if(!err) {
+		err = sockerrno;
+		if(sent >= 0 || !err) {
 			// This never should happen cause even though send is documented to send and return less or equal
 			// the size with no error this only counts for TCP not UDP.
 			// UDP packets never should be broken up but return an error to not break the headers and checksums.
@@ -490,11 +491,9 @@ int send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 				}
 			}
 		}
-
-		return err;
 	}
 
-	return 0;
+	return err;
 }
 
 bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t len) {

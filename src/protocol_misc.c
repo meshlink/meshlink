@@ -37,7 +37,7 @@ bool send_status(meshlink_handle_t *mesh, connection_t *c, int statusno, const c
 	if(!statusstring)
 		statusstring = "Status";
 
-	return send_request(mesh, c, "%d %d %s", STATUS, statusno, statusstring);
+	return !send_request(mesh, c, "%d %d %s", STATUS, statusno, statusstring);
 }
 
 bool status_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -60,7 +60,7 @@ bool send_error(meshlink_handle_t *mesh, connection_t *c, int err, const char *e
 	if(!errstring)
 		errstring = "Error";
 
-	return send_request(mesh, c, "%d %d %s", ERROR, err, errstring);
+	return !send_request(mesh, c, "%d %d %s", ERROR, err, errstring);
 }
 
 bool error_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -80,7 +80,7 @@ bool error_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool send_termreq(meshlink_handle_t *mesh, connection_t *c) {
-	return send_request(mesh, c, "%d", TERMREQ);
+	return !send_request(mesh, c, "%d", TERMREQ);
 }
 
 bool termreq_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -91,7 +91,7 @@ bool send_ping(meshlink_handle_t *mesh, connection_t *c) {
 	c->status.pinged = true;
 	c->last_ping_time = mesh->loop.now.tv_sec;
 
-	return send_request(mesh, c, "%d", PING);
+	return !send_request(mesh, c, "%d", PING);
 }
 
 bool ping_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -99,7 +99,7 @@ bool ping_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool send_pong(meshlink_handle_t *mesh, connection_t *c) {
-	return send_request(mesh, c, "%d", PONG);
+	return !send_request(mesh, c, "%d", PONG);
 }
 
 bool pong_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -128,10 +128,10 @@ bool send_tcppacket(meshlink_handle_t *mesh, connection_t *c, const vpn_packet_t
 	if(2.0 * c->outbuf.len / (float)maxoutbufsize - 1 > (float)rand()/(float)RAND_MAX)
 		return true;
 
-	if(!send_request(mesh, c, "%d %hd", PACKET, packet->len))
+	if(0 != send_request(mesh, c, "%d %hd", PACKET, packet->len))
 		return false;
 
-	return send_meta(mesh, c, (char *)packet->data, packet->len);
+	return !send_meta(mesh, c, (char *)packet->data, packet->len);
 }
 
 bool tcppacket_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {

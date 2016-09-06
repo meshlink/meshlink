@@ -46,7 +46,7 @@
 #define SPTPS_MTU (PAYLOAD_MTU - 19)
 #define SPTPS_DATAGRAM_MTU (PAYLOAD_MTU - 21)
 
-typedef bool (*send_data_t)(void *handle, uint8_t type, const void *data, size_t len);
+typedef int (*send_data_t)(void *handle, uint8_t type, const void *data, size_t len);
 typedef bool (*receive_record_t)(void *handle, uint8_t type, const void *data, uint16_t len);
 
 typedef struct sptps {
