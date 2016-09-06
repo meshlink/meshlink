@@ -43,7 +43,7 @@ int send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t lengt
 	return 0;
 }
 
-bool send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int length) {
+int send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int length) {
 	if(!c) {
 		logger(mesh, MESHLINK_ERROR, "send_meta() called with NULL pointer!");
 		abort();
@@ -55,10 +55,10 @@ bool send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int
 	if(c->allow_request == ID) {
 		buffer_add(&c->outbuf, buffer, length);
 		io_set(&mesh->loop, &c->io, IO_READ | IO_WRITE);
-		return true;
+		return 0;
 	}
 
-	return !sptps_send_record(&c->sptps, 0, buffer, length);
+	return sptps_send_record(&c->sptps, 0, buffer, length);
 }
 
 void broadcast_meta(meshlink_handle_t *mesh, connection_t *from, const char *buffer, int length) {

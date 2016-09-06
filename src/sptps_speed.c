@@ -32,7 +32,7 @@ int send_request(void *c, const char *msg, ...) { return -1; }
 void *mesh;
 void *global_log_cb;
 int global_log_level;
-bool send_meta(void *c, const char *msg , int len) { return false; }
+int send_meta(void *c, const char *msg , int len) { return -1; }
 char *logfilename = NULL;
 struct timeval now;
 

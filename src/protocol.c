@@ -90,7 +90,7 @@ int send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, .
 		broadcast_meta(mesh, NULL, request, len);
 		return 0;
 	} else
-		return send_meta(mesh, c, request, len)? 0: -1;
+		return send_meta(mesh, c, request, len);
 }
 
 void forward_request(meshlink_handle_t *mesh, connection_t *from, const char *request) {

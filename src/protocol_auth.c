@@ -67,7 +67,7 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 				memcpy(s4req + 8, mesh->proxyuser, strlen(mesh->proxyuser));
 			s4req[sizeof s4req - 1] = 0;
 			c->tcplen = 8;
-			return send_meta(mesh, c, s4req, sizeof s4req);
+			return !send_meta(mesh, c, s4req, sizeof s4req);
 		}
 		case PROXY_SOCKS5: {
 			int len = 3 + 6 + (c->address.sa.sa_family == AF_INET ? 4 : 16);
@@ -116,7 +116,7 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 				logger(mesh, MESHLINK_ERROR, "Error: send_proxyrequest i > len");
 				abort();
 			}
-			return send_meta(mesh, c, s5req, sizeof s5req);
+			return !send_meta(mesh, c, s5req, sizeof s5req);
 		}
 		case PROXY_SOCKS4A:
 			logger(mesh, MESHLINK_ERROR, "Proxy type not implemented yet");

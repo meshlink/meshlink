@@ -131,7 +131,7 @@ bool send_tcppacket(meshlink_handle_t *mesh, connection_t *c, const vpn_packet_t
 	if(0 != send_request(mesh, c, "%d %hd", PACKET, packet->len))
 		return false;
 
-	return send_meta(mesh, c, (char *)packet->data, packet->len);
+	return !send_meta(mesh, c, (char *)packet->data, packet->len);
 }
 
 bool tcppacket_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
