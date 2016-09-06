@@ -556,18 +556,18 @@ static bool finalize_join(meshlink_handle_t *mesh) {
     return true;
 }
 
-static bool invitation_send(void *handle, uint8_t type, const void *data, size_t len) {
+static int invitation_send(void *handle, uint8_t type, const void *data, size_t len) {
     meshlink_handle_t* mesh = handle;
     while(len) {
         int result = send(mesh->sock, data, len, 0);
         if(result == -1 && errno == EINTR)
             continue;
         else if(result <= 0)
-            return false;
+            return -1;
         data += result;
         len -= result;
     }
-    return true;
+    return 0;
 }
 
 static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint16_t len) {
@@ -1289,7 +1289,7 @@ bool meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh, vpn_p
     mesh->self->in_packets++;
     mesh->self->in_bytes += packet->len;
     int err = route(mesh, mesh->self, packet);
-    if(0 != err) {
+    if(err) {
         if(sockwouldblock(err)) {
             logger(mesh, MESHLINK_WARNING, "Warning: socket would block, retrying to send packet from queue later");
             MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
