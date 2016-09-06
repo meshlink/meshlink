@@ -69,7 +69,7 @@ bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request
 	return true;
 }
 
-static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
+static int send_initial_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	node_t *to = handle;
 	meshlink_handle_t *mesh = to->mesh;
 	to->sptps.send_data = send_sptps_data;
@@ -302,7 +302,7 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			return true;
 		}
 
-		return send_request(mesh, to->nexthop->connection, "%s", request);
+		return !send_request(mesh, to->nexthop->connection, "%s", request);
 	}
 
 	/* Don't use key material until every check has passed. */
