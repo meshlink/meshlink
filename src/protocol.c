@@ -63,7 +63,7 @@ bool check_id(const char *id) {
 /* Generic request routines - takes care of logging and error
    detection as well */
 
-bool send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, ...) {
+int send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, ...) {
 	va_list args;
 	char request[MAXBUFSIZE];
 	int len;
@@ -79,7 +79,7 @@ bool send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, 
 	if(len < 0 || len > MAXBUFSIZE - 1) {
 		logger(mesh, MESHLINK_ERROR, "Output buffer overflow while sending request to %s (%s)",
 			   c->name, c->hostname);
-		return false;
+		return -1;
 	}
 
 	logger(mesh, MESHLINK_DEBUG, "Sending %s to %s (%s): %s", request_name[atoi(request)], c->name, c->hostname, request);
@@ -88,9 +88,9 @@ bool send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, 
 
 	if(c == mesh->everyone) {
 		broadcast_meta(mesh, NULL, request, len);
-		return true;
+		return 0;
 	} else
-		return send_meta(mesh, c, request, len);
+		return send_meta(mesh, c, request, len)? 0: -1;
 }
 
 void forward_request(meshlink_handle_t *mesh, connection_t *from, const char *request) {

@@ -33,7 +33,7 @@
 #include "utils.h"
 
 // Symbols necessary to link with logger.o
-bool send_request(void *c, const char *msg, ...) { return false; }
+int send_request(void *c, const char *msg, ...) { return -1; }
 void *mesh;
 void *global_log_cb;
 int global_log_level;

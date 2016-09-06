@@ -137,7 +137,7 @@ bool send_id(meshlink_handle_t *mesh, connection_t *c) {
 		if(!send_proxyrequest(mesh, c))
 			return false;
 
-	return send_request(mesh, c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
+	return !send_request(mesh, c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
 }
 
 static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data, uint16_t len) {
@@ -284,7 +284,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		char *mykey = ecdsa_get_base64_public_key(mesh->invitation_key);
 		if(!mykey)
 			return false;
-		if(!send_request(mesh, c, "%d %s", ACK, mykey))
+		if(0 != send_request(mesh, c, "%d %s", ACK, mykey))
 			return false;
 		free(mykey);
 
@@ -375,7 +375,7 @@ bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY)
 		c->options |= OPTION_PMTU_DISCOVERY;
 
-	return send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
+	return !send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
 }
 
 static void send_everything(meshlink_handle_t *mesh, connection_t *c) {

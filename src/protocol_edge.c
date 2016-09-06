@@ -36,7 +36,7 @@
 extern bool node_write_devclass(meshlink_handle_t *mesh, node_t *n);
 
 bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
-	bool x;
+	int x;
 	char *address, *port;
 
 	sockaddr2str(&e->address, &address, &port);
@@ -47,7 +47,7 @@ bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
 	free(address);
 	free(port);
 
-	return x;
+	return !x;
 }
 
 bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -173,7 +173,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool send_del_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
-	return send_request(mesh, c, "%d %x %s %s", DEL_EDGE, rand(),
+	return !send_request(mesh, c, "%d %x %s %s", DEL_EDGE, rand(),
 						e->from->name, e->to->name);
 }
 
