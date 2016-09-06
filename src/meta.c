@@ -28,7 +28,7 @@
 #include "utils.h"
 #include "xalloc.h"
 
-bool send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t length) {
+int send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t length) {
 	connection_t *c = handle;
 	meshlink_handle_t *mesh = c->mesh;
 
@@ -40,7 +40,7 @@ bool send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t leng
 	buffer_add(&c->outbuf, (const char *)buffer, length);
 	io_set(&mesh->loop, &c->io, IO_READ | IO_WRITE);
 
-	return true;
+	return 0;
 }
 
 bool send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int length) {

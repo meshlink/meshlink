@@ -69,13 +69,13 @@ bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request
 	return true;
 }
 
-static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
+static int send_initial_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	node_t *to = handle;
 	meshlink_handle_t *mesh = to->mesh;
 	to->sptps.send_data = send_sptps_data;
 	char buf[len * 4 / 3 + 5];
 	b64encode(data, buf, len);
-	return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_KEY, buf);
+	return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_KEY, buf)? 0: -1;
 }
 
 bool send_req_key(meshlink_handle_t *mesh, node_t *to) {

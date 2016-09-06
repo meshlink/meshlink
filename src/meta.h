@@ -23,7 +23,7 @@
 #include "connection.h"
 
 extern bool send_meta(struct meshlink_handle *mesh, struct connection_t *, const char *, int);
-extern bool send_meta_sptps(void *, uint8_t, const void *, size_t);
+extern int send_meta_sptps(void *, uint8_t, const void *, size_t);
 extern bool receive_meta_sptps(void *, uint8_t, const void *, uint16_t);
 extern void broadcast_meta(struct meshlink_handle *mesh, struct connection_t *, const char *, int);
 extern bool receive_meta(struct meshlink_handle *mesh, struct connection_t *);

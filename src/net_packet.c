@@ -433,10 +433,9 @@ static int send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *orig
 	return send_sptps_packet(mesh, n, origpkt);
 }
 
-bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
+int send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	node_t *to = handle;
 	meshlink_handle_t *mesh = to->mesh;
-	int err = 0;
 
 	/* Send it via TCP if it is a handshake packet, TCPOnly is in use, or this packet is larger than the MTU. */
 
@@ -447,9 +446,9 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 		   to ensure we get to learn the reflexive UDP address. */
 		if(!to->status.validkey) {
 			to->incompression = mesh->self->incompression;
-			return send_request(mesh, to->nexthop->connection, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, to->incompression);
+			return send_request(mesh, to->nexthop->connection, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, to->incompression)? 0: -1;
 		} else {
-			return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_SPTPS, buf);
+			return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_SPTPS, buf)? 0: -1;
 		}
 	}
 
@@ -463,6 +462,7 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	else
 		choose_udp_address(mesh, to, &sa, &sock);
 
+	int err = 0;
 	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0) {
 		err = sockerrno;
 
@@ -480,7 +480,7 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 		}
 	}
 
-	return !err;
+	return err;
 }
 
 bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t len) {
