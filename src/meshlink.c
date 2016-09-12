@@ -2470,7 +2470,7 @@ static int channel_poll(struct utcp_connection *connection, size_t len) {
             size_t left = aio->len - aio->done;
             if(len < left)
                 left = len;
-            ssize_t sent = utcp_send(connection, aio->data + aio->done, left);
+            ssize_t sent = utcp_buffer(connection, aio->data + aio->done, left);
             if(sent != left) {
                 if(sent > left) {
                     logger(mesh, MESHLINK_ERROR, "Error: channel_poll utcp_send returned %u, while there's only been %u to send!", sent, left);
