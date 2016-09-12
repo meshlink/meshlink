@@ -624,7 +624,6 @@ bool sptps_stop(sptps_t *s) {
 	return true;
 }
 
-// Receive the maximum supported mtu
 uint16_t sptps_maxmtu(sptps_t *s) {
 	if(!s) {
 		// return smaller of the two
@@ -632,4 +631,13 @@ uint16_t sptps_maxmtu(sptps_t *s) {
 	}
 
 	return s->datagram ? SPTPS_DATAGRAM_MTU: SPTPS_MTU;
+}
+
+uint16_t sptps_overhead(sptps_t *s) {
+	if(!s) {
+		// return larger of the two
+		return SPTPS_DATAGRAM_OVERHEAD;
+	}
+
+	return s->datagram ? SPTPS_DATAGRAM_OVERHEAD : SPTPS_OVERHEAD;
 }

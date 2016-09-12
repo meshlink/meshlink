@@ -43,8 +43,10 @@
 // max payload size when using SPTPS
 // PAYLOAD_MTU
 // - 19 to 21 bytes encryption (sptps.c send_record_priv / send_record_priv_datagram)
-#define SPTPS_MTU (PAYLOAD_MTU - 19)
-#define SPTPS_DATAGRAM_MTU (PAYLOAD_MTU - 21)
+#define SPTPS_OVERHEAD 19
+#define SPTPS_DATAGRAM_OVERHEAD 21
+#define SPTPS_MTU (PAYLOAD_MTU - SPTPS_OVERHEAD)
+#define SPTPS_DATAGRAM_MTU (PAYLOAD_MTU - SPTPS_DATAGRAM_OVERHEAD)
 
 typedef bool (*send_data_t)(void *handle, uint8_t type, const void *data, size_t len);
 typedef bool (*receive_record_t)(void *handle, uint8_t type, const void *data, uint16_t len);
@@ -94,6 +96,9 @@ extern bool sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16
 extern bool sptps_receive_data(sptps_t *s, const void *data, size_t len);
 extern bool sptps_force_kex(sptps_t *s);
 extern bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len);
+// max pre-encryption payload size
 extern uint16_t sptps_maxmtu(sptps_t *s);
+// number of bytes of packet needed by sptps for encryption and compression
+extern uint16_t sptps_overhead(sptps_t *s);
 
 #endif
