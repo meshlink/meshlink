@@ -2373,7 +2373,7 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
         logger(NULL, MESHLINK_ERROR, "Error: channel_send invalid arguments");
         return UTCP_ERROR;
     }
-    
+
     node_t *destination = utcp->priv;
     meshlink_handle_t *mesh = destination->mesh;
 
@@ -2471,21 +2471,32 @@ static int channel_poll(struct utcp_connection *connection, size_t len) {
             if(len < left)
                 left = len;
             ssize_t sent = utcp_send(connection, aio->data + aio->done, left);
-            if(sent >= 0) {
-                aio->done += sent;
-                len = sent > len ? 0 : len - sent;
-            }
-            else if(sent == UTCP_WOULDBLOCK) {
-                // utcp send buffer is full
-                err = UTCP_WOULDBLOCK;
-                break;
-            }
-            else {
-                logger(mesh, MESHLINK_ERROR, "Error: channel_poll could not pass data to utcp: utcp_send returned %u", sent);
-                err = UTCP_ERROR;
-                break;
+            if(sent != left) {
+                if(sent > left) {
+                    logger(mesh, MESHLINK_ERROR, "Error: channel_poll utcp_send returned %u, while there's only been %u to send!", sent, left);
+                    err = UTCP_ERROR;
+                    break;
+                }
+                else if(sent >= 0) {
+                    // not all could be sent so the utcp send buffer most likely is full
+                    aio->done += sent;
+                    err = UTCP_WOULDBLOCK;
+                    break;
+                }
+                else if(sent == UTCP_WOULDBLOCK) {
+                    // utcp send buffer is full
+                    err = UTCP_WOULDBLOCK;
+                    break;
+                }
+                else {
+                    logger(mesh, MESHLINK_ERROR, "Error: channel_poll could not pass data to utcp: utcp_send returned %u", sent);
+                    err = UTCP_ERROR;
+                    break;
+                }
             }
 
+            aio->done += sent;
+            len = sent > len ? 0 : len - sent;
             aio = aio->next;
         }
     } else {
