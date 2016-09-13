@@ -2384,7 +2384,7 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
     }
 
     // Prepare packet
-    vpn_packet_t *packet = prepare_packet(mesh, destination, data, len);
+    vpn_packet_t *packet = prepare_packet(mesh, (meshlink_node_t*)destination, data, len);
     if(!packet) {
         return UTCP_ERROR;
     }
