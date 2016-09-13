@@ -54,7 +54,7 @@ bool set_non_blocking_socket(int socket) {
 		return false;
 	}
 #else
-	int flags = fcntl(c->socket, F_GETFL);
+	int flags = fcntl(socket, F_GETFL);
 
 	if(fcntl(socket, F_SETFL, flags | O_NONBLOCK) < 0) {
 		return false;
