@@ -67,7 +67,7 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 				memcpy(s4req + 8, mesh->proxyuser, strlen(mesh->proxyuser));
 			s4req[sizeof s4req - 1] = 0;
 			c->tcplen = 8;
-			return send_meta(mesh, c, s4req, sizeof s4req);
+			return !send_meta(mesh, c, s4req, sizeof s4req);
 		}
 		case PROXY_SOCKS5: {
 			int len = 3 + 6 + (c->address.sa.sa_family == AF_INET ? 4 : 16);
@@ -116,7 +116,7 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 				logger(mesh, MESHLINK_ERROR, "Error: send_proxyrequest i > len");
 				abort();
 			}
-			return send_meta(mesh, c, s5req, sizeof s5req);
+			return !send_meta(mesh, c, s5req, sizeof s5req);
 		}
 		case PROXY_SOCKS4A:
 			logger(mesh, MESHLINK_ERROR, "Proxy type not implemented yet");
@@ -137,7 +137,7 @@ bool send_id(meshlink_handle_t *mesh, connection_t *c) {
 		if(!send_proxyrequest(mesh, c))
 			return false;
 
-	return send_request(mesh, c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
+	return !send_request(mesh, c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
 }
 
 static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data, uint16_t len) {
@@ -284,7 +284,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		char *mykey = ecdsa_get_base64_public_key(mesh->invitation_key);
 		if(!mykey)
 			return false;
-		if(!send_request(mesh, c, "%d %s", ACK, mykey))
+		if(0 != send_request(mesh, c, "%d %s", ACK, mykey))
 			return false;
 		free(mykey);
 
@@ -375,7 +375,7 @@ bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY)
 		c->options |= OPTION_PMTU_DISCOVERY;
 
-	return send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
+	return !send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
 }
 
 static void send_everything(meshlink_handle_t *mesh, connection_t *c) {

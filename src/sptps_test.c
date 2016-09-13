@@ -33,11 +33,11 @@
 #include "utils.h"
 
 // Symbols necessary to link with logger.o
-bool send_request(void *c, const char *msg, ...) { return false; }
+int send_request(void *c, const char *msg, ...) { return -1; }
 void *mesh;
 void *global_log_cb;
 int global_log_level;
-bool send_meta(void *c, const char *msg , int len) { return false; }
+int send_meta(void *c, const char *msg , int len) { return -1; }
 char *logfilename = NULL;
 struct timeval now;
 
@@ -47,15 +47,15 @@ static bool writeonly;
 static int in = 0;
 static int out = 1;
 
-static bool send_data(void *handle, uint8_t type, const void *data, size_t len) {
+static int send_data(void *handle, uint8_t type, const void *data, size_t len) {
 	char hex[len * 2 + 1];
 	bin2hex(data, hex, len);
 	if(verbose)
 		fprintf(stderr, "Sending %d bytes of data:\n%s\n", (int)len, hex);
 	const int *sock = handle;
 	if(send(*sock, data, len, 0) != len)
-		return false;
-	return true;
+		return -1;
+	return 0;
 }
 
 static bool receive_record(void *handle, uint8_t type, const void *data, uint16_t len) {
@@ -328,7 +328,7 @@ int main(int argc, char *argv[]) {
 				if(len > 1)
 					sptps_send_record(&s, 0, buf, len);
 			} else
-			if(!sptps_send_record(&s, buf[0] == '!' ? 1 : 0, buf, (len == 1 && buf[0] == '\n') ? 0 : buf[0] == '*' ? sizeof buf : len))
+			if(0 != sptps_send_record(&s, buf[0] == '!' ? 1 : 0, buf, (len == 1 && buf[0] == '\n') ? 0 : buf[0] == '*' ? sizeof buf : len))
 				return 1;
 		}
 

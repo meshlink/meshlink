@@ -28,18 +28,18 @@
 #include "sptps.h"
 
 // Symbols necessary to link with logger.o
-bool send_request(void *c, const char *msg, ...) { return false; }
+int send_request(void *c, const char *msg, ...) { return -1; }
 void *mesh;
 void *global_log_cb;
 int global_log_level;
-bool send_meta(void *c, const char *msg , int len) { return false; }
+int send_meta(void *c, const char *msg , int len) { return -1; }
 char *logfilename = NULL;
 struct timeval now;
 
-static bool send_data(void *handle, uint8_t type, const void *data, size_t len) {
+static int send_data(void *handle, uint8_t type, const void *data, size_t len) {
 	int fd = *(int *)handle;
 	send(fd, data, len, 0);
-	return true;
+	return 0;
 }
 
 static bool receive_record(void *handle, uint8_t type, const void *data, uint16_t len) {
@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
 	}
 	fprintf(stderr, "SPTPS/TCP transmit for %lg seconds: ", duration);
 	for(clock_start(); clock_countto(duration);) {
-		if(!sptps_send_record(&sptps1, 0, buf1, 1451)) {
+		if(0 != sptps_send_record(&sptps1, 0, buf1, 1451)) {
 			fprintf(stderr, "Error: sptps_send_record failed");
 			abort();
 		}
@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
 	}
 	fprintf(stderr, "SPTPS/UDP transmit for %lg seconds: ", duration);
 	for(clock_start(); clock_countto(duration);) {
-		if(!sptps_send_record(&sptps1, 0, buf1, 1451)) {
+		if(0 != sptps_send_record(&sptps1, 0, buf1, 1451)) {
 			fprintf(stderr, "Error: sptps_send_record failed");
 			abort();
 		}

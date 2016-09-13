@@ -152,12 +152,16 @@ static void pipe_init(event_loop_t *loop) {
 		logger(NULL, MESHLINK_ERROR, "Pipe init failed: %s", sockstrerror(sockerrno));
 }
 
-void signal_trigger(event_loop_t *loop, signal_t *sig) {
-
+bool signal_trigger(event_loop_t *loop, signal_t *sig) {
 	uint8_t signum = sig->signum;
-	meshlink_writepipe(loop->pipefd[1], &signum, 1);
-	return;
-
+	
+    // this should block when the queue's event notification send buffer is full
+    // which however would mean there are more messages in the queue than the SO_SNDBUF can hold
+	if(meshlink_writepipe(loop->pipefd[1], &signum, 1) != 1) {
+		logger(NULL, MESHLINK_ERROR, "Error: signal_trigger meshlink_writepipe failed");
+		return false;
+	}
+	return true;
 }
 
 void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum) {

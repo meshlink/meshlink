@@ -80,7 +80,8 @@ static void warning(sptps_t *s, const char *format, ...) {
 }
 
 // Send a record (datagram version, accepts all record types, handles encryption and authentication).
-static bool send_record_priv_datagram(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
+// @return the sockerrno, 0 on success, -1 on other errors
+static int send_record_priv_datagram(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
 	char buffer[len + 21UL];
 
 	// Create header with sequence number, length and record type
@@ -101,7 +102,8 @@ static bool send_record_priv_datagram(sptps_t *s, uint8_t type, const void *data
 	}
 }
 // Send a record (private version, accepts all record types, handles encryption and authentication).
-static bool send_record_priv(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
+// @return the sockerrno, 0 on success, -1 on other errors
+static int send_record_priv(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
 	if(s->datagram)
 		return send_record_priv_datagram(s, type, data, len);
 
@@ -126,14 +128,19 @@ static bool send_record_priv(sptps_t *s, uint8_t type, const void *data, uint16_
 }
 
 // Send an application record.
-bool sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
+// @return the sockerrno, 0 on success, -1 on other errors
+int sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
 	// Sanity checks: application cannot send data before handshake is finished,
 	// and only record types 0..127 are allowed.
-	if(!s->outstate)
-		return error(s, EINVAL, "Handshake phase not finished yet");
+	if(!s->outstate) {
+		error(s, EINVAL, "Handshake phase not finished yet");
+		return -1;
+	}
 
-	if(type >= SPTPS_HANDSHAKE)
-		return error(s, EINVAL, "Invalid application record type");
+	if(type >= SPTPS_HANDSHAKE) {
+		error(s, EINVAL, "Invalid application record type");
+		return -1;
+	}
 
 	return send_record_priv(s, type, data, len);
 }
@@ -159,7 +166,8 @@ static bool send_kex(sptps_t *s) {
 	if(!(s->ecdh = ecdh_generate_public(s->mykex + 1 + 32)))
 		return error(s, EINVAL, "Failed to generate ECDH public key");
 
-	return send_record_priv(s, SPTPS_HANDSHAKE, s->mykex, 1 + 32 + keylen);
+	// TODO: handle sockwouldblock
+	return !send_record_priv(s, SPTPS_HANDSHAKE, s->mykex, 1 + 32 + keylen);
 }
 
 // Send a SIGnature record, containing an ECDSA signature over both KEX records.
@@ -181,7 +189,7 @@ static bool send_sig(sptps_t *s) {
 		return error(s, EINVAL, "Failed to sign SIG record");
 
 	// Send the SIG exchange record.
-	return send_record_priv(s, SPTPS_HANDSHAKE, sig, sizeof sig);
+	return !send_record_priv(s, SPTPS_HANDSHAKE, sig, sizeof sig);
 }
 
 // Generate key material from the shared secret created from the ECDHE key exchange.
@@ -222,7 +230,7 @@ static bool generate_key_material(sptps_t *s, const char *shared, size_t len) {
 
 // Send an ACKnowledgement record.
 static bool send_ack(sptps_t *s) {
-	return send_record_priv(s, SPTPS_HANDSHAKE, "", 0);
+	return !send_record_priv(s, SPTPS_HANDSHAKE, "", 0);
 }
 
 // Receive an ACKnowledgement record.
