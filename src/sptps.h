@@ -48,6 +48,7 @@
 #define SPTPS_MTU (PAYLOAD_MTU - SPTPS_OVERHEAD)
 #define SPTPS_DATAGRAM_MTU (PAYLOAD_MTU - SPTPS_DATAGRAM_OVERHEAD)
 
+// @return the sockerrno, 0 on success, -1 on other errors
 typedef int (*send_data_t)(void *handle, uint8_t type, const void *data, size_t len);
 typedef bool (*receive_record_t)(void *handle, uint8_t type, const void *data, uint16_t len);
 
@@ -92,6 +93,7 @@ extern void sptps_log_stderr(sptps_t *s, int s_errno, const char *format, va_lis
 extern void (*sptps_log)(sptps_t *s, int s_errno, const char *format, va_list ap);
 extern bool sptps_start(sptps_t *s, void *handle, bool initiator, bool datagram, ecdsa_t *mykey, ecdsa_t *hiskey, const char *label, size_t labellen, send_data_t send_data, receive_record_t receive_record);
 extern bool sptps_stop(sptps_t *s);
+// @return the sockerrno, 0 on success, -1 on other errors
 extern int sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16_t len);
 extern bool sptps_receive_data(sptps_t *s, const void *data, size_t len);
 extern bool sptps_force_kex(sptps_t *s);

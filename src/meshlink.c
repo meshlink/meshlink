@@ -556,14 +556,17 @@ static bool finalize_join(meshlink_handle_t *mesh) {
     return true;
 }
 
+// @return the sockerrno, 0 on success, -1 on other errors
 static int invitation_send(void *handle, uint8_t type, const void *data, size_t len) {
     meshlink_handle_t* mesh = handle;
     while(len) {
         int result = send(mesh->sock, data, len, 0);
-        if(result == -1 && errno == EINTR)
-            continue;
-        else if(result <= 0)
-            return -1;
+        if(result < 0) {
+            int err = sockerrno;
+            if(err == EINTR)
+                continue;
+            return err? err: -1;
+        }
         data += result;
         len -= result;
     }
