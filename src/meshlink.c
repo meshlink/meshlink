@@ -2299,7 +2299,7 @@ static bool channel_pre_accept(struct utcp *utcp, uint16_t port) {
     return true;
 }
 
-static ssize_t channel_recv(struct utcp_connection *connection, const void *data, size_t len) {
+static void channel_recv(struct utcp_connection *connection, const void *data, size_t len) {
     meshlink_channel_t *channel = connection->priv;
     if(!channel) {
         logger(NULL, MESHLINK_ERROR, "Error: channel_recv no channel");
@@ -2339,14 +2339,11 @@ static ssize_t channel_recv(struct utcp_connection *connection, const void *data
 
         // Everything received processed?
         if(done >= len)
-            return len;
+            return;
     }
 
-    if(!channel->receive_cb) {
-        return done;
-    } else {
+    if(channel->receive_cb) {
         channel->receive_cb(mesh, channel, data + done, len - done);
-        return len;
     }
 }
 
