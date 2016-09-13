@@ -475,7 +475,7 @@ int send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 			// This never should happen cause even though send is documented to send and return less or equal
 			// the size with no error this only counts for TCP not UDP.
 			// UDP packets never should be broken up but return an error to not break the headers and checksums.
-			logger(mesh, MESHLINK_ERROR, "Error sending UDP SPTPS packet to %s (%s), expected %u but sendto returned %u", to->name, to->hostname, len, sent);
+			logger(mesh, MESHLINK_ERROR, "Error sending UDP SPTPS packet to %s (%s), expected %lu but sendto returned %u", to->name, to->hostname, len, sent);
 			return -1;
 		}
 		
