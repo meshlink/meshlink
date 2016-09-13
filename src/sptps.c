@@ -80,6 +80,7 @@ static void warning(sptps_t *s, const char *format, ...) {
 }
 
 // Send a record (datagram version, accepts all record types, handles encryption and authentication).
+// @return the sockerrno, 0 on success, -1 on other errors
 static int send_record_priv_datagram(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
 	char buffer[len + 21UL];
 
@@ -101,6 +102,7 @@ static int send_record_priv_datagram(sptps_t *s, uint8_t type, const void *data,
 	}
 }
 // Send a record (private version, accepts all record types, handles encryption and authentication).
+// @return the sockerrno, 0 on success, -1 on other errors
 static int send_record_priv(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
 	if(s->datagram)
 		return send_record_priv_datagram(s, type, data, len);
@@ -126,6 +128,7 @@ static int send_record_priv(sptps_t *s, uint8_t type, const void *data, uint16_t
 }
 
 // Send an application record.
+// @return the sockerrno, 0 on success, -1 on other errors
 int sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
 	// Sanity checks: application cannot send data before handshake is finished,
 	// and only record types 0..127 are allowed.
