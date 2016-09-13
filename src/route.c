@@ -36,6 +36,7 @@ static bool checklength(node_t *source, vpn_packet_t *packet, uint16_t length) {
 		return true;
 }
 
+// @return the sockerrno, 0 on success, -1 on other errors
 int route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 	// TODO: route on name or key
 

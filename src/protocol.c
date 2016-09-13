@@ -63,6 +63,7 @@ bool check_id(const char *id) {
 /* Generic request routines - takes care of logging and error
    detection as well */
 
+// @return the sockerrno, 0 on success, -1 on other errors
 int send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, ...) {
 	va_list args;
 	char request[MAXBUFSIZE];

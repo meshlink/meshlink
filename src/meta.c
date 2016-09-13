@@ -28,6 +28,7 @@
 #include "utils.h"
 #include "xalloc.h"
 
+// @return the sockerrno, 0 on success, -1 on other errors
 int send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t length) {
 	connection_t *c = handle;
 	meshlink_handle_t *mesh = c->mesh;
@@ -43,6 +44,7 @@ int send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t lengt
 	return 0;
 }
 
+// @return the sockerrno, 0 on success, -1 on other errors
 int send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int length) {
 	if(!c) {
 		logger(mesh, MESHLINK_ERROR, "send_meta() called with NULL pointer!");

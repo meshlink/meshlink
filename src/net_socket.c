@@ -54,7 +54,7 @@ bool set_non_blocking_socket(int socket) {
 		return false;
 	}
 #else
-	int flags = fcntl(c->socket, F_GETFL);
+	int flags = fcntl(socket, F_GETFL);
 
 	if(fcntl(socket, F_SETFL, flags | O_NONBLOCK) < 0) {
 		return false;
@@ -72,9 +72,7 @@ static bool set_non_blocking(meshlink_handle_t *mesh, int socket) {
 }
 
 static void configure_tcp(connection_t *c) {
-#ifdef O_NONBLOCK
 	set_non_blocking(c->mesh, c->socket);
-#endif
 
 #if defined(SOL_TCP) && defined(TCP_NODELAY)
 	int nodelay = 1;
@@ -174,12 +172,10 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	fcntl(nfd, F_SETFD, FD_CLOEXEC);
 #endif
 
-#ifdef O_NONBLOCK
 	if(!set_non_blocking(mesh, nfd)) {
 		closesocket(nfd);
 		return -1;
 	}
-#endif
 
 	option = 1;
 	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof option);

@@ -38,6 +38,7 @@
 
 int keylifetime = 0;
 
+// @return the sockerrno, 0 on success, -1 on other errors
 static int send_udppacket(meshlink_handle_t *mesh, node_t *, vpn_packet_t *);
 
 #define MAX_SEQNO 1073741824
@@ -299,6 +300,7 @@ void receive_tcppacket(meshlink_handle_t *mesh, connection_t *c, const char *buf
 	receive_packet(mesh, c->node, &outpkt);
 }
 
+// @return the sockerrno, 0 on success, -1 on other errors
 static int send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
 	if(!n->status.validkey) {
 		logger(mesh, MESHLINK_INFO, "No valid key known yet for %s (%s)", n->name, n->hostname);
@@ -424,6 +426,7 @@ static void choose_broadcast_address(meshlink_handle_t *mesh, const node_t *n, c
 	}
 }
 
+// @return the sockerrno, 0 on success, -1 on other errors
 static int send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
 	if(!n->status.reachable) {
 		logger(mesh, MESHLINK_INFO, "Trying to send UDP packet to unreachable node %s (%s)", n->name, n->hostname);
@@ -433,13 +436,15 @@ static int send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *orig
 	return send_sptps_packet(mesh, n, origpkt);
 }
 
+// @return the sockerrno, 0 on success, -1 on other errors
 int send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	node_t *to = handle;
 	meshlink_handle_t *mesh = to->mesh;
 
 	/* Send it via TCP if it is a handshake packet, TCPOnly is in use, or this packet is larger than the MTU. */
 
-	if(type >= SPTPS_HANDSHAKE || ((mesh->self->options | to->options) & OPTION_TCPONLY) || (type != PKT_PROBE && to->mtu && len > to->mtu)) {
+	// data is already encrypted/compressed, but to->mtu is the pre-encryption max payload size
+	if(type >= SPTPS_HANDSHAKE || ((mesh->self->options | to->options) & OPTION_TCPONLY) || (type != PKT_PROBE && to->mtu && len > (to->mtu + sptps_overhead(&(to->sptps))))) {
 		char buf[len * 4 / 3 + 5];
 		b64encode(data, buf, len);
 		/* If no valid key is known yet, send the packets using ANS_KEY requests,
@@ -552,7 +557,8 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 }
 
 /*
-  send a packet to the given vpn ip.
+	send a packet to the given vpn ip.
+  	@return the sockerrno, 0 on success, -1 on other errors
 */
 int send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	if(n == mesh->self) {
