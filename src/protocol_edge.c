@@ -36,18 +36,20 @@
 extern bool node_write_devclass(meshlink_handle_t *mesh, node_t *n);
 
 bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
-	int x;
 	char *address, *port;
 
 	sockaddr2str(&e->address, &address, &port);
 
-	x = send_request(mesh, c, "%d %x %s %d %s %s %s %d %x %d", ADD_EDGE, rand(),
+	int err = send_request(mesh, c, "%d %x %s %d %s %s %s %d %x %d", ADD_EDGE, rand(),
 					 e->from->name, e->from->devclass, e->to->name, address, port, e->to->devclass,
 					 e->options, e->weight);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "send_add_edge() for connection %p failed with err=%d.\n", c, err);
+    }
 	free(address);
 	free(port);
 
-	return !x;
+	return !err;
 }
 
 bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -173,8 +175,11 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool send_del_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
-	return !send_request(mesh, c, "%d %x %s %s", DEL_EDGE, rand(),
-						e->from->name, e->to->name);
+	int err = send_request(mesh, c, "%d %x %s %s", DEL_EDGE, rand(), e->from->name, e->to->name);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "send_del_edge() for connection %p failed with err=%d.\n", c, err);
+    }
+	return !err;
 }
 
 bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {

@@ -32,7 +32,10 @@
 #include "xalloc.h"
 
 void send_key_changed(meshlink_handle_t *mesh) {
-	send_request(mesh, mesh->everyone, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
+	int err = send_request(mesh, mesh->everyone, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "send_key_changed() failed with err=%d.\n", err);
+    }
 
 	/* Force key exchange for connections using SPTPS */
 
@@ -75,7 +78,11 @@ static int send_initial_sptps_data(void *handle, uint8_t type, const void *data,
 	to->sptps.send_data = send_sptps_data;
 	char buf[len * 4 / 3 + 5];
 	b64encode(data, buf, len);
-	return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_KEY, buf);
+	int err = send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_KEY, buf);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "send_initial_sptps_data() for connection %p failed with err=%d.\n", to->nexthop->connection, err);
+    }
+	return err;
 }
 
 bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
@@ -107,7 +114,10 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 	switch(reqno) {
 		case REQ_PUBKEY: {
 			char *pubkey = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
-			send_request(mesh, from->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, from->name, ANS_PUBKEY, pubkey);
+			int err = send_request(mesh, from->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, from->name, ANS_PUBKEY, pubkey);
+		    if(err) {
+		        logger(mesh, MESHLINK_ERROR, "req_key_ext_h() REQ_PUBKEY for connection %p failed with err=%d.\n", from->nexthop->connection, err);
+		    }
 			free(pubkey);
 			return true;
 		}
@@ -234,7 +244,10 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			return true;
 		}
 
-		send_request(mesh, to->nexthop->connection, "%s", request);
+		int err = send_request(mesh, to->nexthop->connection, "%s", request);
+	    if(err) {
+	        logger(mesh, MESHLINK_ERROR, "req_key_h() send_request for connection %p failed with err=%d.\n", to->nexthop->connection, err);
+	    }
 	}
 
 	return true;
@@ -296,13 +309,20 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			char *address, *port;
 			logger(mesh, MESHLINK_DEBUG, "Appending reflexive UDP address to ANS_KEY from %s to %s", from->name, to->name);
 			sockaddr2str(&from->address, &address, &port);
-			send_request(mesh, to->nexthop->connection, "%s %s %s", request, address, port);
+			int err = send_request(mesh, to->nexthop->connection, "%s %s %s", request, address, port);
+		    if(err) {
+		        logger(mesh, MESHLINK_ERROR, "ans_key_h() send_request for connection %p from %s to %s failed with err=%d.\n", to->nexthop->connection, from->name, to->name, err);
+		    }
 			free(address);
 			free(port);
 			return true;
+		} else {
+			int err = send_request(mesh, to->nexthop->connection, "%s", request);
+		    if(err) {
+		        logger(mesh, MESHLINK_ERROR, "ans_key_h() send_request for connection %p failed with err=%d.\n", to->nexthop->connection, err);
+		    }
+			return !err;
 		}
-
-		return !send_request(mesh, to->nexthop->connection, "%s", request);
 	}
 
 	/* Don't use key material until every check has passed. */

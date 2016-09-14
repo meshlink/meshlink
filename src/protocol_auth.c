@@ -137,7 +137,11 @@ bool send_id(meshlink_handle_t *mesh, connection_t *c) {
 		if(!send_proxyrequest(mesh, c))
 			return false;
 
-	return !send_request(mesh, c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
+	int err = send_request(mesh, c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "send_id() for connection %p failed with err=%d.\n", c, err);
+    }
+	return !err;
 }
 
 static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data, uint16_t len) {
@@ -284,8 +288,11 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		char *mykey = ecdsa_get_base64_public_key(mesh->invitation_key);
 		if(!mykey)
 			return false;
-		if(0 != send_request(mesh, c, "%d %s", ACK, mykey))
+		int err = send_request(mesh, c, "%d %s", ACK, mykey);
+		if(err) {
+			logger(mesh, MESHLINK_ERROR, "id_h send_request failed with %d\n", err);
 			return false;
+		}
 		free(mykey);
 
 		c->protocol_minor = 2;
