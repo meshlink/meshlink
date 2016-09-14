@@ -151,7 +151,7 @@ static bool send_kex(sptps_t *s) {
 
 	// Make room for our KEX message, which we will keep around since send_sig() needs it.
 	if(s->mykex)
-		return false;
+		return error(s, EINVAL, "send_kex mykex already set");
 	s->mykex = realloc(s->mykex, 1 + 32 + keylen);
 	if(!s->mykex)
 		return error(s, errno, strerror(errno));
@@ -167,7 +167,12 @@ static bool send_kex(sptps_t *s) {
 		return error(s, EINVAL, "Failed to generate ECDH public key");
 
 	// TODO: handle sockwouldblock
-	return !send_record_priv(s, SPTPS_HANDSHAKE, s->mykex, 1 + 32 + keylen);
+	int err = send_record_priv(s, SPTPS_HANDSHAKE, s->mykex, 1 + 32 + keylen);
+	if(err) {
+		return error(s, EIO, "send_kex send_record_priv failed to send SPTPS_HANDSHAKE with %d", err);
+	}
+
+	return true;
 }
 
 // Send a SIGnature record, containing an ECDSA signature over both KEX records.
