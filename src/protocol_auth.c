@@ -182,7 +182,11 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 
 	//TODO: callback to application to inform of an accepted invitation
 
-	sptps_send_record(&c->sptps, 2, data, 0);
+	int err = sptps_send_record(&c->sptps, 2, data, 0);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "finalize_invitation() failed to send data with err=%d.\n", err);
+        return false;
+    }
 
 	load_all_nodes(mesh);
 
@@ -199,8 +203,10 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	if(type == 1 && c->status.invitation_used)
 		return finalize_invitation(mesh, c, data, len);
 
-	if(type != 0 || len != 18 || c->status.invitation_used)
+	if(type != 0 || len != 18 || c->status.invitation_used) {
+		logger(mesh, MESHLINK_ERROR, "Error receive_invitation_sptps inacceptable parameter type=%u, len=%u, used=%u\n", (unsigned int)type, (unsigned int)len, c->status.invitation_used);
 		return false;
+	}
 
 	// Recover the filename from the cookie and the key
 	char *fingerprint = ecdsa_get_base64_public_key(mesh->invitation_key);
@@ -260,11 +266,22 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	// Send the node the contents of the invitation file
 	rewind(f);
 	size_t result;
-	while((result = fread(buf, 1, sizeof buf, f)))
-		sptps_send_record(&c->sptps, 0, buf, result);
-	sptps_send_record(&c->sptps, 1, buf, 0);
+	int err;
+	while((result = fread(buf, 1, sizeof buf, f))) {
+		err = sptps_send_record(&c->sptps, 0, buf, result);
+		if(err)
+			break;
+	}
+	if(!err)
+		err = sptps_send_record(&c->sptps, 1, buf, 0);
+
 	fclose(f);
 	unlink(usedname);
+
+	if(err) {
+		logger(mesh, MESHLINK_ERROR, "Failed to send invitation file with error %d\n", err);
+		return false;
+	}
 
 	c->status.invitation_used = true;
 
@@ -297,8 +314,10 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 		c->status.invitation = true;
 		char *mykey = ecdsa_get_base64_public_key(mesh->invitation_key);
-		if(!mykey)
+		if(!mykey) {
+			logger(mesh, MESHLINK_ERROR, "Failed to retrieve invitation key\n");
 			return false;
+		}
 		int err = send_request(mesh, c, "%d %s", ACK, mykey);
 		if(err) {
 			logger(mesh, MESHLINK_ERROR, "id_h send_request failed with %d\n", err);
