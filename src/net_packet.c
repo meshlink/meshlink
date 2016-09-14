@@ -536,7 +536,7 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 		}
 		if(inpkt.len > MAXSIZE) {
 			logger(mesh, MESHLINK_ERROR, "Error: SPTPS uncompressed packet len %d > MAXSIZE %d", inpkt.len, MAXSIZE);
-			abort();
+			return false;
 		}
 	} else {
 		memcpy(inpkt.data, data, len);
