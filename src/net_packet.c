@@ -529,6 +529,7 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 	if(type & PKT_COMPRESSED) {
 		uint16_t ulen = uncompress_packet(inpkt.data, (const uint8_t *)data, len, from->incompression);
 		if(ulen < 0) {
+			logger(mesh, MESHLINK_ERROR, "receive_sptps_record() uncompress_packet len < 0! ulen=%u", (unsigned int)ulen);
 			return false;
 		} else {
 			inpkt.len = ulen;
