@@ -60,11 +60,11 @@ bool status_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	return true;
 }
 
-bool send_error(meshlink_handle_t *mesh, connection_t *c, int err, const char *errstring) {
+bool send_error(meshlink_handle_t *mesh, connection_t *c, int error, const char *errstring) {
 	if(!errstring)
 		errstring = "Error";
 
-	int err = send_request(mesh, c, "%d %d %s", ERROR, err, errstring);
+	int err = send_request(mesh, c, "%d %d %s", ERROR, error, errstring);
     if(err) {
         logger(mesh, MESHLINK_ERROR, "send_error() for connection %p failed with err=%d.\n", c, err);
     }
