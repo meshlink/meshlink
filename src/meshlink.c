@@ -407,12 +407,12 @@ static int check_port(meshlink_handle_t *mesh) {
 static bool finalize_join(meshlink_handle_t *mesh) {
     char *name = xstrdup(get_value(mesh->data, "Name"));
     if(!name) {
-        logger(mesh, MESHLINK_DEBUG, "No Name found in invitation!\n");
+        logger(mesh, MESHLINK_ERROR, "No Name found in invitation!\n");
         return false;
     }
 
     if(!check_id(name)) {
-        logger(mesh, MESHLINK_DEBUG, "Invalid Name found in invitation: %s!\n", name);
+        logger(mesh, MESHLINK_ERROR, "Invalid Name found in invitation: %s!\n", name);
         return false;
     }
 
@@ -421,7 +421,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 
     FILE *f = fopen(filename, "wb");
     if(!f) {
-        logger(mesh, MESHLINK_DEBUG, "Could not create file %s: %s\n", filename, strerror(errno));
+        logger(mesh, MESHLINK_ERROR, "Could not create file %s: %s\n", filename, strerror(errno));
         return false;
     }
 
@@ -430,7 +430,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
     snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
     FILE *fh = fopen(filename, "wb");
     if(!fh) {
-        logger(mesh, MESHLINK_DEBUG, "Could not create file %s: %s\n", filename, strerror(errno));
+        logger(mesh, MESHLINK_ERROR, "Could not create file %s: %s\n", filename, strerror(errno));
         fclose(f);
         return false;
     }
@@ -491,12 +491,12 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 
     while(l && !strcasecmp(l, "Name")) {
         if(!check_id(value)) {
-            logger(mesh, MESHLINK_DEBUG, "Invalid Name found in invitation.\n");
+            logger(mesh, MESHLINK_ERROR, "Invalid Name found in invitation.\n");
             return false;
         }
 
         if(!strcmp(value, name)) {
-            logger(mesh, MESHLINK_DEBUG, "Secondary chunk would overwrite our own host config file.\n");
+            logger(mesh, MESHLINK_ERROR, "Secondary chunk would overwrite our own host config file.\n");
             return false;
         }
 
@@ -504,7 +504,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
         f = fopen(filename, "wb");
 
         if(!f) {
-            logger(mesh, MESHLINK_DEBUG, "Could not create file %s: %s\n", filename, strerror(errno));
+            logger(mesh, MESHLINK_ERROR, "Could not create file %s: %s\n", filename, strerror(errno));
             return false;
         }
 
