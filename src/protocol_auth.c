@@ -368,14 +368,14 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	return sptps_start(&c->sptps, c, c->outgoing, false, mesh->self->connection->ecdsa, c->ecdsa, label, sizeof label - 1, send_meta_sptps, receive_meta_sptps);
 }
 
-bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
+int send_ack(meshlink_handle_t *mesh, connection_t *c) {
 
 	/* Check some options */
 
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY)
 		c->options |= OPTION_PMTU_DISCOVERY;
 
-	return !send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
+	return send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
 }
 
 static void send_everything(meshlink_handle_t *mesh, connection_t *c) {

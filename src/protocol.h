@@ -83,7 +83,8 @@ extern bool seen_request(struct meshlink_handle *mesh, const char *);
 /* Requests */
 
 extern bool send_id(struct meshlink_handle *mesh, struct connection_t *);
-extern bool send_ack(struct meshlink_handle *mesh, struct connection_t *);
+// @return the sockerrno, 0 on success, -1 on other errors
+extern int send_ack(struct meshlink_handle *mesh, struct connection_t *);
 extern bool send_status(struct meshlink_handle *mesh, struct connection_t *, int, const char *);
 extern bool send_error(struct meshlink_handle *mesh, struct connection_t *, int, const  char *);
 extern bool send_termreq(struct meshlink_handle *mesh, struct connection_t *);

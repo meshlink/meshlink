@@ -80,8 +80,13 @@ bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t l
 	}
 
 	if(type == SPTPS_HANDSHAKE) {
-		if(c->allow_request == ACK)
-			return send_ack(mesh, c);
+		if(c->allow_request == ACK) {
+			int err = send_ack(mesh, c);
+			if(err) {
+				logger(mesh, MESHLINK_ERROR, "receive_meta_sptps() failed to send ack with error %d!", err);
+			}
+			return !err;
+		}
 		else
 			return true;
 	}

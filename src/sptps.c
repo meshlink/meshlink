@@ -234,8 +234,8 @@ static bool generate_key_material(sptps_t *s, const char *shared, size_t len) {
 }
 
 // Send an ACKnowledgement record.
-static bool send_ack(sptps_t *s) {
-	return !send_record_priv(s, SPTPS_HANDSHAKE, "", 0);
+static int send_ack(sptps_t *s) {
+	return send_record_priv(s, SPTPS_HANDSHAKE, "", 0);
 }
 
 // Receive an ACKnowledgement record.
@@ -316,8 +316,12 @@ static bool receive_sig(sptps_t *s, const char *data, uint16_t len) {
 	s->hiskex = NULL;
 
 	// Send cipher change record
-	if(s->outstate && !send_ack(s))
-		return false;
+	if(s->outstate) {
+		int err = send_ack(s);
+		if(err) {
+			return error(s, EIO, "receive_sig: Failed to send ack");
+		}
+	}
 
 	// TODO: only set new keys after ACK has been set/received
 	if(s->initiator) {
