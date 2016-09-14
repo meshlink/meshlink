@@ -2299,7 +2299,7 @@ static bool channel_pre_accept(struct utcp *utcp, uint16_t port) {
     return true;
 }
 
-static ssize_t channel_recv(struct utcp_connection *connection, const void *data, size_t len) {
+static void channel_recv(struct utcp_connection *connection, const void *data, size_t len) {
     meshlink_channel_t *channel = connection->priv;
     if(!channel) {
         logger(NULL, MESHLINK_ERROR, "Error: channel_recv no channel");
@@ -2339,14 +2339,11 @@ static ssize_t channel_recv(struct utcp_connection *connection, const void *data
 
         // Everything received processed?
         if(done >= len)
-            return len;
+            return;
     }
 
-    if(!channel->receive_cb) {
-        return done;
-    } else {
+    if(channel->receive_cb) {
         channel->receive_cb(mesh, channel, data + done, len - done);
-        return len;
     }
 }
 
@@ -2387,7 +2384,7 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
     }
 
     // Prepare packet
-    vpn_packet_t *packet = prepare_packet(mesh, destination, data, len);
+    vpn_packet_t *packet = prepare_packet(mesh, (meshlink_node_t*)destination, data, len);
     if(!packet) {
         return UTCP_ERROR;
     }
@@ -2476,7 +2473,7 @@ static int channel_poll(struct utcp_connection *connection, size_t len) {
             ssize_t sent = utcp_buffer(connection, aio->data + aio->done, left);
             if(sent != left) {
                 if(sent > left) {
-                    logger(mesh, MESHLINK_ERROR, "Error: channel_poll utcp_buffer returned %u, while there's only been %u to send!", sent, left);
+                    logger(mesh, MESHLINK_ERROR, "Error: channel_poll utcp_buffer returned %ld, while there's only been %lu to send!", sent, left);
                     err = UTCP_ERROR;
                     break;
                 }
@@ -2492,7 +2489,7 @@ static int channel_poll(struct utcp_connection *connection, size_t len) {
                     break;
                 }
                 else {
-                    logger(mesh, MESHLINK_ERROR, "Error: channel_poll could not pass data to utcp: utcp_buffer returned %u", sent);
+                    logger(mesh, MESHLINK_ERROR, "Error: channel_poll could not pass data to utcp: utcp_buffer returned %ld", sent);
                     err = UTCP_ERROR;
                     break;
                 }
