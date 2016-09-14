@@ -542,8 +542,12 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 
     fclose(fh);
 
-    sptps_send_record(&(mesh->sptps), 1, b64key, strlen(b64key));
+    int err = sptps_send_record(&(mesh->sptps), 1, b64key, strlen(b64key));
     free(b64key);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "finalize_join() failed to send ECDSAPublicKey with err=%d.\n", err);
+        return false;
+    }
 
     free(mesh->self->name);
     free(mesh->self->connection->name);
