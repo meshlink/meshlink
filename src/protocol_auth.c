@@ -48,10 +48,13 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 			char *port;
 
 			sockaddr2str(&c->address, &host, &port);
-			send_request(mesh, c, "CONNECT %s:%s HTTP/1.1\r\n\r", host, port);
+			int err = send_request(mesh, c, "CONNECT %s:%s HTTP/1.1\r\n\r", host, port);
 			free(host);
 			free(port);
-			return true;
+		    if(err) {
+		        logger(mesh, MESHLINK_ERROR, "send_proxyrequest() PROXY_HTTP for connection %p failed with err=%d.\n", c, err);
+		    }
+			return !err;
 		}
 		case PROXY_SOCKS4: {
 			if(c->address.sa.sa_family != AF_INET) {
@@ -67,7 +70,11 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 				memcpy(s4req + 8, mesh->proxyuser, strlen(mesh->proxyuser));
 			s4req[sizeof s4req - 1] = 0;
 			c->tcplen = 8;
-			return !send_meta(mesh, c, s4req, sizeof s4req);
+			int err = send_meta(mesh, c, s4req, sizeof s4req);
+		    if(err) {
+		        logger(mesh, MESHLINK_ERROR, "send_proxyrequest() PROXY_SOCKS4 for connection %p failed with err=%d.\n", c, err);
+		    }
+			return !err;
 		}
 		case PROXY_SOCKS5: {
 			int len = 3 + 6 + (c->address.sa.sa_family == AF_INET ? 4 : 16);
@@ -116,7 +123,11 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 				logger(mesh, MESHLINK_ERROR, "Error: send_proxyrequest i > len");
 				abort();
 			}
-			return !send_meta(mesh, c, s5req, sizeof s5req);
+			int err = send_meta(mesh, c, s5req, sizeof s5req);
+		    if(err) {
+		        logger(mesh, MESHLINK_ERROR, "send_proxyrequest() PROXY_SOCKS5 for connection %p failed with err=%d.\n", c, err);
+		    }
+			return !err;
 		}
 		case PROXY_SOCKS4A:
 			logger(mesh, MESHLINK_ERROR, "Proxy type not implemented yet");
