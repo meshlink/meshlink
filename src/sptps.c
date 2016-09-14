@@ -297,17 +297,17 @@ static bool receive_sig(sptps_t *s, const char *data, uint16_t len) {
 
 	// Verify signature.
 	if(!ecdsa_verify(s->hiskey, msg, sizeof msg, data))
-		return error(s, EIO, "Failed to verify SIG record");
+		return error(s, EIO, "receive_sig: Failed to verify SIG record");
 
 	// Compute shared secret.
 	char shared[ECDH_SHARED_SIZE];
 	if(!ecdh_compute_shared(s->ecdh, s->hiskex + 1 + 32, shared))
-		return error(s, EINVAL, "Failed to compute ECDH shared secret");
+		return error(s, EINVAL, "receive_sig: Failed to compute ECDH shared secret");
 	s->ecdh = NULL;
 
 	// Generate key material from shared secret.
 	if(!generate_key_material(s, shared, sizeof shared))
-		return false;
+		return error(s, EINVAL, "receive_sig: Failed to generate key material");
 
 	free(s->mykex);
 	free(s->hiskex);
@@ -326,10 +326,10 @@ static bool receive_sig(sptps_t *s, const char *data, uint16_t len) {
 	// TODO: only set new keys after ACK has been set/received
 	if(s->initiator) {
 		if(!chacha_poly1305_set_key(s->outcipher, s->key + CHACHA_POLY1305_KEYLEN))
-			return error(s, EINVAL, "Failed to set key");
+			return error(s, EINVAL, "receive_sig: Failed to set key");
 	} else {
 		if(!chacha_poly1305_set_key(s->outcipher, s->key))
-			return error(s, EINVAL, "Failed to set key");
+			return error(s, EINVAL, "receive_sig: Failed to set key");
 	}
 
 	return true;
