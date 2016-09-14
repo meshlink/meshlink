@@ -64,9 +64,14 @@ int send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int 
 }
 
 void broadcast_meta(meshlink_handle_t *mesh, connection_t *from, const char *buffer, int length) {
-	for list_each(connection_t, c, mesh->connections)
-		if(c != from && c->status.active)
-			send_meta(mesh, c, buffer, length);
+	for list_each(connection_t, c, mesh->connections) {
+		if(c != from && c->status.active) {
+			int err = send_meta(mesh, c, buffer, length);
+		    if(err) {
+		        logger(mesh, MESHLINK_DEBUG, "broadcast_meta() for connection %p failed with err=%d.\n", c, err);
+		    }
+		}
+	}
 }
 
 bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t length) {
@@ -97,8 +102,10 @@ bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t l
 	/* Are we receiving a TCPpacket? */
 
 	if(c->tcplen) {
-		if(length != c->tcplen)
+		if(length != c->tcplen) {
+			logger(mesh, MESHLINK_ERROR, "receive_meta_sptps() length != c->tcplen!");
 			return false;
+		}
 		receive_tcppacket(mesh, c, request, length);
 		c->tcplen = 0;
 		return true;
