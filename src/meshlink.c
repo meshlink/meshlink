@@ -533,8 +533,9 @@ static bool finalize_join(meshlink_handle_t *mesh) {
     char *b64key = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
     if(!b64key) {
         fclose(fh);
+        logger(mesh, MESHLINK_ERROR, "Failed to lookup the ECDSAPublicKey.\n");
         return false;
-        }
+    }
 
     fprintf(fh, "ECDSAPublicKey = %s\n", b64key);
     fprintf(fh, "Port = %s\n", mesh->myport);
@@ -576,9 +577,14 @@ static int invitation_send(void *handle, uint8_t type, const void *data, size_t 
 static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint16_t len) {
     meshlink_handle_t* mesh = handle;
     switch(type) {
-        case SPTPS_HANDSHAKE:
-            return !sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
-
+        case SPTPS_HANDSHAKE: {
+            int err = sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
+            if(err) {
+                logger(mesh, MESHLINK_ERROR, "invitation_receive SPTPS_HANDSHAKE sptps_send_record failed with %d.\n", err);
+                return false;
+            }
+            break;
+        }
         case 0:
             mesh->data = xrealloc(mesh->data, mesh->thedatalen + len + 1);
             memcpy(mesh->data + mesh->thedatalen, msg, len);
@@ -597,6 +603,7 @@ static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint
             break;
 
         default:
+            logger(mesh, MESHLINK_ERROR, "invitation_receive unkown message type.\n");
             return false;
     }
 
