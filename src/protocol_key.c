@@ -91,8 +91,11 @@ bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 			return false;
 		}
 		logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s (%s)", to->name, to->hostname);
-		send_request(mesh, to->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY);
-		return true;
+		int err = send_request(mesh, to->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY);
+	    if(err) {
+	        logger(mesh, MESHLINK_ERROR, "send_req_key() for connection %p failed with err=%d.\n", to->nexthop->connection, err);
+	    }
+		return !err;
 	}
 
 	if(to->sptps.label)
@@ -119,7 +122,7 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		        logger(mesh, MESHLINK_ERROR, "req_key_ext_h() REQ_PUBKEY for connection %p failed with err=%d.\n", from->nexthop->connection, err);
 		    }
 			free(pubkey);
-			return true;
+			return !err;
 		}
 
 		case ANS_PUBKEY: {
@@ -142,8 +145,11 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		case REQ_KEY: {
 			if(!node_read_ecdsa_public_key(mesh, from)) {
 				logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s (%s)", from->name, from->hostname);
-				send_request(mesh, from->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, from->name, REQ_PUBKEY);
-				return true;
+				int err = send_request(mesh, from->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, from->name, REQ_PUBKEY);
+			    if(err) {
+			        logger(mesh, MESHLINK_ERROR, "req_key_ext_h() REQ_KEY for connection %p failed with err=%d.\n", from->nexthop->connection, err);
+			    }
+				return !err;
 			}
 
 			if(from->sptps.label) {
@@ -247,6 +253,7 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		int err = send_request(mesh, to->nexthop->connection, "%s", request);
 	    if(err) {
 	        logger(mesh, MESHLINK_ERROR, "req_key_h() send_request for connection %p failed with err=%d.\n", to->nexthop->connection, err);
+	        return false;
 	    }
 	}
 
@@ -315,7 +322,7 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		    }
 			free(address);
 			free(port);
-			return true;
+			return !err;
 		} else {
 			int err = send_request(mesh, to->nexthop->connection, "%s", request);
 		    if(err) {
