@@ -266,7 +266,10 @@ static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *pac
 	n->in_packets++;
 	n->in_bytes += packet->len;
 
-	route(mesh, n, packet);
+		int err = route(mesh, n, packet);
+	    if(err) {
+	        logger(mesh, MESHLINK_ERROR, "receive_packet() route failed with err=%d.\n", err);
+	    }
     }
 }
 
