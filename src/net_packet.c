@@ -263,8 +263,8 @@ static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *pac
     if (n->status.blacklisted) {
         logger(mesh, MESHLINK_WARNING, "Dropping packet from blacklisted node %s", n->name);
     } else {
-	n->in_packets++;
-	n->in_bytes += packet->len;
+		n->in_packets++;
+		n->in_bytes += packet->len;
 
 		int err = route(mesh, n, packet);
 	    if(err) {
