@@ -37,7 +37,11 @@ bool send_status(meshlink_handle_t *mesh, connection_t *c, int statusno, const c
 	if(!statusstring)
 		statusstring = "Status";
 
-	return !send_request(mesh, c, "%d %d %s", STATUS, statusno, statusstring);
+	int err = send_request(mesh, c, "%d %d %s", STATUS, statusno, statusstring);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "send_status() for connection %p failed with err=%d.\n", c, err);
+    }
+	return !err;
 }
 
 bool status_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -56,11 +60,15 @@ bool status_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	return true;
 }
 
-bool send_error(meshlink_handle_t *mesh, connection_t *c, int err, const char *errstring) {
+bool send_error(meshlink_handle_t *mesh, connection_t *c, int error, const char *errstring) {
 	if(!errstring)
 		errstring = "Error";
 
-	return !send_request(mesh, c, "%d %d %s", ERROR, err, errstring);
+	int err = send_request(mesh, c, "%d %d %s", ERROR, error, errstring);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "send_error() for connection %p failed with err=%d.\n", c, err);
+    }
+	return !err;
 }
 
 bool error_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -80,7 +88,11 @@ bool error_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool send_termreq(meshlink_handle_t *mesh, connection_t *c) {
-	return !send_request(mesh, c, "%d", TERMREQ);
+	int err = send_request(mesh, c, "%d", TERMREQ);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "send_termreq() for connection %p failed with err=%d.\n", c, err);
+    }
+	return !err;
 }
 
 bool termreq_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -91,7 +103,11 @@ bool send_ping(meshlink_handle_t *mesh, connection_t *c) {
 	c->status.pinged = true;
 	c->last_ping_time = mesh->loop.now.tv_sec;
 
-	return !send_request(mesh, c, "%d", PING);
+	int err = send_request(mesh, c, "%d", PING);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "send_ping() for connection %p failed with err=%d.\n", c, err);
+    }
+	return !err;
 }
 
 bool ping_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -99,7 +115,11 @@ bool ping_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool send_pong(meshlink_handle_t *mesh, connection_t *c) {
-	return !send_request(mesh, c, "%d", PONG);
+	int err = send_request(mesh, c, "%d", PONG);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "send_pong() for connection %p failed with err=%d.\n", c, err);
+    }
+	return !err;
 }
 
 bool pong_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {

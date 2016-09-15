@@ -263,10 +263,13 @@ static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *pac
     if (n->status.blacklisted) {
         logger(mesh, MESHLINK_WARNING, "Dropping packet from blacklisted node %s", n->name);
     } else {
-	n->in_packets++;
-	n->in_bytes += packet->len;
+		n->in_packets++;
+		n->in_bytes += packet->len;
 
-	route(mesh, n, packet);
+		int err = route(mesh, n, packet);
+	    if(err) {
+	        logger(mesh, MESHLINK_ERROR, "receive_packet() route failed with err=%d.\n", err);
+	    }
     }
 }
 
@@ -526,13 +529,14 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 	if(type & PKT_COMPRESSED) {
 		uint16_t ulen = uncompress_packet(inpkt.data, (const uint8_t *)data, len, from->incompression);
 		if(ulen < 0) {
+			logger(mesh, MESHLINK_ERROR, "receive_sptps_record() uncompress_packet len < 0! ulen=%u", (unsigned int)ulen);
 			return false;
 		} else {
 			inpkt.len = ulen;
 		}
 		if(inpkt.len > MAXSIZE) {
 			logger(mesh, MESHLINK_ERROR, "Error: SPTPS uncompressed packet len %d > MAXSIZE %d", inpkt.len, MAXSIZE);
-			abort();
+			return false;
 		}
 	} else {
 		memcpy(inpkt.data, data, len);
@@ -574,15 +578,24 @@ int send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 
 void broadcast_packet(meshlink_handle_t *mesh, const node_t *from, vpn_packet_t *packet) {
 	// Always give ourself a copy of the packet.
-	if(from != mesh->self)
-		send_packet(mesh, mesh->self, packet);
+	if(from != mesh->self) {
+		int err = send_packet(mesh, mesh->self, packet);
+	    if(err) {
+	        logger(mesh, MESHLINK_DEBUG, "broadcast_packet() to ourself failed with err=%d.\n", err);
+	    }
+	}
 
 	logger(mesh, MESHLINK_INFO, "Broadcasting packet of %d bytes from %s (%s)",
 			   packet->len, from->name, from->hostname);
 
-	for list_each(connection_t, c, mesh->connections)
-		if(c->status.active && c->status.mst && c != from->nexthop->connection)
-			send_packet(mesh, c->node, packet);
+	for list_each(connection_t, c, mesh->connections) {
+		if(c->status.active && c->status.mst && c != from->nexthop->connection) {
+			int err = send_packet(mesh, c->node, packet);
+		    if(err) {
+		        logger(mesh, MESHLINK_DEBUG, "broadcast_packet() for connection %p failed with err=%d.\n", c, err);
+		    }
+		}
+	}
 }
 
 static node_t *try_harder(meshlink_handle_t *mesh, const sockaddr_t *from, const vpn_packet_t *pkt) {

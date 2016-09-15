@@ -407,12 +407,12 @@ static int check_port(meshlink_handle_t *mesh) {
 static bool finalize_join(meshlink_handle_t *mesh) {
     char *name = xstrdup(get_value(mesh->data, "Name"));
     if(!name) {
-        logger(mesh, MESHLINK_DEBUG, "No Name found in invitation!\n");
+        logger(mesh, MESHLINK_ERROR, "No Name found in invitation!\n");
         return false;
     }
 
     if(!check_id(name)) {
-        logger(mesh, MESHLINK_DEBUG, "Invalid Name found in invitation: %s!\n", name);
+        logger(mesh, MESHLINK_ERROR, "Invalid Name found in invitation: %s!\n", name);
         return false;
     }
 
@@ -421,7 +421,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 
     FILE *f = fopen(filename, "wb");
     if(!f) {
-        logger(mesh, MESHLINK_DEBUG, "Could not create file %s: %s\n", filename, strerror(errno));
+        logger(mesh, MESHLINK_ERROR, "Could not create file %s: %s\n", filename, strerror(errno));
         return false;
     }
 
@@ -430,7 +430,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
     snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
     FILE *fh = fopen(filename, "wb");
     if(!fh) {
-        logger(mesh, MESHLINK_DEBUG, "Could not create file %s: %s\n", filename, strerror(errno));
+        logger(mesh, MESHLINK_ERROR, "Could not create file %s: %s\n", filename, strerror(errno));
         fclose(f);
         return false;
     }
@@ -491,12 +491,12 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 
     while(l && !strcasecmp(l, "Name")) {
         if(!check_id(value)) {
-            logger(mesh, MESHLINK_DEBUG, "Invalid Name found in invitation.\n");
+            logger(mesh, MESHLINK_ERROR, "Invalid Name found in invitation.\n");
             return false;
         }
 
         if(!strcmp(value, name)) {
-            logger(mesh, MESHLINK_DEBUG, "Secondary chunk would overwrite our own host config file.\n");
+            logger(mesh, MESHLINK_ERROR, "Secondary chunk would overwrite our own host config file.\n");
             return false;
         }
 
@@ -504,7 +504,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
         f = fopen(filename, "wb");
 
         if(!f) {
-            logger(mesh, MESHLINK_DEBUG, "Could not create file %s: %s\n", filename, strerror(errno));
+            logger(mesh, MESHLINK_ERROR, "Could not create file %s: %s\n", filename, strerror(errno));
             return false;
         }
 
@@ -533,16 +533,21 @@ static bool finalize_join(meshlink_handle_t *mesh) {
     char *b64key = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
     if(!b64key) {
         fclose(fh);
+        logger(mesh, MESHLINK_ERROR, "Failed to lookup the ECDSAPublicKey.\n");
         return false;
-        }
+    }
 
     fprintf(fh, "ECDSAPublicKey = %s\n", b64key);
     fprintf(fh, "Port = %s\n", mesh->myport);
 
     fclose(fh);
 
-    sptps_send_record(&(mesh->sptps), 1, b64key, strlen(b64key));
+    int err = sptps_send_record(&(mesh->sptps), 1, b64key, strlen(b64key));
     free(b64key);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "finalize_join() failed to send ECDSAPublicKey with err=%d.\n", err);
+        return false;
+    }
 
     free(mesh->self->name);
     free(mesh->self->connection->name);
@@ -576,9 +581,14 @@ static int invitation_send(void *handle, uint8_t type, const void *data, size_t 
 static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint16_t len) {
     meshlink_handle_t* mesh = handle;
     switch(type) {
-        case SPTPS_HANDSHAKE:
-            return !sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
-
+        case SPTPS_HANDSHAKE: {
+            int err = sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
+            if(err) {
+                logger(mesh, MESHLINK_ERROR, "invitation_receive SPTPS_HANDSHAKE sptps_send_record failed with %d.\n", err);
+                return false;
+            }
+            break;
+        }
         case 0:
             mesh->data = xrealloc(mesh->data, mesh->thedatalen + len + 1);
             memcpy(mesh->data + mesh->thedatalen, msg, len);
@@ -597,6 +607,7 @@ static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint
             break;
 
         default:
+            logger(mesh, MESHLINK_ERROR, "invitation_receive unkown message type.\n");
             return false;
     }
 
