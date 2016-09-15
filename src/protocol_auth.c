@@ -48,10 +48,13 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 			char *port;
 
 			sockaddr2str(&c->address, &host, &port);
-			send_request(mesh, c, "CONNECT %s:%s HTTP/1.1\r\n\r", host, port);
+			int err = send_request(mesh, c, "CONNECT %s:%s HTTP/1.1\r\n\r", host, port);
 			free(host);
 			free(port);
-			return true;
+		    if(err) {
+		        logger(mesh, MESHLINK_ERROR, "send_proxyrequest() PROXY_HTTP for connection %p failed with err=%d.\n", c, err);
+		    }
+			return !err;
 		}
 		case PROXY_SOCKS4: {
 			if(c->address.sa.sa_family != AF_INET) {
@@ -67,7 +70,11 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 				memcpy(s4req + 8, mesh->proxyuser, strlen(mesh->proxyuser));
 			s4req[sizeof s4req - 1] = 0;
 			c->tcplen = 8;
-			return !send_meta(mesh, c, s4req, sizeof s4req);
+			int err = send_meta(mesh, c, s4req, sizeof s4req);
+		    if(err) {
+		        logger(mesh, MESHLINK_ERROR, "send_proxyrequest() PROXY_SOCKS4 for connection %p failed with err=%d.\n", c, err);
+		    }
+			return !err;
 		}
 		case PROXY_SOCKS5: {
 			int len = 3 + 6 + (c->address.sa.sa_family == AF_INET ? 4 : 16);
@@ -116,7 +123,11 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 				logger(mesh, MESHLINK_ERROR, "Error: send_proxyrequest i > len");
 				abort();
 			}
-			return !send_meta(mesh, c, s5req, sizeof s5req);
+			int err = send_meta(mesh, c, s5req, sizeof s5req);
+		    if(err) {
+		        logger(mesh, MESHLINK_ERROR, "send_proxyrequest() PROXY_SOCKS5 for connection %p failed with err=%d.\n", c, err);
+		    }
+			return !err;
 		}
 		case PROXY_SOCKS4A:
 			logger(mesh, MESHLINK_ERROR, "Proxy type not implemented yet");
@@ -137,7 +148,11 @@ bool send_id(meshlink_handle_t *mesh, connection_t *c) {
 		if(!send_proxyrequest(mesh, c))
 			return false;
 
-	return !send_request(mesh, c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
+	int err = send_request(mesh, c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "send_id() for connection %p failed with err=%d.\n", c, err);
+    }
+	return !err;
 }
 
 static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data, uint16_t len) {
@@ -167,7 +182,11 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 
 	//TODO: callback to application to inform of an accepted invitation
 
-	sptps_send_record(&c->sptps, 2, data, 0);
+	int err = sptps_send_record(&c->sptps, 2, data, 0);
+    if(err) {
+        logger(mesh, MESHLINK_ERROR, "finalize_invitation() failed to send data with err=%d.\n", err);
+        return false;
+    }
 
 	load_all_nodes(mesh);
 
@@ -184,8 +203,10 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	if(type == 1 && c->status.invitation_used)
 		return finalize_invitation(mesh, c, data, len);
 
-	if(type != 0 || len != 18 || c->status.invitation_used)
+	if(type != 0 || len != 18 || c->status.invitation_used) {
+		logger(mesh, MESHLINK_ERROR, "Error receive_invitation_sptps inacceptable parameter type=%u, len=%u, used=%u\n", (unsigned int)type, (unsigned int)len, c->status.invitation_used);
 		return false;
+	}
 
 	// Recover the filename from the cookie and the key
 	char *fingerprint = ecdsa_get_base64_public_key(mesh->invitation_key);
@@ -245,11 +266,22 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	// Send the node the contents of the invitation file
 	rewind(f);
 	size_t result;
-	while((result = fread(buf, 1, sizeof buf, f)))
-		sptps_send_record(&c->sptps, 0, buf, result);
-	sptps_send_record(&c->sptps, 1, buf, 0);
+	int err;
+	while((result = fread(buf, 1, sizeof buf, f))) {
+		err = sptps_send_record(&c->sptps, 0, buf, result);
+		if(err)
+			break;
+	}
+	if(!err)
+		err = sptps_send_record(&c->sptps, 1, buf, 0);
+
 	fclose(f);
 	unlink(usedname);
+
+	if(err) {
+		logger(mesh, MESHLINK_ERROR, "Failed to send invitation file with error %d\n", err);
+		return false;
+	}
 
 	c->status.invitation_used = true;
 
@@ -282,11 +314,16 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 		c->status.invitation = true;
 		char *mykey = ecdsa_get_base64_public_key(mesh->invitation_key);
-		if(!mykey)
+		if(!mykey) {
+			logger(mesh, MESHLINK_ERROR, "Failed to retrieve invitation key\n");
 			return false;
-		if(0 != send_request(mesh, c, "%d %s", ACK, mykey))
-			return false;
+		}
+		int err = send_request(mesh, c, "%d %s", ACK, mykey);
 		free(mykey);
+		if(err) {
+			logger(mesh, MESHLINK_ERROR, "id_h send_request failed with %d\n", err);
+			return false;
+		}
 
 		c->protocol_minor = 2;
 		c->allow_request = 1;
@@ -368,14 +405,14 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	return sptps_start(&c->sptps, c, c->outgoing, false, mesh->self->connection->ecdsa, c->ecdsa, label, sizeof label - 1, send_meta_sptps, receive_meta_sptps);
 }
 
-bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
+int send_ack(meshlink_handle_t *mesh, connection_t *c) {
 
 	/* Check some options */
 
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY)
 		c->options |= OPTION_PMTU_DISCOVERY;
 
-	return !send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
+	return send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
 }
 
 static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
