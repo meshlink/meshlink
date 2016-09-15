@@ -319,11 +319,11 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			return false;
 		}
 		int err = send_request(mesh, c, "%d %s", ACK, mykey);
+		free(mykey);
 		if(err) {
 			logger(mesh, MESHLINK_ERROR, "id_h send_request failed with %d\n", err);
 			return false;
 		}
-		free(mykey);
 
 		c->protocol_minor = 2;
 		c->allow_request = 1;
