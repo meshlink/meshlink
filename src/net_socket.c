@@ -301,9 +301,9 @@ static void do_outgoing_pipe(meshlink_handle_t *mesh, connection_t *c, char *com
 #endif
 }
 
-static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
+static bool handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 	if(c->outbuf.len <= c->outbuf.offset)
-		return;
+		return false;
 
 	ssize_t outlen = send(c->socket, c->outbuf.data + c->outbuf.offset, c->outbuf.len - c->outbuf.offset, MSG_NOSIGNAL);
 	if(outlen <= 0) {
@@ -311,21 +311,23 @@ static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 			logger(mesh, MESHLINK_INFO, "Connection closed by %s (%s)", c->name, c->hostname);
 		} else if(sockwouldblock(sockerrno)) {
 			logger(mesh, MESHLINK_DEBUG, "Sending %d bytes to %s (%s) would block", c->outbuf.len - c->outbuf.offset, c->name, c->hostname);
-			return;
+			return false;
 		} else {
 			logger(mesh, MESHLINK_ERROR, "Could not send %d bytes of data to %s (%s): %s", c->outbuf.len - c->outbuf.offset, c->name, c->hostname, strerror(errno));
 		}
 
 		terminate_connection(mesh, c, c->status.active);
-		return;
+		return false;
 	}
 
 	buffer_read(&c->outbuf, outlen);
 	if(!c->outbuf.len)
 		io_set(&mesh->loop, &c->io, IO_READ);
+
+	return true;
 }
 
-static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
+static bool handle_meta_io(event_loop_t *loop, void *data, int flags) {
 	meshlink_handle_t *mesh = loop->data;
 	connection_t *c = data;
 
@@ -341,14 +343,17 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 		else {
 			logger(mesh, MESHLINK_DEBUG, "Error while connecting to %s (%s): %s", c->name, c->hostname, sockstrerror(result));
 			terminate_connection(mesh, c, false);
-			return;
+			return true;
 		}
 	}
 
-	if(flags & IO_WRITE)
-		handle_meta_write(mesh, c);
-	else
+	if(flags & IO_WRITE) {
+		return handle_meta_write(mesh, c);
+	}
+	else {
 		handle_meta_connection_data(mesh, c);
+		return true;
+	}
 }
 
 // Find edges pointing to this node, and use them to build a list of unique, known addresses.
@@ -556,7 +561,7 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
   accept a new tcp connect and create a
   new connection
 */
-void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
+bool handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	meshlink_handle_t *mesh = loop->data;
 	listen_socket_t *l = data;
 	connection_t *c;
@@ -570,11 +575,11 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 		if(errno == EINVAL) { // TODO: check if Windows agrees
 			logger(mesh, MESHLINK_DEBUG, "Stopping event loop\n");
 			event_loop_stop(loop);
-			return;
+			return false;
 		}
 
 		logger(mesh, MESHLINK_ERROR, "Accepting a new connection failed: %s", sockstrerror(sockerrno));
-		return;
+		return false;
 	}
 
 	sockaddrunmap(&sa);
@@ -603,7 +608,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 
 		if(samehost_burst > max_connection_burst) {
 			tarpit = fd;
-			return;
+			return false;
 		}
 	}
 
@@ -625,7 +630,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	if(connection_burst >= max_connection_burst) {
 		connection_burst = max_connection_burst;
 		tarpit = fd;
-		return;
+		return false;
 	}
 
 	// Accept the new connection
@@ -649,6 +654,8 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 
 	c->allow_request = ID;
 	send_id(mesh, c);
+
+	return true;
 }
 
 static void free_outgoing(outgoing_t *outgoing) {
