@@ -151,7 +151,7 @@ static bool send_kex(sptps_t *s) {
 
 	// Make room for our KEX message, which we will keep around since send_sig() needs it.
 	if(s->mykex)
-		return false;
+		return error(s, EINVAL, "send_kex mykex already set");
 	s->mykex = realloc(s->mykex, 1 + 32 + keylen);
 	if(!s->mykex)
 		return error(s, errno, strerror(errno));
@@ -167,7 +167,12 @@ static bool send_kex(sptps_t *s) {
 		return error(s, EINVAL, "Failed to generate ECDH public key");
 
 	// TODO: handle sockwouldblock
-	return !send_record_priv(s, SPTPS_HANDSHAKE, s->mykex, 1 + 32 + keylen);
+	int err = send_record_priv(s, SPTPS_HANDSHAKE, s->mykex, 1 + 32 + keylen);
+	if(err) {
+		return error(s, EIO, "send_kex send_record_priv failed to send SPTPS_HANDSHAKE with %d", err);
+	}
+
+	return true;
 }
 
 // Send a SIGnature record, containing an ECDSA signature over both KEX records.
@@ -229,8 +234,8 @@ static bool generate_key_material(sptps_t *s, const char *shared, size_t len) {
 }
 
 // Send an ACKnowledgement record.
-static bool send_ack(sptps_t *s) {
-	return !send_record_priv(s, SPTPS_HANDSHAKE, "", 0);
+static int send_ack(sptps_t *s) {
+	return send_record_priv(s, SPTPS_HANDSHAKE, "", 0);
 }
 
 // Receive an ACKnowledgement record.
@@ -292,17 +297,17 @@ static bool receive_sig(sptps_t *s, const char *data, uint16_t len) {
 
 	// Verify signature.
 	if(!ecdsa_verify(s->hiskey, msg, sizeof msg, data))
-		return error(s, EIO, "Failed to verify SIG record");
+		return error(s, EIO, "receive_sig: Failed to verify SIG record");
 
 	// Compute shared secret.
 	char shared[ECDH_SHARED_SIZE];
 	if(!ecdh_compute_shared(s->ecdh, s->hiskex + 1 + 32, shared))
-		return error(s, EINVAL, "Failed to compute ECDH shared secret");
+		return error(s, EINVAL, "receive_sig: Failed to compute ECDH shared secret");
 	s->ecdh = NULL;
 
 	// Generate key material from shared secret.
 	if(!generate_key_material(s, shared, sizeof shared))
-		return false;
+		return error(s, EINVAL, "receive_sig: Failed to generate key material");
 
 	free(s->mykex);
 	free(s->hiskex);
@@ -311,16 +316,20 @@ static bool receive_sig(sptps_t *s, const char *data, uint16_t len) {
 	s->hiskex = NULL;
 
 	// Send cipher change record
-	if(s->outstate && !send_ack(s))
-		return false;
+	if(s->outstate) {
+		int err = send_ack(s);
+		if(err) {
+			return error(s, EIO, "receive_sig: Failed to send ack");
+		}
+	}
 
 	// TODO: only set new keys after ACK has been set/received
 	if(s->initiator) {
 		if(!chacha_poly1305_set_key(s->outcipher, s->key + CHACHA_POLY1305_KEYLEN))
-			return error(s, EINVAL, "Failed to set key");
+			return error(s, EINVAL, "receive_sig: Failed to set key");
 	} else {
 		if(!chacha_poly1305_set_key(s->outcipher, s->key))
-			return error(s, EINVAL, "Failed to set key");
+			return error(s, EINVAL, "receive_sig: Failed to set key");
 	}
 
 	return true;
