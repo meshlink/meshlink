@@ -27,7 +27,7 @@ extern int b64encode(const void *src, char *dst, int length);
 extern int b64encode_urlsafe(const void *src, char *dst, int length);
 extern int b64decode(const char *src, void *dst, int length);
 
-#ifdef HAVE_MINGW
+#ifdef _WIN32
 extern const char *winerror(int);
 #define strerror(x) ((x)>0?strerror(x):winerror(GetLastError()))
 #define sockerrno WSAGetLastError()

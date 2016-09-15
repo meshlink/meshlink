@@ -17,8 +17,6 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "system.h"
-
 #include "list.h"
 #include "xalloc.h"
 

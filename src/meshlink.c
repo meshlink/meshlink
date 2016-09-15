@@ -1239,44 +1239,52 @@ void meshlink_set_node_pmtu_cb(meshlink_handle_t *mesh, meshlink_node_pmtu_cb_t 
     MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 }
 
-bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
+static vpn_packet_t* prepare_packet(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
     meshlink_packethdr_t *hdr;
 
     // Validate arguments
     if(!mesh || !destination || len >= MAXSIZE - sizeof *hdr) {
         meshlink_errno = MESHLINK_EINVAL;
-        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send invalid arguments");
-        return false;
+        logger(mesh, MESHLINK_ERROR, "Error: prepare_packet invalid arguments");
+        return NULL;
     }
 
     if(!len)
     {
-        logger(mesh, MESHLINK_WARNING, "Warning: meshlink_send empty packet dropped");
-        return true;
+        logger(mesh, MESHLINK_WARNING, "Warning: prepare_packet empty packet dropped");
+        return NULL;
     }
 
     if(!data) {
         meshlink_errno = MESHLINK_EINVAL;
-        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send missing data");
-        return false;
+        logger(mesh, MESHLINK_ERROR, "Error: prepare_packet missing data");
+        return NULL;
+    }
+
+    // check log level before calling bin2hex since that's an expensive call
+    if(mesh->log_level <= MESHLINK_DEBUG) {
+        // only do this if it will be logged
+        char* hex = xzalloc(len * 2 + 1);
+        bin2hex(data, hex, len);
+        logger(mesh, MESHLINK_DEBUG, "prepare_packet(%p, " PRINT_SIZE_T "): %s\n", data, len, hex);
+        free(hex);
     }
 
     // Prepare the packet
     vpn_packet_t *packet = malloc(sizeof *packet);
     if(!packet) {
         meshlink_errno = MESHLINK_ENOMEM;
-        logger(mesh, MESHLINK_ERROR, "Error: meshlink_send packet memory allocation failed");
-        return false;
+        logger(mesh, MESHLINK_ERROR, "Error: prepare_packet packet memory allocation failed");
+        return NULL;
     }
 
     packet->probe = false;
     packet->tcp = false;
     packet->len = len + sizeof *hdr;
 
-    MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
-
     hdr = (meshlink_packethdr_t *)packet->data;
     memset(hdr, 0, sizeof *hdr);
+
     // leave the last byte as 0 to make sure strings are always
     // null-terminated if they are longer than the buffer
     strncpy(hdr->destination, destination->name, (sizeof hdr->destination) - 1);
@@ -1284,11 +1292,26 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 
     memcpy(packet->data + sizeof *hdr, data, len);
 
+    return packet;
+}
+
+bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
+    if(!len)
+    {
+        logger(mesh, MESHLINK_WARNING, "Warning: meshlink_send empty packet dropped");
+        return true;
+    }
+
+    // Prepare packet
+    vpn_packet_t *packet = prepare_packet(mesh, destination, data, len);
+    if(!packet) {
+        return false;
+    }
+
     // Queue it
     if(!meshlink_queue_push(&mesh->outpacketqueue, packet)) {
         free(packet);
         meshlink_errno = MESHLINK_ENOMEM;
-        MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
         logger(mesh, MESHLINK_ERROR, "Error: meshlink_send failed to queue packet");
         return false;
     }
@@ -1297,8 +1320,6 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
     if(!signal_trigger(&(mesh->loop),&(mesh->datafromapp))) {
         logger(mesh, MESHLINK_WARNING, "Warning: meshlink_send packet queued but signal_trigger failed");
     }
-
-    MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
 
     return true;
 }
@@ -2289,7 +2310,7 @@ static bool channel_pre_accept(struct utcp *utcp, uint16_t port) {
     return true;
 }
 
-static ssize_t channel_recv(struct utcp_connection *connection, const void *data, size_t len) {
+static void channel_recv(struct utcp_connection *connection, const void *data, size_t len) {
     meshlink_channel_t *channel = connection->priv;
     if(!channel) {
         logger(NULL, MESHLINK_ERROR, "Error: channel_recv no channel");
@@ -2329,14 +2350,11 @@ static ssize_t channel_recv(struct utcp_connection *connection, const void *data
 
         // Everything received processed?
         if(done >= len)
-            return len;
+            return;
     }
 
-    if(!channel->receive_cb) {
-        return done;
-    } else {
+    if(channel->receive_cb) {
         channel->receive_cb(mesh, channel, data + done, len - done);
-        return len;
     }
 }
 
@@ -2358,20 +2376,50 @@ static void channel_accept(struct utcp_connection *utcp_connection, uint16_t por
         free(channel);
 }
 
+// called from utcp ack, set by init_utcp
 static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
-    node_t *n = utcp->priv;
-    meshlink_handle_t *mesh = n->mesh;
-
-    // check log level before calling bin2hex since that's an expensive call
-    if(mesh->log_level <= MESHLINK_DEBUG) {
-        // only do this if it will be logged
-        char* hex = xzalloc(len * 2 + 1);
-        bin2hex(data, hex, len);
-        logger(mesh, MESHLINK_DEBUG, "channel_send(%p, %p, " PRINT_SIZE_T "): %s\n", utcp, data, len, hex);
-        free(hex);
+    // Validate arguments
+    if(!utcp || !utcp->priv ) {
+        meshlink_errno = MESHLINK_EINVAL;
+        logger(NULL, MESHLINK_ERROR, "Error: channel_send invalid arguments");
+        return UTCP_ERROR;
     }
 
-    return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? len : -1;
+    node_t *destination = utcp->priv;
+    meshlink_handle_t *mesh = destination->mesh;
+
+    if(!len)
+    {
+        logger(mesh, MESHLINK_WARNING, "Warning: channel_send empty packet dropped");
+        return len;
+    }
+
+    // Prepare packet
+    vpn_packet_t *packet = prepare_packet(mesh, (meshlink_node_t*)destination, data, len);
+    if(!packet) {
+        return UTCP_ERROR;
+    }
+
+    MESHLINK_MUTEX_LOCK(&mesh->mesh_mutex);
+
+    mesh->self->in_packets++;
+    mesh->self->in_bytes += packet->len;
+    int err = route(mesh, mesh->self, packet);
+
+    MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+
+    if(err) {
+        if(sockwouldblock(err)) {
+            logger(mesh, MESHLINK_WARNING, "Warning: channel_send socket would block, retry later");
+        }
+        else {
+            logger(mesh, MESHLINK_ERROR, "Error: channel_send failed to send packet");
+        }
+    }
+
+    free(packet);
+
+    return err ? sockwouldblock(err) ? UTCP_WOULDBLOCK : UTCP_ERROR : len;
 }
 
 void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb) {
@@ -2405,7 +2453,7 @@ static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, co
     utcp_recv(n->utcp, data, len);
 }
 
-static void channel_poll(struct utcp_connection *connection, size_t len) {
+static int channel_poll(struct utcp_connection *connection, size_t len) {
     meshlink_channel_t *channel = connection->priv;
     if(!channel) {
         logger(NULL, MESHLINK_ERROR, "Error: channel_poll no channel");
@@ -2418,6 +2466,7 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 
     logger(mesh, MESHLINK_DEBUG, "channel_poll(%p, " PRINT_SIZE_T ")\n", connection, len);
 
+    int err = 0;
     // If we have AIO buffers queued, use those.
     if(aio) {
         while(aio && len > 0) {
@@ -2432,18 +2481,33 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
             size_t left = aio->len - aio->done;
             if(len < left)
                 left = len;
-            ssize_t sent = utcp_send(connection, aio->data + aio->done, left);
-            if(sent == -1) {
-                logger(mesh, MESHLINK_ERROR, "Error: channel_poll could not pass data to utcp: utcp_send returned -1");
-                break;
-            } else if(sent == 0) {
-                // utcp send buffer is full
-                break;
-            } else {
-                aio->done += sent;
-                len = sent > len ? 0 : len - sent;
+            ssize_t sent = utcp_buffer(connection, aio->data + aio->done, left);
+            if(sent != left) {
+                if(sent > left) {
+                    logger(mesh, MESHLINK_ERROR, "Error: channel_poll utcp_buffer returned %ld, while there's only been %lu to send!", sent, left);
+                    err = UTCP_ERROR;
+                    break;
+                }
+                else if(sent >= 0) {
+                    // not all could be sent so the utcp send buffer most likely is full
+                    aio->done += sent;
+                    err = UTCP_WOULDBLOCK;
+                    break;
+                }
+                else if(sent == UTCP_WOULDBLOCK) {
+                    // utcp send buffer is full
+                    err = UTCP_WOULDBLOCK;
+                    break;
+                }
+                else {
+                    logger(mesh, MESHLINK_ERROR, "Error: channel_poll could not pass data to utcp: utcp_buffer returned %ld", sent);
+                    err = UTCP_ERROR;
+                    break;
+                }
             }
 
+            aio->done += sent;
+            len = sent > len ? 0 : len - sent;
             aio = aio->next;
         }
     } else {
@@ -2452,6 +2516,8 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
         else
             utcp_set_poll_cb(connection, NULL);
     }
+
+    return err;
 }
 
 static void channel_ack(struct utcp_connection *connection, size_t len) {
@@ -2698,8 +2764,12 @@ bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_t *chan
 
     utcp_set_poll_cb(channel->c, channel_poll);
     utcp_set_ack_cb(channel->c, channel_ack);
-    channel_poll(channel->c, len);
     MESHLINK_MUTEX_UNLOCK(&mesh->mesh_mutex);
+
+    // Wake event loop
+    if(!signal_trigger(&(mesh->loop),&(mesh->wakeup))) {
+        logger(mesh, MESHLINK_WARNING, "Warning: meshlink_channel_aio_send data queued but signal_trigger failed");
+    }
 
     return true;
 }

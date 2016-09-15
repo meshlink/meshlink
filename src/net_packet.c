@@ -471,19 +471,32 @@ int send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 		choose_udp_address(mesh, to, &sa, &sock);
 
 	int err = 0;
-	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0) {
+	int sent = sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa));
+	if(sent != len) {
 		err = sockerrno;
+		if(sent >= 0 || !err) {
+			// This never should happen cause even though send is documented to send and return less or equal
+			// the size with no error this only counts for TCP not UDP.
+			// UDP packets never should be broken up but return an error to not break the headers and checksums.
+			logger(mesh, MESHLINK_ERROR, "Error sending UDP SPTPS packet to %s (%s), expected %lu but sendto returned %u", to->name, to->hostname, len, sent);
+			return -1;
+		}
+		
+		if(sockwouldblock(err)) {
+			logger(mesh, MESHLINK_DEBUG, "Warning sending UDP SPTPS packet to %s (%s): %s", to->name, to->hostname, sockstrerror(err));
+		}
+		else {
+			logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s (%s): %s", to->name, to->hostname, sockstrerror(err));
 
-		logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s (%s): %s", to->name, to->hostname, sockstrerror(err));
-
-		// if message is reported to be too long, lessen mtu to at least one less than the failed length
-		if(sockmsgsize(err)) {
-			if(to->maxmtu >= len)
-				to->maxmtu = len - 1;
-			if(to->mtu >= len) {
-				to->mtu = len - 1;
-				// update meshlink and utcp for the mtu change
-				update_node_mtu(mesh, to);
+			// if message is reported to be too long, lessen mtu to at least one less than the failed length
+			if(sockmsgsize(err)) {
+				if(to->maxmtu >= len)
+					to->maxmtu = len - 1;
+				if(to->mtu >= len) {
+					to->mtu = len - 1;
+					// update meshlink and utcp for the mtu change
+					update_node_mtu(mesh, to);
+				}
 			}
 		}
 	}
