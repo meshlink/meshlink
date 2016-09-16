@@ -23,6 +23,7 @@
 #include "system.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 
 static inline void *xmalloc(size_t n) __attribute__ ((__malloc__));

@@ -17,6 +17,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#include <pthread.h>
+
 #include "compat/compat.h"
 
 #include "system.h"
@@ -31,7 +33,7 @@
 #include "meshlink_queue.h"
 
 static meshlink_queue_t outpacketqueue;
-static pthread_mutex_t queue_mutex;
+static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 static event_t *pending_event = NULL;
 
 static int io_compare(const io_t *a, const io_t *b) {
