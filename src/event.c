@@ -17,8 +17,6 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <pthread.h>
-
 #include "compat/compat.h"
 
 #include "system.h"
@@ -31,6 +29,8 @@
 #include "xalloc.h"
 #include "logger.h"
 #include "meshlink_queue.h"
+
+#include <pthread.h>
 
 static meshlink_queue_t outpacketqueue;
 static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
