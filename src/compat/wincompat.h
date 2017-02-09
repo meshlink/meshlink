@@ -10,4 +10,8 @@ int meshlink_pipe(int pipefd[2]);
 #define meshlink_writepipe(s,buf,len) send(s, buf, len, 0)
 #define meshlink_readpipe(s,buf,len) recv(s, buf, len, 0)
 
+#include <winsock2.h>
+// Windows lacks poll, but WSAPoll is good enough for us.
+#define poll(fds, nfds, timeout) WSAPoll(fds, nfds, timeout)
+
 #endif // meshlink_internal_wincompat_h
