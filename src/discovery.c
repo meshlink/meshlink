@@ -11,6 +11,7 @@
 #include "discovery.h"
 #include "sockaddr.h"
 #include "logger.h"
+#include "compat/compat.h"
 
 #include <pthread.h>
 
@@ -456,6 +457,14 @@ static void discovery_log_cb(CattaLogLevel level, const char *txt)
     logger(NULL, mlevel, "%s\n", txt);
 }
 
+static int discovery_poll(struct pollfd *ufds, unsigned int nfds, int timeout, CATTA_GCC_UNUSED void *userdata) {
+    // at least on windows the poll loop regularly uses up a full core
+    // \todo clean this temporary fix
+    usleep( 10 * 1000 );
+
+    return poll(ufds, nfds, timeout);
+}
+
 bool discovery_start(meshlink_handle_t *mesh)
 {
     logger(mesh, MESHLINK_DEBUG, "discovery_start called\n");
@@ -491,6 +500,9 @@ bool discovery_start(meshlink_handle_t *mesh)
         logger(mesh, MESHLINK_ERROR, "Failed to create discovery poll object.\n");
 		goto fail;
     }
+
+    // \todo clean this temporary fix
+    catta_simple_poll_set_func( mesh->catta_poll, discovery_poll, NULL );
 
     // generate some unique host name (we actually do not care about it)
     char hostname[17];
