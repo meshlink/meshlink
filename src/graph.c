@@ -124,6 +124,7 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 		n->status.visited = false;
 		n->status.indirect = true;
 		n->distance = -1;
+        n->nexthop = NULL;
 	}
 
 	/* Begin with mesh->self */
