@@ -74,6 +74,11 @@ bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request
 
 static int send_initial_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	node_t *to = handle;
+	if( !to->nexthop->connection ) {
+		logger(mesh, MESHLINK_ERROR, "send_initial_sptps_data() missing nexthop connection to send.\n");
+		return -1;
+	}
+
 	meshlink_handle_t *mesh = to->mesh;
 	to->sptps.send_data = send_sptps_data;
 	char buf[len * 4 / 3 + 5];

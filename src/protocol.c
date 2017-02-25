@@ -65,6 +65,11 @@ bool check_id(const char *id) {
 
 // @return the sockerrno, 0 on success, -1 on other errors
 int send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, ...) {
+	if( !c ) {
+		logger(mesh, MESHLINK_ERROR, "Can't send request to nullified connection.");
+		return -1;
+	}
+
 	va_list args;
 	char request[MAXBUFSIZE];
 	int len;
