@@ -124,6 +124,7 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 		n->status.visited = false;
 		n->status.indirect = true;
 		n->distance = -1;
+		n->nexthop = NULL;
 	}
 
 	/* Begin with mesh->self */
@@ -176,7 +177,9 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 
 			e->to->status.visited = true;
 			e->to->status.indirect = indirect;
-			e->to->nexthop = (n->nexthop == mesh->self) ? e->to : n->nexthop;
+			// for the first iteration with n == mesh->self make the immediate connected nodes nexthop these nodes themselves
+			// otherwise just propagate the nodes nexthop
+			e->to->nexthop = (n == mesh->self) ? e->to : n->nexthop;
 			e->to->prevedge = e;
 			e->to->via = indirect ? n->via : e->to;
 			e->to->options = e->options;

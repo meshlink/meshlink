@@ -65,15 +65,19 @@ bool check_id(const char *id) {
 
 // @return the sockerrno, 0 on success, -1 on other errors
 int send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, ...) {
+	if( !c ) {
+		logger(mesh, MESHLINK_ERROR, "Can't send request to nullified connection.");
+		return -1;
+	}
+
 	va_list args;
 	char request[MAXBUFSIZE];
 	int len;
 
+	va_start(args, format);
 	/* Use vsnprintf instead of vxasprintf: faster, no memory
 	   fragmentation, cleanup is automatic, and there is a limit on the
 	   input buffer anyway */
-
-	va_start(args, format);
 	len = vsnprintf(request, MAXBUFSIZE, format, args);
 	va_end(args);
 

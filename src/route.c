@@ -62,7 +62,7 @@ int route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 		size_t len = packet->len - sizeof *hdr;
 
 		// check log level before calling bin2hex since that's an expensive call
-		if(mesh->log_level <= MESHLINK_DEBUG) {
+		if(mesh->log_level <= MESHLINK_DEBUG_PACKETDATA) {
 			char* hex = xzalloc(len * 2 + 1);
 			bin2hex(payload, hex, len);
 			logger(mesh, MESHLINK_DEBUG, "I received a packet for me with payload: %s\n", hex);
