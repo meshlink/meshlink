@@ -784,6 +784,7 @@ static bool getlocaladdrname(char *destaddr, char *host, socklen_t hostlen) {
 
     if(connect(sock, rai->ai_addr, rai->ai_addrlen) && !sockwouldblock(errno)) {
         freeaddrinfo(rai);
+        close(sock);
         return false;
     }
 
@@ -792,8 +793,12 @@ static bool getlocaladdrname(char *destaddr, char *host, socklen_t hostlen) {
     struct sockaddr_storage sn;
     socklen_t sl = sizeof sn;
 
-    if(getsockname(sock, (struct sockaddr *)&sn, &sl))
+    if(getsockname(sock, (struct sockaddr *)&sn, &sl)) {
+        close(sock);
         return false;
+    }
+
+    close(sock);
 
     if(getnameinfo((struct sockaddr *)&sn, sl, host, hostlen, NULL, 0, NI_NUMERICHOST | NI_NUMERICSERV))
         return false;
