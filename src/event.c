@@ -448,6 +448,10 @@ void event_loop_exit(event_loop_t *loop) {
 
     loop->signalio.flags = 0;
     FD_CLR(loop->signalio.fd, &loop->readfds);
+    if(loop->pipefd[0] != -1)
+        meshlink_closepipe(loop->pipefd[0]);
+    if(loop->pipefd[1] != -1)
+        meshlink_closepipe(loop->pipefd[1]);
     loop->highestfd = 0;
 
     exit_meshlink_queue(&outpacketqueue, (meshlink_queue_action_t)free_event);
