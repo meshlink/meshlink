@@ -1,6 +1,6 @@
 /*
     meshlink.c -- Implementation of the MeshLink API.
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -1833,6 +1833,10 @@ void meshlink_set_default_blacklist(meshlink_handle_t *mesh, bool blacklist) {
  */
 void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr) {
 	if(!mesh || !node || !addr)
+		return;
+
+	// Ignore hints about ourself.
+	if((node_t *)node == mesh->self)
 		return;
 	
 	pthread_mutex_lock(&(mesh->mesh_mutex));
