@@ -1015,9 +1015,6 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	// Stop discovery
 	discovery_stop(mesh);
 
-	pthread_mutex_lock(&(mesh->mesh_mutex));
-	logger(mesh, MESHLINK_DEBUG, "meshlink_stop called\n");
-
 	// Shut down the main thread
 	event_loop_stop(&mesh->loop);
 
