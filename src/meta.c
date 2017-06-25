@@ -110,25 +110,8 @@ bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t l
 bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 	int inlen;
 	char inbuf[MAXBUFSIZE];
-	char *bufp = inbuf, *endp;
 
-	/* Strategy:
-	   - Read as much as possible from the TCP socket in one go.
-	   - Decrypt it.
-	   - Check if a full request is in the input buffer.
-	   - If yes, process request and remove it from the buffer,
-	   then check again.
-	   - If not, keep stuff in buffer and exit.
-	 */
-
-	buffer_compact(&c->inbuf, MAXBUFSIZE);
-
-	if(sizeof inbuf <= c->inbuf.len) {
-		logger(mesh, MESHLINK_ERROR, "Input buffer full for %s (%s)", c->name, c->hostname);
-		return false;
-	}
-
-	inlen = recv(c->socket, inbuf, sizeof inbuf - c->inbuf.len, 0);
+	inlen = recv(c->socket, inbuf, sizeof inbuf, 0);
 
 	if(inlen <= 0) {
 		if(!inlen || !errno) {
@@ -143,31 +126,29 @@ bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 	}
 
 	if(c->allow_request == ID) {
-		endp = memchr(bufp, '\n', inlen);
-		if(endp)
-			endp++;
-		else
-			endp = bufp + inlen;
+		buffer_add(&c->inbuf, inbuf, inlen);
 
-		buffer_add(&c->inbuf, bufp, endp - bufp);
+		char *request = buffer_readline(&c->inbuf);
 
-		inlen -= endp - bufp;
-		bufp = endp;
+		if(request) {
+			if(!receive_request(mesh, c, request) || c->allow_request == ID)
+				return false;
 
-		while(c->inbuf.len) {
-			char *request = buffer_readline(&c->inbuf);
-			if(request) {
-				bool result = receive_request(mesh, c, request);
-				if(!result)
-					return false;
-				continue;
-			} else {
-				break;
-			}
+			int left = c->inbuf.len - c->inbuf.offset;
+			if(left > 0) {
+				fprintf(stderr, "GOT A LITTLE MORE\n");
+				return sptps_receive_data(&c->sptps, buffer_read(&c->inbuf, left), left);
+			} else
+				return true;
 		}
 
-		return true;
+		if(c->inbuf.len >= sizeof inbuf) {
+			logger(mesh, MESHLINK_ERROR, "Input buffer full for %s (%s)", c->name, c->hostname);
+			return false;
+		} else {
+			return true;
+		}
 	}
 
-	return sptps_receive_data(&c->sptps, bufp, inlen);
+	return sptps_receive_data(&c->sptps, inbuf, inlen);
 }
