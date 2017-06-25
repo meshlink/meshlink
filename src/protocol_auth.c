@@ -289,9 +289,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		c->protocol_minor = 2;
 		c->allow_request = 1;
 
-		static const char label[] = "MeshLink invitation";
-
-		return sptps_start(&c->sptps, c, false, false, mesh->invitation_key, c->ecdsa, label, sizeof label - 1, send_meta_sptps, receive_invitation_sptps);
+		return sptps_start(&c->sptps, c, false, false, mesh->invitation_key, c->ecdsa, meshlink_invitation_label, sizeof meshlink_invitation_label, send_meta_sptps, receive_invitation_sptps);
 	}
 
 	/* Check if identity is a valid name */
@@ -356,12 +354,12 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	}
 
 	c->allow_request = ACK;
-	char label[14 + strlen(mesh->self->name) + strlen(c->name) + 1];
+	char label[sizeof meshlink_tcp_label + strlen(mesh->self->name) + strlen(c->name) + 2];
 
 	if(c->outgoing)
-		snprintf(label, sizeof label, "MeshLink TCP %s %s", mesh->self->name, c->name);
+		snprintf(label, sizeof label, "%s %s %s", meshlink_tcp_label, mesh->self->name, c->name);
 	else
-		snprintf(label, sizeof label, "MeshLink TCP %s %s", c->name, mesh->self->name);
+		snprintf(label, sizeof label, "%s %s %s", meshlink_tcp_label, c->name, mesh->self->name);
 
 	return sptps_start(&c->sptps, c, c->outgoing, false, mesh->self->connection->ecdsa, c->ecdsa, label, sizeof label - 1, send_meta_sptps, receive_meta_sptps);
 }

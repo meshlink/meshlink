@@ -33,6 +33,10 @@
 
 #define MAXSOCKETS 8    /* Probably overkill... */
 
+static const char meshlink_invitation_label[] = "MeshLink invitation";
+static const char meshlink_tcp_label[] = "MeshLink TCP";
+static const char meshlink_udp_label[] = "MeshLink UDP";
+
 struct CattaServer;
 struct CattaSServiceBrowser;
 struct CattaSimplePoll;

@@ -88,8 +88,8 @@ bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 	if(to->sptps.label)
 		logger(mesh, MESHLINK_DEBUG, "send_req_key(%s) called while sptps->label != NULL!", to->name);
 
-	char label[14 + strlen(mesh->self->name) + strlen(to->name) + 1];
-	snprintf(label, sizeof label, "MeshLink UDP %s %s", mesh->self->name, to->name);
+	char label[sizeof meshlink_udp_label + strlen(mesh->self->name) + strlen(to->name) + 2];
+	snprintf(label, sizeof label, "%s %s %s", meshlink_udp_label, mesh->self->name, to->name);
 	sptps_stop(&to->sptps);
 	to->status.validkey = false;
 	to->status.waitingforkey = true;
@@ -149,8 +149,8 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 				return true;
 			}
 
-			char label[14 + strlen(from->name) + strlen(mesh->self->name) + 1];
-			snprintf(label, sizeof label, "MeshLink UDP %s %s", from->name, mesh->self->name);
+			char label[sizeof meshlink_udp_label + strlen(from->name) + strlen(mesh->self->name) + 2];
+			snprintf(label, sizeof label, "%s %s %s", meshlink_udp_label, from->name, mesh->self->name);
 			sptps_stop(&from->sptps);
 			from->status.validkey = false;
 			from->status.waitingforkey = true;

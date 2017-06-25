@@ -1838,7 +1838,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	}
 
 	// Start an SPTPS session
-	if(!sptps_start(&mesh->sptps, mesh, true, false, key, hiskey, "meshlink invitation", 15, invitation_send, invitation_receive)) {
+	if(!sptps_start(&mesh->sptps, mesh, true, false, key, hiskey, meshlink_invitation_label, sizeof meshlink_invitation_label, invitation_send, invitation_receive)) {
 		meshlink_errno = MESHLINK_EINTERNAL;
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
 		return false;
