@@ -2178,9 +2178,6 @@ static void channel_accept(struct utcp_connection *utcp_connection, uint16_t por
 static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
 	node_t *n = utcp->priv;
 	meshlink_handle_t *mesh = n->mesh;
-	char hex[len * 2 + 1];
-	bin2hex(data, hex, len);
-	logger(mesh, MESHLINK_WARNING, "channel_send(%p, %p, %zu): %s\n", utcp, data, len, hex);
 	return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? len : -1;
 }
 
@@ -2197,9 +2194,6 @@ static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, co
 	node_t *n = (node_t *)source;
 	if(!n->utcp)
 		abort();
-	char hex[len * 2 + 1];
-	bin2hex(data, hex, len);
-	logger(mesh, MESHLINK_WARNING, "channel_receive(%p, %p, %zu): %s\n", n->utcp, data, len, hex);
 	utcp_recv(n->utcp, data, len);
 }
 
@@ -2229,7 +2223,6 @@ void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_ac
 	mesh->receive_cb = channel_receive;
 	for splay_each(node_t, n, mesh->nodes) {
 		if(!n->utcp && n != mesh->self) {
-			logger(mesh, MESHLINK_WARNING, "utcp_init on node %s", n->name);
 			n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
 		}
 	}
@@ -2242,7 +2235,6 @@ meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node
 		return NULL;
 	}
 
-	logger(mesh, MESHLINK_WARNING, "meshlink_channel_open(%p, %s, %u, %p, %p, %zu)\n", mesh, node->name, port, cb, data, len);
 	node_t *n = (node_t *)node;
 	if(!n->utcp) {
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
