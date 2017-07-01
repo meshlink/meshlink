@@ -54,7 +54,7 @@ bool check_id(const char *id) {
 		return false;
 
 	for(; *id; id++)
-		if(!isalnum(*id) && *id != '_')
+		if(!isalnum(*id) && *id != '_' && *id != '-')
 			return false;
 
 	return true;
