@@ -89,6 +89,13 @@ namespace meshlink {
 
 	/// A class describing a MeshLink channel.
 	class channel: public meshlink_channel_t {
+		public:
+		static const uint32_t RELIABLE = MESHLINK_CHANNEL_RELIABLE;
+		static const uint32_t ORDERED = MESHLINK_CHANNEL_ORDERED;
+		static const uint32_t FRAMED = MESHLINK_CHANNEL_FRAMED;
+		static const uint32_t DROP_LATE = MESHLINK_CHANNEL_DROP_LATE;
+		static const uint32_t TCP = MESHLINK_CHANNEL_TCP;
+		static const uint32_t UDP = MESHLINK_CHANNEL_UDP;
 	};
 
 	/// A class describing a MeshLink mesh.
@@ -487,11 +494,12 @@ namespace meshlink {
 		 *  @param cb           A pointer to the function which will be called when the remote node sends data to the local node.
 		 *  @param data         A pointer to a buffer containing data to already queue for sending.
 		 *  @param len          The length of the data.
+		 *  @param flags        A bitwise-or'd combination of flags that set the semantics for this channel.
 		 *
 		 *  @return             A handle for the channel, or NULL in case of an error.
 		 */
-		channel *channel_open(node *node, uint16_t port, channel_receive_cb_t cb, const void *data, size_t len) {
-			channel *ch = (channel *)meshlink_channel_open(handle, node, port, (meshlink_channel_receive_cb_t)cb, data, len);
+		channel *channel_open(node *node, uint16_t port, channel_receive_cb_t cb, const void *data, size_t len, uint32_t flags = channel::TCP) {
+			channel *ch = (channel *)meshlink_channel_open_ex(handle, node, port, (meshlink_channel_receive_cb_t)cb, data, len, flags);
 			meshlink_set_channel_poll_cb(handle, ch, &channel_poll_trampoline);
 			return ch;
 		}
@@ -500,8 +508,8 @@ namespace meshlink {
 		 * @override
 		 * Sets channel_receive_trampoline as cb, which in turn calls this->channel_receive( ... ).
 		 */
-		channel *channel_open(node *node, uint16_t port, const void *data, size_t len) {
-			channel *ch = (channel *)meshlink_channel_open(handle, node, port, &channel_receive_trampoline, data, len);
+		channel *channel_open(node *node, uint16_t port, const void *data, size_t len, uint32_t flags = channel::TCP) {
+			channel *ch = (channel *)meshlink_channel_open_ex(handle, node, port, &channel_receive_trampoline, data, len, flags);
 			meshlink_set_channel_poll_cb(handle, ch, &channel_poll_trampoline);
 			return ch;
 		}

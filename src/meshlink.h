@@ -77,6 +77,14 @@ typedef enum {
 	_DEV_CLASS_MAX = 3
 } dev_class_t;
 
+/// Channel flags
+static const uint32_t MESHLINK_CHANNEL_RELIABLE = 1;   // Data is retransmitted when packets are lost.
+static const uint32_t MESHLINK_CHANNEL_ORDERED = 2;    // Data is delivered in-order to the application.
+static const uint32_t MESHLINK_CHANNEL_FRAMED = 4;     // Data is delivered in chunks of the same length as data was originally sent.
+static const uint32_t MESHLINK_CHANNEL_DROP_LATE = 8;  // When packets are reordered, late packets are ignored.
+static const uint32_t MESHLINK_CHANNEL_TCP = 3;        // Select TCP semantics.
+static const uint32_t MESHLINK_CHANNEL_UDP = 0;        // Select UDP semantics.
+
 /// A variable holding the last encountered error from MeshLink.
 /** This is a thread local variable that contains the error code of the most recent error
  *  encountered by a MeshLink API function called in the current thread.
@@ -683,6 +691,29 @@ extern void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_chann
  *  @param data         A pointer to a buffer containing data to already queue for sending, or NULL if there is no data to send.
  *                      After meshlink_send() returns, the application is free to overwrite or free this buffer.
  *  @param len          The length of the data, or 0 if there is no data to send.
+ *  @param flags	A bitwise-or'd combination of flags that set the semantics for this channel.
+ *
+ *  @return             A handle for the channel, or NULL in case of an error.
+ *                      The handle is valid until meshlink_channel_close() is called.
+ */
+extern meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len, uint32_t flags);
+
+/// Open a reliable stream channel to another node.
+/** This function is called whenever a remote node wants to open a channel to the local node.
+ *  The application then has to decide whether to accept or reject this channel.
+ *
+ *  This function returns a pointer to a struct meshlink_channel that will be allocated by MeshLink.
+ *  When the application does no longer need to use this channel, it must call meshlink_close()
+ *  to free its resources.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         The node to which this channel is being initiated.
+ *  @param port         The port number the peer wishes to connect to.
+ *  @param cb           A pointer to the function which will be called when the remote node sends data to the local node.
+ *                      The pointer may be NULL, in which case incoming data is ignored.
+ *  @param data         A pointer to a buffer containing data to already queue for sending, or NULL if there is no data to send.
+ *                      After meshlink_send() returns, the application is free to overwrite or free this buffer.
+ *  @param len          The length of the data, or 0 if there is no data to send.
  *
  *  @return             A handle for the channel, or NULL in case of an error.
  *                      The handle is valid until meshlink_channel_close() is called.
@@ -728,6 +759,16 @@ extern void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *
  *  @return             The amount of data that was queued, which can be less than len, or a negative value in case of an error.
  */
 extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len);
+
+/// Get channel flags.
+/** This returns the flags used when opening this channel.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *
+ *  @return             The flags set for this channel.
+ */
+extern uint32_t meshlink_channel_get_flags(meshlink_handle_t *mesh, meshlink_channel_t *channel);
 
 /// Hint that a hostname may be found at an address
 /** This function indicates to meshlink that the given hostname is likely found

@@ -2226,7 +2226,7 @@ void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_ac
 	pthread_mutex_unlock(&mesh->mesh_mutex);
 }
 
-meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len) {
+meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len, uint32_t flags) {
 	if(!mesh || !node) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
@@ -2244,13 +2244,17 @@ meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node
 	meshlink_channel_t *channel = xzalloc(sizeof *channel);
 	channel->node = n;
 	channel->receive_cb = cb;
-	channel->c = utcp_connect(n->utcp, port, channel_recv, channel);
+	channel->c = utcp_connect_ex(n->utcp, port, channel_recv, channel, flags);
 	if(!channel->c) {
 		meshlink_errno = errno == ENOMEM ? MESHLINK_ENOMEM : MESHLINK_EINTERNAL;
 		free(channel);
 		return NULL;
 	}
 	return channel;
+}
+
+meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len) {
+	return meshlink_channel_open_ex(mesh, node, port, cb, data, len, MESHLINK_CHANNEL_TCP);
 }
 
 void meshlink_channel_shutdown(meshlink_handle_t *mesh, meshlink_channel_t *channel, int direction) {
@@ -2298,6 +2302,15 @@ ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *chann
 	if(retval < 0)
 		meshlink_errno = MESHLINK_ENETWORK;
 	return retval;
+}
+
+uint32_t meshlink_channel_get_flags(meshlink_handle_t *mesh, meshlink_channel_t *channel) {
+	if(!mesh || !channel) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return -1;
+	}
+
+	return channel->c->flags;
 }
 
 void update_node_status(meshlink_handle_t *mesh, node_t *n) {
