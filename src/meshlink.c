@@ -191,6 +191,18 @@ static bool is_valid_hostname(const char *hostname) {
 	return true;
 }
 
+static void set_timeout(int sock, int timeout) {
+#ifdef _WIN32
+	DWORD tv = timeout;
+#else
+	struct timeval tv;
+	tv.tv_sec = timeout / 1000;
+	tv.tv_usec = (timeout - tv.tv_sec * 1000) * 1000;
+#endif
+	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
+	setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof tv);
+}
+
 char *meshlink_get_external_address(meshlink_handle_t *mesh) {
 	char *hostname = NULL;
 
@@ -203,6 +215,7 @@ char *meshlink_get_external_address(meshlink_handle_t *mesh) {
 	while(aip) {
 		int s = socket(aip->ai_family, aip->ai_socktype, aip->ai_protocol);
 		if(s >= 0) {
+			set_timeout(s, 5000);
 			if(connect(s, aip->ai_addr, aip->ai_addrlen)) {
 				closesocket(s);
 				s = -1;
@@ -1774,6 +1787,8 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
 		return false;
 	}
+
+	set_timeout(mesh->sock, 5000);
 
 	if(connect(mesh->sock, ai->ai_addr, ai->ai_addrlen)) {
 		logger(mesh, MESHLINK_DEBUG, "Could not connect to %s port %s: %s\n", address, port, strerror(errno));
