@@ -221,7 +221,10 @@ static void parse_command(char *buf) {
 			fprintf(stderr, "Could not join using invitation: %s\n", meshlink_strerror(meshlink_errno));
 		else {
 			fprintf(stderr, "Invitation accepted!\n");
-			meshlink_start(mesh[nodeindex]);
+		}
+		if(!meshlink_start(mesh[nodeindex])) {
+			fprintf(stderr, "Could not restart MeshLink: %s\n", meshlink_strerror(meshlink_errno));
+			exit(1);
 		}
 	} else if(!strcasecmp(buf, "kick")) {
 		if(!arg) {
