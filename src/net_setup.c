@@ -390,8 +390,19 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	mesh->listen_sockets = 0;
 
-	if(!add_listen_address(mesh, address, NULL))
-		return false;
+	if(!add_listen_address(mesh, address, NULL)) {
+		if(!strcmp(mesh->myport, "0")) {
+			logger(mesh, MESHLINK_WARNING, "Could not bind to port %s, asking OS to choose one for us", mesh->myport);
+			free(mesh->myport);
+			mesh->myport = strdup("0");
+			if(!mesh->myport)
+				return false;
+			if(!add_listen_address(mesh, address, NULL))
+				return false;
+		} else {
+			return false;
+		}
+	}
 
 	if(!mesh->listen_sockets) {
 		logger(mesh, MESHLINK_ERROR, "Unable to create any listening socket!");
