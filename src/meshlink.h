@@ -638,7 +638,8 @@ typedef void (*meshlink_channel_receive_cb_t)(meshlink_handle_t *mesh, meshlink_
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param channel      A handle for the channel.
- *  @param len          The maximum amount of data that is guaranteed to be accepted by meshlink_channel_send().
+ *  @param len          The maximum amount of data that is guaranteed to be accepted by meshlink_channel_send(),
+ *                      or 0 in case of an error.
  */
 typedef void (*meshlink_channel_poll_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len);
 
