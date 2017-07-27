@@ -304,7 +304,8 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	/* Don't use key material until every check has passed. */
 	from->status.validkey = false;
 
-	if(compression < 0 || compression > 11) {
+	/* Compression is not supported. */
+	if(compression != 0) {
 		logger(mesh, MESHLINK_ERROR, "Node %s (%s) uses bogus compression level!", from->name, from->hostname);
 		return true;
 	}

@@ -196,42 +196,11 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 }
 
 static uint16_t compress_packet(uint8_t *dest, const uint8_t *source, uint16_t len, int level) {
-	if(level == 0) {
-		memcpy(dest, source, len);
-		return len;
-	} else if(level == 10)
-		return -1;
-	else if(level < 10) {
-#ifdef HAVE_ZLIB
-		unsigned long destlen = MAXSIZE;
-		if(compress2(dest, &destlen, source, len, level) == Z_OK)
-			return destlen;
-		else
-#endif
-			return -1;
-	} else
-		return -1;
-
-	return -1;
+	abort();
 }
 
 static uint16_t uncompress_packet(uint8_t *dest, const uint8_t *source, uint16_t len, int level) {
-	if(level == 0) {
-		memcpy(dest, source, len);
-		return len;
-	} else if(level > 9)
-		return -1;
-#ifdef HAVE_ZLIB
-	else {
-		unsigned long destlen = MAXSIZE;
-		if(uncompress(dest, &destlen, source, len) == Z_OK)
-			return destlen;
-		else
-			return -1;
-	}
-#endif
-
-	return -1;
+	abort();
 }
 
 /* VPN packet I/O */
