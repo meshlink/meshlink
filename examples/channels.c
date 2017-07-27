@@ -123,9 +123,9 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 	} else if(!strcasecmp(buf, "who")) {
 		if(!arg) {
 			nodes = meshlink_get_all_nodes(mesh, nodes, &nnodes);
-			if(!nnodes) {
+			if(!nnodes)
 				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink_strerror(meshlink_errno));
-			} else {
+			else {
 				printf("%zu known nodes:", nnodes);
 				for(int i = 0; i < nnodes; i++)
 					printf(" %s", nodes[i]->name);
@@ -133,28 +133,26 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			}
 		} else {
 			meshlink_node_t *node = meshlink_get_node(mesh, arg);
-			if(!node) {
+			if(!node)
 				fprintf(stderr, "Error looking up '%s': %s\n", arg, meshlink_strerror(meshlink_errno));
-			} else {
+			else
 				printf("Node %s found\n", arg);
-			}
 		}
 	} else if(!strcasecmp(buf, "quit")) {
 		printf("Bye!\n");
 		fclose(stdin);
 	} else if(!strcasecmp(buf, "help")) {
 		printf(
-			"<name>: <message>     Send a message to the given node.\n"
-			"                      Subsequent messages don't need the <name>: prefix.\n"
-			"/invite <name>        Create an invitation for a new node.\n"
-			"/join <invitation>    Join an existing mesh using an invitation.\n"
-			"/kick <name>          Blacklist the given node.\n"
-			"/who [<name>]         List all nodes or show information about the given node.\n"
-			"/quit                 Exit this program.\n"
-			);
-	} else {
+		        "<name>: <message>     Send a message to the given node.\n"
+		        "                      Subsequent messages don't need the <name>: prefix.\n"
+		        "/invite <name>        Create an invitation for a new node.\n"
+		        "/join <invitation>    Join an existing mesh using an invitation.\n"
+		        "/kick <name>          Blacklist the given node.\n"
+		        "/who [<name>]         List all nodes or show information about the given node.\n"
+		        "/quit                 Exit this program.\n"
+		);
+	} else
 		fprintf(stderr, "Unknown command '/%s'\n", buf);
-	}
 }
 
 static void parse_input(meshlink_handle_t *mesh, char *buf) {

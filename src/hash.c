@@ -76,9 +76,8 @@ void hash_insert(hash_t *hash, const void *key, const void *value) {
 
 void *hash_search(const hash_t *hash, const void *key) {
 	uint32_t i = modulo(hash_function(key, hash->size), hash->n);
-	if(hash->values[i] && !memcmp(key, hash->keys + i * hash->size, hash->size)) {
+	if(hash->values[i] && !memcmp(key, hash->keys + i * hash->size, hash->size))
 		return (void *)hash->values[i];
-	}
 	return NULL;
 }
 

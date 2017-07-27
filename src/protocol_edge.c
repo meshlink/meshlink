@@ -42,8 +42,8 @@ bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
 	sockaddr2str(&e->address, &address, &port);
 
 	x = send_request(mesh, c, "%d %x %s %d %s %s %s %d %x %d", ADD_EDGE, rand(),
-					 e->from->name, e->from->devclass, e->to->name, address, port, e->to->devclass,
-					 e->options, e->weight);
+	                 e->from->name, e->from->devclass, e->to->name, address, port, e->to->devclass,
+	                 e->options, e->weight);
 	free(address);
 	free(port);
 
@@ -64,9 +64,9 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	int weight;
 
 	if(sscanf(request, "%*d %*x "MAX_STRING" %d "MAX_STRING" "MAX_STRING" "MAX_STRING" %d %x %d",
-			  from_name, &from_devclass, to_name, to_address, to_port, &to_devclass, &options, &weight) != 8) {
+	                from_name, &from_devclass, to_name, to_address, to_port, &to_devclass, &options, &weight) != 8) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ADD_EDGE", c->name,
-			   c->hostname);
+		       c->hostname);
 		return false;
 	}
 
@@ -74,7 +74,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!check_id(from_name) || !check_id(to_name)) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ADD_EDGE", c->name,
-			   c->hostname, "invalid name");
+		       c->hostname, "invalid name");
 		return false;
 	}
 
@@ -82,13 +82,13 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(from_devclass < 0 || from_devclass > _DEV_CLASS_MAX) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ADD_EDGE", c->name,
-			   c->hostname, "from devclass invalid");
+		       c->hostname, "from devclass invalid");
 		return false;
 	}
 
 	if(to_devclass < 0 || to_devclass > _DEV_CLASS_MAX) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ADD_EDGE", c->name,
-			   c->hostname, "to devclass invalid");
+		       c->hostname, "to devclass invalid");
 		return false;
 	}
 
@@ -132,12 +132,12 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		if(e->weight != weight || e->options != options || sockaddrcmp(&e->address, &address)) {
 			if(from == mesh->self) {
 				logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) for ourself which does not match existing entry",
-						   "ADD_EDGE", c->name, c->hostname);
+				       "ADD_EDGE", c->name, c->hostname);
 				send_add_edge(mesh, c, e);
 				return true;
 			} else {
 				logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) which does not match existing entry",
-						   "ADD_EDGE", c->name, c->hostname);
+				       "ADD_EDGE", c->name, c->hostname);
 				edge_del(mesh, e);
 				graph(mesh);
 			}
@@ -145,7 +145,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			return true;
 	} else if(from == mesh->self) {
 		logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) for ourself which does not exist",
-				   "ADD_EDGE", c->name, c->hostname);
+		       "ADD_EDGE", c->name, c->hostname);
 		mesh->contradicting_add_edge++;
 		e = new_edge();
 		e->from = from;
@@ -176,7 +176,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 bool send_del_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
 	return send_request(mesh, c, "%d %x %s %s", DEL_EDGE, rand(),
-						e->from->name, e->to->name);
+	                    e->from->name, e->to->name);
 }
 
 bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -187,7 +187,7 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(sscanf(request, "%*d %*x "MAX_STRING" "MAX_STRING, from_name, to_name) != 2) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "DEL_EDGE", c->name,
-			   c->hostname);
+		       c->hostname);
 		return false;
 	}
 
@@ -195,7 +195,7 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!check_id(from_name) || !check_id(to_name)) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "DEL_EDGE", c->name,
-			   c->hostname, "invalid name");
+		       c->hostname, "invalid name");
 		return false;
 	}
 
@@ -209,13 +209,13 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!from) {
 		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) which does not appear in the edge tree",
-				   "DEL_EDGE", c->name, c->hostname);
+		       "DEL_EDGE", c->name, c->hostname);
 		return true;
 	}
 
 	if(!to) {
 		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) which does not appear in the edge tree",
-				   "DEL_EDGE", c->name, c->hostname);
+		       "DEL_EDGE", c->name, c->hostname);
 		return true;
 	}
 
@@ -225,13 +225,13 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!e) {
 		logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) which does not appear in the edge tree",
-				   "DEL_EDGE", c->name, c->hostname);
+		       "DEL_EDGE", c->name, c->hostname);
 		return true;
 	}
 
 	if(e->from == mesh->self) {
 		logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) for ourself",
-				   "DEL_EDGE", c->name, c->hostname);
+		       "DEL_EDGE", c->name, c->hostname);
 		mesh->contradicting_del_edge++;
 		send_add_edge(mesh, c, e);    /* Send back a correction */
 		return true;

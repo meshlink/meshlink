@@ -33,11 +33,15 @@
 #include "utils.h"
 
 // Symbols necessary to link with logger.o
-bool send_request(void *c, const char *msg, ...) { return false; }
+bool send_request(void *c, const char *msg, ...) {
+	return false;
+}
 void *mesh;
 void *global_log_cb;
 int global_log_level;
-bool send_meta(void *c, const char *msg , int len) { return false; }
+bool send_meta(void *c, const char *msg, int len) {
+	return false;
+}
 char *logfilename = NULL;
 struct timeval now;
 
@@ -83,17 +87,17 @@ const char *program_name;
 static void usage() {
 	fprintf(stderr, "Usage: %s [options] my_ecdsa_key_file his_ecdsa_key_file [host] port\n\n", program_name);
 	fprintf(stderr, "Valid options are:\n"
-			"  -d, --datagram          Enable datagram mode.\n"
-			"  -q, --quit              Quit when EOF occurs on stdin.\n"
-			"  -r, --readonly          Only send data from the socket to stdout.\n"
+	        "  -d, --datagram          Enable datagram mode.\n"
+	        "  -q, --quit              Quit when EOF occurs on stdin.\n"
+	        "  -r, --readonly          Only send data from the socket to stdout.\n"
 #ifdef HAVE_LINUX
-			"  -t, --tun               Use a tun device instead of stdio.\n"
+	        "  -t, --tun               Use a tun device instead of stdio.\n"
 #endif
-			"  -w, --writeonly         Only send data from stdin to the socket.\n"
-			"  -L, --packet-loss RATE  Fake packet loss of RATE percent.\n"
-			"  -R, --replay-window N   Set replay window to N bytes.\n"
-			"  -v, --verbose           Display debug messages.\n"
-			"\n");
+	        "  -w, --writeonly         Only send data from stdin to the socket.\n"
+	        "  -L, --packet-loss RATE  Fake packet loss of RATE percent.\n"
+	        "  -R, --replay-window N   Set replay window to N bytes.\n"
+	        "  -v, --verbose           Display debug messages.\n"
+	        "\n");
 	fprintf(stderr, "Report bugs to bugs@meshlink.io.\n");
 }
 
@@ -111,58 +115,58 @@ int main(int argc, char *argv[]) {
 	bool quit = false;
 
 	while((r = getopt_long(argc, argv, "dqrtwL:W:v", long_options, &option_index)) != EOF) {
-		switch (r) {
-			case 0:   /* long option */
-				break;
+		switch(r) {
+		case 0:   /* long option */
+			break;
 
-			case 'd': /* datagram mode */
-				datagram = true;
-				break;
+		case 'd': /* datagram mode */
+			datagram = true;
+			break;
 
-			case 'q': /* close connection on EOF from stdin */
-				quit = true;
-				break;
+		case 'q': /* close connection on EOF from stdin */
+			quit = true;
+			break;
 
-			case 'r': /* read only */
-				readonly = true;
-				break;
+		case 'r': /* read only */
+			readonly = true;
+			break;
 
-			case 't': /* read only */
+		case 't': /* read only */
 #ifdef HAVE_LINUX
-				tun = true;
+			tun = true;
 #else
-				fprintf(stderr, "--tun is only supported on Linux.\n");
-				usage();
-				return 1;
+			fprintf(stderr, "--tun is only supported on Linux.\n");
+			usage();
+			return 1;
 #endif
-				break;
+			break;
 
-			case 'w': /* write only */
-				writeonly = true;
-				break;
+		case 'w': /* write only */
+			writeonly = true;
+			break;
 
-			case 'L': /* packet loss rate */
-				packetloss = atoi(optarg);
-				break;
+		case 'L': /* packet loss rate */
+			packetloss = atoi(optarg);
+			break;
 
-			case 'W': /* replay window size */
-				sptps_replaywin = atoi(optarg);
-				break;
+		case 'W': /* replay window size */
+			sptps_replaywin = atoi(optarg);
+			break;
 
-			case 'v': /* be verbose */
-				verbose = true;
-				break;
+		case 'v': /* be verbose */
+			verbose = true;
+			break;
 
-			case '?': /* wrong options */
-				usage();
-				return 1;
+		case '?': /* wrong options */
+			usage();
+			return 1;
 
-			case 1: /* help */
-				usage();
-				return 0;
+		case 1: /* help */
+			usage();
+			return 0;
 
-			default:
-				break;
+		default:
+			break;
 		}
 	}
 
@@ -327,8 +331,7 @@ int main(int argc, char *argv[]) {
 				sptps_force_kex(&s);
 				if(len > 1)
 					sptps_send_record(&s, 0, buf, len);
-			} else
-			if(!sptps_send_record(&s, buf[0] == '!' ? 1 : 0, buf, (len == 1 && buf[0] == '\n') ? 0 : buf[0] == '*' ? sizeof buf : len))
+			} else if(!sptps_send_record(&s, buf[0] == '!' ? 1 : 0, buf, (len == 1 && buf[0] == '\n') ? 0 : buf[0] == '*' ? sizeof buf : len))
 				return 1;
 		}
 

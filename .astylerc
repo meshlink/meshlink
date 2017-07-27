@@ -1,0 +1,5 @@
+--indent=tab=8
+--convert-tabs
+-xj
+-A2
+-U

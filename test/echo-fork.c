@@ -93,7 +93,7 @@ int main1(void) {
 	}
 
 	// Open a channel from foo to bar.
-	
+
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
 	if(!bar) {
 		fprintf(stderr, "Foo could not find bar\n");
@@ -130,9 +130,9 @@ int main1(void) {
 				fprintf(stderr, "Sending message failed\n");
 				return 1;
 			}
-			if(!sent) {
+			if(!sent)
 				usleep(100000);
-			} else {
+			else {
 				len -= sent;
 				p += sent;
 			}

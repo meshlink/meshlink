@@ -165,9 +165,9 @@ static void scan_for_hostname(const char *filename, char **hostname, char **port
 		p += strspn(p, "\t ");
 		p[strcspn(p, "\t ")] = 0;
 
-		if(!*port && !strcasecmp(line, "Port")) {
+		if(!*port && !strcasecmp(line, "Port"))
 			*port = xstrdup(q);
-		} else if(!*hostname && !strcasecmp(line, "Address")) {
+		else if(!*hostname && !strcasecmp(line, "Address")) {
 			*hostname = xstrdup(q);
 			if(*p) {
 				free(*port);
@@ -278,9 +278,8 @@ static char *get_my_hostname(meshlink_handle_t* mesh) {
 	if(f) {
 		fprintf(f, "\nAddress = %s\n", hostname);
 		fclose(f);
-	} else {
+	} else
 		logger(mesh, MESHLINK_DEBUG, "Could not append Address to %s: %s\n", filename, strerror(errno));
-	}
 
 done:
 	if(port) {
@@ -531,7 +530,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 	if(!b64key) {
 		fclose(fh);
 		return false;
-		}
+	}
 
 	fprintf(fh, "ECDSAPublicKey = %s\n", b64key);
 	fprintf(fh, "Port = %s\n", mesh->myport);
@@ -570,28 +569,28 @@ static bool invitation_send(void *handle, uint8_t type, const void *data, size_t
 static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint16_t len) {
 	meshlink_handle_t* mesh = handle;
 	switch(type) {
-		case SPTPS_HANDSHAKE:
-			return sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
+	case SPTPS_HANDSHAKE:
+		return sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
 
-		case 0:
-			mesh->data = xrealloc(mesh->data, mesh->thedatalen + len + 1);
-			memcpy(mesh->data + mesh->thedatalen, msg, len);
-			mesh->thedatalen += len;
-			mesh->data[mesh->thedatalen] = 0;
-			break;
+	case 0:
+		mesh->data = xrealloc(mesh->data, mesh->thedatalen + len + 1);
+		memcpy(mesh->data + mesh->thedatalen, msg, len);
+		mesh->thedatalen += len;
+		mesh->data[mesh->thedatalen] = 0;
+		break;
 
-		case 1:
-			mesh->thedatalen = 0;
-			return finalize_join(mesh);
+	case 1:
+		mesh->thedatalen = 0;
+		return finalize_join(mesh);
 
-		case 2:
-			logger(mesh, MESHLINK_DEBUG, "Invitation succesfully accepted.\n");
-			shutdown(mesh->sock, SHUT_RDWR);
-			mesh->success = true;
-			break;
+	case 2:
+		logger(mesh, MESHLINK_DEBUG, "Invitation succesfully accepted.\n");
+		shutdown(mesh->sock, SHUT_RDWR);
+		mesh->success = true;
+		break;
 
-		default:
-			return false;
+	default:
+		return false;
 	}
 
 	return true;
@@ -845,7 +844,7 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
 	// Validate arguments provided by the application
 	bool usingname = false;
-	
+
 	logger(NULL, MESHLINK_DEBUG, "meshlink_open called\n");
 
 	if(!confbase || !*confbase) {
@@ -863,14 +862,14 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	if(!name || !*name) {
 		logger(NULL, MESHLINK_ERROR, "No name given!\n");
 		//return NULL;
-	}
-	else { //check name only if there is a name != NULL
+	} else { //check name only if there is a name != NULL
 
 		if(!check_id(name)) {
 			logger(NULL, MESHLINK_ERROR, "Invalid name given!\n");
 			meshlink_errno = MESHLINK_EINVAL;
 			return NULL;
-		} else { usingname = true;}
+		} else
+			usingname = true;
 	}
 
 	if(devclass < 0 || devclass > _DEV_CLASS_MAX) {
@@ -883,14 +882,14 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	mesh->confbase = xstrdup(confbase);
 	mesh->appname = xstrdup(appname);
 	mesh->devclass = devclass;
-	if (usingname) mesh->name = xstrdup(name);
+	if(usingname) mesh->name = xstrdup(name);
 
 	// initialize mutex
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 	pthread_mutex_init(&(mesh->mesh_mutex), &attr);
-	
+
 	mesh->threadstarted = false;
 	event_loop_init(&mesh->loop);
 	mesh->loop.data = mesh;
@@ -967,7 +966,7 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
-	
+
 	logger(mesh, MESHLINK_DEBUG, "meshlink_start called\n");
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
@@ -989,7 +988,7 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 	// TODO: open listening sockets first
 
 	//Check that a valid name is set
-	if(!mesh->name ) {
+	if(!mesh->name) {
 		logger(mesh, MESHLINK_DEBUG, "No name given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
@@ -1194,7 +1193,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 	// leave the last byte as 0 to make sure strings are always
 	// null-terminated if they are longer than the buffer
 	strncpy(hdr->destination, destination->name, (sizeof hdr->destination) - 1);
-	strncpy(hdr->source, mesh->self->name, (sizeof hdr->source) -1 );
+	strncpy(hdr->source, mesh->self->name, (sizeof hdr->source) -1);
 
 	memcpy(packet->data + sizeof *hdr, data, len);
 
@@ -1207,7 +1206,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 
 	// Notify event loop
 	signal_trigger(&(mesh->loop),&(mesh->datafromapp));
-	
+
 	return true;
 }
 
@@ -1232,13 +1231,11 @@ ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination)
 	if(!n->status.reachable) {
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
 		return 0;
-	
-	}
-	else if(n->mtuprobes > 30 && n->minmtu) {
+
+	} else if(n->mtuprobes > 30 && n->minmtu) {
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
 		return n->minmtu;
-	}
-	else {
+	} else {
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
 		return MTU;
 	}
@@ -1364,16 +1361,15 @@ bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const voi
 	if(!n->ecdsa) {
 		meshlink_errno = MESHLINK_EINTERNAL;
 		rval = false;
-	} else {
+	} else
 		rval = ecdsa_verify(((struct node_t *)source)->ecdsa, data, len, signature);
-	}
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return rval;
 }
 
 static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 	char filename[PATH_MAX];
-	
+
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
 	snprintf(filename, sizeof filename, "%s" SLASH "invitations", mesh->confbase);
@@ -1587,7 +1583,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
 	}
-	
+
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
 	// Check validity of the new node's name
@@ -1670,7 +1666,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	// Fill in the details.
 	fprintf(f, "Name = %s\n", name);
 	//if(netname)
-	//	fprintf(f, "NetName = %s\n", netname);
+	//      fprintf(f, "NetName = %s\n", netname);
 	fprintf(f, "ConnectTo = %s\n", mesh->self->name);
 
 	// Copy Broadcast and Mode
@@ -1680,7 +1676,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 		char buf[1024];
 		while(fgets(buf, sizeof buf, tc)) {
 			if((!strncasecmp(buf, "Mode", 4) && strchr(" \t=", buf[4]))
-					|| (!strncasecmp(buf, "Broadcast", 9) && strchr(" \t=", buf[9]))) {
+			                || (!strncasecmp(buf, "Broadcast", 9) && strchr(" \t=", buf[9]))) {
 				fputs(buf, f);
 				// Make sure there is a newline character.
 				if(!strchr(buf, '\n'))
@@ -1716,7 +1712,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
-	
+
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
 	//TODO: think of a better name for this variable, or of a different way to tokenize the invitation URL.
@@ -1767,9 +1763,8 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	char *b64key = ecdsa_get_base64_public_key(key);
 
 	//Before doing meshlink_join make sure we are not connected to another mesh
-	if ( mesh->threadstarted ){
+	if(mesh->threadstarted)
 		goto invalid;
-	}
 
 	// Connect to the meshlink daemon mentioned in the URL.
 	struct addrinfo *ai = str2addrinfo(address, port, SOCK_STREAM);
@@ -1914,7 +1909,7 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 	}
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
-	
+
 	char filename[PATH_MAX];
 	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
 	FILE *f = fopen(filename, "r");
@@ -1942,7 +1937,7 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 
 	fclose(f);
 	buf[len - 1] = 0;
-	
+
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return buf;
 }
@@ -1952,7 +1947,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
-	
+
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
 	if(strncmp(data, "Name = ", 7)) {
@@ -2021,7 +2016,7 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	}
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
-	
+
 	node_t *n;
 	n = (node_t*)node;
 	n->status.blacklisted=true;
@@ -2041,7 +2036,7 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	}
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
-	
+
 	node_t *n = (node_t *)node;
 	n->status.blacklisted = false;
 
@@ -2065,15 +2060,15 @@ void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const
 	// Ignore hints about ourself.
 	if((node_t *)node == mesh->self)
 		return;
-	
+
 	pthread_mutex_lock(&(mesh->mesh_mutex));
-	
+
 	char *host = NULL, *port = NULL, *str = NULL;
 	sockaddr2str((const sockaddr_t *)addr, &host, &port);
 
 	if(host && port) {
 		xasprintf(&str, "%s %s", host, port);
-		if ( (strncmp ("fe80",host,4) != 0) && ( strncmp("127.",host,4) != 0 ) && ( strcmp("localhost",host) !=0 ) )
+		if((strncmp("fe80",host,4) != 0) && (strncmp("127.",host,4) != 0) && (strcmp("localhost",host) !=0))
 			append_config_file(mesh, node->name, "Address", str);
 		else
 			logger(mesh, MESHLINK_DEBUG, "Not adding Link Local IPv6 Address to config\n");
@@ -2098,7 +2093,7 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 	}
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
-	
+
 	meshlink_edge_t **result = NULL;
 	meshlink_edge_t *copy = NULL;
 	int result_size = 0;
@@ -2106,11 +2101,10 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 	result_size = mesh->edges->count;
 
 	// if result is smaller than edges, we have to dealloc all the excess meshlink_edge_t
-	if(result_size > *nmemb) {
-		result = realloc(edges, result_size * sizeof (meshlink_edge_t*));
-	} else {
+	if(result_size > *nmemb)
+		result = realloc(edges, result_size * sizeof(meshlink_edge_t*));
+	else
 		result = edges;
-	}
 
 	if(result) {
 		meshlink_edge_t **p = result;
@@ -2123,12 +2117,10 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 			}
 			n++;
 			// the first *nmemb members of result can be re-used
-			if(n > *nmemb) {
+			if(n > *nmemb)
 				copy = xzalloc(sizeof *copy);
-			}
-			else {
+			else
 				copy = *p;
-			}
 			copy->from = (meshlink_node_t*)e->from;
 			copy->to = (meshlink_node_t*)e->to;
 			copy->address = e->address.storage;
@@ -2137,10 +2129,9 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 			*p++ = copy;
 		}
 		// shrink result to the actual amount of memory used
-		for(int i = *nmemb; i > result_size; i--) {
+		for(int i = *nmemb; i > result_size; i--)
 			free(result[i - 1]);
-		}
-		result = realloc(result, result_size * sizeof (meshlink_edge_t*));
+		result = realloc(result, result_size * sizeof(meshlink_edge_t*));
 		*nmemb = result_size;
 	} else {
 		*nmemb = 0;
@@ -2231,9 +2222,8 @@ void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_ac
 	mesh->channel_accept_cb = cb;
 	mesh->receive_cb = channel_receive;
 	for splay_each(node_t, n, mesh->nodes) {
-		if(!n->utcp && n != mesh->self) {
+		if(!n->utcp && n != mesh->self)
 			n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
-		}
 	}
 	pthread_mutex_unlock(&mesh->mesh_mutex);
 }
@@ -2345,8 +2335,8 @@ static void __attribute__((destructor)) meshlink_exit(void) {
 
 /// Device class traits
 dev_class_traits_t dev_class_traits[_DEV_CLASS_MAX +1] = {
-	{ .min_connects = 3, .max_connects = 10000, .edge_weight = 1 },	// DEV_CLASS_BACKBONE
-	{ .min_connects = 3, .max_connects = 100, .edge_weight = 3 },	// DEV_CLASS_STATIONARY
-	{ .min_connects = 3, .max_connects = 3, .edge_weight = 6 },		// DEV_CLASS_PORTABLE
-	{ .min_connects = 1, .max_connects = 1, .edge_weight = 9 },		// DEV_CLASS_UNKNOWN
+	{ .min_connects = 3, .max_connects = 10000, .edge_weight = 1 }, // DEV_CLASS_BACKBONE
+	{ .min_connects = 3, .max_connects = 100, .edge_weight = 3 },   // DEV_CLASS_STATIONARY
+	{ .min_connects = 3, .max_connects = 3, .edge_weight = 6 },             // DEV_CLASS_PORTABLE
+	{ .min_connects = 1, .max_connects = 1, .edge_weight = 9 },             // DEV_CLASS_UNKNOWN
 };

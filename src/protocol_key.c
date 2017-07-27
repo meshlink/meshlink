@@ -47,7 +47,7 @@ bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request
 
 	if(sscanf(request, "%*d %*x " MAX_STRING, name) != 1) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "KEY_CHANGED",
-			   c->name, c->hostname);
+		       c->name, c->hostname);
 		return false;
 	}
 
@@ -58,7 +58,7 @@ bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request
 
 	if(!n) {
 		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) origin %s which does not exist",
-			   "KEY_CHANGED", c->name, c->hostname, name);
+		       "KEY_CHANGED", c->name, c->hostname, name);
 		return true;
 	}
 
@@ -102,83 +102,83 @@ bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 
 static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *request, node_t *from, int reqno) {
 	switch(reqno) {
-		case REQ_PUBKEY: {
-			char *pubkey = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
-			send_request(mesh, from->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, from->name, ANS_PUBKEY, pubkey);
-			free(pubkey);
+	case REQ_PUBKEY: {
+		char *pubkey = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
+		send_request(mesh, from->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, from->name, ANS_PUBKEY, pubkey);
+		free(pubkey);
+		return true;
+	}
+
+	case ANS_PUBKEY: {
+		if(node_read_ecdsa_public_key(mesh, from)) {
+			logger(mesh, MESHLINK_WARNING, "Got ANS_PUBKEY from %s (%s) even though we already have his pubkey", from->name, from->hostname);
 			return true;
 		}
 
-		case ANS_PUBKEY: {
-			if(node_read_ecdsa_public_key(mesh, from)) {
-				logger(mesh, MESHLINK_WARNING, "Got ANS_PUBKEY from %s (%s) even though we already have his pubkey", from->name, from->hostname);
-				return true;
-			}
-
-			char pubkey[MAX_STRING_SIZE];
-			if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, pubkey) != 1 || !(from->ecdsa = ecdsa_set_base64_public_key(pubkey))) {
-				logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ANS_PUBKEY", from->name, from->hostname, "invalid pubkey");
-				return true;
-			}
-
-			logger(mesh, MESHLINK_INFO, "Learned ECDSA public key from %s (%s)", from->name, from->hostname);
-			append_config_file(mesh, from->name, "ECDSAPublicKey", pubkey);
+		char pubkey[MAX_STRING_SIZE];
+		if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, pubkey) != 1 || !(from->ecdsa = ecdsa_set_base64_public_key(pubkey))) {
+			logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ANS_PUBKEY", from->name, from->hostname, "invalid pubkey");
 			return true;
 		}
 
-		case REQ_KEY: {
-			if(!node_read_ecdsa_public_key(mesh, from)) {
-				logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s (%s)", from->name, from->hostname);
-				send_request(mesh, from->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, from->name, REQ_PUBKEY);
-				return true;
-			}
+		logger(mesh, MESHLINK_INFO, "Learned ECDSA public key from %s (%s)", from->name, from->hostname);
+		append_config_file(mesh, from->name, "ECDSAPublicKey", pubkey);
+		return true;
+	}
 
-			if(from->sptps.label) {
-				logger(mesh, MESHLINK_DEBUG, "Got REQ_KEY from %s while we already started a SPTPS session!", from->name);
-				if(strcmp(mesh->self->name, from->name) < 0) {
-					logger(mesh, MESHLINK_DEBUG, "Ignoring REQ_KEY from %s.", from->name);
-					return true;
-				}
-			}
-
-			char buf[MAX_STRING_SIZE];
-			int len;
-
-			if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, buf) != 1 || !(len = b64decode(buf, buf, strlen(buf)))) {
-				logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "REQ_SPTPS_START", from->name, from->hostname, "invalid SPTPS data");
-				return true;
-			}
-
-			char label[sizeof meshlink_udp_label + strlen(from->name) + strlen(mesh->self->name) + 2];
-			snprintf(label, sizeof label, "%s %s %s", meshlink_udp_label, from->name, mesh->self->name);
-			sptps_stop(&from->sptps);
-			from->status.validkey = false;
-			from->status.waitingforkey = true;
-			from->last_req_key = mesh->loop.now.tv_sec;
-			sptps_start(&from->sptps, from, false, true, mesh->self->connection->ecdsa, from->ecdsa, label, sizeof label - 1, send_sptps_data, receive_sptps_record);
-			sptps_receive_data(&from->sptps, buf, len);
+	case REQ_KEY: {
+		if(!node_read_ecdsa_public_key(mesh, from)) {
+			logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s (%s)", from->name, from->hostname);
+			send_request(mesh, from->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, from->name, REQ_PUBKEY);
 			return true;
 		}
 
-		case REQ_SPTPS: {
-			if(!from->status.validkey) {
-				logger(mesh, MESHLINK_ERROR, "Got REQ_SPTPS from %s (%s) but we don't have a valid key yet", from->name, from->hostname);
+		if(from->sptps.label) {
+			logger(mesh, MESHLINK_DEBUG, "Got REQ_KEY from %s while we already started a SPTPS session!", from->name);
+			if(strcmp(mesh->self->name, from->name) < 0) {
+				logger(mesh, MESHLINK_DEBUG, "Ignoring REQ_KEY from %s.", from->name);
 				return true;
 			}
+		}
 
-			char buf[MAX_STRING_SIZE];
-			int len;
-			if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, buf) != 1 || !(len = b64decode(buf, buf, strlen(buf)))) {
-				logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "REQ_SPTPS", from->name, from->hostname, "invalid SPTPS data");
-				return true;
-			}
-			sptps_receive_data(&from->sptps, buf, len);
+		char buf[MAX_STRING_SIZE];
+		int len;
+
+		if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, buf) != 1 || !(len = b64decode(buf, buf, strlen(buf)))) {
+			logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "REQ_SPTPS_START", from->name, from->hostname, "invalid SPTPS data");
 			return true;
 		}
 
-		default:
-			logger(mesh, MESHLINK_ERROR, "Unknown extended REQ_KEY request from %s (%s): %s", from->name, from->hostname, request);
+		char label[sizeof meshlink_udp_label + strlen(from->name) + strlen(mesh->self->name) + 2];
+		snprintf(label, sizeof label, "%s %s %s", meshlink_udp_label, from->name, mesh->self->name);
+		sptps_stop(&from->sptps);
+		from->status.validkey = false;
+		from->status.waitingforkey = true;
+		from->last_req_key = mesh->loop.now.tv_sec;
+		sptps_start(&from->sptps, from, false, true, mesh->self->connection->ecdsa, from->ecdsa, label, sizeof label - 1, send_sptps_data, receive_sptps_record);
+		sptps_receive_data(&from->sptps, buf, len);
+		return true;
+	}
+
+	case REQ_SPTPS: {
+		if(!from->status.validkey) {
+			logger(mesh, MESHLINK_ERROR, "Got REQ_SPTPS from %s (%s) but we don't have a valid key yet", from->name, from->hostname);
 			return true;
+		}
+
+		char buf[MAX_STRING_SIZE];
+		int len;
+		if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, buf) != 1 || !(len = b64decode(buf, buf, strlen(buf)))) {
+			logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "REQ_SPTPS", from->name, from->hostname, "invalid SPTPS data");
+			return true;
+		}
+		sptps_receive_data(&from->sptps, buf, len);
+		return true;
+	}
+
+	default:
+		logger(mesh, MESHLINK_ERROR, "Unknown extended REQ_KEY request from %s (%s): %s", from->name, from->hostname, request);
+		return true;
 	}
 }
 
@@ -190,7 +190,7 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(sscanf(request, "%*d " MAX_STRING " " MAX_STRING " %d", from_name, to_name, &reqno) < 2) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "REQ_KEY", c->name,
-			   c->hostname);
+		       c->hostname);
 		return false;
 	}
 
@@ -203,7 +203,7 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!from) {
 		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) origin %s which does not exist in our connection list",
-			   "REQ_KEY", c->name, c->hostname, from_name);
+		       "REQ_KEY", c->name, c->hostname, from_name);
 		return true;
 	}
 
@@ -211,7 +211,7 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!to) {
 		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) destination %s which does not exist in our connection list",
-			   "REQ_KEY", c->name, c->hostname, to_name);
+		       "REQ_KEY", c->name, c->hostname, to_name);
 		return true;
 	}
 
@@ -227,7 +227,7 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	} else {
 		if(!to->status.reachable) {
 			logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) destination %s which is not reachable",
-				"REQ_KEY", c->name, c->hostname, to_name);
+			       "REQ_KEY", c->name, c->hostname, to_name);
 			return true;
 		}
 
@@ -251,10 +251,10 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	node_t *from, *to;
 
 	if(sscanf(request, "%*d "MAX_STRING" "MAX_STRING" "MAX_STRING" %d %d %d %d "MAX_STRING" "MAX_STRING,
-		from_name, to_name, key, &cipher, &digest, &maclength,
-		&compression, address, port) < 7) {
+	                from_name, to_name, key, &cipher, &digest, &maclength,
+	                &compression, address, port) < 7) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ANS_KEY", c->name,
-			   c->hostname);
+		       c->hostname);
 		return false;
 	}
 
@@ -267,7 +267,7 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!from) {
 		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) origin %s which does not exist in our connection list",
-			   "ANS_KEY", c->name, c->hostname, from_name);
+		       "ANS_KEY", c->name, c->hostname, from_name);
 		return true;
 	}
 
@@ -275,7 +275,7 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!to) {
 		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) destination %s which does not exist in our connection list",
-			   "ANS_KEY", c->name, c->hostname, to_name);
+		       "ANS_KEY", c->name, c->hostname, to_name);
 		return true;
 	}
 
@@ -284,7 +284,7 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	if(to != mesh->self) {
 		if(!to->status.reachable) {
 			logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) destination %s which is not reachable",
-				   "ANS_KEY", c->name, c->hostname, to_name);
+			       "ANS_KEY", c->name, c->hostname, to_name);
 			return true;
 		}
 

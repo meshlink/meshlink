@@ -8,6 +8,8 @@ Makefile.in
 *~
 .*
 !.gitignore
+!.gitmodules
+!.astylerc
 core
 core.*
 /config.*

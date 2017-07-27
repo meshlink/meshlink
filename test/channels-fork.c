@@ -100,7 +100,7 @@ int main1(int rfd, int wfd) {
 	}
 
 	// Open a channel from foo to bar.
-	
+
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
 	if(!bar) {
 		fprintf(stderr, "Foo could not find bar\n");

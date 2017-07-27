@@ -127,7 +127,7 @@ bool get_config_bool(const config_t *cfg, bool *result) {
 	}
 
 	logger(NULL, MESHLINK_ERROR, "\"yes\" or \"no\" expected for configuration variable %s in %s line %d",
-		   cfg->variable, cfg->file, cfg->line);
+	       cfg->variable, cfg->file, cfg->line);
 
 	return false;
 }
@@ -140,13 +140,12 @@ bool get_config_int(const config_t *cfg, int *result) {
 		return true;
 
 	logger(NULL, MESHLINK_ERROR, "Integer expected for configuration variable %s in %s line %d",
-		   cfg->variable, cfg->file, cfg->line);
+	       cfg->variable, cfg->file, cfg->line);
 
 	return false;
 }
 
-bool set_config_int(config_t *cfg, int val)
-{
+bool set_config_int(config_t *cfg, int val) {
 	if(!cfg)
 		return false;
 
@@ -170,8 +169,7 @@ bool get_config_string(const config_t *cfg, char **result) {
 	return true;
 }
 
-bool set_config_string(config_t *cfg, const char* val)
-{
+bool set_config_string(config_t *cfg, const char* val) {
 	if(!cfg)
 		return false;
 
@@ -197,7 +195,7 @@ bool get_config_address(const config_t *cfg, struct addrinfo **result) {
 	}
 
 	logger(NULL, MESHLINK_ERROR, "Hostname or IP address expected for configuration variable %s in %s line %d",
-		   cfg->variable, cfg->file, cfg->line);
+	       cfg->variable, cfg->file, cfg->line);
 
 	return false;
 }
@@ -252,7 +250,7 @@ config_t *parse_config_line(char *line, const char *fname, int lineno) {
 	if(!*value) {
 		const char err[] = "No value for variable";
 		logger(NULL, MESHLINK_ERROR, "%s `%s' on line %d while reading config file %s",
-			err, variable, lineno, fname);
+		       err, variable, lineno, fname);
 		return NULL;
 	}
 
@@ -311,7 +309,7 @@ bool read_config_file(splay_tree_t *config_tree, const char *fname) {
 		}
 
 		cfg = parse_config_line(line, fname, lineno);
-		if (!cfg)
+		if(!cfg)
 			break;
 		config_add(config_tree, cfg);
 	}
@@ -321,8 +319,7 @@ bool read_config_file(splay_tree_t *config_tree, const char *fname) {
 	return result;
 }
 
-bool write_config_file(const struct splay_tree_t *config_tree, const char *fname)
-{
+bool write_config_file(const struct splay_tree_t *config_tree, const char *fname) {
 	FILE *fp;
 
 	fp = fopen(fname, "w+");
@@ -332,8 +329,7 @@ bool write_config_file(const struct splay_tree_t *config_tree, const char *fname
 		return false;
 	}
 
-	for splay_each(config_t, cnf, config_tree)
-	{
+	for splay_each(config_t, cnf, config_tree) {
 		if(fwrite(cnf->variable, sizeof(char), strlen(cnf->variable), fp) < strlen(cnf->variable))
 			goto error;
 
@@ -380,8 +376,7 @@ bool read_host_config(meshlink_handle_t *mesh, splay_tree_t *config_tree, const 
 	return x;
 }
 
-bool write_host_config(struct meshlink_handle *mesh, const struct splay_tree_t *config_tree, const char *name)
-{
+bool write_host_config(struct meshlink_handle *mesh, const struct splay_tree_t *config_tree, const char *name) {
 	char filename[PATH_MAX];
 
 	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);

@@ -55,7 +55,7 @@ static splay_node_t *splay_top_down(splay_tree_t *tree, const void *data, int *r
 				grandchild->parent = NULL;
 
 				root = grandchild;
-			} else if (c > 0 && (grandchild = child->right)) {
+			} else if(c > 0 && (grandchild = child->right)) {
 				leftbottom->right = child;
 				child->parent = leftbottom;
 				leftbottom = child;
@@ -99,7 +99,7 @@ static splay_node_t *splay_top_down(splay_tree_t *tree, const void *data, int *r
 				grandchild->parent = NULL;
 
 				root = grandchild;
-			} else if (c < 0 && (grandchild = child->left)) {
+			} else if(c < 0 && (grandchild = child->left)) {
 				rightbottom->left = child;
 				child->parent = rightbottom;
 				rightbottom = child;
@@ -125,9 +125,8 @@ static splay_node_t *splay_top_down(splay_tree_t *tree, const void *data, int *r
 				root = child;
 				break;
 			}
-		} else {
+		} else
 			break;
-		}
 	}
 
 	/* Merge trees */
@@ -328,9 +327,8 @@ splay_node_t *splay_search_closest_node_nosplay(const splay_tree_t *tree, const 
 				node = node->right;
 			else
 				break;
-		} else {
+		} else
 			break;
-		}
 	}
 
 	if(result)
@@ -513,9 +511,8 @@ void splay_unlink_node(splay_tree_t *tree, splay_node_t *node) {
 	} else if(node->next) {
 		tree->root = node->right;
 		node->right->parent = NULL;
-	} else {
+	} else
 		tree->root = NULL;
-	}
 
 	tree->count--;
 }

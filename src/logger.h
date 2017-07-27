@@ -22,6 +22,6 @@
 
 #include "meshlink_internal.h"
 
-extern void logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *format, ...) __attribute__ ((__format__(printf, 3, 4)));
+extern void logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *format, ...) __attribute__((__format__(printf, 3, 4)));
 
 #endif /* __MESHLINK_LOGGER_H__ */

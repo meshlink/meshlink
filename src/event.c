@@ -91,7 +91,9 @@ void io_del(event_loop_t *loop, io_t *io) {
 
 void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *data, struct timeval *tv) {
 	if(!timeout->cb)
-		timeout->tv = (struct timeval){0, 0};
+		timeout->tv = (struct timeval) {
+		0, 0
+	};
 
 	timeout->cb = cb;
 	timeout->data = data;
@@ -121,7 +123,9 @@ void timeout_del(event_loop_t *loop, timeout_t *timeout) {
 
 	splay_unlink_node(&loop->timeouts, &timeout->node);
 	timeout->cb = 0;
-	timeout->tv = (struct timeval){0, 0};
+	timeout->tv = (struct timeval) {
+		0, 0
+	};
 }
 
 static int signal_compare(const signal_t *a, const signal_t *b) {
@@ -133,7 +137,9 @@ static void signalio_handler(event_loop_t *loop, void *data, int flags) {
 	if(read(loop->pipefd[0], &signum, 1) != 1)
 		return;
 
-	signal_t *sig = splay_search(&loop->signals, &((signal_t){.signum = signum}));
+	signal_t *sig = splay_search(&loop->signals, &((signal_t) {
+		.signum = signum
+	}));
 	if(sig)
 		sig->cb(loop, sig->data);
 }

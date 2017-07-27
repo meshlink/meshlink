@@ -50,15 +50,13 @@ static void configure_tcp(connection_t *c) {
 #ifdef O_NONBLOCK
 	int flags = fcntl(c->socket, F_GETFL);
 
-	if(fcntl(c->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
+	if(fcntl(c->socket, F_SETFL, flags | O_NONBLOCK) < 0)
 		logger(c->mesh, MESHLINK_ERROR, "fcntl for %s: %s", c->hostname, strerror(errno));
-	}
 #elif defined(WIN32)
 	unsigned long arg = 1;
 
-	if(ioctlsocket(c->socket, FIONBIO, &arg) != 0) {
+	if(ioctlsocket(c->socket, FIONBIO, &arg) != 0)
 		logger(c->mesh, MESHLINK_ERROR, "ioctlsocket for %s: %s", c->hostname, sockstrerror(sockerrno));
-	}
 #endif
 
 #if defined(SOL_TCP) && defined(TCP_NODELAY)
@@ -166,7 +164,7 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 		if(fcntl(nfd, F_SETFL, flags | O_NONBLOCK) < 0) {
 			closesocket(nfd);
 			logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "fcntl",
-				   strerror(errno));
+			       strerror(errno));
 			return -1;
 		}
 	}
@@ -245,7 +243,9 @@ void retry_outgoing(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	if(outgoing->timeout > mesh->maxtimeout)
 		outgoing->timeout = mesh->maxtimeout;
 
-	timeout_add(&mesh->loop, &outgoing->ev, retry_outgoing_handler, outgoing, &(struct timeval){outgoing->timeout, rand() % 100000});
+	timeout_add(&mesh->loop, &outgoing->ev, retry_outgoing_handler, outgoing, &(struct timeval) {
+		outgoing->timeout, rand() % 100000
+	});
 
 	logger(mesh, MESHLINK_INFO, "Trying to re-establish outgoing connection in %d seconds", outgoing->timeout);
 }
@@ -311,14 +311,13 @@ static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 
 	ssize_t outlen = send(c->socket, c->outbuf.data + c->outbuf.offset, c->outbuf.len - c->outbuf.offset, MSG_NOSIGNAL);
 	if(outlen <= 0) {
-		if(!errno || errno == EPIPE) {
+		if(!errno || errno == EPIPE)
 			logger(mesh, MESHLINK_INFO, "Connection closed by %s (%s)", c->name, c->hostname);
-		} else if(sockwouldblock(sockerrno)) {
+		else if(sockwouldblock(sockerrno)) {
 			logger(mesh, MESHLINK_DEBUG, "Sending %d bytes to %s (%s) would block", c->outbuf.len - c->outbuf.offset, c->name, c->hostname);
 			return;
-		} else {
+		} else
 			logger(mesh, MESHLINK_ERROR, "Could not send %d bytes of data to %s (%s): %s", c->outbuf.len - c->outbuf.offset, c->name, c->hostname, strerror(errno));
-		}
 
 		terminate_connection(mesh, c, c->status.active);
 		return;
@@ -458,9 +457,9 @@ begin:
 	if(!mesh->proxytype) {
 		c->socket = socket(c->address.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 		configure_tcp(c);
-	} else if(mesh->proxytype == PROXY_EXEC) {
+	} else if(mesh->proxytype == PROXY_EXEC)
 		do_outgoing_pipe(mesh, c, mesh->proxyhost);
-	} else {
+	else {
 		proxyai = str2addrinfo(mesh->proxyhost, mesh->proxyport, SOCK_STREAM);
 		if(!proxyai) {
 			free_connection(c);
@@ -493,11 +492,11 @@ begin:
 
 	/* Connect */
 
-	if(!mesh->proxytype) {
+	if(!mesh->proxytype)
 		result = connect(c->socket, &c->address.sa, SALEN(c->address.sa));
-	} else if(mesh->proxytype == PROXY_EXEC) {
+	else if(mesh->proxytype == PROXY_EXEC)
 		result = 0;
-	} else {
+	else {
 		result = connect(c->socket, proxyai->ai_addr, proxyai->ai_addrlen);
 		freeaddrinfo(proxyai);
 	}
@@ -542,7 +541,7 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	outgoing->cfg = lookup_config(outgoing->config_tree, "Address");
 
 	get_config_bool(lookup_config(outgoing->config_tree, "blacklisted"), &blacklisted);
-	if (blacklisted) return;
+	if(blacklisted) return;
 
 	if(!outgoing->cfg) {
 		if(n)
@@ -677,9 +676,9 @@ static void free_outgoing(outgoing_t *outgoing) {
 void try_outgoing_connections(meshlink_handle_t *mesh) {
 	/* If there is no outgoing list yet, create one. Otherwise, mark all outgoings as deleted. */
 
-	if(!mesh->outgoings) {
+	if(!mesh->outgoings)
 		mesh->outgoings = list_alloc((list_action_t)free_outgoing);
-	} else {
+	else {
 		for list_each(outgoing_t, outgoing, mesh->outgoings)
 			outgoing->timeout = -1;
 	}
@@ -693,8 +692,8 @@ void try_outgoing_connections(meshlink_handle_t *mesh) {
 
 		if(!check_id(name)) {
 			logger(mesh, MESHLINK_ERROR,
-				   "Invalid name for outgoing connection in %s line %d",
-				   cfg->file, cfg->line);
+			       "Invalid name for outgoing connection in %s line %d",
+			       cfg->file, cfg->line);
 			free(name);
 			continue;
 		}

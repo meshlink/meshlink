@@ -4,22 +4,21 @@
 #include <strings.h>
 #include "../src/meshlink++.h"
 
-class ChatMesh : public meshlink::mesh
-{
+class ChatMesh : public meshlink::mesh {
 public:
 	void log(meshlink::log_level_t level, const char *text) {
 		const char *levelstr[] = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"};
 		fprintf(stderr, "%s: %s\n", levelstr[level], text);
-		}
+	}
 
 	void receive(meshlink::node *source, const void *data, size_t len) {
 		const char *msg = (const char *)data;
-	
+
 		if(!len || msg[len - 1]) {
 			fprintf(stderr, "Received invalid data from %s\n", source->name);
 			return;
 		}
-		
+
 		printf("%s says: %s\n", source->name, msg);
 	}
 
@@ -90,9 +89,9 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 	} else if(!strcasecmp(buf, "who")) {
 		if(!arg) {
 			nodes = mesh->get_all_nodes(nodes, &nnodes);
-			if(!nodes) {
+			if(!nodes)
 				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink::strerror());
-			} else {
+			else {
 				printf("%zu known nodes:", nnodes);
 				for(size_t i = 0; i < nnodes; i++)
 					printf(" %s", nodes[i]->name);
@@ -100,28 +99,26 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 			}
 		} else {
 			meshlink::node *node = mesh->get_node(arg);
-			if(!node) {
+			if(!node)
 				fprintf(stderr, "Error looking up '%s': %s\n", arg, meshlink::strerror());
-			} else {
+			else
 				printf("Node %s found\n", arg);
-			}
 		}
 	} else if(!strcasecmp(buf, "quit")) {
 		printf("Bye!\n");
 		fclose(stdin);
 	} else if(!strcasecmp(buf, "help")) {
 		printf(
-			"<name>: <message>     Send a message to the given node.\n"
-			"                      Subsequent messages don't need the <name>: prefix.\n"
-			"/invite <name>        Create an invitation for a new node.\n"
-			"/join <invitation>    Join an existing mesh using an invitation.\n"
-			"/kick <name>          Blacklist the given node.\n"
-			"/who [<name>]         List all nodes or show information about the given node.\n"
-			"/quit                 Exit this program.\n"
-			);
-	} else {
+		        "<name>: <message>     Send a message to the given node.\n"
+		        "                      Subsequent messages don't need the <name>: prefix.\n"
+		        "/invite <name>        Create an invitation for a new node.\n"
+		        "/join <invitation>    Join an existing mesh using an invitation.\n"
+		        "/kick <name>          Blacklist the given node.\n"
+		        "/who [<name>]         List all nodes or show information about the given node.\n"
+		        "/quit                 Exit this program.\n"
+		);
+	} else
 		fprintf(stderr, "Unknown command '/%s'\n", buf);
-	}
 }
 
 static void parse_input(meshlink::mesh *mesh, char *buf) {

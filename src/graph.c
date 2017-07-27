@@ -150,11 +150,11 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 
 			/* Situation:
 
-				   /
-				  /
+			           /
+			          /
 			   ----->(n)---e-->(e->to)
-				  \
-				   \
+			          \
+			           \
 
 			   Where e is an edge, (n) and (e->to) are nodes.
 			   n->address is set to the e->address of the edge left of n to n.
@@ -168,8 +168,8 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 			bool indirect = n->status.indirect || e->options & OPTION_INDIRECT;
 
 			if(e->to->status.visited
-			   && (!e->to->status.indirect || indirect)
-			   && (e->to->distance != n->distance + 1 || e->weight >= e->to->prevedge->weight))
+			                && (!e->to->status.indirect || indirect)
+			                && (e->to->distance != n->distance + 1 || e->weight >= e->to->prevedge->weight))
 				continue;
 
 			e->to->status.visited = true;
@@ -203,10 +203,10 @@ static void check_reachability(meshlink_handle_t *mesh) {
 
 			if(n->status.reachable) {
 				logger(mesh, MESHLINK_DEBUG, "Node %s (%s) became reachable",
-					   n->name, n->hostname);
+				       n->name, n->hostname);
 			} else {
 				logger(mesh, MESHLINK_DEBUG, "Node %s (%s) became unreachable",
-					   n->name, n->hostname);
+				       n->name, n->hostname);
 			}
 
 			/* TODO: only clear status.validkey if node is unreachable? */

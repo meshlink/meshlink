@@ -6,7 +6,7 @@ void handle_recv_data(meshlink_handle_t *mesh, meshlink_node_t *source, void *da
 	printf("Received %zu bytes from %s: %s\n", len, source->name, (char*)data);
 }
 
-int main(int argc , char **argv){
+int main(int argc, char **argv) {
 	char *confbase = argc > 1 ? argv[1] : "/tmp/meshlink/";
 	char *name = argc > 2 ? argv[2] : "foo";
 

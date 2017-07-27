@@ -10,8 +10,7 @@
 
 #include "devtools.h"
 
-static int node_compare(const void *a, const void *b)
-{
+static int node_compare(const void *a, const void *b) {
 	if(a < b)
 		return -1;
 
@@ -21,8 +20,7 @@ static int node_compare(const void *a, const void *b)
 	return 0;
 }
 
-static bool fstrwrite(const char* str, FILE* stream)
-{
+static bool fstrwrite(const char* str, FILE* stream) {
 	size_t len = strlen(str);
 
 	if(fwrite((void*)str, 1, len, stream) != len)
@@ -31,9 +29,8 @@ static bool fstrwrite(const char* str, FILE* stream)
 	return true;
 }
 
-static const char* __itoa(int value)
-{
-	static char buffer[sizeof(int) * 8 + 1];	// not thread safe
+static const char* __itoa(int value) {
+	static char buffer[sizeof(int) * 8 + 1];        // not thread safe
 
 	if(snprintf(buffer, sizeof(buffer), "%d", value) == -1)
 		return "";
@@ -41,8 +38,7 @@ static const char* __itoa(int value)
 	return buffer;
 }
 
-bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE* stream)
-{
+bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE* stream) {
 	bool result = true;
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
@@ -55,7 +51,7 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE* stream)
 	meshlink_edge_t **edges = meshlink_get_all_edges_state(mesh, NULL, &edge_count);
 
 	if((!nodes && node_count != 0) || (!edges && edge_count != 0))
-		{ goto fail; }
+		goto fail;
 
 	// export begin
 	if(!fstrwrite("{\n", stream))
@@ -65,8 +61,7 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE* stream)
 	if(!fstrwrite("\t\"nodes\": {\n", stream))
 		goto fail;
 
-	for(size_t i = 0; i < node_count; ++i)
-	{
+	for(size_t i = 0; i < node_count; ++i) {
 		if(!fstrwrite("\t\t\"", stream) || !fstrwrite(((node_t*)nodes[i])->name, stream) || !fstrwrite("\": {\n", stream))
 			goto fail;
 
@@ -91,8 +86,7 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE* stream)
 	if(!fstrwrite("\t\"edges\": {\n", stream))
 		goto fail;
 
-	for(size_t i = 0; i < edge_count; ++i)
-	{
+	for(size_t i = 0; i < edge_count; ++i) {
 		if(!fstrwrite("\t\t\"", stream) || !fstrwrite(edges[i]->from->name, stream) || !fstrwrite("_to_", stream) || !fstrwrite(edges[i]->to->name, stream) || !fstrwrite("\": {\n", stream))
 			goto fail;
 
@@ -105,15 +99,13 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE* stream)
 		char *host = NULL, *port = NULL, *address = NULL;
 		sockaddr2str((const sockaddr_t *)&(edges[i]->address), &host, &port);
 
-		if(host && port) {
+		if(host && port)
 			xasprintf(&address, "{ \"host\": \"%s\", \"port\": %s }", host, port);
-		}
 
 		free(host);
 		free(port);
 
-		if(!fstrwrite("\t\t\t\"address\": ", stream) || !fstrwrite(address ? address : "null", stream) || !fstrwrite(",\n", stream))
-		{
+		if(!fstrwrite("\t\t\t\"address\": ", stream) || !fstrwrite(address ? address : "null", stream) || !fstrwrite(",\n", stream)) {
 			free(address);
 			goto fail;
 		}
@@ -146,13 +138,13 @@ fail:
 done:
 
 	if(nodes)
-		{ free(nodes); }
+		free(nodes);
 
 	for(size_t i = 0; edges && i < edge_count; ++i)
-		{ free(edges[i]); }
+		free(edges[i]);
 
 	if(nodes)
-		{ free(edges); }
+		free(edges);
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 

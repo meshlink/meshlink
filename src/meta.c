@@ -50,7 +50,7 @@ bool send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int
 	}
 
 	logger(mesh, MESHLINK_DEBUG, "Sending %d bytes of metadata to %s (%s)", length,
-			   c->name, c->hostname);
+	       c->name, c->hostname);
 
 	if(c->allow_request == ID) {
 		buffer_add(&c->outbuf, buffer, length);
@@ -116,12 +116,12 @@ bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 	if(inlen <= 0) {
 		if(!inlen || !errno) {
 			logger(mesh, MESHLINK_INFO, "Connection closed by %s (%s)",
-					   c->name, c->hostname);
+			       c->name, c->hostname);
 		} else if(sockwouldblock(sockerrno))
 			return true;
 		else
 			logger(mesh, MESHLINK_ERROR, "Metadata socket read error for %s (%s): %s",
-				   c->name, c->hostname, sockstrerror(sockerrno));
+			       c->name, c->hostname, sockstrerror(sockerrno));
 		return false;
 	}
 
@@ -145,9 +145,8 @@ bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 		if(c->inbuf.len >= sizeof inbuf) {
 			logger(mesh, MESHLINK_ERROR, "Input buffer full for %s (%s)", c->name, c->hostname);
 			return false;
-		} else {
+		} else
 			return true;
-		}
 	}
 
 	return sptps_receive_data(&c->sptps, inbuf, inlen);

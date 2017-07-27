@@ -32,7 +32,7 @@ typedef struct event_loop_t event_loop_t;
 typedef void (*io_cb_t)(event_loop_t *loop, void *data, int flags);
 typedef void (*timeout_cb_t)(event_loop_t *loop, void *data);
 typedef void (*signal_cb_t)(event_loop_t *loop, void *data);
-typedef struct timeval (*idle_cb_t)(event_loop_t *loop, void *data);
+typedef struct timeval(*idle_cb_t)(event_loop_t *loop, void *data);
 
 typedef struct io_t {
 	int fd;
@@ -63,7 +63,7 @@ struct event_loop_t {
 	volatile bool running;
 	struct timeval now;
 	bool deletion;
-	
+
 	splay_tree_t ios;
 	splay_tree_t timeouts;
 	splay_tree_t signals;

@@ -89,7 +89,7 @@ typedef struct node_t {
 
 extern void init_nodes(struct meshlink_handle *mesh);
 extern void exit_nodes(struct meshlink_handle *mesh);
-extern node_t *new_node(void) __attribute__ ((__malloc__));
+extern node_t *new_node(void) __attribute__((__malloc__));
 extern void free_node(node_t *);
 extern void node_add(struct meshlink_handle *mesh, node_t *);
 extern void node_del(struct meshlink_handle *mesh, node_t *);

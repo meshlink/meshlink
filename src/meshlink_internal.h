@@ -122,8 +122,8 @@ struct meshlink_handle {
 	struct connection_t *everyone;
 	struct ecdsa *invitation_key;
 
-	int pinginterval;	/* seconds between pings */
-	int pingtimeout;	/* seconds to wait for response */
+	int pinginterval;       /* seconds between pings */
+	int pingtimeout;        /* seconds to wait for response */
 	int maxtimeout;
 
 	int sock;
@@ -165,7 +165,7 @@ struct meshlink_channel {
 typedef struct meshlink_packethdr {
 	uint8_t destination[16];
 	uint8_t source[16];
-} __attribute__ ((__packed__)) meshlink_packethdr_t;
+} __attribute__((__packed__)) meshlink_packethdr_t;
 
 extern void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
 extern void update_node_status(meshlink_handle_t *mesh, struct node_t *n);

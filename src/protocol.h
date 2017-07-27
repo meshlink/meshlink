@@ -70,7 +70,7 @@ typedef struct past_request_t {
 
 /* Basic functions */
 
-extern bool send_request(struct meshlink_handle *mesh, struct connection_t *, const char *, ...) __attribute__ ((__format__(printf, 3, 4)));
+extern bool send_request(struct meshlink_handle *mesh, struct connection_t *, const char *, ...) __attribute__((__format__(printf, 3, 4)));
 extern void forward_request(struct meshlink_handle *mesh, struct connection_t *, const char *);
 extern bool receive_request(struct meshlink_handle *mesh, struct connection_t *, const char *);
 extern bool check_id(const char *);

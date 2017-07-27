@@ -30,8 +30,8 @@ static char *program_name;
 static void usage() {
 	fprintf(stderr, "Usage: %s [options] private_key_file public_key_file\n\n", program_name);
 	fprintf(stderr, "Valid options are:\n"
-			"  --help  Display this help and exit.\n"
-			"\n");
+	        "  --help  Display this help and exit.\n"
+	        "\n");
 	fprintf(stderr, "Report bugs to bugs@meshlink.io.\n");
 }
 
@@ -46,20 +46,20 @@ int main(int argc, char *argv[]) {
 	int option_index = 0;
 
 	while((r = getopt_long(argc, argv, "", long_options, &option_index)) != EOF) {
-		switch (r) {
-			case 0:   /* long option */
-				break;
+		switch(r) {
+		case 0:   /* long option */
+			break;
 
-			case '?': /* wrong options */
-				usage();
-				return 1;
+		case '?': /* wrong options */
+			usage();
+			return 1;
 
-			case 1: /* help */
-				usage();
-				return 0;
+		case 1: /* help */
+			usage();
+			return 0;
 
-			default:
-				break;
+		default:
+			break;
 		}
 	}
 
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 	ecdsa_t *key = ecdsa_generate();
 	if(!key)
 		return 1;
-	
+
 	FILE *fp = fopen(argv[1], "w");
 	if(fp) {
 		ecdsa_write_pem_private_key(key, fp);

@@ -26,8 +26,8 @@
 #include <unistd.h>
 
 typedef struct meshlink_queue {
-	struct meshlink_queue_item *head;	
-	struct meshlink_queue_item *tail;	
+	struct meshlink_queue_item *head;
+	struct meshlink_queue_item *tail;
 	pthread_mutex_t mutex;
 } meshlink_queue_t;
 

@@ -123,7 +123,7 @@ static bool read_invitation_key(meshlink_handle_t *mesh) {
 }
 
 bool node_read_devclass(meshlink_handle_t *mesh, node_t *n) {
-	
+
 	splay_tree_t *config_tree;
 	char *p;
 
@@ -131,14 +131,13 @@ bool node_read_devclass(meshlink_handle_t *mesh, node_t *n) {
 	if(!read_host_config(mesh, config_tree, n->name))
 		goto exit;
 
-	if(get_config_string(lookup_config(config_tree, "DeviceClass"), &p))
-	{
+	if(get_config_string(lookup_config(config_tree, "DeviceClass"), &p)) {
 		n->devclass = atoi(p);
 		free(p);
 	}
 
 	if(n->devclass < 0 || n->devclass > _DEV_CLASS_MAX)
-		{ n->devclass = _DEV_CLASS_MAX; }
+		n->devclass = _DEV_CLASS_MAX;
 
 exit:
 	exit_configuration(&config_tree);
@@ -160,8 +159,7 @@ bool node_write_devclass(meshlink_handle_t *mesh, node_t *n) {
 
 	config_t* cnf = lookup_config(config_tree, "DeviceClass");
 
-	if(!cnf)
-	{
+	if(!cnf) {
 		cnf = new_config();
 		cnf->variable = xstrdup("DeviceClass");
 		config_add(config_tree, cnf);
@@ -399,9 +397,8 @@ bool setup_myself(meshlink_handle_t *mesh) {
 				return false;
 			if(!add_listen_address(mesh, address, NULL))
 				return false;
-		} else {
+		} else
 			return false;
-		}
 	}
 
 	if(!mesh->listen_sockets) {

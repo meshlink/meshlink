@@ -33,7 +33,7 @@ typedef struct config_t {
 
 extern void init_configuration(struct splay_tree_t **);
 extern void exit_configuration(struct splay_tree_t **);
-extern config_t *new_config(void) __attribute__ ((__malloc__));
+extern config_t *new_config(void) __attribute__((__malloc__));
 extern void free_config(config_t *);
 extern void config_add(struct splay_tree_t *, config_t *);
 extern config_t *lookup_config(struct splay_tree_t *, char *);

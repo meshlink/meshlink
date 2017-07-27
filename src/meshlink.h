@@ -115,15 +115,15 @@ struct meshlink_channel {
 /// An edge in the meshlink network.
 struct meshlink_edge {
 	struct meshlink_node *from;     ///< Pointer to a node. Node memory is
-	                                //   owned by meshlink and should not be
-	                                //   deallocated. Node contents may be
-	                                //   changed by meshlink.
+	//   owned by meshlink and should not be
+	//   deallocated. Node contents may be
+	//   changed by meshlink.
 	struct meshlink_node *to;       ///< Pointer to a node. Node memory is
-	                                //   owned by meshlink and should not be
-	                                //   deallocated. Node contents may be
-	                                //   changed by meshlink.
+	//   owned by meshlink and should not be
+	//   deallocated. Node contents may be
+	//   changed by meshlink.
 	struct sockaddr_storage address;///< The address information associated
-	                                //   with this edge.
+	//   with this edge.
 	uint32_t options;               ///< Edge options. @TODO what are edge options?
 	int weight;                     ///< Weight assigned to this edge.
 };
@@ -702,7 +702,7 @@ extern void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_chann
  *  @param data         A pointer to a buffer containing data to already queue for sending, or NULL if there is no data to send.
  *                      After meshlink_send() returns, the application is free to overwrite or free this buffer.
  *  @param len          The length of the data, or 0 if there is no data to send.
- *  @param flags	A bitwise-or'd combination of flags that set the semantics for this channel.
+ *  @param flags        A bitwise-or'd combination of flags that set the semantics for this channel.
  *
  *  @return             A handle for the channel, or NULL in case of an error.
  *                      The handle is valid until meshlink_channel_close() is called.
@@ -818,7 +818,7 @@ extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node
  *                      on the array to change its size.
  *                      The contents of this variable will be changed to reflect
  *                      the new size of the array.
- *  @return             A pointer to an array containing pointers to all known 
+ *  @return             A pointer to an array containing pointers to all known
  *                      edges, or NULL in case of an error.
  *                      If the @a edges @a argument was not NULL, then the
  *                      retun value can be either the same value or a different

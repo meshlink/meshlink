@@ -31,22 +31,22 @@
 /* Jumptable for the request handlers */
 
 static bool (*request_handlers[])(meshlink_handle_t *, connection_t *, const char *) = {
-		id_h, NULL, NULL, NULL /* metakey_h, challenge_h, chal_reply_h */, ack_h,
-		status_h, error_h, termreq_h,
-		ping_h, pong_h,
-		NULL, NULL, //add_subnet_h, del_subnet_h,
-		add_edge_h, del_edge_h,
-		key_changed_h, req_key_h, ans_key_h, tcppacket_h, NULL, //control_h,
+	id_h, NULL, NULL, NULL /* metakey_h, challenge_h, chal_reply_h */, ack_h,
+	status_h, error_h, termreq_h,
+	ping_h, pong_h,
+	NULL, NULL, //add_subnet_h, del_subnet_h,
+	add_edge_h, del_edge_h,
+	key_changed_h, req_key_h, ans_key_h, tcppacket_h, NULL, //control_h,
 };
 
 /* Request names */
 
 static char (*request_name[]) = {
-		"ID", "METAKEY", "CHALLENGE", "CHAL_REPLY", "ACK",
-		"STATUS", "ERROR", "TERMREQ",
-		"PING", "PONG",
-		"ADD_SUBNET", "DEL_SUBNET",
-		"ADD_EDGE", "DEL_EDGE", "KEY_CHANGED", "REQ_KEY", "ANS_KEY", "PACKET", "CONTROL",
+	"ID", "METAKEY", "CHALLENGE", "CHAL_REPLY", "ACK",
+	"STATUS", "ERROR", "TERMREQ",
+	"PING", "PONG",
+	"ADD_SUBNET", "DEL_SUBNET",
+	"ADD_EDGE", "DEL_EDGE", "KEY_CHANGED", "REQ_KEY", "ANS_KEY", "PACKET", "CONTROL",
 };
 
 bool check_id(const char *id) {
@@ -78,7 +78,7 @@ bool send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, 
 
 	if(len < 0 || len > MAXBUFSIZE - 1) {
 		logger(mesh, MESHLINK_ERROR, "Output buffer overflow while sending request to %s (%s)",
-			   c->name, c->hostname);
+		       c->name, c->hostname);
 		return false;
 	}
 
@@ -125,9 +125,8 @@ bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *reque
 		if((reqno < 0) || (reqno >= LAST) || !request_handlers[reqno]) {
 			logger(mesh, MESHLINK_DEBUG, "Unknown request from %s (%s): %s", c->name, c->hostname, request);
 			return false;
-		} else {
+		} else
 			logger(mesh, MESHLINK_DEBUG, "Got %s from %s (%s): %s", request_name[reqno], c->name, c->hostname, request);
-		}
 
 		if((c->allow_request != ALL) && (c->allow_request != reqno)) {
 			logger(mesh, MESHLINK_ERROR, "Unauthorized request from %s (%s)", c->name, c->hostname);
@@ -174,7 +173,9 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 		logger(mesh, MESHLINK_DEBUG, "Aging past requests: deleted %d, left %d", deleted, left);
 
 	if(left)
-		timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timeval){10, rand() % 100000});
+		timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timeval) {
+		10, rand() % 100000
+	});
 }
 
 bool seen_request(meshlink_handle_t *mesh, const char *request) {
@@ -190,7 +191,9 @@ bool seen_request(meshlink_handle_t *mesh, const char *request) {
 		new->request = xstrdup(request);
 		new->firstseen = mesh->loop.now.tv_sec;
 		splay_insert(mesh->past_request_tree, new);
-		timeout_add(&mesh->loop, &mesh->past_request_timeout, age_past_requests, NULL, &(struct timeval){10, rand() % 100000});
+		timeout_add(&mesh->loop, &mesh->past_request_timeout, age_past_requests, NULL, &(struct timeval) {
+			10, rand() % 100000
+		});
 		return false;
 	}
 }

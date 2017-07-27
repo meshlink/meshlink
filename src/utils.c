@@ -79,8 +79,10 @@ int b64decode(const char *src, void *dst, int length) {
 		if((i & 3) == 3) {
 			if(triplet & 0xff000000U)
 				return 0;
-			udst[0] = triplet & 0xff; triplet >>= 8;
-			udst[1] = triplet & 0xff; triplet >>= 8;
+			udst[0] = triplet & 0xff;
+			triplet >>= 8;
+			udst[1] = triplet & 0xff;
+			triplet >>= 8;
 			udst[2] = triplet;
 			triplet = 0;
 			udst += 3;
@@ -89,15 +91,15 @@ int b64decode(const char *src, void *dst, int length) {
 	if(triplet & 0xff000000U)
 		return 0;
 	if((i & 3) == 3) {
-		udst[0] = triplet & 0xff; triplet >>= 8;
+		udst[0] = triplet & 0xff;
+		triplet >>= 8;
 		udst[1] = triplet & 0xff;
 		return i / 4 * 3 + 2;
 	} else if((i & 3) == 2) {
 		udst[0] = triplet & 0xff;
 		return i / 4 * 3 + 1;
-	} else {
+	} else
 		return i / 4 * 3;
-	}
 }
 
 static int b64encode_internal(const void *src, char *dst, int length, const char *alphabet) {
@@ -107,34 +109,40 @@ static int b64encode_internal(const void *src, char *dst, int length, const char
 	int di = length / 3 * 4;
 
 	switch(length % 3) {
-		case 2:
-			triplet = usrc[si] | usrc[si + 1] << 8;
-			dst[di] = alphabet[triplet & 63]; triplet >>= 6;
-			dst[di + 1] = alphabet[triplet & 63]; triplet >>= 6;
-			dst[di + 2] = alphabet[triplet];
-			dst[di + 3] = 0;
-			length = di + 2;
-			break;
-		case 1:
-			triplet = usrc[si];
-			dst[di] = alphabet[triplet & 63]; triplet >>= 6;
-			dst[di + 1] = alphabet[triplet];
-			dst[di + 2] = 0;
-			length = di + 1;
-			break;
-		default:
-			dst[di] = 0;
-			length = di;
-			break;
+	case 2:
+		triplet = usrc[si] | usrc[si + 1] << 8;
+		dst[di] = alphabet[triplet & 63];
+		triplet >>= 6;
+		dst[di + 1] = alphabet[triplet & 63];
+		triplet >>= 6;
+		dst[di + 2] = alphabet[triplet];
+		dst[di + 3] = 0;
+		length = di + 2;
+		break;
+	case 1:
+		triplet = usrc[si];
+		dst[di] = alphabet[triplet & 63];
+		triplet >>= 6;
+		dst[di + 1] = alphabet[triplet];
+		dst[di + 2] = 0;
+		length = di + 1;
+		break;
+	default:
+		dst[di] = 0;
+		length = di;
+		break;
 	}
 
 	while(si > 0) {
 		di -= 4;
 		si -= 3;
 		triplet = usrc[si] | usrc[si + 1] << 8 | usrc[si + 2] << 16;
-		dst[di] = alphabet[triplet & 63]; triplet >>= 6;
-		dst[di + 1] = alphabet[triplet & 63]; triplet >>= 6;
-		dst[di + 2] = alphabet[triplet & 63]; triplet >>= 6;
+		dst[di] = alphabet[triplet & 63];
+		triplet >>= 6;
+		dst[di + 1] = alphabet[triplet & 63];
+		triplet >>= 6;
+		dst[di + 2] = alphabet[triplet & 63];
+		triplet >>= 6;
 		dst[di + 3] = alphabet[triplet];
 	}
 
@@ -159,10 +167,10 @@ const char *winerror(int err) {
 
 	ptr = buf + sprintf(buf, "(%d) ", err);
 
-	if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), ptr, sizeof(buf) - (ptr - buf), NULL)) {
+	if(!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+	                  NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), ptr, sizeof(buf) - (ptr - buf), NULL))
 		strncpy(buf, "(unable to format errormessage)", sizeof(buf));
-	};
+	;
 
 	if((ptr = strchr(buf, '\r')))
 		*ptr = '\0';

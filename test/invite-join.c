@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
 	// Start the first instance and have it generate an invitation.
 
 	meshlink_set_node_status_cb(mesh1, status_cb);
-	
+
 	if(!meshlink_start(mesh1)) {
 		fprintf(stderr, "Foo could not start\n");
 		return 1;

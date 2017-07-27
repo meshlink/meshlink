@@ -103,9 +103,8 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 	if(n->mtuprobes == 31) {
 		timeout = mesh->pinginterval;
 		goto end;
-	} else if(n->mtuprobes == 32) {
+	} else if(n->mtuprobes == 32)
 		timeout = mesh->pingtimeout;
-	}
 
 	for(int i = 0; i < 4 + mesh->localdiscovery; i++) {
 		int len;
@@ -114,11 +113,10 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 			if(n->mtuprobes < 30 || n->maxmtu + 8 >= MTU)
 				continue;
 			len = n->maxmtu + 8;
-		} else if(n->maxmtu <= n->minmtu) {
+		} else if(n->maxmtu <= n->minmtu)
 			len = n->maxmtu;
-		} else {
+		else
 			len = n->minmtu + 1 + rand() % (n->maxmtu - n->minmtu);
-		}
 
 		if(len < 64)
 			len = 64;
@@ -138,11 +136,15 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 	n->status.broadcast = false;
 
 end:
-	timeout_set(&mesh->loop, &n->mtutimeout, &(struct timeval){timeout, rand() % 100000});
+	timeout_set(&mesh->loop, &n->mtutimeout, &(struct timeval) {
+		timeout, rand() % 100000
+	});
 }
 
 void send_mtu_probe(meshlink_handle_t *mesh, node_t *n) {
-	timeout_add(&mesh->loop, &n->mtutimeout, send_mtu_probe_handler, n, &(struct timeval){1, 0});
+	timeout_add(&mesh->loop, &n->mtutimeout, send_mtu_probe_handler, n, &(struct timeval) {
+		1, 0
+	});
 	send_mtu_probe_handler(&mesh->loop, n);
 }
 
@@ -171,7 +173,7 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 		/* If we haven't established the PMTU yet, restart the discovery process. */
 
 		if(n->mtuprobes > 30) {
-			if (len == n->maxmtu + 8) {
+			if(len == n->maxmtu + 8) {
 				logger(mesh, MESHLINK_INFO, "Increase in PMTU to %s (%s) detected, restarting PMTU discovery", n->name, n->hostname);
 				n->maxmtu = MTU;
 				n->mtuprobes = 10;
@@ -197,9 +199,9 @@ static uint16_t compress_packet(uint8_t *dest, const uint8_t *source, uint16_t l
 	if(level == 0) {
 		memcpy(dest, source, len);
 		return len;
-	} else if(level == 10) {
+	} else if(level == 10)
 		return -1;
-	} else if(level < 10) {
+	else if(level < 10) {
 #ifdef HAVE_ZLIB
 		unsigned long destlen = MAXSIZE;
 		if(compress2(dest, &destlen, source, len, level) == Z_OK)
@@ -207,9 +209,8 @@ static uint16_t compress_packet(uint8_t *dest, const uint8_t *source, uint16_t l
 		else
 #endif
 			return -1;
-	} else {
+	} else
 		return -1;
-	}
 
 	return -1;
 }
@@ -218,9 +219,8 @@ static uint16_t uncompress_packet(uint8_t *dest, const uint8_t *source, uint16_t
 	if(level == 0) {
 		memcpy(dest, source, len);
 		return len;
-	} else if(level > 9) {
-			return -1;
-	}
+	} else if(level > 9)
+		return -1;
 #ifdef HAVE_ZLIB
 	else {
 		unsigned long destlen = MAXSIZE;
@@ -238,16 +238,16 @@ static uint16_t uncompress_packet(uint8_t *dest, const uint8_t *source, uint16_t
 
 static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	logger(mesh, MESHLINK_DEBUG, "Received packet of %d bytes from %s (%s)",
-			   packet->len, n->name, n->hostname);
+	       packet->len, n->name, n->hostname);
 
-    if (n->status.blacklisted) {
-        logger(mesh, MESHLINK_WARNING, "Dropping packet from blacklisted node %s", n->name);
-    } else {
-	n->in_packets++;
-	n->in_bytes += packet->len;
+	if(n->status.blacklisted)
+		logger(mesh, MESHLINK_WARNING, "Dropping packet from blacklisted node %s", n->name);
+	else {
+		n->in_packets++;
+		n->in_bytes += packet->len;
 
-	route(mesh, n, packet);
-    }
+		route(mesh, n, packet);
+	}
 }
 
 static bool try_mac(meshlink_handle_t *mesh, node_t *n, const vpn_packet_t *inpkt) {
@@ -259,9 +259,8 @@ static void receive_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 		if(!n->status.waitingforkey) {
 			logger(mesh, MESHLINK_DEBUG, "Got packet from %s (%s) but we haven't exchanged keys yet", n->name, n->hostname);
 			send_req_key(mesh, n);
-		} else {
+		} else
 			logger(mesh, MESHLINK_DEBUG, "Got packet from %s (%s) but he hasn't got our key yet", n->name, n->hostname);
-		}
 		return;
 	}
 	sptps_receive_data(&n->sptps, inpkt->data, inpkt->len);
@@ -306,9 +305,9 @@ static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 
 	if(n->outcompression) {
 		int len = compress_packet(outpkt.data, origpkt->data, origpkt->len, n->outcompression);
-		if(len < 0) {
+		if(len < 0)
 			logger(mesh, MESHLINK_ERROR, "Error while compressing packet to %s (%s)", n->name, n->hostname);
-		} else if(len < origpkt->len) {
+		else if(len < origpkt->len) {
 			outpkt.len = len;
 			origpkt = &outpkt;
 			type |= PKT_COMPRESSED;
@@ -430,9 +429,8 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 		if(!to->status.validkey) {
 			to->incompression = mesh->self->incompression;
 			return send_request(mesh, to->nexthop->connection, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, to->incompression);
-		} else {
+		} else
 			return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_SPTPS, buf);
-		}
 	}
 
 	/* Otherwise, send the packet via UDP */
@@ -486,9 +484,8 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 		memcpy(inpkt.data, data, len);
 		mtu_probe_h(mesh, from, &inpkt, len);
 		return true;
-	} else {
+	} else
 		inpkt.probe = false;
-	}
 
 	if(type & ~(PKT_COMPRESSED)) {
 		logger(mesh, MESHLINK_ERROR, "Unexpected SPTPS record type %d len %d from %s (%s)", type, len, from->name, from->hostname);
@@ -497,11 +494,10 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 
 	if(type & PKT_COMPRESSED) {
 		uint16_t ulen = uncompress_packet(inpkt.data, (const uint8_t *)data, len, from->incompression);
-		if(ulen < 0) {
+		if(ulen < 0)
 			return false;
-		} else {
+		else
 			inpkt.len = ulen;
-		}
 		if(inpkt.len > MAXSIZE)
 			abort();
 	} else {
@@ -525,11 +521,11 @@ void send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	}
 
 	logger(mesh, MESHLINK_DEBUG, "Sending packet of %d bytes to %s (%s)",
-			   packet->len, n->name, n->hostname);
+	       packet->len, n->name, n->hostname);
 
 	if(!n->status.reachable) {
 		logger(mesh, MESHLINK_WARNING, "Node %s (%s) is not reachable",
-				   n->name, n->hostname);
+		       n->name, n->hostname);
 		return;
 	}
 
@@ -548,7 +544,7 @@ void broadcast_packet(meshlink_handle_t *mesh, const node_t *from, vpn_packet_t 
 		send_packet(mesh, mesh->self, packet);
 
 	logger(mesh, MESHLINK_INFO, "Broadcasting packet of %d bytes from %s (%s)",
-			   packet->len, from->name, from->hostname);
+	       packet->len, from->name, from->hostname);
 
 	for list_each(connection_t, c, mesh->connections)
 		if(c->status.active && c->status.mst && c != from->nexthop->connection)
@@ -617,15 +613,14 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 			logger(mesh, MESHLINK_WARNING, "Received UDP packet from unknown source %s", hostname);
 			free(hostname);
 			return;
-		}
-		else
+		} else
 			return;
 	}
 
-    if (n->status.blacklisted) {
-			logger(mesh, MESHLINK_WARNING, "Dropping packet from blacklisted node %s", n->name);
-            return;
-    }
+	if(n->status.blacklisted) {
+		logger(mesh, MESHLINK_WARNING, "Dropping packet from blacklisted node %s", n->name);
+		return;
+	}
 	n->sock = ls - mesh->listen_socket;
 
 	receive_udppacket(mesh, n, &pkt);

@@ -331,47 +331,47 @@ bool sptps_force_kex(sptps_t *s) {
 static bool receive_handshake(sptps_t *s, const char *data, uint16_t len) {
 	// Only a few states to deal with handshaking.
 	switch(s->state) {
-		case SPTPS_SECONDARY_KEX:
-			// We receive a secondary KEX request, first respond by sending our own.
-			if(!send_kex(s))
-				return false;
-		case SPTPS_KEX:
-			// We have sent our KEX request, we expect our peer to sent one as well.
-			if(!receive_kex(s, data, len))
-				return false;
-			s->state = SPTPS_SIG;
-			return true;
-		case SPTPS_SIG:
-			// If we already sent our secondary public ECDH key, we expect the peer to send his.
-			if(!receive_sig(s, data, len))
-				return false;
-			if(s->outstate)
-				s->state = SPTPS_ACK;
-			else {
-				s->outstate = true;
-				if(!receive_ack(s, NULL, 0))
-					return false;
-				s->receive_record(s->handle, SPTPS_HANDSHAKE, NULL, 0);
-				s->state = SPTPS_SECONDARY_KEX;
-			}
-
-			return true;
-		case SPTPS_ACK:
-			// We expect a handshake message to indicate transition to the new keys.
-			if(!receive_ack(s, data, len))
+	case SPTPS_SECONDARY_KEX:
+		// We receive a secondary KEX request, first respond by sending our own.
+		if(!send_kex(s))
+			return false;
+	case SPTPS_KEX:
+		// We have sent our KEX request, we expect our peer to sent one as well.
+		if(!receive_kex(s, data, len))
+			return false;
+		s->state = SPTPS_SIG;
+		return true;
+	case SPTPS_SIG:
+		// If we already sent our secondary public ECDH key, we expect the peer to send his.
+		if(!receive_sig(s, data, len))
+			return false;
+		if(s->outstate)
+			s->state = SPTPS_ACK;
+		else {
+			s->outstate = true;
+			if(!receive_ack(s, NULL, 0))
 				return false;
 			s->receive_record(s->handle, SPTPS_HANDSHAKE, NULL, 0);
 			s->state = SPTPS_SECONDARY_KEX;
-			return true;
-		// TODO: split ACK into a VERify and ACK?
-		default:
-			return error(s, EIO, "Invalid session state %d", s->state);
+		}
+
+		return true;
+	case SPTPS_ACK:
+		// We expect a handshake message to indicate transition to the new keys.
+		if(!receive_ack(s, data, len))
+			return false;
+		s->receive_record(s->handle, SPTPS_HANDSHAKE, NULL, 0);
+		s->state = SPTPS_SECONDARY_KEX;
+		return true;
+	// TODO: split ACK into a VERify and ACK?
+	default:
+		return error(s, EIO, "Invalid session state %d", s->state);
 	}
 }
 
 // Check datagram for valid HMAC
 bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len) {
-	if (!s->instate)
+	if(!s->instate)
 		return error(s, EIO, "SPTPS state not ready to verify this datagram");
 
 	if(len < 21)
@@ -433,7 +433,7 @@ static bool sptps_receive_data_datagram(sptps_t *s, const void *vdata, size_t le
 				warning(s, "Lost %d packets\n", seqno - s->inseqno);
 				// Mark all packets in the replay window as being late.
 				memset(s->late, 255, s->replaywin);
-			} else if (seqno < s->inseqno) {
+			} else if(seqno < s->inseqno) {
 				// If the sequence number is farther in the past than the bitmap goes, or if the packet was already received, drop it.
 				if((s->inseqno >= s->replaywin * 8 && seqno < s->inseqno - s->replaywin * 8) || !(s->late[(seqno / 8) % s->replaywin] & (1 << seqno % 8)))
 					return error(s, EIO, "Received late or replayed packet, seqno %d, last received %d\n", seqno, s->inseqno);
@@ -469,9 +469,8 @@ static bool sptps_receive_data_datagram(sptps_t *s, const void *vdata, size_t le
 	} else if(type == SPTPS_HANDSHAKE) {
 		if(!receive_handshake(s, buffer + 1, len - 21))
 			abort();
-	} else {
+	} else
 		return error(s, EIO, "Invalid record type %d", type);
-	}
 
 	return true;
 }
@@ -553,9 +552,8 @@ bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 		} else if(type == SPTPS_HANDSHAKE) {
 			if(!receive_handshake(s, s->inbuf + 3, s->reclen))
 				return false;
-		} else {
+		} else
 			return error(s, EIO, "Invalid record type %d", type);
-		}
 
 		s->buflen = 0;
 	}

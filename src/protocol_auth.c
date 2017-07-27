@@ -43,92 +43,91 @@ extern bool node_write_devclass(meshlink_handle_t *mesh, node_t *n);
 
 static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 	switch(mesh->proxytype) {
-		case PROXY_HTTP: {
-			char *host;
-			char *port;
+	case PROXY_HTTP: {
+		char *host;
+		char *port;
 
-			sockaddr2str(&c->address, &host, &port);
-			send_request(mesh, c, "CONNECT %s:%s HTTP/1.1\r\n\r", host, port);
-			free(host);
-			free(port);
-			return true;
+		sockaddr2str(&c->address, &host, &port);
+		send_request(mesh, c, "CONNECT %s:%s HTTP/1.1\r\n\r", host, port);
+		free(host);
+		free(port);
+		return true;
+	}
+	case PROXY_SOCKS4: {
+		if(c->address.sa.sa_family != AF_INET) {
+			logger(mesh, MESHLINK_ERROR, "Cannot connect to an IPv6 host through a SOCKS 4 proxy!");
+			return false;
 		}
-		case PROXY_SOCKS4: {
-			if(c->address.sa.sa_family != AF_INET) {
-				logger(mesh, MESHLINK_ERROR, "Cannot connect to an IPv6 host through a SOCKS 4 proxy!");
-				return false;
-			}
-			char s4req[9 + (mesh->proxyuser ? strlen(mesh->proxyuser) : 0)];
-			s4req[0] = 4;
-			s4req[1] = 1;
-			memcpy(s4req + 2, &c->address.in.sin_port, 2);
-			memcpy(s4req + 4, &c->address.in.sin_addr, 4);
-			if(mesh->proxyuser)
-				memcpy(s4req + 8, mesh->proxyuser, strlen(mesh->proxyuser));
-			s4req[sizeof s4req - 1] = 0;
-			c->tcplen = 8;
-			return send_meta(mesh, c, s4req, sizeof s4req);
-		}
-		case PROXY_SOCKS5: {
-			int len = 3 + 6 + (c->address.sa.sa_family == AF_INET ? 4 : 16);
-			c->tcplen = 2;
-			if(mesh->proxypass)
-				len += 3 + strlen(mesh->proxyuser) + strlen(mesh->proxypass);
-			char s5req[len];
-			int i = 0;
-			s5req[i++] = 5;
+		char s4req[9 + (mesh->proxyuser ? strlen(mesh->proxyuser) : 0)];
+		s4req[0] = 4;
+		s4req[1] = 1;
+		memcpy(s4req + 2, &c->address.in.sin_port, 2);
+		memcpy(s4req + 4, &c->address.in.sin_addr, 4);
+		if(mesh->proxyuser)
+			memcpy(s4req + 8, mesh->proxyuser, strlen(mesh->proxyuser));
+		s4req[sizeof s4req - 1] = 0;
+		c->tcplen = 8;
+		return send_meta(mesh, c, s4req, sizeof s4req);
+	}
+	case PROXY_SOCKS5: {
+		int len = 3 + 6 + (c->address.sa.sa_family == AF_INET ? 4 : 16);
+		c->tcplen = 2;
+		if(mesh->proxypass)
+			len += 3 + strlen(mesh->proxyuser) + strlen(mesh->proxypass);
+		char s5req[len];
+		int i = 0;
+		s5req[i++] = 5;
+		s5req[i++] = 1;
+		if(mesh->proxypass) {
+			s5req[i++] = 2;
 			s5req[i++] = 1;
-			if(mesh->proxypass) {
-				s5req[i++] = 2;
-				s5req[i++] = 1;
-				s5req[i++] = strlen(mesh->proxyuser);
-				memcpy(s5req + i, mesh->proxyuser, strlen(mesh->proxyuser));
-				i += strlen(mesh->proxyuser);
-				s5req[i++] = strlen(mesh->proxypass);
-				memcpy(s5req + i, mesh->proxypass, strlen(mesh->proxypass));
-				i += strlen(mesh->proxypass);
-				c->tcplen += 2;
-			} else {
-				s5req[i++] = 0;
-			}
-			s5req[i++] = 5;
-			s5req[i++] = 1;
+			s5req[i++] = strlen(mesh->proxyuser);
+			memcpy(s5req + i, mesh->proxyuser, strlen(mesh->proxyuser));
+			i += strlen(mesh->proxyuser);
+			s5req[i++] = strlen(mesh->proxypass);
+			memcpy(s5req + i, mesh->proxypass, strlen(mesh->proxypass));
+			i += strlen(mesh->proxypass);
+			c->tcplen += 2;
+		} else
 			s5req[i++] = 0;
-			if(c->address.sa.sa_family == AF_INET) {
-				s5req[i++] = 1;
-				memcpy(s5req + i, &c->address.in.sin_addr, 4);
-				i += 4;
-				memcpy(s5req + i, &c->address.in.sin_port, 2);
-				i += 2;
-				c->tcplen += 10;
-			} else if(c->address.sa.sa_family == AF_INET6) {
-				s5req[i++] = 3;
-				memcpy(s5req + i, &c->address.in6.sin6_addr, 16);
-				i += 16;
-				memcpy(s5req + i, &c->address.in6.sin6_port, 2);
-				i += 2;
-				c->tcplen += 22;
-			} else {
-				logger(mesh, MESHLINK_ERROR, "Address family %hx not supported for SOCKS 5 proxies!", c->address.sa.sa_family);
-				return false;
-			}
-			if(i > len)
-				abort();
-			return send_meta(mesh, c, s5req, sizeof s5req);
+		s5req[i++] = 5;
+		s5req[i++] = 1;
+		s5req[i++] = 0;
+		if(c->address.sa.sa_family == AF_INET) {
+			s5req[i++] = 1;
+			memcpy(s5req + i, &c->address.in.sin_addr, 4);
+			i += 4;
+			memcpy(s5req + i, &c->address.in.sin_port, 2);
+			i += 2;
+			c->tcplen += 10;
+		} else if(c->address.sa.sa_family == AF_INET6) {
+			s5req[i++] = 3;
+			memcpy(s5req + i, &c->address.in6.sin6_addr, 16);
+			i += 16;
+			memcpy(s5req + i, &c->address.in6.sin6_port, 2);
+			i += 2;
+			c->tcplen += 22;
+		} else {
+			logger(mesh, MESHLINK_ERROR, "Address family %hx not supported for SOCKS 5 proxies!", c->address.sa.sa_family);
+			return false;
 		}
-		case PROXY_SOCKS4A:
-			logger(mesh, MESHLINK_ERROR, "Proxy type not implemented yet");
-			return false;
-		case PROXY_EXEC:
-			return true;
-		default:
-			logger(mesh, MESHLINK_ERROR, "Unknown proxy type");
-			return false;
+		if(i > len)
+			abort();
+		return send_meta(mesh, c, s5req, sizeof s5req);
+	}
+	case PROXY_SOCKS4A:
+		logger(mesh, MESHLINK_ERROR, "Proxy type not implemented yet");
+		return false;
+	case PROXY_EXEC:
+		return true;
+	default:
+		logger(mesh, MESHLINK_ERROR, "Unknown proxy type");
+		return false;
 	}
 }
 
 bool send_id(meshlink_handle_t *mesh, connection_t *c) {
-	
+
 	int minor = mesh->self->connection->protocol_minor;
 
 	if(mesh->proxytype && c->outgoing)
@@ -260,7 +259,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(sscanf(request, "%*d " MAX_STRING " %d.%d", name, &c->protocol_major, &c->protocol_minor) < 2) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ID", c->name,
-			   c->hostname);
+		       c->hostname);
 		return false;
 	}
 
@@ -296,7 +295,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!check_id(name)) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ID", c->name,
-			   c->hostname, "invalid name");
+		       c->hostname, "invalid name");
 		return false;
 	}
 
@@ -305,7 +304,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	if(c->outgoing) {
 		if(strcmp(c->name, name)) {
 			logger(mesh, MESHLINK_ERROR, "Peer %s is %s instead of %s", c->hostname, name,
-				   c->name);
+			       c->name);
 			return false;
 		}
 	} else {
@@ -318,7 +317,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(c->protocol_major != mesh->self->connection->protocol_major) {
 		logger(mesh, MESHLINK_ERROR, "Peer %s (%s) uses incompatible version %d.%d",
-			c->name, c->hostname, c->protocol_major, c->protocol_minor);
+		       c->name, c->hostname, c->protocol_major, c->protocol_minor);
 		return false;
 	}
 
@@ -349,7 +348,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(ecdsa_active(c->ecdsa) && c->protocol_minor < 2) {
 		logger(mesh, MESHLINK_ERROR, "Peer %s (%s) tries to roll back protocol version to %d.%d",
-			c->name, c->hostname, c->protocol_major, c->protocol_minor);
+		       c->name, c->hostname, c->protocol_major, c->protocol_minor);
 		return false;
 	}
 
@@ -392,13 +391,13 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(sscanf(request, "%*d " MAX_STRING " %d %x", hisport, &devclass, &options) != 3) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ACK", c->name,
-			   c->hostname);
+		       c->hostname);
 		return false;
 	}
 
 	if(devclass < 0 || devclass > _DEV_CLASS_MAX) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ACK", c->name,
-			   c->hostname, "devclass invalid");
+		       c->hostname, "devclass invalid");
 		return false;
 	}
 
@@ -449,7 +448,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	c->status.active = true;
 
 	logger(mesh, MESHLINK_INFO, "Connection with %s (%s) activated", c->name,
-			   c->hostname);
+	       c->hostname);
 
 	/* Send him everything we know */
 

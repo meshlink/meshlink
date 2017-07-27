@@ -31,13 +31,16 @@ void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 }
 
 void foo_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	printf("foo_receive_cb %zu: ", len); fwrite(data, 1, len, stdout); printf("\n");
+	printf("foo_receive_cb %zu: ", len);
+	fwrite(data, 1, len, stdout);
+	printf("\n");
 	if(len == 5 && !memcmp(data, "Hello", 5))
 		bar_responded = true;
 }
 
 void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	printf("bar_receive_cb %zu: ", len); fwrite(data, 1, len, stdout);
+	printf("bar_receive_cb %zu: ", len);
+	fwrite(data, 1, len, stdout);
 	// Echo the data back.
 	meshlink_channel_send(mesh, channel, data, len);
 }
@@ -48,7 +51,10 @@ bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 
 bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	printf("accept_cb: (from %s on port %u) ", channel->node->name, (unsigned int)port);
-	if(data) { fwrite(data, 1, len, stdout); printf("\n"); }
+	if(data) {
+		fwrite(data, 1, len, stdout);
+		printf("\n");
+	}
 
 	if(port != 7)
 		return false;
@@ -115,12 +121,12 @@ int main(int argc, char *argv[]) {
 	free(data);
 
 	// Set the callbacks.
-	
+
 	meshlink_set_channel_accept_cb(mesh1, reject_cb);
 	meshlink_set_channel_accept_cb(mesh2, accept_cb);
 
 	meshlink_set_node_status_cb(mesh1, status_cb);
-	
+
 	// Start both instances
 
 	if(!meshlink_start(mesh1)) {
@@ -147,7 +153,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Open a channel from foo to bar.
-	
+
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
 	if(!bar) {
 		fprintf(stderr, "Foo could not find bar\n");
