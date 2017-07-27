@@ -2337,6 +2337,9 @@ void update_node_status(meshlink_handle_t *mesh, node_t *n) {
 
 static void __attribute__((constructor)) meshlink_init(void) {
 	crypto_init();
+	unsigned int seed;
+	randomize(&seed, sizeof seed);
+	srand(seed);
 }
 
 static void __attribute__((destructor)) meshlink_exit(void) {
