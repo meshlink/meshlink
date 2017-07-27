@@ -1,6 +1,9 @@
+#ifndef MESHLINK_CONF_H
+#define MESHLINK_CONF_H
+
 /*
     conf.h -- header for conf.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef __MESHLINK_CONF_H__
-#define __MESHLINK_CONF_H__
 
 #include "list.h"
 #include "meshlink_internal.h"
@@ -55,4 +55,4 @@ extern bool write_host_config(struct meshlink_handle *mesh, const struct splay_t
 extern bool modify_config_file(struct meshlink_handle *mesh, const char *, const char *, const char *, bool);
 extern bool append_config_file(struct meshlink_handle *mesh, const char *, const char *, const char *);
 
-#endif /* __MESHLINK_CONF_H__ */
+#endif

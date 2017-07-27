@@ -1,6 +1,9 @@
+#ifndef MESHLINK_LOGGER_H
+#define MESHLINK_LOGGER_H
+
 /*
     logger.h -- header file for logger.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,11 +20,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __MESHLINK_LOGGER_H__
-#define __MESHLINK_LOGGER_H__
-
 #include "meshlink_internal.h"
 
 extern void logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *format, ...) __attribute__((__format__(printf, 3, 4)));
 
-#endif /* __MESHLINK_LOGGER_H__ */
+#endif

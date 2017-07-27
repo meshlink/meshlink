@@ -1,6 +1,9 @@
+#ifndef MESHLINK_NET_H
+#define MESHLINK_NET_H
+
 /*
     net.h -- header for net.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef __MESHLINK_NET_H__
-#define __MESHLINK_NET_H__
 
 #include "event.h"
 #include "sockaddr.h"
@@ -115,4 +115,4 @@ extern void retry(struct meshlink_handle *mesh);
 extern CRITICAL_SECTION mutex;
 #endif
 
-#endif /* __MESHLINK_NET_H__ */
+#endif

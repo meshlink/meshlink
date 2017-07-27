@@ -1,5 +1,5 @@
-#ifndef _FAKE_GETNAMEINFO_H
-#define _FAKE_GETNAMEINFO_H
+#ifndef MESHLINK_FAKE_GETNAMEINFO_H
+#define MESHLINK_FAKE_GETNAMEINFO_H
 
 #if !HAVE_DECL_GETNAMEINFO
 int getnameinfo(const struct sockaddr *sa, size_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
@@ -12,4 +12,4 @@ int getnameinfo(const struct sockaddr *sa, size_t salen, char *host, size_t host
 # define NI_MAXHOST 1025
 #endif /* !NI_MAXHOST */
 
-#endif /* _FAKE_GETNAMEINFO_H */
+#endif

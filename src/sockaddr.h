@@ -1,5 +1,5 @@
-#ifndef SOCKADDR_H
-#define SOCKADDR_H
+#ifndef MESHLINK_SOCKADDR_H
+#define MESHLINK_SOCKADDR_H
 
 #define AF_UNKNOWN 255
 
@@ -25,4 +25,4 @@ typedef union sockaddr_t {
 	struct sockaddr_storage storage;
 } sockaddr_t;
 
-#endif // SOCKADDR_H
+#endif

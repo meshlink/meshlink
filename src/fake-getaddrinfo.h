@@ -1,5 +1,5 @@
-#ifndef _FAKE_GETADDRINFO_H
-#define _FAKE_GETADDRINFO_H
+#ifndef MESHLINK_FAKE_GETADDRINFO_H
+#define MESHLINK_FAKE_GETADDRINFO_H
 
 #include "fake-gai-errnos.h"
 
@@ -43,4 +43,4 @@ char *gai_strerror(int ecode);
 void freeaddrinfo(struct addrinfo *ai);
 #endif /* !HAVE_FREEADDRINFO */
 
-#endif /* _FAKE_GETADDRINFO_H */
+#endif

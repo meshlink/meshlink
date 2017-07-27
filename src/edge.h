@@ -1,6 +1,9 @@
+#ifndef MESHLINK_EDGE_H
+#define MESHLINK_EDGE_H
+
 /*
     edge.h -- header for edge.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef __MESHLINK_EDGE_H__
-#define __MESHLINK_EDGE_H__
 
 #include "splay_tree.h"
 #include "connection.h"
@@ -47,4 +47,4 @@ extern void edge_add(struct meshlink_handle *mesh, edge_t *);
 extern void edge_del(struct meshlink_handle *mesh, edge_t *);
 extern edge_t *lookup_edge(struct node_t *, struct node_t *);
 
-#endif /* __MESHLINK_EDGE_H__ */
+#endif

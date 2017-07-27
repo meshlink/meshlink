@@ -1,6 +1,9 @@
+#ifndef MESHLINK_ECDH_H
+#define MESHLINK_ECDH_H
+
 /*
     ecdh.h -- header file for ecdh.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef __MESHLINK_ECDH_H__
-#define __MESHLINK_ECDH_H__
 
 #define ECDH_SIZE 32
 #define ECDH_SHARED_SIZE 32

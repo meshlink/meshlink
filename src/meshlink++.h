@@ -1,6 +1,9 @@
+#ifndef MESHLINKPP_H
+#define MESHLINKPP_H
+
 /*
     meshlink++.h -- MeshLink C++ API
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef MESHLINKPP_H
-#define MESHLINKPP_H
 
 #include <meshlink.h>
 #include <new> // for 'placement new'
@@ -633,4 +633,4 @@ static bool destroy(const char *confbase) {
 }
 }
 
-#endif // MESHLINKPP_H
+#endif

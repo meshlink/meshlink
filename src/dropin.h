@@ -1,6 +1,9 @@
+#ifndef MESHLINK_DROPIN_H
+#define MESHLINK_DROPIN_H
+
 /*
     dropin.h -- header file for dropin.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef __DROPIN_H__
-#define __DROPIN_H__
 
 #include "fake-getaddrinfo.h"
 #include "fake-getnameinfo.h"
@@ -65,4 +65,4 @@ extern int usleep(long long usec);
 #endif
 #endif
 
-#endif /* __DROPIN_H__ */
+#endif

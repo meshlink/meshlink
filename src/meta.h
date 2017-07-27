@@ -1,6 +1,9 @@
+#ifndef MESHLINK_META_H
+#define MESHLINK_META_H
+
 /*
     meta.h -- header for meta.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,9 +20,6 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef __MESHLINK_META_H__
-#define __MESHLINK_META_H__
-
 #include "connection.h"
 
 extern bool send_meta(struct meshlink_handle *mesh, struct connection_t *, const char *, int);
@@ -28,4 +28,4 @@ extern bool receive_meta_sptps(void *, uint8_t, const void *, uint16_t);
 extern void broadcast_meta(struct meshlink_handle *mesh, struct connection_t *, const char *, int);
 extern bool receive_meta(struct meshlink_handle *mesh, struct connection_t *);
 
-#endif /* __MESHLINK_META_H__ */
+#endif

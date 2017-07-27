@@ -1,6 +1,9 @@
+#ifndef MESHLINK_H
+#define MESHLINK_H
+
 /*
     meshlink.h -- MeshLink API
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef MESHLINK_H
-#define MESHLINK_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -836,4 +836,4 @@ extern meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, m
 }
 #endif
 
-#endif // MESHLINK_H
+#endif

@@ -1,11 +1,6 @@
-/*
- * fake library for ssh
- *
- * This file is included in getaddrinfo.c and getnameinfo.c.
- * See getaddrinfo.c and getnameinfo.c.
- */
+#ifndef MESHLINK_FAKE_GAI_ERRNOS_H
+#define MESHLINK_FAKE_GAI_ERRNOS_H
 
-/* for old netdb.h */
 #ifndef EAI_NODATA
 #define EAI_NODATA 1
 #endif
@@ -20,4 +15,6 @@
 
 #ifndef EAI_SYSTEM
 #define EAI_SYSTEM 4
+#endif
+
 #endif

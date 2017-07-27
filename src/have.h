@@ -1,6 +1,9 @@
+#ifndef MESHLINK_HAVE_H
+#define MESHLINK_HAVE_H
+
 /*
     have.h -- include headers which are known to exist
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef __MESHLINK_HAVE_H__
-#define __MESHLINK_HAVE_H__
 
 #ifdef HAVE_MINGW
 #ifdef WITH_WINDOWS2000
@@ -126,4 +126,4 @@
 #define SLASH "/"
 #endif
 
-#endif /* __MESHLINK_SYSTEM_H__ */
+#endif

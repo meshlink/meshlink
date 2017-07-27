@@ -1,6 +1,9 @@
+#ifndef MESHLINK_CONNECTION_H
+#define MESHLINK_CONNECTION_H
+
 /*
     connection.h -- header for connection.c
-    Copyright (C) 2000-2013 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2000-2013, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef __MESHLINK_CONNECTION_H__
-#define __MESHLINK_CONNECTION_H__
 
 #include "buffer.h"
 #include "list.h"
@@ -94,4 +94,4 @@ extern void free_connection(connection_t *);
 extern void connection_add(struct meshlink_handle *mesh, connection_t *);
 extern void connection_del(struct meshlink_handle *mesh, connection_t *);
 
-#endif /* __MESHLINK_CONNECTION_H__ */
+#endif

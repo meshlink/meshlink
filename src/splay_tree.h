@@ -1,6 +1,9 @@
+#ifndef MESHLINK_SPLAY_TREE_H
+#define MESHLINK_SPLAY_TREE_H
+
 /*
     splay_tree.h -- header file for splay_tree.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,10 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-
-#ifndef __SPLAY_TREE_H__
-#define __SPLAY_TREE_H__
 
 typedef struct splay_node_t {
 

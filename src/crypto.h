@@ -1,6 +1,9 @@
+#ifndef MESHLINK_CRYPTO_H
+#define MESHLINK_CRYPTO_H
+
 /*
     crypto.h -- header for crypto.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef __MESHLINK_CRYPTO_H__
-#define __MESHLINK_CRYPTO_H__
 
 extern void crypto_init();
 extern void crypto_exit();

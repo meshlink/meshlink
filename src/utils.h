@@ -1,6 +1,9 @@
+#ifndef MESHLINK_UTILS_H
+#define MESHLINK_UTILS_H
+
 /*
     utils.h -- header file for utils.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef __MESHLINK_UTILS_H__
-#define __MESHLINK_UTILS_H__
 
 extern int hex2bin(const char *src, void *dst, int length);
 extern int bin2hex(const void *src, char *dst, int length);
@@ -47,4 +47,4 @@ extern const char *winerror(int);
 
 extern unsigned int bitfield_to_int(const void *bitfield, size_t size);
 
-#endif /* __MESHLINK_UTILS_H__ */
+#endif

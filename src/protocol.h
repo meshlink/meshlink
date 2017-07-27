@@ -1,6 +1,9 @@
+#ifndef MESHLINK_PROTOCOL_H
+#define MESHLINK_PROTOCOL_H
+
 /*
     protocol.h -- header for protocol.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef __MESHLINK_PROTOCOL_H__
-#define __MESHLINK_PROTOCOL_H__
 
 #include "ecdsa.h"
 
@@ -111,4 +111,4 @@ extern bool req_key_h(struct meshlink_handle *mesh, struct connection_t *, const
 extern bool ans_key_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
 extern bool tcppacket_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
 
-#endif /* __MESHLINK_PROTOCOL_H__ */
+#endif

@@ -1,6 +1,9 @@
+#ifndef MESHLINK_HASH_H
+#define MESHLINK_HASH_H
+
 /*
     hash.h -- header file for hash.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef __MESHLINK_HASH_H__
-#define __MESHLINK_HASH_H__
 
 typedef struct hash_t {
 	size_t n;
@@ -38,4 +38,4 @@ extern void *hash_search_or_insert(hash_t *, const void *key, const void *value)
 extern void hash_clear(hash_t *);
 extern void hash_resize(hash_t *, size_t n);
 
-#endif /* __MESHLINK_HASH_H__ */
+#endif

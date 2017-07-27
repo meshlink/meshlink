@@ -1,6 +1,9 @@
+#ifndef MESHLINK_NODE_H
+#define MESHLINK_NODE_H
+
 /*
     node.h -- header for node.c
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef __MESHLINK_NODE_H__
-#define __MESHLINK_NODE_H__
 
 #include "event.h"
 #include "sockaddr.h"
@@ -97,4 +97,4 @@ extern node_t *lookup_node(struct meshlink_handle *mesh, const char *);
 extern node_t *lookup_node_udp(struct meshlink_handle *mesh, const sockaddr_t *);
 extern void update_node_udp(struct meshlink_handle *mesh, node_t *, const sockaddr_t *);
 
-#endif /* __MESHLINK_NODE_H__ */
+#endif
