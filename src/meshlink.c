@@ -2163,12 +2163,9 @@ static ssize_t channel_recv(struct utcp_connection *connection, const void *data
 		abort();
 	node_t *n = channel->node;
 	meshlink_handle_t *mesh = n->mesh;
-	if(!channel->receive_cb)
-		return -1;
-	else {
+	if(channel->receive_cb)
 		channel->receive_cb(mesh, channel, data, len);
-		return len;
-	}
+	return len;
 }
 
 static void channel_accept(struct utcp_connection *utcp_connection, uint16_t port) {
