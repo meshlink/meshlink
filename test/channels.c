@@ -41,6 +41,7 @@ void foo_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const 
 void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	printf("bar_receive_cb %zu: ", len);
 	fwrite(data, 1, len, stdout);
+	printf("\n");
 	// Echo the data back.
 	meshlink_channel_send(mesh, channel, data, len);
 }
@@ -53,8 +54,8 @@ bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 	printf("accept_cb: (from %s on port %u) ", channel->node->name, (unsigned int)port);
 	if(data) {
 		fwrite(data, 1, len, stdout);
-		printf("\n");
 	}
+	printf("\n");
 
 	if(port != 7)
 		return false;
@@ -162,21 +163,10 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	// XXX not enough to wait for reachable, must wait for SPTPS to complete
-	for(int i=0; i < 20; i++) {
-		sleep(1);
-		if(((node_t *)bar)->status.validkey)
-			break;
-	}
-	if(!((node_t *)bar)->status.validkey) {
-		fprintf(stderr, "No key exchange after 20 seconds\n");
-		return 1;
-	}
-
 	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, foo_receive_cb, NULL, 0);
 	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb);
 
-	for(int i = 0; i < 5; i++) {
+	for(int i = 0; i < 20; i++) {
 		sleep(1);
 		if(bar_responded)
 			break;
