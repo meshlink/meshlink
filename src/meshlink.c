@@ -2146,8 +2146,9 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 }
 
 static bool channel_pre_accept(struct utcp *utcp, uint16_t port) {
-	//TODO: implement
-	return true;
+	node_t *n = utcp->priv;
+	meshlink_handle_t *mesh = n->mesh;
+	return mesh->channel_accept_cb;
 }
 
 static ssize_t channel_recv(struct utcp_connection *connection, const void *data, size_t len) {
