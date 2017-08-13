@@ -169,7 +169,7 @@ bool get_config_string(const config_t *cfg, char **result) {
 	return true;
 }
 
-bool set_config_string(config_t *cfg, const char* val) {
+bool set_config_string(config_t *cfg, const char *val) {
 	if(!cfg)
 		return false;
 
@@ -203,7 +203,7 @@ bool get_config_address(const config_t *cfg, struct addrinfo **result) {
 /*
   Read exactly one line and strip the trailing newline if any.
 */
-static char *readline(FILE * fp, char *buf, size_t buflen) {
+static char *readline(FILE *fp, char *buf, size_t buflen) {
 	char *newline = NULL;
 	char *p;
 
@@ -356,7 +356,7 @@ bool read_server_config(meshlink_handle_t *mesh) {
 	char filename[PATH_MAX];
 	bool x;
 
-	snprintf(filename, PATH_MAX,"%s" SLASH "meshlink.conf", mesh->confbase);
+	snprintf(filename, PATH_MAX, "%s" SLASH "meshlink.conf", mesh->confbase);
 	errno = 0;
 	x = read_config_file(mesh->config, filename);
 
@@ -370,7 +370,7 @@ bool read_host_config(meshlink_handle_t *mesh, splay_tree_t *config_tree, const 
 	char filename[PATH_MAX];
 	bool x;
 
-	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	snprintf(filename, PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 	x = read_config_file(config_tree, filename);
 
 	return x;
@@ -379,7 +379,7 @@ bool read_host_config(meshlink_handle_t *mesh, splay_tree_t *config_tree, const 
 bool write_host_config(struct meshlink_handle *mesh, const struct splay_tree_t *config_tree, const char *name) {
 	char filename[PATH_MAX];
 
-	snprintf(filename,PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	snprintf(filename, PATH_MAX, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 	return write_config_file(config_tree, filename);
 }
 

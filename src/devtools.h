@@ -20,6 +20,6 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-extern bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE* stream);
+extern bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream);
 
 #endif

@@ -3,7 +3,7 @@
 #include "../src/meshlink.h"
 
 void handle_recv_data(meshlink_handle_t *mesh, meshlink_node_t *source, void *data, size_t len) {
-	printf("Received %zu bytes from %s: %s\n", len, source->name, (char*)data);
+	printf("Received %zu bytes from %s: %s\n", len, source->name, (char *)data);
 }
 
 int main(int argc, char **argv) {
@@ -12,7 +12,7 @@ int main(int argc, char **argv) {
 
 	char *remotename = argc > 3 ? argv[3] : "bar";
 
-	meshlink_handle_t* myhandle;
+	meshlink_handle_t *myhandle;
 
 	myhandle = meshlink_open(confbase, name, "meshlinkapp", DEV_CLASS_STATIONARY);
 
@@ -32,11 +32,11 @@ int main(int argc, char **argv) {
 
 		//sample data to send out
 		char mydata[200];
-		memset(mydata,0,200);
-		strcpy(mydata,"Hello World!");
+		memset(mydata, 0, 200);
+		strcpy(mydata, "Hello World!");
 
 		//send out data
-		meshlink_send(myhandle,remotenode,mydata,sizeof(mydata));
+		meshlink_send(myhandle, remotenode, mydata, sizeof(mydata));
 	}
 
 	meshlink_stop(myhandle);

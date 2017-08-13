@@ -143,7 +143,7 @@ struct meshlink_handle {
 	struct CattaSServiceBrowser *catta_browser;
 	struct CattaSimplePoll *catta_poll;
 	struct CattaSEntryGroup *catta_group;
-	char* catta_servicetype;
+	char *catta_servicetype;
 };
 
 /// A handle for a MeshLink node.
@@ -168,7 +168,7 @@ typedef struct meshlink_packethdr {
 	uint8_t source[16];
 } __attribute__((__packed__)) meshlink_packethdr_t;
 
-extern void meshlink_send_from_queue(event_loop_t* el,meshlink_handle_t *mesh);
+extern void meshlink_send_from_queue(event_loop_t *el, meshlink_handle_t *mesh);
 extern void update_node_status(meshlink_handle_t *mesh, struct node_t *n);
 extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;

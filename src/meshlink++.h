@@ -108,7 +108,7 @@ public:
 	}
 
 	bool isOpen() const {
-		return (handle!=0);
+		return (handle != 0);
 	}
 
 // TODO: please enable C++11 in autoconf to enable "move constructors":
@@ -137,7 +137,7 @@ public:
 	 *
 	 *  @return         This function will return a pointer to a meshlink::mesh if MeshLink has succesfully set up its configuration files, NULL otherwise.
 	 */
-	bool open(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
+	bool open(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
 		handle = meshlink_open(confbase, name, appname, devclass);
 		if(handle)
 			handle->priv = this;
@@ -145,7 +145,7 @@ public:
 		return isOpen();
 	}
 
-	mesh(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
+	mesh(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
 		open(confbase, name, appname, devclass);
 	}
 
@@ -159,7 +159,7 @@ public:
 			handle->priv = 0;
 			meshlink_close(handle);
 		}
-		handle=0;
+		handle = 0;
 	}
 
 	/** instead of registerin callbacks you derive your own class and overwrite the following abstract member functions.
@@ -171,13 +171,13 @@ public:
 	 */
 
 	/// This function is called whenever another node sends data to the local node.
-	virtual void receive(node* source, const void* data, size_t length) { /* do nothing */ }
+	virtual void receive(node *source, const void *data, size_t length) { /* do nothing */ }
 
 	/// This functions is called  whenever another node's status changed.
-	virtual void node_status(node* peer, bool reachable)                { /* do nothing */ }
+	virtual void node_status(node *peer, bool reachable)                { /* do nothing */ }
 
 	/// This functions is called whenever MeshLink has some information to log.
-	virtual void log(log_level_t level, const char* message)            { /* do nothing */ }
+	virtual void log(log_level_t level, const char *message)            { /* do nothing */ }
 
 	/// This functions is called whenever another node attemps to open a channel to the local node.
 	/**
@@ -570,36 +570,36 @@ public:
 
 private:
 	// non-copyable:
-	mesh(const mesh&) /* TODO: C++11: = delete */;
-	void operator=(const mesh&) /* TODO: C++11: = delete */ ;
+	mesh(const mesh &) /* TODO: C++11: = delete */;
+	void operator=(const mesh &) /* TODO: C++11: = delete */ ;
 
 	/// static callback trampolines:
-	static void receive_trampoline(meshlink_handle_t* handle, meshlink_node_t* source, const void* data, size_t length) {
+	static void receive_trampoline(meshlink_handle_t *handle, meshlink_node_t *source, const void *data, size_t length) {
 		if(!(handle->priv))
 			return;
-		meshlink::mesh* that = static_cast<mesh*>(handle->priv);
-		that->receive(static_cast<node*>(source), data, length);
+		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
+		that->receive(static_cast<node *>(source), data, length);
 	}
 
-	static void node_status_trampoline(meshlink_handle_t* handle, meshlink_node_t* peer, bool reachable) {
+	static void node_status_trampoline(meshlink_handle_t *handle, meshlink_node_t *peer, bool reachable) {
 		if(!(handle->priv))
 			return;
-		meshlink::mesh* that = static_cast<mesh*>(handle->priv);
-		that->node_status(static_cast<node*>(peer), reachable);
+		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
+		that->node_status(static_cast<node *>(peer), reachable);
 	}
 
-	static void log_trampoline(meshlink_handle_t* handle, log_level_t level, const char* message) {
+	static void log_trampoline(meshlink_handle_t *handle, log_level_t level, const char *message) {
 		if(!(handle->priv))
 			return;
-		meshlink::mesh* that = static_cast<mesh*>(handle->priv);
+		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
 		that->log(level, message);
 	}
 
 	static bool channel_accept_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, uint16_t port, const void *data, size_t len) {
 		if(!(handle->priv))
 			return false;
-		meshlink::mesh* that = static_cast<mesh*>(handle->priv);
-		bool accepted = that->channel_accept(static_cast<meshlink::channel*>(channel), port, data, len);
+		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
+		bool accepted = that->channel_accept(static_cast<meshlink::channel *>(channel), port, data, len);
 		if(accepted) {
 			meshlink_set_channel_receive_cb(handle, channel, &channel_receive_trampoline);
 			meshlink_set_channel_poll_cb(handle, channel, &channel_poll_trampoline);
@@ -607,21 +607,21 @@ private:
 		return accepted;
 	}
 
-	static void channel_receive_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, const void* data, size_t len) {
+	static void channel_receive_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, const void *data, size_t len) {
 		if(!(handle->priv))
 			return;
-		meshlink::mesh* that = static_cast<mesh*>(handle->priv);
-		that->channel_receive(static_cast<meshlink::channel*>(channel), data, len);
+		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
+		that->channel_receive(static_cast<meshlink::channel *>(channel), data, len);
 	}
 
 	static void channel_poll_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, size_t len) {
 		if(!(handle->priv))
 			return;
-		meshlink::mesh* that = static_cast<mesh*>(handle->priv);
-		that->channel_poll(static_cast<meshlink::channel*>(channel), len);
+		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
+		that->channel_poll(static_cast<meshlink::channel *>(channel), len);
 	}
 
-	meshlink_handle_t* handle;
+	meshlink_handle_t *handle;
 };
 
 static const char *strerror(errno_t err = meshlink_errno) {

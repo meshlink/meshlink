@@ -338,8 +338,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		// connect disconnect nodes
 
-		node_t* connect_to = NULL;
-		node_t* disconnect_from = NULL;
+		node_t *connect_to = NULL;
+		node_t *disconnect_from = NULL;
 
 
 		// get cur_connects
@@ -380,7 +380,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				logger(mesh, MESHLINK_DEBUG, "* found best one for initial connect");
 
 				//timeout = 0;
-				connect_to = (node_t*)nodes->head->data;
+				connect_to = (node_t *)nodes->head->data;
 			} else
 				logger(mesh, MESHLINK_DEBUG, "* could not find node for initial connect");
 
@@ -409,7 +409,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 					if(nodes->head) {
 						logger(mesh, MESHLINK_DEBUG, "* found better node");
-						connect_to = (node_t*)nodes->head->data;
+						connect_to = (node_t *)nodes->head->data;
 
 						splay_free_tree(nodes);
 						break;
@@ -437,7 +437,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 			if(nodes->head) {
 				logger(mesh, MESHLINK_DEBUG, "* try to heal partition");
-				connect_to = (node_t*)nodes->head->data;
+				connect_to = (node_t *)nodes->head->data;
 			} else
 				logger(mesh, MESHLINK_DEBUG, "* could not find nodes for partition healing");
 
@@ -492,7 +492,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 					if(nodes->head) {
 						logger(mesh, MESHLINK_DEBUG, "* disconnect suboptimal outgoing connection");
-						disconnect_from = (node_t*)nodes->head->data;
+						disconnect_from = (node_t *)nodes->head->data;
 					}
 
 					splay_free_tree(nodes);
@@ -519,7 +519,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				logger(mesh, MESHLINK_DEBUG, "* disconnect connection (too many connections)");
 
 				//timeout = 0;
-				disconnect_from = (node_t*)nodes->head->data;
+				disconnect_from = (node_t *)nodes->head->data;
 			} else
 				logger(mesh, MESHLINK_DEBUG, "* no node we want to disconnect, even though we have too many connections");
 
@@ -589,7 +589,7 @@ int main_loop(meshlink_handle_t *mesh) {
 
 	//Add signal handler
 	mesh->datafromapp.signum = 0;
-	signal_add(&(mesh->loop),&(mesh->datafromapp), (signal_cb_t)meshlink_send_from_queue,mesh, mesh->datafromapp.signum);
+	signal_add(&(mesh->loop), &(mesh->datafromapp), (signal_cb_t)meshlink_send_from_queue, mesh, mesh->datafromapp.signum);
 
 	if(!event_loop_run(&(mesh->loop), &(mesh->mesh_mutex))) {
 		logger(mesh, MESHLINK_ERROR, "Error while waiting for input: %s", strerror(errno));

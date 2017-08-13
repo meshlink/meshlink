@@ -166,7 +166,7 @@ extern const char *meshlink_strerror(meshlink_errno_t err);
  *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink, or NULL in case of an error.
  *                  The pointer is valid until meshlink_close() is called.
  */
-extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dev_class_t devclass);
+extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char *appname, dev_class_t devclass);
 
 /// Start MeshLink.
 /** This function causes MeshLink to open network sockets, make outgoing connections, and

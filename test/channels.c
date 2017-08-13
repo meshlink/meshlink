@@ -17,7 +17,7 @@ void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *tex
 	if(tv0.tv_sec == 0)
 		gettimeofday(&tv0, NULL);
 	gettimeofday(&tv, NULL);
-	fprintf(stderr, "%u.%.03u ", (unsigned int)(tv.tv_sec-tv0.tv_sec), (unsigned int)tv.tv_usec/1000);
+	fprintf(stderr, "%u.%.03u ", (unsigned int)(tv.tv_sec - tv0.tv_sec), (unsigned int)tv.tv_usec / 1000);
 
 	if(mesh)
 		fprintf(stderr, "(%s) ", mesh->name);
@@ -25,7 +25,7 @@ void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *tex
 }
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
-	printf("status_cb: %s %sreachable\n", node->name, reachable?"":"un");
+	printf("status_cb: %s %sreachable\n", node->name, reachable ? "" : "un");
 	if(!strcmp(node->name, "bar"))
 		bar_reachable = reachable;
 }
@@ -52,9 +52,8 @@ bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 
 bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	printf("accept_cb: (from %s on port %u) ", channel->node->name, (unsigned int)port);
-	if(data) {
+	if(data)
 		fwrite(data, 1, len, stdout);
-	}
 	printf("\n");
 
 	if(port != 7)

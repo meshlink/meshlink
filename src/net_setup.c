@@ -82,7 +82,7 @@ bool read_ecdsa_private_key(meshlink_handle_t *mesh) {
 	FILE *fp;
 	char filename[PATH_MAX];
 
-	snprintf(filename,PATH_MAX, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
+	snprintf(filename, PATH_MAX, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
 	fp = fopen(filename, "rb");
 
 	if(!fp) {
@@ -108,7 +108,7 @@ static bool read_invitation_key(meshlink_handle_t *mesh) {
 		mesh->invitation_key = NULL;
 	}
 
-	snprintf(filename,PATH_MAX, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
+	snprintf(filename, PATH_MAX, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
 
 	fp = fopen(filename, "rb");
 
@@ -157,7 +157,7 @@ bool node_write_devclass(meshlink_handle_t *mesh, node_t *n) {
 	// ignore read errors; in case the file does not exist we will create it
 	read_host_config(mesh, config_tree, n->name);
 
-	config_t* cnf = lookup_config(config_tree, "DeviceClass");
+	config_t *cnf = lookup_config(config_tree, "DeviceClass");
 
 	if(!cnf) {
 		cnf = new_config();
@@ -182,7 +182,7 @@ void load_all_nodes(meshlink_handle_t *mesh) {
 	struct dirent *ent;
 	char dname[PATH_MAX];
 
-	snprintf(dname,PATH_MAX, "%s" SLASH "hosts", mesh->confbase);
+	snprintf(dname, PATH_MAX, "%s" SLASH "hosts", mesh->confbase);
 	dir = opendir(dname);
 	if(!dir) {
 		logger(mesh, MESHLINK_ERROR, "Could not open %s: %s", dname, strerror(errno));

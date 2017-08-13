@@ -20,11 +20,11 @@
 #define MESHLINK_MDNS_NAME_KEY "name"
 #define MESHLINK_MDNS_FINGERPRINT_KEY "fingerprint"
 
-static void generate_rand_string(char* buffer, size_t size) {
+static void generate_rand_string(char *buffer, size_t size) {
 	for(size_t i = 0; i < (size - 1); ++i)
 		buffer[i] = 'a' + (rand() % ('z' - 'a' + 1));
 
-	buffer[size-1] = '\0';
+	buffer[size - 1] = '\0';
 }
 
 static void discovery_entry_group_callback(CattaServer *server, CattaSEntryGroup *group, CattaEntryGroupState state, void *userdata) {
@@ -127,7 +127,7 @@ done:
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
-static void discovery_server_callback(CattaServer *server, CattaServerState state, void * userdata) {
+static void discovery_server_callback(CattaServer *server, CattaServerState state, void *userdata) {
 	meshlink_handle_t *mesh = userdata;
 
 	// asserts
@@ -251,8 +251,8 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 		CattaStringList *node_fp_li = catta_string_list_find(txt, MESHLINK_MDNS_FINGERPRINT_KEY);
 
 		if(node_name_li != NULL && node_fp_li != NULL) {
-			char *node_name = (char*)catta_string_list_get_text(node_name_li) + strlen(MESHLINK_MDNS_NAME_KEY);
-			char *node_fp = (char*)catta_string_list_get_text(node_fp_li) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY);
+			char *node_name = (char *)catta_string_list_get_text(node_name_li) + strlen(MESHLINK_MDNS_NAME_KEY);
+			char *node_fp = (char *)catta_string_list_get_text(node_fp_li) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY);
 
 			if(node_name[0] == '=' && node_fp[0] == '=') {
 				node_name += 1;
@@ -287,7 +287,7 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 					}
 
 					if(naddress.unknown.family != AF_UNKNOWN)
-						meshlink_hint_address(mesh, (meshlink_node_t *)node, (struct sockaddr*)&naddress);
+						meshlink_hint_address(mesh, (meshlink_node_t *)node, (struct sockaddr *)&naddress);
 					else
 						logger(mesh, MESHLINK_WARNING, "Could not resolve node %s to a known address family type.\n", node->name);
 				} else
@@ -305,7 +305,7 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
-static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfIndex interface_, CattaProtocol protocol, CattaBrowserEvent event, const char *name, const char *type, const char *domain, CattaLookupResultFlags flags, void* userdata) {
+static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfIndex interface_, CattaProtocol protocol, CattaBrowserEvent event, const char *name, const char *type, const char *domain, CattaLookupResultFlags flags, void *userdata) {
 	meshlink_handle_t *mesh = userdata;
 
 	// asserts

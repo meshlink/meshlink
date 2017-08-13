@@ -517,7 +517,7 @@ begin:
 
 	connection_add(mesh, c);
 
-	io_add(&mesh->loop, &c->io, handle_meta_io, c, c->socket, IO_READ|IO_WRITE);
+	io_add(&mesh->loop, &c->io, handle_meta_io, c, c->socket, IO_READ | IO_WRITE);
 
 	return true;
 }

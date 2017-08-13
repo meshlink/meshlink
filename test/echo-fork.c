@@ -58,7 +58,7 @@ bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 
 void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
 	meshlink_set_channel_poll_cb(mesh, channel, NULL);
-	bar_responded=true;
+	bar_responded = true;
 }
 
 int main1(void) {
@@ -104,7 +104,7 @@ int main1(void) {
 	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb);
 
 	// read and buffer stdin
-	int BUF_SIZE = 1024*1024;
+	int BUF_SIZE = 1024 * 1024;
 	char buffer[BUF_SIZE];
 
 	for(int i = 0; i < 5; i++) {

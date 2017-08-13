@@ -23,7 +23,7 @@
 
 static int n = 10;
 static meshlink_handle_t **mesh;
-static char* namesprefix="machine1";
+static char *namesprefix = "machine1";
 static int nodeindex = 0;
 
 static meshlink_node_t **nodes;
@@ -37,7 +37,7 @@ static void log_message(meshlink_handle_t *mesh, meshlink_log_level_t level, con
 		[MESHLINK_ERROR] = "\x1b[31mERROR",
 		[MESHLINK_CRITICAL] = "\x1b[31mCRITICAL",
 	};
-	fprintf(stderr, "%s\t%s:\x1b[0m %s\n", mesh ? mesh->name : "global",levelstr[level], text);
+	fprintf(stderr, "%s\t%s:\x1b[0m %s\n", mesh ? mesh->name : "global", levelstr[level], text);
 }
 
 //Test mesh sending data
@@ -76,7 +76,7 @@ static void linkmesh() {
 	}
 }
 
-static bool exportmeshgraph(const char* path) {
+static bool exportmeshgraph(const char *path) {
 	struct stat ps;
 	int psr = stat(path, &ps);
 
@@ -89,7 +89,7 @@ static bool exportmeshgraph(const char* path) {
 		return false;
 	}
 
-	FILE* stream = fopen(path, "w");
+	FILE *stream = fopen(path, "w");
 
 	if(!stream) {
 		perror("stream");
@@ -112,7 +112,7 @@ void exportmeshgraph_timer(int signum) {
 	gettimeofday(&ts, NULL);
 
 	char name[1024];
-	snprintf(name, sizeof(name), "%sgraph_%ld_%03ld.json", namesprefix,ts.tv_sec, ts.tv_usec/1000);
+	snprintf(name, sizeof(name), "%sgraph_%ld_%03ld.json", namesprefix, ts.tv_sec, ts.tv_usec / 1000);
 
 	exportmeshgraph(name);
 }
@@ -120,7 +120,7 @@ void exportmeshgraph_timer(int signum) {
 #ifndef _WIN32
 static bool exportmeshgraph_started = false;
 
-static bool exportmeshgraph_end(const char* none) {
+static bool exportmeshgraph_end(const char *none) {
 	if(!exportmeshgraph_started)
 		return false;
 
@@ -132,7 +132,7 @@ static bool exportmeshgraph_end(const char* none) {
 	return true;
 }
 
-static bool exportmeshgraph_begin(const char* timeout_str) {
+static bool exportmeshgraph_begin(const char *timeout_str) {
 	if(!timeout_str)
 		return false;
 
@@ -170,11 +170,11 @@ static bool exportmeshgraph_begin(const char* timeout_str) {
 	return true;
 }
 #else
-static bool exportmeshgraph_end(const char* none) {
+static bool exportmeshgraph_end(const char *none) {
 	return false;
 }
 
-static bool exportmeshgraph_begin(const char* timeout_str) {
+static bool exportmeshgraph_begin(const char *timeout_str) {
 	return false;
 }
 #endif
@@ -263,7 +263,7 @@ static void parse_command(char *buf) {
 			return;
 		}
 		nodeindex = atoi(arg);
-		printf("Index is now %d\n",nodeindex);
+		printf("Index is now %d\n", nodeindex);
 	} else if(!strcasecmp(buf, "stop"))
 		meshlink_stop(mesh[nodeindex]);
 	else if(!strcasecmp(buf, "quit")) {
@@ -380,10 +380,10 @@ int main(int argc, char *argv[]) {
 	char filename[PATH_MAX];
 	char nodename[100];
 	for(int i = 0; i < n; i++) {
-		snprintf(nodename, sizeof(nodename), "%snode%d", namesprefix,i);
+		snprintf(nodename, sizeof(nodename), "%snode%d", namesprefix, i);
 		snprintf(filename, sizeof(filename), "%s/%s", basebase, nodename);
 		bool itsnew = access(filename, R_OK);
-		if(n/(i+1) > n/4)
+		if(n / (i + 1) > n / 4)
 			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_BACKBONE);
 		else
 			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_PORTABLE);

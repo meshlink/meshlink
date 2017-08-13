@@ -26,17 +26,17 @@
 #include "utcp/utcp.h"
 
 typedef struct node_status_t {
-	unsigned int unused_active:1;           /* 1 if active (not used for nodes) */
-	unsigned int validkey:1;                /* 1 if we currently have a valid key for him */
-	unsigned int waitingforkey:1;           /* 1 if we already sent out a request */
-	unsigned int visited:1;                 /* 1 if this node has been visited by one of the graph algorithms */
-	unsigned int reachable:1;               /* 1 if this node is reachable in the graph */
-	unsigned int indirect:1;                /* 1 if this node is not directly reachable by us */
-	unsigned int unused_sptps:1;            /* 1 if this node supports SPTPS */
-	unsigned int udp_confirmed:1;           /* 1 if the address is one that we received UDP traffic on */
-	unsigned int broadcast:1;               /* 1 if the next UDP packet should be broadcast to the local network */
-	unsigned int blacklisted:1;             /* 1 if the node is blacklist so we never want to speak with him anymore*/
-	unsigned int unused:22;
+	unsigned int unused_active: 1;          /* 1 if active (not used for nodes) */
+	unsigned int validkey: 1;               /* 1 if we currently have a valid key for him */
+	unsigned int waitingforkey: 1;          /* 1 if we already sent out a request */
+	unsigned int visited: 1;                /* 1 if this node has been visited by one of the graph algorithms */
+	unsigned int reachable: 1;              /* 1 if this node is reachable in the graph */
+	unsigned int indirect: 1;               /* 1 if this node is not directly reachable by us */
+	unsigned int unused_sptps: 1;           /* 1 if this node supports SPTPS */
+	unsigned int udp_confirmed: 1;          /* 1 if the address is one that we received UDP traffic on */
+	unsigned int broadcast: 1;              /* 1 if the next UDP packet should be broadcast to the local network */
+	unsigned int blacklisted: 1;            /* 1 if the node is blacklist so we never want to speak with him anymore*/
+	unsigned int unused: 22;
 } node_status_t;
 
 typedef struct node_t {

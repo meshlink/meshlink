@@ -125,7 +125,7 @@ bool send_tcppacket(meshlink_handle_t *mesh, connection_t *c, const vpn_packet_t
 	/* If there already is a lot of data in the outbuf buffer, discard this packet.
 	   We use a very simple Random Early Drop algorithm. */
 
-	if(2.0 * c->outbuf.len / (float)maxoutbufsize - 1 > (float)rand()/(float)RAND_MAX)
+	if(2.0 * c->outbuf.len / (float)maxoutbufsize - 1 > (float)rand() / (float)RAND_MAX)
 		return true;
 
 	if(!send_request(mesh, c, "%d %hd", PACKET, packet->len))

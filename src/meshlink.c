@@ -255,7 +255,7 @@ char *meshlink_get_external_address(meshlink_handle_t *mesh) {
 	return hostname;
 }
 
-static char *get_my_hostname(meshlink_handle_t* mesh) {
+static char *get_my_hostname(meshlink_handle_t *mesh) {
 	char *hostname = NULL;
 	char *port = NULL;
 	char *hostport = NULL;
@@ -303,7 +303,7 @@ static char *get_line(const char **data) {
 	if(!data || !*data)
 		return NULL;
 
-	if(!**data) {
+	if(! **data) {
 		*data = NULL;
 		return NULL;
 	}
@@ -553,7 +553,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 }
 
 static bool invitation_send(void *handle, uint8_t type, const void *data, size_t len) {
-	meshlink_handle_t* mesh = handle;
+	meshlink_handle_t *mesh = handle;
 	while(len) {
 		int result = send(mesh->sock, data, len, 0);
 		if(result == -1 && errno == EINTR)
@@ -567,7 +567,7 @@ static bool invitation_send(void *handle, uint8_t type, const void *data, size_t
 }
 
 static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint16_t len) {
-	meshlink_handle_t* mesh = handle;
+	meshlink_handle_t *mesh = handle;
 	switch(type) {
 	case SPTPS_HANDSHAKE:
 		return sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof(mesh)->cookie);
@@ -596,7 +596,7 @@ static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint
 	return true;
 }
 
-static bool recvline(meshlink_handle_t* mesh, size_t len) {
+static bool recvline(meshlink_handle_t *mesh, size_t len) {
 	char *newline = NULL;
 
 	if(!mesh->sock)
@@ -841,7 +841,7 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	return true;
 }
 
-meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
+meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
 	// Validate arguments provided by the application
 	bool usingname = false;
 
@@ -1007,7 +1007,7 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 		return false;
 	}
 
-	mesh->threadstarted=true;
+	mesh->threadstarted = true;
 
 	if(mesh->discovery)
 		discovery_start(mesh);
@@ -1195,7 +1195,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 	// leave the last byte as 0 to make sure strings are always
 	// null-terminated if they are longer than the buffer
 	strncpy(hdr->destination, destination->name, (sizeof(hdr)->destination) - 1);
-	strncpy(hdr->source, mesh->self->name, (sizeof(hdr)->source) -1);
+	strncpy(hdr->source, mesh->self->name, (sizeof(hdr)->source) - 1);
 
 	memcpy(packet->data + sizeof(*hdr), data, len);
 
@@ -1207,7 +1207,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 	}
 
 	// Notify event loop
-	signal_trigger(&(mesh->loop),&(mesh->datafromapp));
+	signal_trigger(&(mesh->loop), &(mesh->datafromapp));
 
 	return true;
 }
@@ -2020,9 +2020,9 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
 	node_t *n;
-	n = (node_t*)node;
-	n->status.blacklisted=true;
-	logger(mesh, MESHLINK_DEBUG, "Blacklisted %s.\n",node->name);
+	n = (node_t *)node;
+	n->status.blacklisted = true;
+	logger(mesh, MESHLINK_DEBUG, "Blacklisted %s.\n", node->name);
 
 	//Make blacklisting persistent in the config file
 	append_config_file(mesh, n->name, "blacklisted", "yes");
@@ -2070,7 +2070,7 @@ void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const
 
 	if(host && port) {
 		xasprintf(&str, "%s %s", host, port);
-		if((strncmp("fe80",host,4) != 0) && (strncmp("127.",host,4) != 0) && (strcmp("localhost",host) !=0))
+		if((strncmp("fe80", host, 4) != 0) && (strncmp("127.", host, 4) != 0) && (strcmp("localhost", host) != 0))
 			append_config_file(mesh, node->name, "Address", str);
 		else
 			logger(mesh, MESHLINK_DEBUG, "Not adding Link Local IPv6 Address to config\n");
@@ -2104,7 +2104,7 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 
 	// if result is smaller than edges, we have to dealloc all the excess meshlink_edge_t
 	if(result_size > *nmemb)
-		result = realloc(edges, result_size * sizeof(meshlink_edge_t*));
+		result = realloc(edges, result_size * sizeof(meshlink_edge_t *));
 	else
 		result = edges;
 
@@ -2123,8 +2123,8 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 				copy = xzalloc(sizeof(*copy));
 			else
 				copy = *p;
-			copy->from = (meshlink_node_t*)e->from;
-			copy->to = (meshlink_node_t*)e->to;
+			copy->from = (meshlink_node_t *)e->from;
+			copy->to = (meshlink_node_t *)e->to;
 			copy->address = e->address.storage;
 			copy->options = e->options;
 			copy->weight = e->weight;
@@ -2133,7 +2133,7 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 		// shrink result to the actual amount of memory used
 		for(int i = *nmemb; i > result_size; i--)
 			free(result[i - 1]);
-		result = realloc(result, result_size * sizeof(meshlink_edge_t*));
+		result = realloc(result, result_size * sizeof(meshlink_edge_t *));
 		*nmemb = result_size;
 	} else {
 		*nmemb = 0;
@@ -2360,7 +2360,7 @@ static void __attribute__((destructor)) meshlink_exit(void) {
 }
 
 /// Device class traits
-dev_class_traits_t dev_class_traits[_DEV_CLASS_MAX +1] = {
+dev_class_traits_t dev_class_traits[_DEV_CLASS_MAX + 1] = {
 	{ .min_connects = 3, .max_connects = 10000, .edge_weight = 1 }, // DEV_CLASS_BACKBONE
 	{ .min_connects = 3, .max_connects = 100, .edge_weight = 3 },   // DEV_CLASS_STATIONARY
 	{ .min_connects = 3, .max_connects = 3, .edge_weight = 6 },             // DEV_CLASS_PORTABLE
