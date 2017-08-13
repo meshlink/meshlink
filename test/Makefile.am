@@ -3,6 +3,7 @@ TESTS = \
 	basicpp.test \
 	channels.test \
 	channels-fork.test \
+	channels-cornercases.test \
 	import-export.test \
 	invite-join.test \
 	sign-verify.test
@@ -11,7 +12,16 @@ dist_check_SCRIPTS = $(TESTS)
 
 AM_CPPFLAGS = -I../src
 
-check_PROGRAMS = basic basicpp channels channels-fork import-export invite-join sign-verify echo-fork
+check_PROGRAMS = \
+	basic \
+	basicpp \
+	channels \
+	channels-fork \
+	channels-cornercases \
+	import-export \
+	invite-join \
+	sign-verify \
+	echo-fork
 
 basic_SOURCES = basic.c
 basic_LDADD = ../src/libmeshlink.la
@@ -24,6 +34,9 @@ channels_LDADD = ../src/libmeshlink.la
 
 channels_fork_SOURCES = channels-fork.cpp
 channels_fork_LDADD = ../src/libmeshlink.la
+
+channels_cornercases_SOURCES = channels-cornercases.cpp utils.cpp utils.h
+channels_cornercases_LDADD = ../src/libmeshlink.la
 
 echo_fork_SOURCES = echo-fork.c
 echo_fork_LDADD = ../src/libmeshlink.la

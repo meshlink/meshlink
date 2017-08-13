@@ -1,0 +1,4 @@
+#!/bin/sh
+
+rm -Rf channels-cornercases_conf.*
+./channels-cornercases
