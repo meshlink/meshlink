@@ -59,6 +59,8 @@ node_t *new_node(void) {
 }
 
 void free_node(node_t *n) {
+	n->status.destroyed = true;
+
 	if(n->edge_tree)
 		free_edge_tree(n->edge_tree);
 

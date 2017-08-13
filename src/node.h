@@ -35,7 +35,8 @@ typedef struct node_status_t {
 	unsigned int unused_sptps: 1;           /* 1 if this node supports SPTPS */
 	unsigned int udp_confirmed: 1;          /* 1 if the address is one that we received UDP traffic on */
 	unsigned int broadcast: 1;              /* 1 if the next UDP packet should be broadcast to the local network */
-	unsigned int blacklisted: 1;            /* 1 if the node is blacklist so we never want to speak with him anymore*/
+	unsigned int blacklisted: 1;            /* 1 if the node is blacklist so we never want to speak with him anymore */
+	unsigned int destroyed: 1;              /* 1 if the node is being destroyed, deallocate channels when any callback is triggered */
 	unsigned int unused: 22;
 } node_status_t;
 

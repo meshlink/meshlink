@@ -2156,7 +2156,9 @@ static ssize_t channel_recv(struct utcp_connection *connection, const void *data
 		abort();
 	node_t *n = channel->node;
 	meshlink_handle_t *mesh = n->mesh;
-	if(channel->receive_cb)
+	if(n->status.destroyed)
+		meshlink_channel_close(mesh, channel);
+	else if(channel->receive_cb)
 		channel->receive_cb(mesh, channel, data, len);
 	return len;
 }
