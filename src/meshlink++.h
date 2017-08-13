@@ -558,6 +558,16 @@ public:
 		return meshlink_channel_send(handle, channel, data, len);
 	}
 
+	/// Enable or disable zeroconf discovery of local peers
+	/** This controls whether zeroconf discovery using the Catta library will be
+	 *  enabled to search for peers on the local network. By default, it is enabled.
+	 *
+	 *  @param enable  Set to true to enable discovery, false to disable.
+	 */
+	void enable_discovery(bool enable = true) {
+		meshlink_enable_discovery(handle, enable);
+	}
+
 private:
 	// non-copyable:
 	mesh(const mesh&) /* TODO: C++11: = delete */;

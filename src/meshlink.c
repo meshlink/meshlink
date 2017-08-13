@@ -1009,7 +1009,8 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 
 	mesh->threadstarted=true;
 
-	discovery_start(mesh);
+	if(mesh->discovery)
+		discovery_start(mesh);
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return true;
@@ -1025,7 +1026,8 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	logger(mesh, MESHLINK_DEBUG, "meshlink_stop called\n");
 
 	// Stop discovery
-	discovery_stop(mesh);
+	if(mesh->discovery)
+		discovery_stop(mesh);
 
 	// Shut down the main thread
 	event_loop_stop(&mesh->loop);
@@ -2320,6 +2322,30 @@ void update_node_status(meshlink_handle_t *mesh, node_t *n) {
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
 	if(mesh->node_status_cb)
 		mesh->node_status_cb(mesh, (meshlink_node_t *)n, n->status.reachable);
+}
+
+void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	pthread_mutex_lock(&mesh->mesh_mutex);
+
+	if(mesh->discovery == enable)
+		goto end;
+
+	if(mesh->threadstarted) {
+		if(enable)
+			discovery_start(mesh);
+		else
+			discovery_stop(mesh);
+	}
+
+	mesh->discovery = enable;
+
+end:
+	pthread_mutex_unlock(&mesh->mesh_mutex);
 }
 
 static void __attribute__((constructor)) meshlink_init(void) {

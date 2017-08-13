@@ -832,6 +832,16 @@ extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node
  */
 extern meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink_edge_t **edges, size_t *nmemb);
 
+/// Enable or disable zeroconf discovery of local peers
+
+/** This controls whether zeroconf discovery using the Catta library will be
+ *  enabled to search for peers on the local network. By default, it is enabled.
+ *
+ *  @param mesh    A handle which represents an instance of MeshLink.
+ *  @param enable  Set to true to enable discovery, false to disable.
+ */
+extern void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable);
+
 #ifdef __cplusplus
 }
 #endif

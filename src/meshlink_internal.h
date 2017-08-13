@@ -113,6 +113,7 @@ struct meshlink_handle {
 	char *proxypass;
 	proxytype_t proxytype;
 
+	bool discovery;         // Whether Catta is enabled or not
 	bool localdiscovery;
 	sockaddr_t localdiscovery_address;
 

@@ -25,6 +25,10 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	// Disable local discovery.
+
+	mesh.enable_discovery(false);
+
 	// Start and stop the mesh.
 
 	if(!mesh.start()) {
@@ -65,6 +69,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Start and stop the mesh.
+
+	mesh.enable_discovery(false);
 
 	if(!mesh.start()) {
 		cerr << "Foo could not start a third time\n";

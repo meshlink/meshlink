@@ -27,6 +27,11 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	// Disable local discovery
+
+	meshlink_enable_discovery(mesh1, false);
+	meshlink_enable_discovery(mesh2, false);
+
 	// Import and export both side's data
 
 	meshlink_add_address(mesh1, "localhost");

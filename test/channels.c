@@ -87,6 +87,8 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	meshlink_enable_discovery(mesh1, false);
+	meshlink_enable_discovery(mesh2, false);
 	meshlink_set_log_cb(mesh1, MESHLINK_DEBUG, log_cb);
 	meshlink_set_log_cb(mesh2, MESHLINK_DEBUG, log_cb);
 

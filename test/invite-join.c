@@ -27,6 +27,11 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	// Disable local discovery.
+
+	meshlink_enable_discovery(mesh1, false);
+	meshlink_enable_discovery(mesh2, false);
+
 	// Start the first instance and have it generate an invitation.
 
 	meshlink_set_node_status_cb(mesh1, status_cb);

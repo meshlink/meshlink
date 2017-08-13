@@ -58,6 +58,8 @@ int main1(int rfd, int wfd) {
 		return 1;
 	}
 
+	meshlink_enable_discovery(mesh1, false);
+
 	meshlink_add_address(mesh1, "localhost");
 
 	char *data = meshlink_export(mesh1);
@@ -141,6 +143,8 @@ int main2(int rfd, int wfd) {
 		fprintf(stderr, "Could not initialize configuration for bar\n");
 		return 1;
 	}
+
+	meshlink_enable_discovery(mesh2, false);
 
 	char *data = meshlink_export(mesh2);
 	if(!data) {
