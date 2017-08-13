@@ -433,9 +433,11 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 
 	if(type == SPTPS_HANDSHAKE) {
 		if(!from->status.validkey) {
+			logger(mesh, MESHLINK_INFO, "SPTPS key exchange with %s (%s) succesful", from->name, from->hostname);
 			from->status.validkey = true;
 			from->status.waitingforkey = false;
-			logger(mesh, MESHLINK_INFO, "SPTPS key exchange with %s (%s) succesful", from->name, from->hostname);
+			if(from->utcp)
+				utcp_reset_timers(from->utcp);
 		}
 		return true;
 	}
