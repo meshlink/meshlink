@@ -126,7 +126,7 @@ static bool fcopy(FILE *out, const char *filename) {
 
 	char buf[1024];
 	size_t len;
-	while((len = fread(buf, 1, sizeof buf, in)))
+	while((len = fread(buf, 1, sizeof(buf), in)))
 		fwrite(buf, len, 1, out);
 	fclose(in);
 	return true;
@@ -148,7 +148,7 @@ static void scan_for_hostname(const char *filename, char **hostname, char **port
 	if(!f)
 		return;
 
-	while(fgets(line, sizeof line, f)) {
+	while(fgets(line, sizeof(line), f)) {
 		if(!rstrip(line))
 			continue;
 		char *p = line, *q;
@@ -199,8 +199,8 @@ static void set_timeout(int sock, int timeout) {
 	tv.tv_sec = timeout / 1000;
 	tv.tv_usec = (timeout - tv.tv_sec * 1000) * 1000;
 #endif
-	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
-	setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof tv);
+	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+	setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 }
 
 char *meshlink_get_external_address(meshlink_handle_t *mesh) {
@@ -222,8 +222,8 @@ char *meshlink_get_external_address(meshlink_handle_t *mesh) {
 			}
 		}
 		if(s >= 0) {
-			send(s, request, sizeof request - 1, 0);
-			int len = recv(s, line, sizeof line - 1, MSG_WAITALL);
+			send(s, request, sizeof(request) - 1, 0);
+			int len = recv(s, line, sizeof(line) - 1, MSG_WAITALL);
 			if(len > 0) {
 				line[len] = 0;
 				if(line[len - 1] == '\n')
@@ -264,7 +264,7 @@ static char *get_my_hostname(meshlink_handle_t* mesh) {
 	FILE *f;
 
 	// Use first Address statement in own host config file
-	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 	scan_for_hostname(filename, &hostname, &port);
 
 	if(hostname)
@@ -311,7 +311,7 @@ static char *get_line(const char **data) {
 	static char line[1024];
 	const char *end = strchr(*data, '\n');
 	size_t len = end ? end - *data : strlen(*data);
-	if(len >= sizeof line) {
+	if(len >= sizeof(line)) {
 		logger(NULL, MESHLINK_ERROR, "Maximum line length exceeded!\n");
 		return NULL;
 	}
@@ -354,7 +354,7 @@ static bool try_bind(int port) {
 	};
 
 	char portstr[16];
-	snprintf(portstr, sizeof portstr, "%d", port);
+	snprintf(portstr, sizeof(portstr), "%d", port);
 
 	if(getaddrinfo(NULL, portstr, &hint, &ai) || !ai)
 		return false;
@@ -383,7 +383,7 @@ static int check_port(meshlink_handle_t *mesh) {
 		int port = 0x1000 + (rand() & 0x7fff);
 		if(try_bind(port)) {
 			char filename[PATH_MAX];
-			snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->name);
+			snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->name);
 			FILE *f = fopen(filename, "a");
 			if(!f) {
 				logger(mesh, MESHLINK_DEBUG, "Please change MeshLink's Port manually.\n");
@@ -413,7 +413,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 	}
 
 	char filename[PATH_MAX];
-	snprintf(filename, sizeof filename, "%s" SLASH "meshlink.conf", mesh->confbase);
+	snprintf(filename, sizeof(filename), "%s" SLASH "meshlink.conf", mesh->confbase);
 
 	FILE *f = fopen(filename, "w");
 	if(!f) {
@@ -423,7 +423,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 
 	fprintf(f, "Name = %s\n", name);
 
-	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 	FILE *fh = fopen(filename, "w");
 	if(!fh) {
 		logger(mesh, MESHLINK_DEBUG, "Could not create file %s: %s\n", filename, strerror(errno));
@@ -496,7 +496,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 			return false;
 		}
 
-		snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, value);
+		snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, value);
 		f = fopen(filename, "w");
 
 		if(!f) {
@@ -570,7 +570,7 @@ static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint
 	meshlink_handle_t* mesh = handle;
 	switch(type) {
 	case SPTPS_HANDSHAKE:
-		return sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof mesh->cookie);
+		return sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof(mesh)->cookie);
 
 	case 0:
 		mesh->data = xrealloc(mesh->data, mesh->thedatalen + len + 1);
@@ -603,7 +603,7 @@ static bool recvline(meshlink_handle_t* mesh, size_t len) {
 		abort();
 
 	while(!(newline = memchr(mesh->buffer, '\n', mesh->blen))) {
-		int result = recv(mesh->sock, mesh->buffer + mesh->blen, sizeof mesh->buffer - mesh->blen, 0);
+		int result = recv(mesh->sock, mesh->buffer + mesh->blen, sizeof(mesh)->buffer - mesh->blen, 0);
 		if(result == -1 && errno == EINTR)
 			continue;
 		else if(result <= 0)
@@ -630,10 +630,10 @@ static bool sendline(int fd, char *format, ...) {
 	va_list ap;
 
 	va_start(ap, format);
-	blen = vsnprintf(buffer, sizeof buffer, format, ap);
+	blen = vsnprintf(buffer, sizeof(buffer), format, ap);
 	va_end(ap);
 
-	if(blen < 1 || blen >= sizeof buffer)
+	if(blen < 1 || blen >= sizeof(buffer))
 		return false;
 
 	buffer[blen] = '\n';
@@ -666,7 +666,7 @@ static const char *errstr[] = {
 };
 
 const char *meshlink_strerror(meshlink_errno_t err) {
-	if(err < 0 || err >= sizeof errstr / sizeof *errstr)
+	if(err < 0 || err >= sizeof(errstr) / sizeof(*errstr))
 		return "Invalid error code";
 	return errstr[err];
 }
@@ -685,7 +685,7 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 	} else
 		logger(mesh, MESHLINK_DEBUG, "Done.\n");
 
-	snprintf(privname, sizeof privname, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
+	snprintf(privname, sizeof(privname), "%s" SLASH "ecdsa_key.priv", mesh->confbase);
 	f = fopen(privname, "wb");
 
 	if(!f) {
@@ -707,7 +707,7 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 
 	fclose(f);
 
-	snprintf(pubname, sizeof pubname, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->name);
+	snprintf(pubname, sizeof(pubname), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->name);
 	f = fopen(pubname, "a");
 
 	if(!f) {
@@ -766,7 +766,7 @@ static bool getlocaladdrname(char *destaddr, char *host, socklen_t hostlen) {
 	freeaddrinfo(rai);
 
 	struct sockaddr_storage sn;
-	socklen_t sl = sizeof sn;
+	socklen_t sl = sizeof(sn);
 
 	if(getsockname(sock, (struct sockaddr *)&sn, &sl))
 		return false;
@@ -784,15 +784,15 @@ static void add_local_addresses(meshlink_handle_t *mesh) {
 
 	// IPv4 example.org
 
-	if(getlocaladdrname("93.184.216.34", host, sizeof host)) {
-		snprintf(entry, sizeof entry, "%s %s", host, mesh->myport);
+	if(getlocaladdrname("93.184.216.34", host, sizeof(host))) {
+		snprintf(entry, sizeof(entry), "%s %s", host, mesh->myport);
 		append_config_file(mesh, mesh->name, "Address", entry);
 	}
 
 	// IPv6 example.org
 
-	if(getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", host, sizeof host)) {
-		snprintf(entry, sizeof entry, "%s %s", host, mesh->myport);
+	if(getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", host, sizeof(host))) {
+		snprintf(entry, sizeof(entry), "%s %s", host, mesh->myport);
 		append_config_file(mesh, mesh->name, "Address", entry);
 	}
 }
@@ -805,7 +805,7 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	}
 
 	char filename[PATH_MAX];
-	snprintf(filename, sizeof filename, "%s" SLASH "hosts", mesh->confbase);
+	snprintf(filename, sizeof(filename), "%s" SLASH "hosts", mesh->confbase);
 
 	if(mkdir(filename, 0777) && errno != EEXIST) {
 		logger(mesh, MESHLINK_DEBUG, "Could not create directory %s: %s\n", filename, strerror(errno));
@@ -813,7 +813,7 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 		return false;
 	}
 
-	snprintf(filename, sizeof filename, "%s" SLASH "meshlink.conf", mesh->confbase);
+	snprintf(filename, sizeof(filename), "%s" SLASH "meshlink.conf", mesh->confbase);
 
 	if(!access(filename, F_OK)) {
 		logger(mesh, MESHLINK_DEBUG, "Configuration file %s already exists!\n", filename);
@@ -897,7 +897,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	// Check whether meshlink.conf already exists
 
 	char filename[PATH_MAX];
-	snprintf(filename, sizeof filename, "%s" SLASH "meshlink.conf", confbase);
+	snprintf(filename, sizeof(filename), "%s" SLASH "meshlink.conf", confbase);
 
 	if(access(filename, R_OK)) {
 		if(errno == ENOENT) {
@@ -1001,7 +1001,7 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 
 	if(pthread_create(&mesh->thread, NULL, meshlink_main_loop, mesh) != 0) {
 		logger(mesh, MESHLINK_DEBUG, "Could not start thread: %s\n", strerror(errno));
-		memset(&mesh->thread, 0, sizeof mesh->thread);
+		memset(&mesh->thread, 0, sizeof(mesh)->thread);
 		meshlink_errno = MESHLINK_EINTERNAL;
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
 		return false;
@@ -1080,7 +1080,7 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	free(mesh->confbase);
 	pthread_mutex_destroy(&(mesh->mesh_mutex));
 
-	memset(mesh, 0, sizeof *mesh);
+	memset(mesh, 0, sizeof(*mesh));
 
 	free(mesh);
 }
@@ -1093,7 +1093,7 @@ static void deltree(const char *dirname) {
 			if(ent->d_name[0] == '.')
 				continue;
 			char filename[PATH_MAX];
-			snprintf(filename, sizeof filename, "%s" SLASH "%s", dirname, ent->d_name);
+			snprintf(filename, sizeof(filename), "%s" SLASH "%s", dirname, ent->d_name);
 			if(unlink(filename))
 				deltree(filename);
 		}
@@ -1110,7 +1110,7 @@ bool meshlink_destroy(const char *confbase) {
 	}
 
 	char filename[PATH_MAX];
-	snprintf(filename, sizeof filename, "%s" SLASH "meshlink.conf", confbase);
+	snprintf(filename, sizeof(filename), "%s" SLASH "meshlink.conf", confbase);
 
 	if(unlink(filename)) {
 		if(errno == ENOENT) {
@@ -1166,7 +1166,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 	meshlink_packethdr_t *hdr;
 
 	// Validate arguments
-	if(!mesh || !destination || len >= MAXSIZE - sizeof *hdr) {
+	if(!mesh || !destination || len >= MAXSIZE - sizeof(*hdr)) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
@@ -1180,7 +1180,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 	}
 
 	// Prepare the packet
-	vpn_packet_t *packet = malloc(sizeof *packet);
+	vpn_packet_t *packet = malloc(sizeof(*packet));
 	if(!packet) {
 		meshlink_errno = MESHLINK_ENOMEM;
 		return false;
@@ -1188,16 +1188,16 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 
 	packet->probe = false;
 	packet->tcp = false;
-	packet->len = len + sizeof *hdr;
+	packet->len = len + sizeof(*hdr);
 
 	hdr = (meshlink_packethdr_t *)packet->data;
-	memset(hdr, 0, sizeof *hdr);
+	memset(hdr, 0, sizeof(*hdr));
 	// leave the last byte as 0 to make sure strings are always
 	// null-terminated if they are longer than the buffer
-	strncpy(hdr->destination, destination->name, (sizeof hdr->destination) - 1);
-	strncpy(hdr->source, mesh->self->name, (sizeof hdr->source) -1);
+	strncpy(hdr->destination, destination->name, (sizeof(hdr)->destination) - 1);
+	strncpy(hdr->source, mesh->self->name, (sizeof(hdr)->source) -1);
 
-	memcpy(packet->data + sizeof *hdr, data, len);
+	memcpy(packet->data + sizeof(*hdr), data, len);
 
 	// Queue it
 	if(!meshlink_queue_push(&mesh->outpacketqueue, packet)) {
@@ -1302,7 +1302,7 @@ meshlink_node_t **meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
 	*nmemb = mesh->nodes->count;
-	result = realloc(nodes, *nmemb * sizeof *nodes);
+	result = realloc(nodes, *nmemb * sizeof(*nodes));
 
 	if(result) {
 		meshlink_node_t **p = result;
@@ -1374,7 +1374,7 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
-	snprintf(filename, sizeof filename, "%s" SLASH "invitations", mesh->confbase);
+	snprintf(filename, sizeof(filename), "%s" SLASH "invitations", mesh->confbase);
 	if(mkdir(filename, 0700) && errno != EEXIST) {
 		logger(mesh, MESHLINK_DEBUG, "Could not create directory %s: %s\n", filename, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
@@ -1401,7 +1401,7 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 			continue;
 		char invname[PATH_MAX];
 		struct stat st;
-		snprintf(invname, sizeof invname, "%s" SLASH "%s", filename, ent->d_name);
+		snprintf(invname, sizeof(invname), "%s" SLASH "%s", filename, ent->d_name);
 		if(!stat(invname, &st)) {
 			if(mesh->invitation_key && deadline < st.st_mtime)
 				count++;
@@ -1423,7 +1423,7 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 
 	closedir(dir);
 
-	snprintf(filename, sizeof filename, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
+	snprintf(filename, sizeof(filename), "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
 
 	// Remove the key if there are no outstanding invitations.
 	if(!count) {
@@ -1560,8 +1560,8 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 	exit_configuration(&mesh->config);
 
 	char portstr[10];
-	snprintf(portstr, sizeof portstr, "%d", port);
-	portstr[sizeof portstr - 1] = 0;
+	snprintf(portstr, sizeof(portstr), "%d", port);
+	portstr[sizeof(portstr) - 1] = 0;
 
 	modify_config_file(mesh, mesh->name, "Port", portstr, true);
 
@@ -1598,7 +1598,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 
 	// Ensure no host configuration file with that name exists
 	char filename[PATH_MAX];
-	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 	if(!access(filename, F_OK)) {
 		logger(mesh, MESHLINK_DEBUG, "A host config file for %s already exists!\n", name);
 		meshlink_errno = MESHLINK_EEXIST;
@@ -1644,8 +1644,8 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	char buf[18 + strlen(fingerprint)];
 	char cookiehash[64];
 	memcpy(buf, cookie, 18);
-	memcpy(buf + 18, fingerprint, sizeof buf - 18);
-	sha512(buf, sizeof buf, cookiehash);
+	memcpy(buf + 18, fingerprint, sizeof(buf) - 18);
+	sha512(buf, sizeof(buf), cookiehash);
 	b64encode_urlsafe(cookiehash, cookiehash, 18);
 
 	b64encode_urlsafe(cookie, cookie, 18);
@@ -1653,7 +1653,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	free(fingerprint);
 
 	// Create a file containing the details of the invitation.
-	snprintf(filename, sizeof filename, "%s" SLASH "invitations" SLASH "%s", mesh->confbase, cookiehash);
+	snprintf(filename, sizeof(filename), "%s" SLASH "invitations" SLASH "%s", mesh->confbase, cookiehash);
 	int ifd = open(filename, O_RDWR | O_CREAT | O_EXCL, 0600);
 	if(!ifd) {
 		logger(mesh, MESHLINK_DEBUG, "Could not create invitation file %s: %s\n", filename, strerror(errno));
@@ -1672,11 +1672,11 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	fprintf(f, "ConnectTo = %s\n", mesh->self->name);
 
 	// Copy Broadcast and Mode
-	snprintf(filename, sizeof filename, "%s" SLASH "meshlink.conf", mesh->confbase);
+	snprintf(filename, sizeof(filename), "%s" SLASH "meshlink.conf", mesh->confbase);
 	FILE *tc = fopen(filename,  "r");
 	if(tc) {
 		char buf[1024];
-		while(fgets(buf, sizeof buf, tc)) {
+		while(fgets(buf, sizeof(buf), tc)) {
 			if((!strncasecmp(buf, "Mode", 4) && strchr(" \t=", buf[4]))
 			                || (!strncasecmp(buf, "Broadcast", 9) && strchr(" \t=", buf[9]))) {
 				fputs(buf, f);
@@ -1696,7 +1696,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	fprintf(f, "#---------------------------------------------------------------#\n");
 	fprintf(f, "Name = %s\n", mesh->self->name);
 
-	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
+	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
 	fcopy(f, filename);
 	fclose(f);
 
@@ -1817,7 +1817,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	char hisname[4096] = "";
 	int code, hismajor, hisminor = 0;
 
-	if(!recvline(mesh, sizeof mesh->line) || sscanf(mesh->line, "%d %s %d.%d", &code, hisname, &hismajor, &hisminor) < 3 || code != 0 || hismajor != PROT_MAJOR || !check_id(hisname) || !recvline(mesh, sizeof mesh->line) || !rstrip(mesh->line) || sscanf(mesh->line, "%d ", &code) != 1 || code != ACK || strlen(mesh->line) < 3) {
+	if(!recvline(mesh, sizeof(mesh)->line) || sscanf(mesh->line, "%d %s %d.%d", &code, hisname, &hismajor, &hisminor) < 3 || code != 0 || hismajor != PROT_MAJOR || !check_id(hisname) || !recvline(mesh, sizeof(mesh)->line) || !rstrip(mesh->line) || sscanf(mesh->line, "%d ", &code) != 1 || code != ACK || strlen(mesh->line) < 3) {
 		logger(mesh, MESHLINK_DEBUG, "Cannot read greeting from peer\n");
 		closesocket(mesh->sock);
 		meshlink_errno = MESHLINK_ENETWORK;
@@ -1850,7 +1850,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	}
 
 	// Start an SPTPS session
-	if(!sptps_start(&mesh->sptps, mesh, true, false, key, hiskey, meshlink_invitation_label, sizeof meshlink_invitation_label, invitation_send, invitation_receive)) {
+	if(!sptps_start(&mesh->sptps, mesh, true, false, key, hiskey, meshlink_invitation_label, sizeof(meshlink_invitation_label), invitation_send, invitation_receive)) {
 		meshlink_errno = MESHLINK_EINTERNAL;
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
 		return false;
@@ -1865,7 +1865,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 
 	int len;
 
-	while((len = recv(mesh->sock, mesh->line, sizeof mesh->line, 0))) {
+	while((len = recv(mesh->sock, mesh->line, sizeof(mesh)->line, 0))) {
 		if(len < 0) {
 			if(errno == EINTR)
 				continue;
@@ -1913,7 +1913,7 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
 	char filename[PATH_MAX];
-	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
+	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
 	FILE *f = fopen(filename, "r");
 	if(!f) {
 		logger(mesh, MESHLINK_DEBUG, "Could not open %s: %s\n", filename, strerror(errno));
@@ -1979,7 +1979,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 	}
 
 	char filename[PATH_MAX];
-	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 	if(!access(filename, F_OK)) {
 		logger(mesh, MESHLINK_DEBUG, "File %s already exists, not importing\n", filename);
 		meshlink_errno = MESHLINK_EEXIST;
@@ -2120,7 +2120,7 @@ meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink
 			n++;
 			// the first *nmemb members of result can be re-used
 			if(n > *nmemb)
-				copy = xzalloc(sizeof *copy);
+				copy = xzalloc(sizeof(*copy));
 			else
 				copy = *p;
 			copy->from = (meshlink_node_t*)e->from;
@@ -2168,7 +2168,7 @@ static void channel_accept(struct utcp_connection *utcp_connection, uint16_t por
 	meshlink_handle_t *mesh = n->mesh;
 	if(!mesh->channel_accept_cb)
 		return;
-	meshlink_channel_t *channel = xzalloc(sizeof *channel);
+	meshlink_channel_t *channel = xzalloc(sizeof(*channel));
 	channel->node = n;
 	channel->c = utcp_connection;
 	if(mesh->channel_accept_cb(mesh, channel, port, NULL, 0))
@@ -2245,7 +2245,7 @@ meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_n
 			return NULL;
 		}
 	}
-	meshlink_channel_t *channel = xzalloc(sizeof *channel);
+	meshlink_channel_t *channel = xzalloc(sizeof(*channel));
 	channel->node = n;
 	channel->receive_cb = cb;
 	channel->c = utcp_connect_ex(n->utcp, port, channel_recv, channel, flags);
@@ -2351,7 +2351,7 @@ end:
 static void __attribute__((constructor)) meshlink_init(void) {
 	crypto_init();
 	unsigned int seed;
-	randomize(&seed, sizeof seed);
+	randomize(&seed, sizeof(seed));
 	srand(seed);
 }
 

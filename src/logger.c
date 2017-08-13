@@ -37,10 +37,10 @@ void logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *for
 	char message[1024] = "";
 
 	va_start(ap, format);
-	int len = vsnprintf(message, sizeof message, format, ap);
+	int len = vsnprintf(message, sizeof(message), format, ap);
 	va_end(ap);
 
-	if(len > 0 && len < sizeof message && message[len - 1] == '\n')
+	if(len > 0 && len < sizeof(message) && message[len - 1] == '\n')
 		message[len - 1] = 0;
 
 	if(mesh)

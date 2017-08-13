@@ -111,7 +111,7 @@ bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 	int inlen;
 	char inbuf[MAXBUFSIZE];
 
-	inlen = recv(c->socket, inbuf, sizeof inbuf, 0);
+	inlen = recv(c->socket, inbuf, sizeof(inbuf), 0);
 
 	if(inlen <= 0) {
 		if(!inlen || !errno) {
@@ -142,7 +142,7 @@ bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 				return true;
 		}
 
-		if(c->inbuf.len >= sizeof inbuf) {
+		if(c->inbuf.len >= sizeof(inbuf)) {
 			logger(mesh, MESHLINK_ERROR, "Input buffer full for %s (%s)", c->name, c->hostname);
 			return false;
 		} else

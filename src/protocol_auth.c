@@ -65,9 +65,9 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 		memcpy(s4req + 4, &c->address.in.sin_addr, 4);
 		if(mesh->proxyuser)
 			memcpy(s4req + 8, mesh->proxyuser, strlen(mesh->proxyuser));
-		s4req[sizeof s4req - 1] = 0;
+		s4req[sizeof(s4req) - 1] = 0;
 		c->tcplen = 8;
-		return send_meta(mesh, c, s4req, sizeof s4req);
+		return send_meta(mesh, c, s4req, sizeof(s4req));
 	}
 	case PROXY_SOCKS5: {
 		int len = 3 + 6 + (c->address.sa.sa_family == AF_INET ? 4 : 16);
@@ -113,7 +113,7 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 		}
 		if(i > len)
 			abort();
-		return send_meta(mesh, c, s5req, sizeof s5req);
+		return send_meta(mesh, c, s5req, sizeof(s5req));
 	}
 	case PROXY_SOCKS4A:
 		logger(mesh, MESHLINK_ERROR, "Proxy type not implemented yet");
@@ -145,7 +145,7 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 
 	// Create a new host config file
 	char filename[PATH_MAX];
-	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, c->name);
+	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, c->name);
 	if(!access(filename, F_OK)) {
 		logger(mesh, MESHLINK_ERROR, "Host config file for %s (%s) already exists!\n", c->name, c->hostname);
 		return false;
@@ -190,14 +190,14 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	char hashbuf[18 + strlen(fingerprint)];
 	char cookie[25];
 	memcpy(hashbuf, data, 18);
-	memcpy(hashbuf + 18, fingerprint, sizeof hashbuf - 18);
-	sha512(hashbuf, sizeof hashbuf, hash);
+	memcpy(hashbuf + 18, fingerprint, sizeof(hashbuf) - 18);
+	sha512(hashbuf, sizeof(hashbuf), hash);
 	b64encode_urlsafe(hash, cookie, 18);
 	free(fingerprint);
 
 	char filename[PATH_MAX], usedname[PATH_MAX];
-	snprintf(filename, sizeof filename, "%s" SLASH "invitations" SLASH "%s", mesh->confbase, cookie);
-	snprintf(usedname, sizeof usedname, "%s" SLASH "invitations" SLASH "%s.used", mesh->confbase, cookie);
+	snprintf(filename, sizeof(filename), "%s" SLASH "invitations" SLASH "%s", mesh->confbase, cookie);
+	snprintf(usedname, sizeof(usedname), "%s" SLASH "invitations" SLASH "%s.used", mesh->confbase, cookie);
 
 	// Atomically rename the invitation file
 	if(rename(filename, usedname)) {
@@ -217,7 +217,7 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 
 	// Read the new node's Name from the file
 	char buf[1024];
-	fgets(buf, sizeof buf, f);
+	fgets(buf, sizeof(buf), f);
 	if(*buf)
 		buf[strlen(buf) - 1] = 0;
 
@@ -242,7 +242,7 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	// Send the node the contents of the invitation file
 	rewind(f);
 	size_t result;
-	while((result = fread(buf, 1, sizeof buf, f)))
+	while((result = fread(buf, 1, sizeof(buf), f)))
 		sptps_send_record(&c->sptps, 0, buf, result);
 	sptps_send_record(&c->sptps, 1, buf, 0);
 	fclose(f);
@@ -288,7 +288,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		c->protocol_minor = 2;
 		c->allow_request = 1;
 
-		return sptps_start(&c->sptps, c, false, false, mesh->invitation_key, c->ecdsa, meshlink_invitation_label, sizeof meshlink_invitation_label, send_meta_sptps, receive_invitation_sptps);
+		return sptps_start(&c->sptps, c, false, false, mesh->invitation_key, c->ecdsa, meshlink_invitation_label, sizeof(meshlink_invitation_label), send_meta_sptps, receive_invitation_sptps);
 	}
 
 	/* Check if identity is a valid name */
@@ -353,14 +353,14 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	}
 
 	c->allow_request = ACK;
-	char label[sizeof meshlink_tcp_label + strlen(mesh->self->name) + strlen(c->name) + 2];
+	char label[sizeof(meshlink_tcp_label) + strlen(mesh->self->name) + strlen(c->name) + 2];
 
 	if(c->outgoing)
-		snprintf(label, sizeof label, "%s %s %s", meshlink_tcp_label, mesh->self->name, c->name);
+		snprintf(label, sizeof(label), "%s %s %s", meshlink_tcp_label, mesh->self->name, c->name);
 	else
-		snprintf(label, sizeof label, "%s %s %s", meshlink_tcp_label, c->name, mesh->self->name);
+		snprintf(label, sizeof(label), "%s %s %s", meshlink_tcp_label, c->name, mesh->self->name);
 
-	return sptps_start(&c->sptps, c, c->outgoing, false, mesh->self->connection->ecdsa, c->ecdsa, label, sizeof label - 1, send_meta_sptps, receive_meta_sptps);
+	return sptps_start(&c->sptps, c, c->outgoing, false, mesh->self->connection->ecdsa, c->ecdsa, label, sizeof(label) - 1, send_meta_sptps, receive_meta_sptps);
 }
 
 bool send_ack(meshlink_handle_t *mesh, connection_t *c) {

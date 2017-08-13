@@ -216,8 +216,8 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 				tv = &it;
 		}
 
-		memcpy(&readable, &loop->readfds, sizeof readable);
-		memcpy(&writable, &loop->writefds, sizeof writable);
+		memcpy(&readable, &loop->readfds, sizeof(readable));
+		memcpy(&writable, &loop->writefds, sizeof(writable));
 
 		int fds = 0;
 

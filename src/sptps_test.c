@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
 #endif
 
 	struct addrinfo *ai, hint;
-	memset(&hint, 0, sizeof hint);
+	memset(&hint, 0, sizeof(hint));
 
 	hint.ai_family = AF_UNSPEC;
 	hint.ai_socktype = datagram ? SOCK_DGRAM : SOCK_STREAM;
@@ -229,7 +229,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	int one = 1;
-	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof one);
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one));
 
 	if(initiator) {
 		if(connect(sock, ai->ai_addr, ai->ai_addrlen)) {
@@ -260,9 +260,9 @@ int main(int argc, char *argv[]) {
 
 			char buf[65536];
 			struct sockaddr addr;
-			socklen_t addrlen = sizeof addr;
+			socklen_t addrlen = sizeof(addr);
 
-			if(recvfrom(sock, buf, sizeof buf, MSG_PEEK, &addr, &addrlen) <= 0) {
+			if(recvfrom(sock, buf, sizeof(buf), MSG_PEEK, &addr, &addrlen) <= 0) {
 				fprintf(stderr, "Could not read from socket: %s\n", strerror(errno));
 				return 1;
 			}
@@ -312,7 +312,7 @@ int main(int argc, char *argv[]) {
 			return 1;
 
 		if(FD_ISSET(in, &fds)) {
-			ssize_t len = read(in, buf, sizeof buf);
+			ssize_t len = read(in, buf, sizeof(buf));
 			if(len < 0) {
 				fprintf(stderr, "Could not read from stdin: %s\n", strerror(errno));
 				return 1;
@@ -331,12 +331,12 @@ int main(int argc, char *argv[]) {
 				sptps_force_kex(&s);
 				if(len > 1)
 					sptps_send_record(&s, 0, buf, len);
-			} else if(!sptps_send_record(&s, buf[0] == '!' ? 1 : 0, buf, (len == 1 && buf[0] == '\n') ? 0 : buf[0] == '*' ? sizeof buf : len))
+			} else if(!sptps_send_record(&s, buf[0] == '!' ? 1 : 0, buf, (len == 1 && buf[0] == '\n') ? 0 : buf[0] == '*' ? sizeof(buf) : len))
 				return 1;
 		}
 
 		if(FD_ISSET(sock, &fds)) {
-			ssize_t len = recv(sock, buf, sizeof buf, 0);
+			ssize_t len = recv(sock, buf, sizeof(buf), 0);
 			if(len < 0) {
 				fprintf(stderr, "Could not read from socket: %s\n", strerror(errno));
 				return 1;

@@ -37,7 +37,7 @@ typedef struct meshlink_queue_item {
 } meshlink_queue_item_t;
 
 static inline bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
-	meshlink_queue_item_t *item = malloc(sizeof *item);
+	meshlink_queue_item_t *item = malloc(sizeof(*item));
 	if(!item)
 		return false;
 	item->data = data;

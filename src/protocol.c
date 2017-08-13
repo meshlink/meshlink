@@ -101,7 +101,7 @@ void forward_request(meshlink_handle_t *mesh, connection_t *from, const char *re
 	char tmp[len + 1];
 	memcpy(tmp, request, len);
 	tmp[len] = '\n';
-	broadcast_meta(mesh, from, tmp, sizeof tmp);
+	broadcast_meta(mesh, from, tmp, sizeof(tmp));
 }
 
 bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -187,7 +187,7 @@ bool seen_request(meshlink_handle_t *mesh, const char *request) {
 		logger(mesh, MESHLINK_DEBUG, "Already seen request");
 		return true;
 	} else {
-		new = xmalloc(sizeof *new);
+		new = xmalloc(sizeof(*new));
 		new->request = xstrdup(request);
 		new->firstseen = mesh->loop.now.tv_sec;
 		splay_insert(mesh->past_request_tree, new);

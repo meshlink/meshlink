@@ -48,7 +48,7 @@ void exit_nodes(meshlink_handle_t *mesh) {
 }
 
 node_t *new_node(void) {
-	node_t *n = xzalloc(sizeof *n);
+	node_t *n = xzalloc(sizeof(*n));
 
 	n->edge_tree = new_edge_tree();
 	n->mtu = MTU;

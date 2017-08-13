@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
 
 	printf("Chat started.\nType /help for a list of commands.\n");
 
-	while(fgets(buf, sizeof buf, stdin))
+	while(fgets(buf, sizeof(buf), stdin))
 		parse_input(&mesh, buf);
 
 	printf("Chat stopping.\n");

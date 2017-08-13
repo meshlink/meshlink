@@ -227,7 +227,7 @@ static void check_reachability(meshlink_handle_t *mesh) {
 
 			if(!n->status.reachable) {
 				update_node_udp(mesh, n, NULL);
-				memset(&n->status, 0, sizeof n->status);
+				memset(&n->status, 0, sizeof(n)->status);
 				n->options = 0;
 			} else if(n->connection) {
 				if(n->connection->outgoing)

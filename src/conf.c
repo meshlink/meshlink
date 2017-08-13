@@ -284,7 +284,7 @@ bool read_config_file(splay_tree_t *config_tree, const char *fname) {
 	}
 
 	for(;;) {
-		line = readline(fp, buffer, sizeof buffer);
+		line = readline(fp, buffer, sizeof(buffer));
 
 		if(!line) {
 			if(feof(fp))
@@ -390,8 +390,8 @@ bool modify_config_file(struct meshlink_handle *mesh, const char *name, const ch
 	char tmpname[PATH_MAX];
 	bool error = false;
 
-	snprintf(filename, sizeof filename, "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
-	snprintf(tmpname, sizeof tmpname, "%s.tmp", filename);
+	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	snprintf(tmpname, sizeof(tmpname), "%s.tmp", filename);
 
 	FILE *fr = fopen(filename, "r");
 
@@ -412,7 +412,7 @@ bool modify_config_file(struct meshlink_handle *mesh, const char *name, const ch
 	char *sep;
 	bool found = false;
 
-	while(readline(fr, buf, sizeof buf)) {
+	while(readline(fr, buf, sizeof(buf))) {
 		if(!*buf || *buf == '#')
 			goto copy;
 
@@ -472,7 +472,7 @@ copy:
 	// Try to atomically replace the old config file with the new one.
 #ifdef HAVE_MINGW
 	char bakname[PATH_MAX];
-	snprintf(bakname, sizeof bakname, "%s.bak", filename);
+	snprintf(bakname, sizeof(bakname), "%s.bak", filename);
 	if(rename(filename, bakname) || rename(tmpname, filename)) {
 		rename(bakname, filename);
 #else

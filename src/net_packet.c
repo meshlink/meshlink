@@ -238,7 +238,7 @@ static void receive_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 void receive_tcppacket(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int len) {
 	vpn_packet_t outpkt;
 
-	if(len > sizeof outpkt.data)
+	if(len > sizeof(outpkt).data)
 		return;
 
 	outpkt.len = len;
@@ -555,7 +555,7 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 	vpn_packet_t pkt;
 	char *hostname;
 	sockaddr_t from = {{0}};
-	socklen_t fromlen = sizeof from;
+	socklen_t fromlen = sizeof(from);
 	node_t *n;
 	int len;
 

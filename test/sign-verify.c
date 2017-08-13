@@ -49,9 +49,9 @@ int main(int argc, char *argv[]) {
 	static const char testdata2[] = "Test data 2.";
 
 	char sig[MESHLINK_SIGLEN * 2];
-	size_t siglen = sizeof sig * 2;
+	size_t siglen = sizeof(sig) * 2;
 
-	if(!meshlink_sign(mesh1, testdata1, sizeof testdata1, sig, &siglen)) {
+	if(!meshlink_sign(mesh1, testdata1, sizeof(testdata1), sig, &siglen)) {
 		fprintf(stderr, "Signing failed\n");
 		return 1;
 	}
@@ -72,26 +72,26 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	if(!meshlink_verify(mesh2, foo, testdata1, sizeof testdata1, sig, siglen)) {
+	if(!meshlink_verify(mesh2, foo, testdata1, sizeof(testdata1), sig, siglen)) {
 		fprintf(stderr, "False negative verification\n");
 		return 1;
 	}
 
 	// Check that bad signatures are revoked
 
-	if(meshlink_verify(mesh2, foo, testdata1, sizeof testdata1, sig, siglen / 2)) {
+	if(meshlink_verify(mesh2, foo, testdata1, sizeof(testdata1), sig, siglen / 2)) {
 		fprintf(stderr, "False positive verification with half sized signature\n");
 		return 1;
 	}
-	if(meshlink_verify(mesh2, foo, testdata1, sizeof testdata1, sig, siglen * 2)) {
+	if(meshlink_verify(mesh2, foo, testdata1, sizeof(testdata1), sig, siglen * 2)) {
 		fprintf(stderr, "False positive verification with double sized signature\n");
 		return 1;
 	}
-	if(meshlink_verify(mesh2, foo, testdata2, sizeof testdata2, sig, siglen)) {
+	if(meshlink_verify(mesh2, foo, testdata2, sizeof(testdata2), sig, siglen)) {
 		fprintf(stderr, "False positive verification with wrong data\n");
 		return 1;
 	}
-	if(meshlink_verify(mesh2, bar, testdata1, sizeof testdata1, sig, siglen)) {
+	if(meshlink_verify(mesh2, bar, testdata1, sizeof(testdata1), sig, siglen)) {
 		fprintf(stderr, "False positive verification with wrong signer\n");
 		return 1;
 	}

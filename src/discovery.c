@@ -463,7 +463,7 @@ bool discovery_start(meshlink_handle_t *mesh) {
 	// Start the discovery thread
 	if(pthread_create(&mesh->discovery_thread, NULL, discovery_loop, mesh) != 0) {
 		logger(mesh, MESHLINK_ERROR, "Could not start discovery thread: %s\n", strerror(errno));
-		memset(&mesh->discovery_thread, 0, sizeof mesh->discovery_thread);
+		memset(&mesh->discovery_thread, 0, sizeof(mesh)->discovery_thread);
 		goto fail;
 	}
 

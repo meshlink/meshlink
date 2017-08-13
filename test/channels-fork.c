@@ -69,11 +69,11 @@ int main1(int rfd, int wfd) {
 	}
 
 	size_t len = strlen(data);
-	write(wfd, &len, sizeof len);
+	write(wfd, &len, sizeof(len));
 	write(wfd, data, len);
 	free(data);
 
-	read(rfd, &len, sizeof len);
+	read(rfd, &len, sizeof(len));
 	char indata[len + 1];
 	read(rfd, indata, len);
 	indata[len] = 0;
@@ -153,11 +153,11 @@ int main2(int rfd, int wfd) {
 	}
 
 	size_t len = strlen(data);
-	if(write(wfd, &len, sizeof len) <= 0) abort();
+	if(write(wfd, &len, sizeof(len)) <= 0) abort();
 	if(write(wfd, data, len) <= 0) abort();
 	free(data);
 
-	read(rfd, &len, sizeof len);
+	read(rfd, &len, sizeof(len));
 	char indata[len + 1];
 	read(rfd, indata, len);
 	indata[len] = 0;

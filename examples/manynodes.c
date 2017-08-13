@@ -368,7 +368,7 @@ int main(int argc, char *argv[]) {
 	if(argc > 4)
 		graphexporttimeout = argv[4];
 
-	mesh = calloc(n, sizeof *mesh);
+	mesh = calloc(n, sizeof(*mesh));
 
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_message);
 #ifndef _WIN32
@@ -380,8 +380,8 @@ int main(int argc, char *argv[]) {
 	char filename[PATH_MAX];
 	char nodename[100];
 	for(int i = 0; i < n; i++) {
-		snprintf(nodename, sizeof nodename, "%snode%d", namesprefix,i);
-		snprintf(filename, sizeof filename, "%s/%s", basebase, nodename);
+		snprintf(nodename, sizeof(nodename), "%snode%d", namesprefix,i);
+		snprintf(filename, sizeof(filename), "%s/%s", basebase, nodename);
 		bool itsnew = access(filename, R_OK);
 		if(n/(i+1) > n/4)
 			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_BACKBONE);
@@ -415,7 +415,7 @@ int main(int argc, char *argv[]) {
 	printf("%d nodes started.\nType /help for a list of commands.\n", started);
 
 	// handle input
-	while(fgets(buf, sizeof buf, stdin))
+	while(fgets(buf, sizeof(buf), stdin))
 		parse_input(buf);
 
 	exportmeshgraph_end(NULL);

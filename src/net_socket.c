@@ -61,12 +61,12 @@ static void configure_tcp(connection_t *c) {
 
 #if defined(SOL_TCP) && defined(TCP_NODELAY)
 	int nodelay = 1;
-	setsockopt(c->socket, SOL_TCP, TCP_NODELAY, (void *)&nodelay, sizeof nodelay);
+	setsockopt(c->socket, SOL_TCP, TCP_NODELAY, (void *)&nodelay, sizeof(nodelay));
 #endif
 
 #if defined(SOL_IP) && defined(IP_TOS) && defined(IPTOS_LOWDELAY)
 	int lowdelay = IPTOS_LOWDELAY;
-	setsockopt(c->socket, SOL_IP, IP_TOS, (void *)&lowdelay, sizeof lowdelay);
+	setsockopt(c->socket, SOL_IP, IP_TOS, (void *)&lowdelay, sizeof(lowdelay));
 #endif
 }
 
@@ -117,11 +117,11 @@ int setup_listen_socket(const sockaddr_t *sa) {
 	/* Optimize TCP settings */
 
 	option = 1;
-	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof option);
+	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
 
 #if defined(SOL_IPV6) && defined(IPV6_V6ONLY)
 	if(sa->sa.sa_family == AF_INET6)
-		setsockopt(nfd, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof option);
+		setsockopt(nfd, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
 #endif
 
 	if(bind(nfd, &sa->sa, SALEN(sa->sa))) {
@@ -180,12 +180,12 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 #endif
 
 	option = 1;
-	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof option);
-	setsockopt(nfd, SOL_SOCKET, SO_BROADCAST, (void *)&option, sizeof option);
+	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
+	setsockopt(nfd, SOL_SOCKET, SO_BROADCAST, (void *)&option, sizeof(option));
 
 #if defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
 	if(sa->sa.sa_family == AF_INET6)
-		setsockopt(nfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof option);
+		setsockopt(nfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
 #endif
 
 #if defined(IP_DONTFRAG) && !defined(IP_DONTFRAGMENT)
@@ -336,7 +336,7 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 		c->status.connecting = false;
 
 		int result;
-		socklen_t len = sizeof result;
+		socklen_t len = sizeof(result);
 		getsockopt(c->socket, SOL_SOCKET, SO_ERROR, (void *)&result, &len);
 
 		if(!result)
@@ -373,7 +373,7 @@ static struct addrinfo *get_known_addresses(node_t *n) {
 			continue;
 
 		// Create a new struct addrinfo, and put it at the head of the list.
-		struct addrinfo *nai = xzalloc(sizeof *nai + SALEN(e->reverse->address.sa));
+		struct addrinfo *nai = xzalloc(sizeof(*nai) + SALEN(e->reverse->address.sa));
 		nai->ai_next = ai;
 		ai = nai;
 
@@ -484,7 +484,7 @@ begin:
 #if defined(SOL_IPV6) && defined(IPV6_V6ONLY)
 		int option = 1;
 		if(c->address.sa.sa_family == AF_INET6)
-			setsockopt(c->socket, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof option);
+			setsockopt(c->socket, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
 #endif
 
 		bind_to_address(mesh, c);
@@ -565,7 +565,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	connection_t *c;
 	sockaddr_t sa;
 	int fd;
-	socklen_t len = sizeof sa;
+	socklen_t len = sizeof(sa);
 
 	fd = accept(l->tcp.fd, &sa.sa, &len);
 
@@ -609,7 +609,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 		}
 	}
 
-	memcpy(&prev_sa, &sa, sizeof sa);
+	memcpy(&prev_sa, &sa, sizeof(sa));
 
 	// Check if we get many connections from different hosts
 
@@ -709,7 +709,7 @@ void try_outgoing_connections(meshlink_handle_t *mesh) {
 		}
 
 		if(!found) {
-			outgoing_t *outgoing = xzalloc(sizeof *outgoing);
+			outgoing_t *outgoing = xzalloc(sizeof(*outgoing));
 			outgoing->mesh = mesh;
 			outgoing->name = name;
 			list_insert_tail(mesh->outgoings, outgoing);
