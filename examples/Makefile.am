@@ -1,4 +1,4 @@
-bin_PROGRAMS = meshlinkapp chat chatpp manynodes channels
+noinst_PROGRAMS = meshlinkapp chat chatpp manynodes channels
 
 AM_CPPFLAGS = -I../src
 
