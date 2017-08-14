@@ -432,7 +432,7 @@ bool modify_config_file(struct meshlink_handle *mesh, const char *name, const ch
 		}
 
 		// We found the key and the value. We already added it at the top, so ignore this one.
-		if(sep[1] == '=' && sep[2] == ' ' && !strcmp(sep + 3, value))
+		if(value && sep[1] == '=' && sep[2] == ' ' && !strcmp(sep + 3, value))
 			continue;
 
 		// We found the key but with a different value, delete it if wanted.

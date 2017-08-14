@@ -20,6 +20,7 @@
 
 #include <sys/time.h>
 #include <signal.h>
+#include <assert.h>
 
 static int n = 10;
 static meshlink_handle_t **mesh;
@@ -77,6 +78,8 @@ static void linkmesh() {
 }
 
 static bool exportmeshgraph(const char *path) {
+	assert(path);
+
 	struct stat ps;
 	int psr = stat(path, &ps);
 

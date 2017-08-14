@@ -67,7 +67,7 @@ void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report)
 
 		/* If the node is not reachable anymore but we remember it had an edge to us, clean it up */
 
-		if(report && !c->node->status.reachable) {
+		if(report && c->node && !c->node->status.reachable) {
 			edge_t *e;
 			e = lookup_edge(c->node, mesh->self);
 			if(e) {

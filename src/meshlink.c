@@ -1946,6 +1946,7 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 	if(fread(buf + len - fsize - 1, fsize, 1, f) != 1) {
 		logger(mesh, MESHLINK_DEBUG, "Error reading from %s: %s\n", filename, strerror(errno));
 		fclose(f);
+		free(buf);
 		meshlink_errno = MESHLINK_ESTORAGE;
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
 		return NULL;
