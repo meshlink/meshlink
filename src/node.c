@@ -126,7 +126,9 @@ void update_node_udp(meshlink_handle_t *mesh, node_t *n, const sockaddr_t *sa) {
 		}
 		hash_insert(mesh->node_udp_cache, sa, n);
 		free(n->hostname);
+
 		n->hostname = sockaddr2hostname(&n->address);
+		meshlink_hint_address(mesh, (meshlink_node_t *)n, &sa->sa);
 		logger(mesh, MESHLINK_DEBUG, "UDP address of %s set to %s", n->name, n->hostname);
 	}
 }
