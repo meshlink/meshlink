@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
+#include <sys/time.h>
 
 #include "meshlink.h"
 #include "utils.h"

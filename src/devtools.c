@@ -10,16 +10,6 @@
 
 #include "devtools.h"
 
-static int node_compare(const void *a, const void *b) {
-	if(a < b)
-		return -1;
-
-	if(a > b)
-		return 1;
-
-	return 0;
-}
-
 static bool fstrwrite(const char *str, FILE *stream) {
 	size_t len = strlen(str);
 

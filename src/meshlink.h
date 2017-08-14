@@ -37,10 +37,10 @@ extern "C" {
 #endif
 
 /// The length in bytes of a signature made with meshlink_sign()
-#define MESHLINK_SIGLEN  (64)
+#define MESHLINK_SIGLEN (64ul)
 
 // The maximum length of fingerprints
-#define MESHLINK_FINGERPRINTLEN  (64)
+#define MESHLINK_FINGERPRINTLEN (64ul)
 
 /// A handle for an instance of MeshLink.
 typedef struct meshlink_handle meshlink_handle_t;

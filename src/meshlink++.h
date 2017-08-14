@@ -624,7 +624,7 @@ private:
 	meshlink_handle_t *handle;
 };
 
-static const char *strerror(errno_t err = meshlink_errno) {
+static inline const char *strerror(errno_t err = meshlink_errno) {
 	return meshlink_strerror(err);
 }
 
@@ -638,7 +638,7 @@ static const char *strerror(errno_t err = meshlink_errno) {
  *
  *  @return         This function will return true if the MeshLink instance was succesfully destroyed, false otherwise.
  */
-static bool destroy(const char *confbase) {
+static inline bool destroy(const char *confbase) {
 	return meshlink_destroy(confbase);
 }
 }

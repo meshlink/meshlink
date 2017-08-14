@@ -184,7 +184,7 @@ int main2(int rfd, int wfd) {
 
 
 int main(int argc, char *argv[]) {
-	int fda[2], fdb[2], result;
+	int fda[2], fdb[2];
 
 	pipe2(fda, 0);
 	pipe2(fdb, 0);

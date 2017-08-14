@@ -389,6 +389,7 @@ static void discovery_log_cb(CattaLogLevel level, const char *txt) {
 		break;
 
 	case CATTA_LOG_DEBUG:
+	default:
 		mlevel = MESHLINK_DEBUG;
 		break;
 	}
