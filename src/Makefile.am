@@ -25,32 +25,6 @@ chacha_poly1305_SOURCES = \
 utcp_SOURCES = \
 	utcp/utcp.c utcp/utcp.h
 
-sptps_test_SOURCES = \
-	crypto.c crypto.h \
-	logger.c logger.h \
-	prf.c prf.h \
-	sptps.c sptps.h \
-	sptps_test.c \
-	utils.c utils.h \
-	$(ed25519_SOURCES) \
-	$(chacha_poly1305_SOURCES)
-
-sptps_keypair_SOURCES = \
-	crypto.c crypto.h \
-	sptps_keypair.c \
-	utils.c utils.h \
-	$(ed25519_SOURCES)
-
-sptps_speed_SOURCES = \
-	crypto.c crypto.h \
-	logger.c logger.h \
-	prf.c prf.h \
-	sptps.c sptps.h \
-	sptps_speed.c \
-	utils.c utils.h \
-	$(ed25519_SOURCES) \
-	$(chacha_poly1305_SOURCES)
-
 lib_LTLIBRARIES = libmeshlink.la
 
 pkginclude_HEADERS = meshlink++.h meshlink.h
@@ -115,7 +89,3 @@ libmeshlink_la_SOURCES += \
 	ed25519/ecdh.c \
 	ed25519/ecdsa.c \
 	ed25519/ecdsagen.c
-
-LIBS = @LIBS@
-
-AM_CFLAGS = -DCONFDIR=\"$(sysconfdir)\" -DLOCALSTATEDIR=\"$(localstatedir)\" -DSBINDIR=\"$(sbindir)\"

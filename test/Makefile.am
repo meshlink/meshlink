@@ -54,6 +54,3 @@ invite_join_LDADD = ../src/libmeshlink.la
 
 sign_verify_SOURCES = sign-verify.c
 sign_verify_LDADD = ../src/libmeshlink.la
-
-channels_SOURCES = channels.c
-channels_LDADD = ../src/libmeshlink.la
