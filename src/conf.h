@@ -52,7 +52,7 @@ extern bool write_config_file(const struct splay_tree_t *, const char *);
 extern bool read_server_config(struct meshlink_handle *mesh);
 extern bool read_host_config(struct meshlink_handle *mesh, struct splay_tree_t *, const char *);
 extern bool write_host_config(struct meshlink_handle *mesh, const struct splay_tree_t *, const char *);
-extern bool modify_config_file(struct meshlink_handle *mesh, const char *, const char *, const char *, bool);
-extern bool append_config_file(struct meshlink_handle *mesh, const char *, const char *, const char *);
+extern bool modify_config_file(struct meshlink_handle *mesh, const char *name, const char *key, const char *value, int trim);
+extern bool append_config_file(struct meshlink_handle *mesh, const char *name, const char *key, const char *value);
 
 #endif

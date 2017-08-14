@@ -383,8 +383,8 @@ bool write_host_config(struct meshlink_handle *mesh, const struct splay_tree_t *
 	return write_config_file(config_tree, filename);
 }
 
-bool modify_config_file(struct meshlink_handle *mesh, const char *name, const char *key, const char *value, bool replace) {
-	assert(mesh && name && key && (replace || value));
+bool modify_config_file(struct meshlink_handle *mesh, const char *name, const char *key, const char *value, int trim) {
+	assert(mesh && name && key);
 
 	char filename[PATH_MAX];
 	char tmpname[PATH_MAX];
@@ -410,7 +410,12 @@ bool modify_config_file(struct meshlink_handle *mesh, const char *name, const ch
 
 	char buf[4096];
 	char *sep;
-	bool found = false;
+	int found = 0;
+
+	if(value) {
+		fprintf(fw, "%s = %s\n", key, value);
+		found++;
+	}
 
 	while(readline(fr, buf, sizeof(buf))) {
 		if(!*buf || *buf == '#')
@@ -426,20 +431,13 @@ bool modify_config_file(struct meshlink_handle *mesh, const char *name, const ch
 			goto copy;
 		}
 
-		if(!value) {
-			found = true;
+		// We found the key and the value. We already added it at the top, so ignore this one.
+		if(sep[1] == '=' && sep[2] == ' ' && !strcmp(sep + 3, value))
 			continue;
-		}
-
-		// We found the key and the value. Keep one copy around.
-		if(sep[1] == '=' && sep[2] == ' ' && !strcmp(sep + 3, value)) {
-			if(found)
-				continue;
-			found = true;
-		}
 
 		// We found the key but with a different value, delete it if wanted.
-		if(!found && replace)
+		found++;
+		if((!value || trim) && found > trim)
 			continue;
 
 		*sep = ' ';
@@ -452,10 +450,6 @@ copy:
 		error = true;
 
 	fclose(fr);
-
-	// Add new key/value pair if necessary
-	if(!found && value)
-		fprintf(fw, "%s = %s\n", key, value);
 
 	if(ferror(fw))
 		error = true;
@@ -488,5 +482,5 @@ copy:
 }
 
 bool append_config_file(meshlink_handle_t *mesh, const char *name, const char *key, const char *value) {
-	return modify_config_file(mesh, name, key, value, false);
+	return modify_config_file(mesh, name, key, value, 0);
 }
