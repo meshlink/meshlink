@@ -11,7 +11,7 @@ TESTS = \
 
 dist_check_SCRIPTS = $(TESTS)
 
-AM_CPPFLAGS = -I../src
+AM_CPPFLAGS = -I../src -Wall
 
 check_PROGRAMS = \
 	basic \

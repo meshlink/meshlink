@@ -1,6 +1,6 @@
 ## Produce this file with automake to get Makefile.in
 
-DEFAULT_INCLUDES =
+AM_CPPFLAGS = -Wall
 
 ed25519_SOURCES = \
 	ed25519/add_scalar.c \
