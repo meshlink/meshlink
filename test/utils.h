@@ -25,5 +25,14 @@ extern void stop_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b);
 /// Stop and cleanup a pair of meshlink instances.
 extern void close_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b, const char *prefix);
 
-#endif
+#define assert_after(cond, timeout) do {\
+	for(int i = 0; i++ <= timeout;) {\
+		if(cond)\
+			break;\
+		if(i == timeout)\
+			assert(cond);\
+		sleep(1);\
+	}\
+} while(0);
 
+#endif

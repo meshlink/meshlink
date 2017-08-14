@@ -1,6 +1,7 @@
 TESTS = \
 	basic.test \
 	basicpp.test \
+	trio.test \
 	channels.test \
 	channels-fork.test \
 	channels-cornercases.test \
@@ -15,6 +16,7 @@ AM_CPPFLAGS = -I../src
 check_PROGRAMS = \
 	basic \
 	basicpp \
+	trio \
 	channels \
 	channels-fork \
 	channels-cornercases \
@@ -28,6 +30,9 @@ basic_LDADD = ../src/libmeshlink.la
 
 basicpp_SOURCES = basicpp.cpp
 basicpp_LDADD = ../src/libmeshlink.la
+
+trio_SOURCES = trio.c
+trio_LDADD = ../src/libmeshlink.la
 
 channels_SOURCES = channels.cpp
 channels_LDADD = ../src/libmeshlink.la
