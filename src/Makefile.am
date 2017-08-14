@@ -1,11 +1,5 @@
 ## Produce this file with automake to get Makefile.in
 
-sbin_PROGRAMS = sptps_test sptps_keypair
-
-if LINUX
-sbin_PROGRAMS += sptps_speed
-endif
-
 DEFAULT_INCLUDES =
 
 ed25519_SOURCES = \
@@ -121,17 +115,6 @@ libmeshlink_la_SOURCES += \
 	ed25519/ecdh.c \
 	ed25519/ecdsa.c \
 	ed25519/ecdsagen.c
-sptps_test_SOURCES += \
-	ed25519/ecdh.c \
-	ed25519/ecdsa.c
-sptps_keypair_SOURCES += \
-	ed25519/ecdsagen.c
-sptps_speed_SOURCES += \
-	ed25519/ecdh.c \
-	ed25519/ecdsa.c \
-	ed25519/ecdsagen.c
-
-sptps_speed_LDADD = -lrt
 
 LIBS = @LIBS@
 
