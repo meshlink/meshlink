@@ -1044,6 +1044,20 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	mesh->threadstarted = false;
 
+	// Close all metaconnections
+	if(mesh->connections) {
+		for(list_node_t *node = mesh->connections->head, *next; node; node = next) {
+			next = node->next;
+			connection_t *c = node->data;
+			c->outgoing = NULL;
+			terminate_connection(mesh, c, false);
+		}
+	}
+
+	if(mesh->outgoings)
+		list_delete_list(mesh->outgoings);
+	mesh->outgoings = NULL;
+
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
