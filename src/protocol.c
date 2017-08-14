@@ -77,12 +77,11 @@ bool send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, 
 	va_end(args);
 
 	if(len < 0 || len > MAXBUFSIZE - 1) {
-		logger(mesh, MESHLINK_ERROR, "Output buffer overflow while sending request to %s (%s)",
-		       c->name, c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Output buffer overflow while sending request to %s", c->name);
 		return false;
 	}
 
-	logger(mesh, MESHLINK_DEBUG, "Sending %s to %s (%s): %s", request_name[atoi(request)], c->name, c->hostname, request);
+	logger(mesh, MESHLINK_DEBUG, "Sending %s to %s: %s", request_name[atoi(request)], c->name, request);
 
 	request[len++] = '\n';
 
@@ -94,7 +93,7 @@ bool send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, 
 }
 
 void forward_request(meshlink_handle_t *mesh, connection_t *from, const char *request) {
-	logger(mesh, MESHLINK_DEBUG, "Forwarding %s from %s (%s): %s", request_name[atoi(request)], from->name, from->hostname, request);
+	logger(mesh, MESHLINK_DEBUG, "Forwarding %s from %s: %s", request_name[atoi(request)], from->name, request);
 
 	// Create a temporary newline-terminated copy of the request
 	int len = strlen(request);
@@ -123,24 +122,24 @@ bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *reque
 
 	if(reqno || *request == '0') {
 		if((reqno < 0) || (reqno >= LAST) || !request_handlers[reqno]) {
-			logger(mesh, MESHLINK_DEBUG, "Unknown request from %s (%s): %s", c->name, c->hostname, request);
+			logger(mesh, MESHLINK_DEBUG, "Unknown request from %s: %s", c->name, request);
 			return false;
 		} else
-			logger(mesh, MESHLINK_DEBUG, "Got %s from %s (%s): %s", request_name[reqno], c->name, c->hostname, request);
+			logger(mesh, MESHLINK_DEBUG, "Got %s from %s: %s", request_name[reqno], c->name, request);
 
 		if((c->allow_request != ALL) && (c->allow_request != reqno)) {
-			logger(mesh, MESHLINK_ERROR, "Unauthorized request from %s (%s)", c->name, c->hostname);
+			logger(mesh, MESHLINK_ERROR, "Unauthorized request from %s", c->name);
 			return false;
 		}
 
 		if(!request_handlers[reqno](mesh, c, request)) {
 			/* Something went wrong. Probably scriptkiddies. Terminate. */
 
-			logger(mesh, MESHLINK_ERROR, "Error while processing %s from %s (%s)", request_name[reqno], c->name, c->hostname);
+			logger(mesh, MESHLINK_ERROR, "Error while processing %s from %s", request_name[reqno], c->name);
 			return false;
 		}
 	} else {
-		logger(mesh, MESHLINK_ERROR, "Bogus data received from %s (%s)", c->name, c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Bogus data received from %s", c->name);
 		return false;
 	}
 

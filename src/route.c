@@ -29,7 +29,7 @@ bool decrement_ttl = false;
 
 static bool checklength(node_t *source, vpn_packet_t *packet, uint16_t length) {
 	if(packet->len < length) {
-		logger(source->mesh, MESHLINK_WARNING, "Got too short packet from %s (%s)", source->name, source->hostname);
+		logger(source->mesh, MESHLINK_WARNING, "Got too short packet from %s", source->name);
 		return false;
 	} else
 		return true;
@@ -77,7 +77,7 @@ void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 
 	via = (owner->via == mesh->self) ? owner->nexthop : owner->via;
 	if(via == source) {
-		logger(mesh, MESHLINK_ERROR, "Routing loop for packet from %s (%s)!", source->name, source->hostname);
+		logger(mesh, MESHLINK_ERROR, "Routing loop for packet from %s!", source->name);
 		return;
 	}
 

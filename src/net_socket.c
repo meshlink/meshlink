@@ -51,12 +51,12 @@ static void configure_tcp(connection_t *c) {
 	int flags = fcntl(c->socket, F_GETFL);
 
 	if(fcntl(c->socket, F_SETFL, flags | O_NONBLOCK) < 0)
-		logger(c->mesh, MESHLINK_ERROR, "fcntl for %s: %s", c->hostname, strerror(errno));
+		logger(c->mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "fcntl", strerror(errno));
 #elif defined(WIN32)
 	unsigned long arg = 1;
 
 	if(ioctlsocket(c->socket, FIONBIO, &arg) != 0)
-		logger(c->mesh, MESHLINK_ERROR, "ioctlsocket for %s: %s", c->hostname, sockstrerror(sockerrno));
+		logger(c->mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "ioctlsocket", sockstrerror(sockerrno));
 #endif
 
 #if defined(SOL_TCP) && defined(TCP_NODELAY)
@@ -251,7 +251,7 @@ void retry_outgoing(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 }
 
 void finish_connecting(meshlink_handle_t *mesh, connection_t *c) {
-	logger(mesh, MESHLINK_INFO, "Connected to %s (%s)", c->name, c->hostname);
+	logger(mesh, MESHLINK_INFO, "Connected to %s", c->name);
 
 	c->last_ping_time = mesh->loop.now.tv_sec;
 	c->status.connecting = false;
@@ -312,12 +312,12 @@ static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 	ssize_t outlen = send(c->socket, c->outbuf.data + c->outbuf.offset, c->outbuf.len - c->outbuf.offset, MSG_NOSIGNAL);
 	if(outlen <= 0) {
 		if(!errno || errno == EPIPE)
-			logger(mesh, MESHLINK_INFO, "Connection closed by %s (%s)", c->name, c->hostname);
+			logger(mesh, MESHLINK_INFO, "Connection closed by %s", c->name);
 		else if(sockwouldblock(sockerrno)) {
-			logger(mesh, MESHLINK_DEBUG, "Sending %d bytes to %s (%s) would block", c->outbuf.len - c->outbuf.offset, c->name, c->hostname);
+			logger(mesh, MESHLINK_DEBUG, "Sending %d bytes to %s would block", c->outbuf.len - c->outbuf.offset, c->name);
 			return;
 		} else
-			logger(mesh, MESHLINK_ERROR, "Could not send %d bytes of data to %s (%s): %s", c->outbuf.len - c->outbuf.offset, c->name, c->hostname, strerror(errno));
+			logger(mesh, MESHLINK_ERROR, "Could not send %d bytes of data to %s: %s", c->outbuf.len - c->outbuf.offset, c->name, strerror(errno));
 
 		terminate_connection(mesh, c, c->status.active);
 		return;
@@ -342,7 +342,7 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 		if(!result)
 			finish_connecting(mesh, c);
 		else {
-			logger(mesh, MESHLINK_DEBUG, "Error while connecting to %s (%s): %s", c->name, c->hostname, sockstrerror(result));
+			logger(mesh, MESHLINK_DEBUG, "Error while connecting to %s: %s", c->name, sockstrerror(result));
 			terminate_connection(mesh, c, false);
 			return;
 		}
@@ -450,9 +450,9 @@ begin:
 	memcpy(&c->address, outgoing->aip->ai_addr, outgoing->aip->ai_addrlen);
 	outgoing->aip = outgoing->aip->ai_next;
 
-	c->hostname = sockaddr2hostname(&c->address);
+	char *hostname = sockaddr2hostname(&c->address);
 
-	logger(mesh, MESHLINK_INFO, "Trying to connect to %s (%s)", outgoing->name, c->hostname);
+	logger(mesh, MESHLINK_INFO, "Trying to connect to %s at %s", outgoing->name, hostname);
 
 	if(!mesh->proxytype) {
 		c->socket = socket(c->address.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
@@ -463,6 +463,7 @@ begin:
 		proxyai = str2addrinfo(mesh->proxyhost, mesh->proxyport, SOCK_STREAM);
 		if(!proxyai) {
 			free_connection(c);
+			free(hostname);
 			goto begin;
 		}
 		logger(mesh, MESHLINK_INFO, "Using proxy at %s port %s", mesh->proxyhost, mesh->proxyport);
@@ -471,10 +472,13 @@ begin:
 	}
 
 	if(c->socket == -1) {
-		logger(mesh, MESHLINK_ERROR, "Creating socket for %s failed: %s", c->hostname, sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Creating socket for %s at %s failed: %s", c->name, c->hostname, sockstrerror(sockerrno));
 		free_connection(c);
+		free(hostname);
 		goto begin;
 	}
+
+	free(hostname);
 
 #ifdef FD_CLOEXEC
 	fcntl(c->socket, F_SETFD, FD_CLOEXEC);
@@ -502,7 +506,7 @@ begin:
 	}
 
 	if(result == -1 && !sockinprogress(sockerrno)) {
-		logger(mesh, MESHLINK_ERROR, "Could not connect to %s (%s): %s", outgoing->name, c->hostname, sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Could not connect to %s: %s", outgoing->name, sockstrerror(sockerrno));
 		free_connection(c);
 
 		goto begin;
@@ -637,11 +641,12 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	c->outcompression = mesh->self->connection->outcompression;
 
 	c->address = sa;
-	c->hostname = sockaddr2hostname(&sa);
 	c->socket = fd;
 	c->last_ping_time = mesh->loop.now.tv_sec;
 
+	char *hostname = sockaddr2hostname(&sa);
 	logger(mesh, MESHLINK_INFO, "Connection from %s", c->hostname);
+	free(hostname);
 
 	io_add(&mesh->loop, &c->io, handle_meta_io, c, c->socket, IO_READ);
 

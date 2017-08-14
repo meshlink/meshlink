@@ -51,7 +51,6 @@ typedef struct node_t {
 
 	int sock;                               /* Socket to use for outgoing UDP packets */
 	sockaddr_t address;                     /* his real (internet) ip to send UDP packets to */
-	char *hostname;                         /* the hostname of its real ip */
 
 	node_status_t status;
 	time_t last_state_change;

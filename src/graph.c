@@ -201,13 +201,10 @@ static void check_reachability(meshlink_handle_t *mesh) {
 			n->status.reachable = !n->status.reachable;
 			n->last_state_change = mesh->loop.now.tv_sec;
 
-			if(n->status.reachable) {
-				logger(mesh, MESHLINK_DEBUG, "Node %s (%s) became reachable",
-				       n->name, n->hostname);
-			} else {
-				logger(mesh, MESHLINK_DEBUG, "Node %s (%s) became unreachable",
-				       n->name, n->hostname);
-			}
+			if(n->status.reachable)
+				logger(mesh, MESHLINK_DEBUG, "Node %s became reachable", n->name);
+			else
+				logger(mesh, MESHLINK_DEBUG, "Node %s became unreachable", n->name);
 
 			/* TODO: only clear status.validkey if node is unreachable? */
 

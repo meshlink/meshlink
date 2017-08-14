@@ -65,30 +65,26 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(sscanf(request, "%*d %*x "MAX_STRING" %d "MAX_STRING" "MAX_STRING" "MAX_STRING" %d %x %d",
 	                from_name, &from_devclass, to_name, to_address, to_port, &to_devclass, &options, &weight) != 8) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ADD_EDGE", c->name,
-		       c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ADD_EDGE", c->name);
 		return false;
 	}
 
 	/* Check if names are valid */
 
 	if(!check_id(from_name) || !check_id(to_name)) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ADD_EDGE", c->name,
-		       c->hostname, "invalid name");
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ADD_EDGE", c->name, "invalid name");
 		return false;
 	}
 
 	// Check if devclasses are valid
 
 	if(from_devclass < 0 || from_devclass > _DEV_CLASS_MAX) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ADD_EDGE", c->name,
-		       c->hostname, "from devclass invalid");
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ADD_EDGE", c->name, "from devclass invalid");
 		return false;
 	}
 
 	if(to_devclass < 0 || to_devclass > _DEV_CLASS_MAX) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ADD_EDGE", c->name,
-		       c->hostname, "to devclass invalid");
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ADD_EDGE", c->name, "to devclass invalid");
 		return false;
 	}
 
@@ -131,21 +127,21 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	if(e) {
 		if(e->weight != weight || e->options != options || sockaddrcmp(&e->address, &address)) {
 			if(from == mesh->self) {
-				logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) for ourself which does not match existing entry",
-				       "ADD_EDGE", c->name, c->hostname);
+				logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself which does not match existing entry",
+				       "ADD_EDGE", c->name);
 				send_add_edge(mesh, c, e);
 				return true;
 			} else {
-				logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) which does not match existing entry",
-				       "ADD_EDGE", c->name, c->hostname);
+				logger(mesh, MESHLINK_WARNING, "Got %s from %s which does not match existing entry",
+				       "ADD_EDGE", c->name);
 				edge_del(mesh, e);
 				graph(mesh);
 			}
 		} else
 			return true;
 	} else if(from == mesh->self) {
-		logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) for ourself which does not exist",
-		       "ADD_EDGE", c->name, c->hostname);
+		logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself which does not exist",
+		       "ADD_EDGE", c->name);
 		mesh->contradicting_add_edge++;
 		e = new_edge();
 		e->from = from;
@@ -186,16 +182,14 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	node_t *from, *to;
 
 	if(sscanf(request, "%*d %*x "MAX_STRING" "MAX_STRING, from_name, to_name) != 2) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "DEL_EDGE", c->name,
-		       c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "DEL_EDGE", c->name);
 		return false;
 	}
 
 	/* Check if names are valid */
 
 	if(!check_id(from_name) || !check_id(to_name)) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "DEL_EDGE", c->name,
-		       c->hostname, "invalid name");
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "DEL_EDGE", c->name, "invalid name");
 		return false;
 	}
 
@@ -208,14 +202,14 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	to = lookup_node(mesh, to_name);
 
 	if(!from) {
-		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) which does not appear in the edge tree",
-		       "DEL_EDGE", c->name, c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Got %s from %s which does not appear in the edge tree",
+		       "DEL_EDGE", c->name);
 		return true;
 	}
 
 	if(!to) {
-		logger(mesh, MESHLINK_ERROR, "Got %s from %s (%s) which does not appear in the edge tree",
-		       "DEL_EDGE", c->name, c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Got %s from %s which does not appear in the edge tree",
+		       "DEL_EDGE", c->name);
 		return true;
 	}
 
@@ -224,14 +218,14 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	e = lookup_edge(from, to);
 
 	if(!e) {
-		logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) which does not appear in the edge tree",
-		       "DEL_EDGE", c->name, c->hostname);
+		logger(mesh, MESHLINK_WARNING, "Got %s from %s which does not appear in the edge tree",
+		       "DEL_EDGE", c->name);
 		return true;
 	}
 
 	if(e->from == mesh->self) {
-		logger(mesh, MESHLINK_WARNING, "Got %s from %s (%s) for ourself",
-		       "DEL_EDGE", c->name, c->hostname);
+		logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself",
+		       "DEL_EDGE", c->name);
 		mesh->contradicting_del_edge++;
 		send_add_edge(mesh, c, e);    /* Send back a correction */
 		return true;

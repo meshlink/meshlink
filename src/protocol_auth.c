@@ -139,7 +139,7 @@ bool send_id(meshlink_handle_t *mesh, connection_t *c) {
 
 static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data, uint16_t len) {
 	if(strchr(data, '\n')) {
-		logger(mesh, MESHLINK_ERROR, "Received invalid key from invited node %s (%s)!\n", c->name, c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Received invalid key from invited node %s!\n", c->name);
 		return false;
 	}
 
@@ -147,7 +147,7 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 	char filename[PATH_MAX];
 	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, c->name);
 	if(!access(filename, F_OK)) {
-		logger(mesh, MESHLINK_ERROR, "Host config file for %s (%s) already exists!\n", c->name, c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Host config file for %s already exists!\n", c->name);
 		return false;
 	}
 
@@ -160,7 +160,7 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 	fprintf(f, "ECDSAPublicKey = %s\n", (const char *)data);
 	fclose(f);
 
-	logger(mesh, MESHLINK_INFO, "Key succesfully received from %s (%s)", c->name, c->hostname);
+	logger(mesh, MESHLINK_INFO, "Key succesfully received from %s", c->name);
 
 	//TODO: callback to application to inform of an accepted invitation
 
@@ -202,7 +202,7 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	// Atomically rename the invitation file
 	if(rename(filename, usedname)) {
 		if(errno == ENOENT)
-			logger(mesh, MESHLINK_ERROR, "Peer %s tried to use non-existing invitation %s\n", c->hostname, cookie);
+			logger(mesh, MESHLINK_ERROR, "Peer %s tried to use non-existing invitation %s\n", c->name, cookie);
 		else
 			logger(mesh, MESHLINK_ERROR, "Error trying to rename invitation %s\n", cookie);
 		return false;
@@ -250,7 +250,7 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 
 	c->status.invitation_used = true;
 
-	logger(mesh, MESHLINK_INFO, "Invitation %s succesfully sent to %s (%s)", cookie, c->name, c->hostname);
+	logger(mesh, MESHLINK_INFO, "Invitation %s succesfully sent to %s", cookie, c->name);
 	return true;
 }
 
@@ -258,8 +258,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char name[MAX_STRING_SIZE];
 
 	if(sscanf(request, "%*d " MAX_STRING " %d.%d", name, &c->protocol_major, &c->protocol_minor) < 2) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ID", c->name,
-		       c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ID", c->name);
 		return false;
 	}
 
@@ -267,13 +266,13 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(name[0] == '?') {
 		if(!mesh->invitation_key) {
-			logger(mesh, MESHLINK_ERROR, "Got invitation from %s but we don't have an invitation key", c->hostname);
+			logger(mesh, MESHLINK_ERROR, "Got invitation from %s but we don't have an invitation key", c->name);
 			return false;
 		}
 
 		c->ecdsa = ecdsa_set_base64_public_key(name + 1);
 		if(!c->ecdsa) {
-			logger(mesh, MESHLINK_ERROR, "Got bad invitation from %s", c->hostname);
+			logger(mesh, MESHLINK_ERROR, "Got bad invitation from %s", c->name);
 			return false;
 		}
 
@@ -294,8 +293,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	/* Check if identity is a valid name */
 
 	if(!check_id(name)) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ID", c->name,
-		       c->hostname, "invalid name");
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ID", c->name, "invalid name");
 		return false;
 	}
 
@@ -303,8 +301,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(c->outgoing) {
 		if(strcmp(c->name, name)) {
-			logger(mesh, MESHLINK_ERROR, "Peer %s is %s instead of %s", c->hostname, name,
-			       c->name);
+			logger(mesh, MESHLINK_ERROR, "Peer is %s instead of %s", name, c->name);
 			return false;
 		}
 	} else {
@@ -316,8 +313,8 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	/* Check if version matches */
 
 	if(c->protocol_major != mesh->self->connection->protocol_major) {
-		logger(mesh, MESHLINK_ERROR, "Peer %s (%s) uses incompatible version %d.%d",
-		       c->name, c->hostname, c->protocol_major, c->protocol_minor);
+		logger(mesh, MESHLINK_ERROR, "Peer %s uses incompatible version %d.%d",
+		       c->name, c->protocol_major, c->protocol_minor);
 		return false;
 	}
 
@@ -325,7 +322,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		init_configuration(&c->config_tree);
 
 		if(!read_host_config(mesh, c->config_tree, c->name)) {
-			logger(mesh, MESHLINK_ERROR, "Peer %s had unknown identity (%s)", c->hostname, c->name);
+			logger(mesh, MESHLINK_ERROR, "Peer %s has unknown identity", c->name);
 			return false;
 		}
 	}
@@ -333,11 +330,11 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	read_ecdsa_public_key(mesh, c);
 
 	if(!ecdsa_active(c->ecdsa)) {
-		logger(mesh, MESHLINK_ERROR, "No key known for peer %s (%s)", c->name, c->hostname);
+		logger(mesh, MESHLINK_ERROR, "No key known for peer %s", c->name);
 
 		node_t *n = lookup_node(mesh, c->name);
 		if(n && !n->status.waitingforkey) {
-			logger(mesh, MESHLINK_INFO, "Requesting key from peer %s (%s)", c->name, c->hostname);
+			logger(mesh, MESHLINK_INFO, "Requesting key from peer %s", c->name);
 			send_req_key(mesh, n);
 		}
 
@@ -347,8 +344,8 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	/* Forbid version rollback for nodes whose ECDSA key we know */
 
 	if(ecdsa_active(c->ecdsa) && c->protocol_minor < 2) {
-		logger(mesh, MESHLINK_ERROR, "Peer %s (%s) tries to roll back protocol version to %d.%d",
-		       c->name, c->hostname, c->protocol_major, c->protocol_minor);
+		logger(mesh, MESHLINK_ERROR, "Peer %s tries to roll back protocol version to %d.%d",
+		       c->name, c->protocol_major, c->protocol_minor);
 		return false;
 	}
 
@@ -390,14 +387,12 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	node_t *n;
 
 	if(sscanf(request, "%*d " MAX_STRING " %d %x", hisport, &devclass, &options) != 3) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ACK", c->name,
-		       c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ACK", c->name);
 		return false;
 	}
 
 	if(devclass < 0 || devclass > _DEV_CLASS_MAX) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s): %s", "ACK", c->name,
-		       c->hostname, "devclass invalid");
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ACK", c->name, "devclass invalid");
 		return false;
 	}
 
@@ -412,7 +407,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	} else {
 		if(n->connection) {
 			/* Oh dear, we already have a connection to this node. */
-			logger(mesh, MESHLINK_DEBUG, "Established a second connection with %s (%s), closing old connection", n->connection->name, n->connection->hostname);
+			logger(mesh, MESHLINK_DEBUG, "Established a second connection with %s, closing old connection", n->connection->name);
 
 			if(n->connection->outgoing) {
 				if(c->outgoing)
@@ -447,8 +442,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	c->allow_request = ALL;
 	c->status.active = true;
 
-	logger(mesh, MESHLINK_INFO, "Connection with %s (%s) activated", c->name,
-	       c->hostname);
+	logger(mesh, MESHLINK_INFO, "Connection with %s activated", c->name);
 
 	/* Send him everything we know */
 

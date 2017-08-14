@@ -406,9 +406,6 @@ bool setup_myself(meshlink_handle_t *mesh) {
 		return false;
 	}
 
-	xasprintf(&mesh->self->hostname, "MYSELF port %s", mesh->myport);
-	mesh->self->connection->hostname = xstrdup(mesh->self->hostname);
-
 	/* Done. */
 
 	mesh->last_config_check = mesh->loop.now.tv_sec;

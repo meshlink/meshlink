@@ -47,7 +47,7 @@ static const int min(int a, int b) {
   - Check if we need to retry making an outgoing connection
 */
 void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report) {
-	logger(mesh, MESHLINK_INFO, "Closing connection with %s (%s)", c->name, c->hostname);
+	logger(mesh, MESHLINK_INFO, "Closing connection with %s", c->name);
 
 	c->status.active = false;
 
@@ -113,7 +113,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 		if(c->last_ping_time + mesh->pingtimeout <= mesh->loop.now.tv_sec) {
 			if(c->status.active) {
 				if(c->status.pinged)
-					logger(mesh, MESHLINK_INFO, "%s (%s) didn't respond to PING in %ld seconds", c->name, c->hostname, (long)mesh->loop.now.tv_sec - c->last_ping_time);
+					logger(mesh, MESHLINK_INFO, "%s didn't respond to PING in %ld seconds", c->name, (long)mesh->loop.now.tv_sec - c->last_ping_time);
 				else if(c->last_ping_time + mesh->pinginterval <= mesh->loop.now.tv_sec) {
 					send_ping(mesh, c);
 					continue;
@@ -121,9 +121,9 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 					continue;
 			} else {
 				if(c->status.connecting)
-					logger(mesh, MESHLINK_WARNING, "Timeout while connecting to %s (%s)", c->name, c->hostname);
+					logger(mesh, MESHLINK_WARNING, "Timeout while connecting to %s", c->name);
 				else
-					logger(mesh, MESHLINK_WARNING, "Timeout from %s (%s) during authentication", c->name, c->hostname);
+					logger(mesh, MESHLINK_WARNING, "Timeout from %s during authentication", c->name);
 			}
 			terminate_connection(mesh, c, c->status.active);
 		}

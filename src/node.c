@@ -72,7 +72,6 @@ void free_node(node_t *n) {
 	if(n->mtutimeout.cb)
 		abort();
 
-	free(n->hostname);
 	free(n->name);
 
 	utcp_exit(n->utcp);
@@ -124,11 +123,15 @@ void update_node_udp(meshlink_handle_t *mesh, node_t *n, const sockaddr_t *sa) {
 				break;
 			}
 		}
-		hash_insert(mesh->node_udp_cache, sa, n);
-		free(n->hostname);
 
-		n->hostname = sockaddr2hostname(&n->address);
+		hash_insert(mesh->node_udp_cache, sa, n);
+
 		meshlink_hint_address(mesh, (meshlink_node_t *)n, &sa->sa);
-		logger(mesh, MESHLINK_DEBUG, "UDP address of %s set to %s", n->name, n->hostname);
+
+		if(mesh->log_level >= MESHLINK_DEBUG) {
+			char *hostname = sockaddr2hostname(&n->address);
+			logger(mesh, MESHLINK_DEBUG, "UDP address of %s set to %s", n->name, hostname);
+			free(hostname);
+		}
 	}
 }

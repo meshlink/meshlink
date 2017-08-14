@@ -45,13 +45,11 @@ bool status_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char statusstring[MAX_STRING_SIZE];
 
 	if(sscanf(request, "%*d %d " MAX_STRING, &statusno, statusstring) != 2) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "STATUS",
-		       c->name, c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "STATUS", c->name);
 		return false;
 	}
 
-	logger(mesh, MESHLINK_INFO, "Status message from %s (%s): %d: %s",
-	       c->name, c->hostname, statusno, statusstring);
+	logger(mesh, MESHLINK_INFO, "Status message from %s: %d: %s", c->name, statusno, statusstring);
 
 	return true;
 }
@@ -68,13 +66,11 @@ bool error_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char errorstring[MAX_STRING_SIZE];
 
 	if(sscanf(request, "%*d %d " MAX_STRING, &err, errorstring) != 2) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "ERROR",
-		       c->name, c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ERROR", c->name);
 		return false;
 	}
 
-	logger(mesh, MESHLINK_INFO, "Error message from %s (%s): %d: %s",
-	       c->name, c->hostname, err, errorstring);
+	logger(mesh, MESHLINK_INFO, "Error message from %s: %d: %s", c->name, err, errorstring);
 
 	return false;
 }
@@ -138,8 +134,7 @@ bool tcppacket_h(meshlink_handle_t *mesh, connection_t *c, const char *request) 
 	short int len;
 
 	if(sscanf(request, "%*d %hd", &len) != 1) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s (%s)", "PACKET", c->name,
-		       c->hostname);
+		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "PACKET", c->name);
 		return false;
 	}
 

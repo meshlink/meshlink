@@ -32,7 +32,6 @@ void init_connections(meshlink_handle_t *mesh) {
 	mesh->connections = list_alloc((list_action_t) free_connection);
 	mesh->everyone = new_connection();
 	mesh->everyone->name = xstrdup("mesh->everyone");
-	mesh->everyone->hostname = xstrdup("BROADCAST");
 }
 
 void exit_connections(meshlink_handle_t *mesh) {
@@ -66,7 +65,6 @@ void free_connection(connection_t *c) {
 		closesocket(c->socket);
 
 	free(c->name);
-	free(c->hostname);
 
 	if(c->config_tree)
 		exit_configuration(&c->config_tree);
