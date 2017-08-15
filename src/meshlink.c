@@ -2099,67 +2099,6 @@ void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const
 	// @TODO do we want to fire off a connection attempt right away?
 }
 
-/* Return an array of edges in the current network graph.
- * Data captures the current state and will not be updated.
- * Caller must deallocate data when done.
- */
-meshlink_edge_t **meshlink_get_all_edges_state(meshlink_handle_t *mesh, meshlink_edge_t **edges, size_t *nmemb) {
-	if(!mesh || !nmemb || (*nmemb && !edges)) {
-		meshlink_errno = MESHLINK_EINVAL;
-		return NULL;
-	}
-
-	pthread_mutex_lock(&(mesh->mesh_mutex));
-
-	meshlink_edge_t **result = NULL;
-	meshlink_edge_t *copy = NULL;
-	int result_size = 0;
-
-	result_size = mesh->edges->count;
-
-	// if result is smaller than edges, we have to dealloc all the excess meshlink_edge_t
-	if(result_size > *nmemb)
-		result = realloc(edges, result_size * sizeof(meshlink_edge_t *));
-	else
-		result = edges;
-
-	if(result) {
-		meshlink_edge_t **p = result;
-		int n = 0;
-		for splay_each(edge_t, e, mesh->edges) {
-			// skip edges that do not represent a two-directional connection
-			if((!e->reverse) || (e->reverse->to != e->from)) {
-				result_size--;
-				continue;
-			}
-			n++;
-			// the first *nmemb members of result can be re-used
-			if(n > *nmemb)
-				copy = xzalloc(sizeof(*copy));
-			else
-				copy = *p;
-			copy->from = (meshlink_node_t *)e->from;
-			copy->to = (meshlink_node_t *)e->to;
-			copy->address = e->address.storage;
-			copy->options = e->options;
-			copy->weight = e->weight;
-			*p++ = copy;
-		}
-		// shrink result to the actual amount of memory used
-		for(int i = *nmemb; i > result_size; i--)
-			free(result[i - 1]);
-		result = realloc(result, result_size * sizeof(meshlink_edge_t *));
-		*nmemb = result_size;
-	} else {
-		*nmemb = 0;
-		meshlink_errno = MESHLINK_ENOMEM;
-	}
-
-	pthread_mutex_unlock(&(mesh->mesh_mutex));
-
-	return result;
-}
-
 static bool channel_pre_accept(struct utcp *utcp, uint16_t port) {
 	node_t *n = utcp->priv;
 	meshlink_handle_t *mesh = n->mesh;

@@ -1,5 +1,24 @@
+/*
+    devtools.c -- Debugging and quality control functions.
+    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 
 #include "system.h"
+#include <assert.h>
 
 #include "logger.h"
 #include "meshlink_internal.h"
@@ -9,6 +28,67 @@
 #include "xalloc.h"
 
 #include "devtools.h"
+
+/* Return an array of edges in the current network graph.
+ * Data captures the current state and will not be updated.
+ * Caller must deallocate data when done.
+ */
+devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *edges, size_t *nmemb) {
+	if(!mesh || !nmemb || (*nmemb && !edges)) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	pthread_mutex_lock(&(mesh->mesh_mutex));
+
+	devtool_edge_t *result = NULL;
+	int result_size = 0;
+
+	result_size = mesh->edges->count / 2;
+
+	// if result is smaller than edges, we have to dealloc all the excess devtool_edge_t
+	if(result_size > *nmemb)
+		result = realloc(edges, result_size * sizeof(*result));
+	else
+		result = edges;
+
+	if(result) {
+		devtool_edge_t *p = result;
+		int n = 0;
+
+		for splay_each(edge_t, e, mesh->edges) {
+			// skip edges that do not represent a two-directional connection
+			if((!e->reverse) || (e->reverse->to != e->from))
+				continue;
+
+			// don't count edges twice
+			if(e->to < e->from)
+				continue;
+
+			assert(n < result_size);
+
+			p->from = (meshlink_node_t *)e->from;
+			p->to = (meshlink_node_t *)e->to;
+			p->address = e->address.storage;
+			p->options = e->options;
+			p->weight = e->weight;
+
+			n++;
+			p++;
+		}
+
+		// shrink result to the actual amount of memory used
+		result = realloc(result, n * sizeof(*result));
+		*nmemb = n;
+	} else {
+		*nmemb = 0;
+		meshlink_errno = MESHLINK_ENOMEM;
+	}
+
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
+
+	return result;
+}
 
 static bool fstrwrite(const char *str, FILE *stream) {
 	size_t len = strlen(str);
@@ -38,7 +118,7 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) 
 	size_t edge_count = 0;
 
 	meshlink_node_t **nodes = meshlink_get_all_nodes(mesh, NULL, &node_count);
-	meshlink_edge_t **edges = meshlink_get_all_edges_state(mesh, NULL, &edge_count);
+	devtool_edge_t *edges = devtool_get_all_edges(mesh, NULL, &edge_count);
 
 	if((!nodes && node_count != 0) || (!edges && edge_count != 0))
 		goto fail;
@@ -77,17 +157,17 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) 
 		goto fail;
 
 	for(size_t i = 0; i < edge_count; ++i) {
-		if(!fstrwrite("\t\t\"", stream) || !fstrwrite(edges[i]->from->name, stream) || !fstrwrite("_to_", stream) || !fstrwrite(edges[i]->to->name, stream) || !fstrwrite("\": {\n", stream))
+		if(!fstrwrite("\t\t\"", stream) || !fstrwrite(edges[i].from->name, stream) || !fstrwrite("_to_", stream) || !fstrwrite(edges[i].to->name, stream) || !fstrwrite("\": {\n", stream))
 			goto fail;
 
-		if(!fstrwrite("\t\t\t\"from\": \"", stream) || !fstrwrite(edges[i]->from->name, stream) || !fstrwrite("\",\n", stream))
+		if(!fstrwrite("\t\t\t\"from\": \"", stream) || !fstrwrite(edges[i].from->name, stream) || !fstrwrite("\",\n", stream))
 			goto fail;
 
-		if(!fstrwrite("\t\t\t\"to\": \"", stream) || !fstrwrite(edges[i]->to->name, stream) || !fstrwrite("\",\n", stream))
+		if(!fstrwrite("\t\t\t\"to\": \"", stream) || !fstrwrite(edges[i].to->name, stream) || !fstrwrite("\",\n", stream))
 			goto fail;
 
 		char *host = NULL, *port = NULL, *address = NULL;
-		sockaddr2str((const sockaddr_t *) & (edges[i]->address), &host, &port);
+		sockaddr2str((const sockaddr_t *) & (edges[i].address), &host, &port);
 
 		if(host && port)
 			xasprintf(&address, "{ \"host\": \"%s\", \"port\": %s }", host, port);
@@ -102,10 +182,10 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) 
 
 		free(address);
 
-		if(!fstrwrite("\t\t\t\"options\": ", stream) || !fstrwrite(__itoa(edges[i]->options), stream) || !fstrwrite(",\n", stream))
+		if(!fstrwrite("\t\t\t\"options\": ", stream) || !fstrwrite(__itoa(edges[i].options), stream) || !fstrwrite(",\n", stream))
 			goto fail;
 
-		if(!fstrwrite("\t\t\t\"weight\": ", stream) || !fstrwrite(__itoa(edges[i]->weight), stream) || !fstrwrite("\n", stream))
+		if(!fstrwrite("\t\t\t\"weight\": ", stream) || !fstrwrite(__itoa(edges[i].weight), stream) || !fstrwrite("\n", stream))
 			goto fail;
 
 		if(!fstrwrite((i + 1) != edge_count ? "\t\t},\n" : "\t\t}\n", stream))
@@ -126,15 +206,8 @@ fail:
 	result = false;
 
 done:
-
-	if(nodes)
-		free(nodes);
-
-	for(size_t i = 0; edges && i < edge_count; ++i)
-		free(edges[i]);
-
-	if(nodes)
-		free(edges);
+	free(nodes);
+	free(edges);
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 
