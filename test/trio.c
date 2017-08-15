@@ -8,6 +8,7 @@
 #include <sys/time.h>
 
 #include "meshlink.h"
+#include "devtools.h"
 #include "utils.h"
 
 static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
@@ -76,10 +77,16 @@ int main(int argc, char *argv[]) {
 	assert_after(meshlink_get_node(mesh[1], name[2]), 5);
 	assert_after(meshlink_get_node(mesh[2], name[1]), 5);
 
-	// Send a packet
+	// Send a packet, expect it is received
 
 	meshlink_set_receive_cb(mesh[1], receive_cb);
 	assert_after((meshlink_send(mesh[2], meshlink_get_node(mesh[2], name[1]), "Hello", 5), received), 15);
+
+	// Check that the second and third node have autoconnected to each other
+
+	devtool_edge_t *edges = NULL;
+	size_t nedges = 0;
+	assert_after((edges = devtool_get_all_edges(mesh[1], edges, &nedges), nedges == 3), 15);
 
 	// Stop the first node
 
