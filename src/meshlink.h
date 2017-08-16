@@ -93,18 +93,18 @@ extern __thread meshlink_errno_t meshlink_errno;
 #ifndef MESHLINK_INTERNAL_H
 
 struct meshlink_handle {
-	char *name;       ///< Textual name of ourself. It is stored in a nul-terminated C string, which is allocated by MeshLink.
-	void *priv;       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
+	const char *const name; ///< Textual name of ourself. It is stored in a nul-terminated C string, which is allocated by MeshLink.
+	void *priv;             ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
 struct meshlink_node {
-	char *name;       ///< Textual name of this node. It is stored in a nul-terminated C string, which is allocated by MeshLink.
-	void *priv;       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
+	const char *const name; ///< Textual name of this node. It is stored in a nul-terminated C string, which is allocated by MeshLink.
+	void *priv;             ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
 struct meshlink_channel {
-	struct meshlink_node *node; ///< Pointer to the peer of this channel.
-	void *priv;                 ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
+	struct meshlink_node *const node; ///< Pointer to the peer of this channel.
+	void *priv;                       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
 #endif // MESHLINK_INTERNAL_H
