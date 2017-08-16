@@ -266,6 +266,8 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 		return false;
 	}
 
+	bool success = false;
+
 	for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
 		// Ignore duplicate addresses
 		bool found = false;
@@ -308,10 +310,11 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 		mesh->listen_socket[mesh->listen_sockets].bindto = bindto;
 		memcpy(&mesh->listen_socket[mesh->listen_sockets].sa, aip->ai_addr, aip->ai_addrlen);
 		mesh->listen_sockets++;
+		success = true;
 	}
 
 	freeaddrinfo(ai);
-	return true;
+	return success;
 }
 
 /*
@@ -389,8 +392,8 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	mesh->listen_sockets = 0;
 
 	if(!add_listen_address(mesh, address, NULL)) {
-		if(!strcmp(mesh->myport, "0")) {
-			logger(mesh, MESHLINK_WARNING, "Could not bind to port %s, asking OS to choose one for us", mesh->myport);
+		if(strcmp(mesh->myport, "0")) {
+			logger(mesh, MESHLINK_INFO, "Could not bind to port %s, asking OS to choose one for us", mesh->myport);
 			free(mesh->myport);
 			mesh->myport = strdup("0");
 			if(!mesh->myport)
