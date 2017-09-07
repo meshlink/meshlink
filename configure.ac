@@ -83,6 +83,15 @@ AS_IF([test "x$enable_utcp_debug" = "xyes"],
   ]
 );
 
+dnl Install test binaries
+AC_ARG_ENABLE([install_tests],
+  [AS_HELP_STRING([--enable-install-tests], [include test binaries in installation])],
+  [AS_IF([test "x$enable_install_tests" = "xyes"], [install_tests=true], [install_tests=false])],
+  [install_tests=false]
+)
+
+AM_CONDITIONAL(INSTALL_TESTS, test "$install_tests" = true)
+
 dnl Checks for header files.
 dnl We do this in multiple stages, because unlike Linux all the other operating systems really suck and don't include their own dependencies.
 

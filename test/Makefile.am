@@ -25,6 +25,10 @@ check_PROGRAMS = \
 	sign-verify \
 	echo-fork
 
+if INSTALL_TESTS
+bin_PROGRAMS = $(check_PROGRAMS)
+endif
+
 basic_SOURCES = basic.c
 basic_LDADD = ../src/libmeshlink.la
 
