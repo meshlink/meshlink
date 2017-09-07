@@ -1,5 +1,0 @@
-
-cd catta
-autoreconf
-./configure CFLAGS=-fPIC
-make

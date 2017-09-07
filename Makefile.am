@@ -2,11 +2,11 @@
 
 AUTOMAKE_OPTIONS = gnu
 
-SUBDIRS =  m4 src doc test examples
+SUBDIRS =  m4 catta src doc test examples
 
 ACLOCAL_AMFLAGS = -I m4 
 
-EXTRA_DIST = COPYING.README README.android
+EXTRA_DIST = README.android
 
 ChangeLog:
 	git log > ChangeLog
