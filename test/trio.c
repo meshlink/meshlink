@@ -15,13 +15,17 @@ static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const ch
 	static struct timeval tv0;
 	struct timeval tv;
 
-	if(tv0.tv_sec == 0)
+	if(tv0.tv_sec == 0) {
 		gettimeofday(&tv0, NULL);
+	}
+
 	gettimeofday(&tv, NULL);
 	fprintf(stderr, "%u.%.03u ", (unsigned int)(tv.tv_sec - tv0.tv_sec), (unsigned int)tv.tv_usec / 1000);
 
-	if(mesh)
+	if(mesh) {
 		fprintf(stderr, "(%s) ", mesh->name);
+	}
+
 	fprintf(stderr, "[%d] %s\n", level, text);
 }
 
@@ -29,8 +33,10 @@ static bool received = false;
 
 static void receive_cb(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
 	fprintf(stderr, "RECEIVED SOMETHING\n");
-	if(len == 5 && !memcmp(data, "Hello", 5))
+
+	if(len == 5 && !memcmp(data, "Hello", 5)) {
 		received = true;
+	}
 }
 
 int main(int argc, char *argv[]) {
@@ -69,8 +75,9 @@ int main(int argc, char *argv[]) {
 
 	// start the nodes
 
-	for(int i = 0; i < 3; i++)
+	for(int i = 0; i < 3; i++) {
 		meshlink_start(mesh[i]);
+	}
 
 	// the nodes should now learn about each other
 
@@ -99,8 +106,9 @@ int main(int argc, char *argv[]) {
 
 	// Stop the other nodes
 
-	for(int i = 1; i < 3; i++)
+	for(int i = 1; i < 3; i++) {
 		meshlink_stop(mesh[i]);
+	}
 
 	sleep(1);
 
@@ -108,8 +116,9 @@ int main(int argc, char *argv[]) {
 
 	meshlink_set_log_cb(mesh[1], MESHLINK_DEBUG, log_cb);
 
-	for(int i = 1; i < 3; i++)
+	for(int i = 1; i < 3; i++) {
 		meshlink_start(mesh[i]);
+	}
 
 	assert(meshlink_get_node(mesh[1], name[2]));
 	assert(meshlink_get_node(mesh[2], name[1]));
@@ -121,6 +130,7 @@ int main(int argc, char *argv[]) {
 
 	// Clean up.
 
-	for(int i = 0; i < 3; i++)
+	for(int i = 0; i < 3; i++) {
 		meshlink_close(mesh[i]);
+	}
 }

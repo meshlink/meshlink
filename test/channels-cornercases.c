@@ -19,27 +19,33 @@ void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *tex
 	static struct timeval tv0;
 	struct timeval tv;
 
-	if(tv0.tv_sec == 0)
+	if(tv0.tv_sec == 0) {
 		gettimeofday(&tv0, NULL);
+	}
+
 	gettimeofday(&tv, NULL);
 	fprintf(stderr, "%u.%.03u ", (unsigned int)(tv.tv_sec - tv0.tv_sec), (unsigned int)tv.tv_usec / 1000);
 
-	if(mesh)
+	if(mesh) {
 		fprintf(stderr, "(%s) ", mesh->name);
+	}
+
 	fprintf(stderr, "[%d] %s\n", level, text);
 }
 
 void a_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	if(len == 5 && !memcmp(data, "Hello", 5))
+	if(len == 5 && !memcmp(data, "Hello", 5)) {
 		b_responded = true;
-	else if(len == 0)
+	} else if(len == 0) {
 		b_closed = true;
+	}
 }
 
 void b_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	// Send one message back, then close the channel.
-	if(len)
+	if(len) {
 		meshlink_channel_send(mesh, channel, data, len);
+	}
 
 	meshlink_channel_close(mesh, channel);
 }
@@ -51,8 +57,11 @@ bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	meshlink_set_channel_accept_cb(mesh, NULL);
 	meshlink_set_channel_receive_cb(mesh, channel, b_receive_cb);
-	if(data)
+
+	if(data) {
 		b_receive_cb(mesh, channel, data, len);
+	}
+
 	return true;
 }
 
@@ -62,8 +71,9 @@ void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
 }
 
 void poll_cb2(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
-	if(len)
+	if(len) {
 		a_nonzero_poll_cb = true;
+	}
 }
 
 int main(int argc, char *argv[]) {
@@ -132,7 +142,7 @@ int main(int argc, char *argv[]) {
 	assert(b_closed);
 
 	// Try to create a second channel
-	
+
 	meshlink_channel_t *channel2 = meshlink_channel_open(a, nb, 7, a_receive_cb, NULL, 0);
 	assert(channel2);
 	meshlink_set_channel_poll_cb(a, channel2, poll_cb2);

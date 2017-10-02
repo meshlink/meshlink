@@ -12,4 +12,4 @@ ChangeLog:
 	git log > ChangeLog
 
 astyle:
-	astyle --options=.astylerc -nQ src/*.[ch] src/ed25519/e*.[ch]
+	astyle --options=.astylerc -nQ src/*.[ch] src/ed25519/e*.[ch] examples/*.[ch] examples/*.cc test/*.[ch]

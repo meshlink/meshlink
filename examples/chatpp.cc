@@ -23,10 +23,11 @@ public:
 	}
 
 	void node_status(meshlink::node *node, bool reachable) {
-		if(reachable)
+		if(reachable) {
 			printf("%s joined.\n", node->name);
-		else
+		} else {
 			printf("%s left.\n", node->name);
+		}
 	}
 };
 
@@ -35,8 +36,10 @@ static size_t nnodes;
 
 static void parse_command(meshlink::mesh *mesh, char *buf) {
 	char *arg = strchr(buf, ' ');
-	if(arg)
+
+	if(arg) {
 		*arg++ = 0;
+	}
 
 	if(!strcasecmp(buf, "invite")) {
 		char *invitation;
@@ -47,6 +50,7 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 		}
 
 		invitation = mesh->invite(arg);
+
 		if(!invitation) {
 			fprintf(stderr, "Could not invite '%s': %s\n", arg, meshlink::strerror());
 			return;
@@ -62,10 +66,11 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 
 		mesh->stop();
 
-		if(!mesh->join(arg))
+		if(!mesh->join(arg)) {
 			fprintf(stderr, "Could not join using invitation: %s\n", meshlink::strerror());
-		else
+		} else {
 			fprintf(stderr, "Invitation accepted!\n");
+		}
 
 		if(!mesh->start()) {
 			fprintf(stderr, "Could not restart MeshLink: %s\n", meshlink::strerror());
@@ -78,6 +83,7 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 		}
 
 		meshlink::node *node = mesh->get_node(arg);
+
 		if(!node) {
 			fprintf(stderr, "Error looking up '%s': %s\n", arg, meshlink::strerror());
 			return;
@@ -89,20 +95,26 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 	} else if(!strcasecmp(buf, "who")) {
 		if(!arg) {
 			nodes = mesh->get_all_nodes(nodes, &nnodes);
-			if(!nodes)
+
+			if(!nodes) {
 				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink::strerror());
-			else {
+			} else {
 				printf("%zu known nodes:", nnodes);
-				for(size_t i = 0; i < nnodes; i++)
+
+				for(size_t i = 0; i < nnodes; i++) {
 					printf(" %s", nodes[i]->name);
+				}
+
 				printf("\n");
 			}
 		} else {
 			meshlink::node *node = mesh->get_node(arg);
-			if(!node)
+
+			if(!node) {
 				fprintf(stderr, "Error looking up '%s': %s\n", arg, meshlink::strerror());
-			else
+			} else {
 				printf("Node %s found\n", arg);
+			}
 		}
 	} else if(!strcasecmp(buf, "quit")) {
 		printf("Bye!\n");
@@ -117,36 +129,42 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 		        "/who [<name>]         List all nodes or show information about the given node.\n"
 		        "/quit                 Exit this program.\n"
 		);
-	} else
+	} else {
 		fprintf(stderr, "Unknown command '/%s'\n", buf);
+	}
 }
 
 static void parse_input(meshlink::mesh *mesh, char *buf) {
 	static meshlink::node *destination;
 	size_t len;
 
-	if(!buf)
+	if(!buf) {
 		return;
+	}
 
 	// Remove newline.
 
 	len = strlen(buf);
 
-	if(len && buf[len - 1] == '\n')
+	if(len && buf[len - 1] == '\n') {
 		buf[--len] = 0;
+	}
 
-	if(len && buf[len - 1] == '\r')
+	if(len && buf[len - 1] == '\r') {
 		buf[--len] = 0;
+	}
 
 	// Ignore empty lines.
 
-	if(!len)
+	if(!len) {
 		return;
+	}
 
 	// Commands start with '/'
 
-	if(*buf == '/')
+	if(*buf == '/') {
 		return parse_command(mesh, buf + 1);
+	}
 
 	// Lines in the form "name: message..." set the destination node.
 
@@ -156,10 +174,13 @@ static void parse_input(meshlink::mesh *mesh, char *buf) {
 	if(colon) {
 		*colon = 0;
 		msg = colon + 1;
-		if(*msg == ' ')
+
+		if(*msg == ' ') {
 			msg++;
+		}
 
 		destination = mesh->get_node(buf);
+
 		if(!destination) {
 			fprintf(stderr, "Error looking up '%s': %s\n", buf, meshlink::strerror());
 			return;
@@ -185,11 +206,13 @@ int main(int argc, char *argv[]) {
 	const char *nick = NULL;
 	char buf[1024];
 
-	if(argc > 1)
+	if(argc > 1) {
 		confbase = argv[1];
+	}
 
-	if(argc > 2)
+	if(argc > 2) {
 		nick = argv[2];
+	}
 
 	ChatMesh mesh;
 	mesh.open(confbase, nick, "chatpp", DEV_CLASS_STATIONARY);
@@ -206,8 +229,9 @@ int main(int argc, char *argv[]) {
 
 	printf("Chat started.\nType /help for a list of commands.\n");
 
-	while(fgets(buf, sizeof(buf), stdin))
+	while(fgets(buf, sizeof(buf), stdin)) {
 		parse_input(&mesh, buf);
+	}
 
 	printf("Chat stopping.\n");
 

@@ -25,6 +25,7 @@ int main(int argc, char **argv) {
 		sleep(10);
 
 		meshlink_node_t *remotenode = meshlink_get_node(myhandle, remotename);
+
 		if(!remotenode) {
 			fprintf(stderr, "Node %s not known yet.\n", remotename);
 			continue;

@@ -8,20 +8,23 @@
 volatile bool baz_reachable = false;
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
-	if(!strcmp(node->name, "baz"))
+	if(!strcmp(node->name, "baz")) {
 		baz_reachable = reachable;
+	}
 }
 
 int main(int argc, char *argv[]) {
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("invite_join_conf.1", "foo", "invite-join", DEV_CLASS_BACKBONE);
+
 	if(!mesh1) {
 		fprintf(stderr, "Could not initialize configuration for foo\n");
 		return 1;
 	}
 
 	meshlink_handle_t *mesh2 = meshlink_open("invite_join_conf.2", "bar", "invite-join", DEV_CLASS_BACKBONE);
+
 	if(!mesh2) {
 		fprintf(stderr, "Could not initialize configuration for bar\n");
 		return 1;
@@ -43,6 +46,7 @@ int main(int argc, char *argv[]) {
 
 	meshlink_add_address(mesh1, "localhost");
 	char *url = meshlink_invite(mesh1, "baz");
+
 	if(!url) {
 		fprintf(stderr, "Foo could not generate an invitation for baz\n");
 		return 1;
@@ -66,8 +70,10 @@ int main(int argc, char *argv[]) {
 
 	for(int i = 0; i < 60; i++) {
 		sleep(1);
-		if(baz_reachable)
+
+		if(baz_reachable) {
 			break;
+		}
 	}
 
 	if(!baz_reachable) {
@@ -76,6 +82,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	int pmtu = meshlink_get_pmtu(mesh1, meshlink_get_node(mesh1, "baz"));
+
 	for(int i = 0; i < 10 && !pmtu; i++) {
 		sleep(1);
 		pmtu = meshlink_get_pmtu(mesh1, meshlink_get_node(mesh1, "baz"));

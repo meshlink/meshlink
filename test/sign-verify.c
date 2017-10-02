@@ -9,12 +9,14 @@ int main(int argc, char *argv[]) {
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("sign_verify_conf.1", "foo", "sign-verify", DEV_CLASS_BACKBONE);
+
 	if(!mesh1) {
 		fprintf(stderr, "Could not initialize configuration for foo\n");
 		return 1;
 	}
 
 	meshlink_handle_t *mesh2 = meshlink_open("sign_verify_conf.2", "bar", "sign-verify", DEV_CLASS_BACKBONE);
+
 	if(!mesh2) {
 		fprintf(stderr, "Could not initialize configuration for bar\n");
 		return 1;
@@ -55,18 +57,21 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Signing failed\n");
 		return 1;
 	}
+
 	if(siglen != MESHLINK_SIGLEN) {
 		fprintf(stderr, "Signature has unexpected length %zu != %zu\n", siglen, MESHLINK_SIGLEN);
 		return 1;
 	}
 
 	meshlink_node_t *foo = meshlink_get_node(mesh2, "foo");
+
 	if(!foo) {
 		fprintf(stderr, "Bar did not know about node foo\n");
 		return 1;
 	}
 
 	meshlink_node_t *bar = meshlink_get_node(mesh2, "bar");
+
 	if(!bar) {
 		fprintf(stderr, "Bar did not know about node bar\n");
 		return 1;
@@ -83,14 +88,17 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "False positive verification with half sized signature\n");
 		return 1;
 	}
+
 	if(meshlink_verify(mesh2, foo, testdata1, sizeof(testdata1), sig, siglen * 2)) {
 		fprintf(stderr, "False positive verification with double sized signature\n");
 		return 1;
 	}
+
 	if(meshlink_verify(mesh2, foo, testdata2, sizeof(testdata2), sig, siglen)) {
 		fprintf(stderr, "False positive verification with wrong data\n");
 		return 1;
 	}
+
 	if(meshlink_verify(mesh2, bar, testdata1, sizeof(testdata1), sig, siglen)) {
 		fprintf(stderr, "False positive verification with wrong signer\n");
 		return 1;

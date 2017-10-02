@@ -21,8 +21,9 @@ bool wait_sync_flag(struct sync_flag *s, int seconds) {
 	timeout.tv_sec += seconds;
 
 	while(!s->flag)
-		if(!pthread_cond_timedwait(&s->cond, &s->mutex, &timeout) || errno != EINTR)
+		if(!pthread_cond_timedwait(&s->cond, &s->mutex, &timeout) || errno != EINTR) {
 			break;
+		}
 
 	return s->flag;
 }

@@ -16,17 +16,20 @@ volatile bool foo_closed = false;
 int debug_level;
 
 void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
-	if(mesh)
+	if(mesh) {
 		fprintf(stderr, "(%s) ", mesh->name);
+	}
+
 	fprintf(stderr, "[%d] %s\n", level, text);
 }
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
-	if(!strcmp(node->name, "bar"))
+	if(!strcmp(node->name, "bar")) {
 		bar_reachable = reachable;
-	else if(!strcmp(node->name, "foo"))
-		if(!reachable)
+	} else if(!strcmp(node->name, "foo"))
+		if(!reachable) {
 			foo_closed = true;
+		}
 }
 
 void foo_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
@@ -39,6 +42,7 @@ void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const 
 		foo_closed = true;
 		return;
 	}
+
 	// Write data to stdout.
 	write(1, data, len);
 }
@@ -48,11 +52,16 @@ bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 }
 
 bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	if(port != 7)
+	if(port != 7) {
 		return false;
+	}
+
 	meshlink_set_channel_receive_cb(mesh, channel, bar_receive_cb);
-	if(data)
+
+	if(data) {
 		bar_receive_cb(mesh, channel, data, len);
+	}
+
 	return true;
 }
 
@@ -67,6 +76,7 @@ int main1(void) {
 	meshlink_set_log_cb(NULL, debug_level, log_cb);
 
 	meshlink_handle_t *mesh1 = meshlink_open("echo-fork_conf.1", "foo", "echo-fork", DEV_CLASS_BACKBONE);
+
 	if(!mesh1) {
 		fprintf(stderr, "Could not initialize configuration for foo\n");
 		return 1;
@@ -83,8 +93,10 @@ int main1(void) {
 
 	for(int i = 0; i < 20; i++) {
 		sleep(1);
-		if(bar_reachable)
+
+		if(bar_reachable) {
 			break;
+		}
 	}
 
 	if(!bar_reachable) {
@@ -95,6 +107,7 @@ int main1(void) {
 	// Open a channel from foo to bar.
 
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
+
 	if(!bar) {
 		fprintf(stderr, "Foo could not find bar\n");
 		return 1;
@@ -109,8 +122,10 @@ int main1(void) {
 
 	for(int i = 0; i < 5; i++) {
 		sleep(1);
-		if(bar_responded)
+
+		if(bar_responded) {
 			break;
+		}
 	}
 
 	if(!bar_responded) {
@@ -121,18 +136,24 @@ int main1(void) {
 	do {
 		//fprintf(stderr, ":");
 		ssize_t len = read(0, buffer, BUF_SIZE);
-		if(len <= 0)
+
+		if(len <= 0) {
 			break;
+		}
+
 		char *p = buffer;
+
 		while(len > 0) {
 			ssize_t sent = meshlink_channel_send(mesh1, channel, p, len);
+
 			if(sent < 0) {
 				fprintf(stderr, "Sending message failed\n");
 				return 1;
 			}
-			if(!sent)
+
+			if(!sent) {
 				usleep(100000);
-			else {
+			} else {
 				len -= sent;
 				p += sent;
 			}
@@ -160,6 +181,7 @@ int main2(void) {
 	meshlink_set_log_cb(NULL, debug_level, log_cb);
 
 	meshlink_handle_t *mesh2 = meshlink_open("echo-fork_conf.2", "bar", "echo-fork", DEV_CLASS_BACKBONE);
+
 	if(!mesh2) {
 		fprintf(stderr, "Could not initialize configuration for bar\n");
 		return 1;
@@ -174,8 +196,9 @@ int main2(void) {
 		return 1;
 	}
 
-	while(!foo_closed)
+	while(!foo_closed) {
 		sleep(1);
+	}
 
 	// Clean up.
 
@@ -198,8 +221,9 @@ int main(int argc, char *argv[]) {
 	meshlink_close(foo);
 	meshlink_close(bar);
 
-	if(fork())
+	if(fork()) {
 		return main1();
-	else
+	} else {
 		return main2();
+	}
 }

@@ -8,20 +8,23 @@
 volatile bool bar_reachable = false;
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
-	if(!strcmp(node->name, "bar"))
+	if(!strcmp(node->name, "bar")) {
 		bar_reachable = reachable;
+	}
 }
 
 int main(int argc, char *argv[]) {
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("import_export_conf.1", "foo", "import-export", DEV_CLASS_BACKBONE);
+
 	if(!mesh1) {
 		fprintf(stderr, "Could not initialize configuration for foo\n");
 		return 1;
 	}
 
 	meshlink_handle_t *mesh2 = meshlink_open("import_export_conf.2", "bar", "import-export", DEV_CLASS_BACKBONE);
+
 	if(!mesh2) {
 		fprintf(stderr, "Could not initialize configuration for bar\n");
 		return 1;
@@ -38,6 +41,7 @@ int main(int argc, char *argv[]) {
 	meshlink_add_address(mesh2, "localhost");
 
 	char *data = meshlink_export(mesh1);
+
 	if(!data) {
 		fprintf(stderr, "Foo could not export its configuration\n");
 		return 1;
@@ -51,6 +55,7 @@ int main(int argc, char *argv[]) {
 	free(data);
 
 	data = meshlink_export(mesh2);
+
 	if(!data) {
 		fprintf(stderr, "Bar could not export its configuration\n");
 		return 1;
@@ -82,8 +87,10 @@ int main(int argc, char *argv[]) {
 
 	for(int i = 0; i < 20; i++) {
 		sleep(1);
-		if(bar_reachable)
+
+		if(bar_reachable) {
 			break;
+		}
 	}
 
 	if(!bar_reachable) {
@@ -92,6 +99,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	int pmtu = meshlink_get_pmtu(mesh2, meshlink_get_node(mesh2, "bar"));
+
 	for(int i = 0; i < 10 && !pmtu; i++) {
 		sleep(1);
 		pmtu = meshlink_get_pmtu(mesh2, meshlink_get_node(mesh2, "bar"));
