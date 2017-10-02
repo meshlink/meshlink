@@ -1,6 +1,6 @@
 /*
     sptps.c -- Simple Peer-to-Peer Security
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -50,9 +50,15 @@ unsigned int sptps_replaywin = 32;
 */
 
 void sptps_log_quiet(sptps_t *s, int s_errno, const char *format, va_list ap) {
+	(void)s;
+	(void)s_errno;
+	(void)format;
+	(void)ap;
 }
 
 void sptps_log_stderr(sptps_t *s, int s_errno, const char *format, va_list ap) {
+	(void)s;
+	(void)s_errno;
 	vfprintf(stderr, format, ap);
 	fputc('\n', stderr);
 }
@@ -227,6 +233,7 @@ static bool send_ack(sptps_t *s) {
 
 // Receive an ACKnowledgement record.
 static bool receive_ack(sptps_t *s, const char *data, uint16_t len) {
+	(void)data;
 	if(len)
 		return error(s, EIO, "Invalid ACK record length");
 
@@ -335,6 +342,7 @@ static bool receive_handshake(sptps_t *s, const char *data, uint16_t len) {
 		// We receive a secondary KEX request, first respond by sending our own.
 		if(!send_kex(s))
 			return false;
+		// fallthrough
 	case SPTPS_KEX:
 		// We have sent our KEX request, we expect our peer to sent one as well.
 		if(!receive_kex(s, data, len))
@@ -439,7 +447,7 @@ static bool sptps_receive_data_datagram(sptps_t *s, const void *vdata, size_t le
 					return error(s, EIO, "Received late or replayed packet, seqno %d, last received %d\n", seqno, s->inseqno);
 			} else {
 				// We missed some packets. Mark them in the bitmap as being late.
-				for(int i = s->inseqno; i < seqno; i++)
+				for(uint32_t i = s->inseqno; i < seqno; i++)
 					s->late[(i / 8) % s->replaywin] |= 1 << i % 8;
 			}
 		}

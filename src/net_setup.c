@@ -1,6 +1,6 @@
 /*
     net_setup.c -- Setup.
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -136,7 +136,7 @@ bool node_read_devclass(meshlink_handle_t *mesh, node_t *n) {
 		free(p);
 	}
 
-	if(n->devclass < 0 || n->devclass > _DEV_CLASS_MAX)
+	if((int)n->devclass < 0 || n->devclass > _DEV_CLASS_MAX)
 		n->devclass = _DEV_CLASS_MAX;
 
 exit:
@@ -146,7 +146,7 @@ exit:
 
 bool node_write_devclass(meshlink_handle_t *mesh, node_t *n) {
 
-	if(n->devclass < 0 || n->devclass > _DEV_CLASS_MAX)
+	if((int)n->devclass < 0 || n->devclass > _DEV_CLASS_MAX)
 		return false;
 
 	bool result = false;
@@ -252,7 +252,7 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 			*address = 0;
 	}
 
-	struct addrinfo *ai, hint = {0};
+	struct addrinfo *ai, hint = {};
 	hint.ai_family = addressfamily;
 	hint.ai_socktype = SOCK_STREAM;
 	hint.ai_protocol = IPPROTO_TCP;

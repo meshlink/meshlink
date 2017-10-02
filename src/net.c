@@ -1,6 +1,6 @@
 /*
     net.c -- most of the network code
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@
 #include <assert.h>
 
 #if !defined(min)
-static const int min(int a, int b) {
+static inline int min(int a, int b) {
 	return a < b ? a : b;
 }
 #endif
@@ -344,7 +344,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		// get cur_connects
 
-		int cur_connects = 0;
+		unsigned int cur_connects = 0;
 
 		for list_each(connection_t, c, mesh->connections) {
 			if(c->status.active)
@@ -358,8 +358,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		assert(mesh->devclass >= 0 && mesh->devclass <= _DEV_CLASS_MAX);
 
-		int min_connects = dev_class_traits[mesh->devclass].min_connects;
-		int max_connects = dev_class_traits[mesh->devclass].max_connects;
+		unsigned int min_connects = dev_class_traits[mesh->devclass].min_connects;
+		unsigned int max_connects = dev_class_traits[mesh->devclass].max_connects;
 
 		logger(mesh, MESHLINK_DEBUG, "* min_connects = %d", min_connects);
 		logger(mesh, MESHLINK_DEBUG, "* max_connects = %d", max_connects);
@@ -393,7 +393,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		if(!connect_to && min_connects <= cur_connects && cur_connects < max_connects) {
 			unsigned int connects = 0;
 
-			for(int devclass = 0; devclass <= mesh->devclass; ++devclass) {
+			for(unsigned int devclass = 0; devclass <= mesh->devclass; ++devclass) {
 				for list_each(connection_t, c, mesh->connections) {
 					if(c->status.active && c->node && c->node->devclass == devclass)
 						connects += 1;
@@ -476,7 +476,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		if(min_connects < cur_connects /*&& cur_connects <= max_connects*/) {
 			unsigned int connects = 0;
 
-			for(int devclass = 0; devclass <= mesh->devclass; ++devclass) {
+			for(unsigned int devclass = 0; devclass <= mesh->devclass; ++devclass) {
 				for list_each(connection_t, c, mesh->connections) {
 					if(c->status.active && c->node && c->node->devclass == devclass)
 						connects += 1;

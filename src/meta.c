@@ -1,6 +1,6 @@
 /*
     meta.c -- handle the meta communication
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>,
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>,
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include "xalloc.h"
 
 bool send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t length) {
+	(void)type;
 	connection_t *c = handle;
 	meshlink_handle_t *mesh = c->mesh;
 
@@ -89,11 +90,7 @@ bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t l
 	/* Are we receiving a TCPpacket? */
 
 	if(c->tcplen) {
-		if(length != c->tcplen)
-			return false;
-		receive_tcppacket(mesh, c, request, length);
-		c->tcplen = 0;
-		return true;
+		abort(); // TODO: get rid of tcplen altogether
 	}
 
 	/* Change newline to null byte, just like non-SPTPS requests */

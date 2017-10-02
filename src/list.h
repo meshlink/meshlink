@@ -35,7 +35,7 @@ typedef void (*list_action_node_t)(const list_node_t *);
 typedef struct list_t {
 	list_node_t *head;
 	list_node_t *tail;
-	int count;
+	unsigned int count;
 
 	/* Callbacks */
 

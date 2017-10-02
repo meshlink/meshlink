@@ -1,6 +1,6 @@
 /*
     splay_tree.c -- splay tree and linked list convenience
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 /* Splay operation */
 
 static splay_node_t *splay_top_down(splay_tree_t *tree, const void *data, int *result) {
-	splay_node_t left = {NULL}, right = {NULL};
+	splay_node_t left = {}, right = {};
 	splay_node_t *leftbottom = &left, *rightbottom = &right, *child, *grandchild;
 	splay_node_t *root = tree->root;
 	int c;

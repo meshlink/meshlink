@@ -83,17 +83,12 @@ extern bool seen_request(struct meshlink_handle *mesh, const char *);
 
 extern bool send_id(struct meshlink_handle *mesh, struct connection_t *);
 extern bool send_ack(struct meshlink_handle *mesh, struct connection_t *);
-extern bool send_status(struct meshlink_handle *mesh, struct connection_t *, int, const char *);
-extern bool send_error(struct meshlink_handle *mesh, struct connection_t *, int, const  char *);
-extern bool send_termreq(struct meshlink_handle *mesh, struct connection_t *);
 extern bool send_ping(struct meshlink_handle *mesh, struct connection_t *);
 extern bool send_pong(struct meshlink_handle *mesh, struct connection_t *);
 extern bool send_add_edge(struct meshlink_handle *mesh, struct connection_t *, const struct edge_t *);
 extern bool send_del_edge(struct meshlink_handle *mesh, struct connection_t *, const struct edge_t *);
 extern void send_key_changed(struct meshlink_handle *mesh);
 extern bool send_req_key(struct meshlink_handle *mesh, struct node_t *);
-extern bool send_ans_key(struct meshlink_handle *mesh, struct node_t *);
-extern bool send_tcppacket(struct meshlink_handle *mesh, struct connection_t *, const struct vpn_packet_t *);
 
 /* Request handlers  */
 

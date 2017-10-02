@@ -310,7 +310,7 @@ static char *get_line(const char **data) {
 
 	static char line[1024];
 	const char *end = strchr(*data, '\n');
-	size_t len = end ? end - *data : strlen(*data);
+	size_t len = end ? (size_t)(end - *data) : strlen(*data);
 	if(len >= sizeof(line)) {
 		logger(NULL, MESHLINK_ERROR, "Maximum line length exceeded!\n");
 		return NULL;
@@ -553,6 +553,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 }
 
 static bool invitation_send(void *handle, uint8_t type, const void *data, size_t len) {
+	(void)type;
 	meshlink_handle_t *mesh = handle;
 	while(len) {
 		int result = send(mesh->sock, data, len, 0);
@@ -611,7 +612,7 @@ static bool recvline(meshlink_handle_t *mesh, size_t len) {
 		mesh->blen += result;
 	}
 
-	if(newline - mesh->buffer >= len)
+	if((size_t)(newline - mesh->buffer) >= len)
 		return false;
 
 	len = newline - mesh->buffer;
@@ -633,7 +634,7 @@ static bool sendline(int fd, char *format, ...) {
 	blen = vsnprintf(buffer, sizeof(buffer), format, ap);
 	va_end(ap);
 
-	if(blen < 1 || blen >= sizeof(buffer))
+	if(blen < 1 || (size_t)blen >= sizeof(buffer))
 		return false;
 
 	buffer[blen] = '\n';
@@ -666,7 +667,7 @@ static const char *errstr[] = {
 };
 
 const char *meshlink_strerror(meshlink_errno_t err) {
-	if(err < 0 || err >= sizeof(errstr) / sizeof(*errstr))
+	if((int)err < 0 || err >= sizeof(errstr) / sizeof(*errstr))
 		return "Invalid error code";
 	return errstr[err];
 }
@@ -726,6 +727,7 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 }
 
 static struct timeval idle(event_loop_t *loop, void *data) {
+	(void)loop;
 	meshlink_handle_t *mesh = data;
 	struct timeval t, tmin = {3600, 0};
 	for splay_each(node_t, n, mesh->nodes) {
@@ -872,7 +874,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 			usingname = true;
 	}
 
-	if(devclass < 0 || devclass > _DEV_CLASS_MAX) {
+	if((int)devclass < 0 || devclass > _DEV_CLASS_MAX) {
 		logger(NULL, MESHLINK_ERROR, "Invalid devclass given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
@@ -1227,6 +1229,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 }
 
 void meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
+	(void)loop;
 	vpn_packet_t *packet = meshlink_queue_pop(&mesh->outpacketqueue);
 	if(!packet)
 		return;
@@ -2100,6 +2103,7 @@ void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const
 }
 
 static bool channel_pre_accept(struct utcp *utcp, uint16_t port) {
+	(void)port;
 	node_t *n = utcp->priv;
 	meshlink_handle_t *mesh = n->mesh;
 	return mesh->channel_accept_cb;
@@ -2137,7 +2141,7 @@ static void channel_accept(struct utcp_connection *utcp_connection, uint16_t por
 static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
 	node_t *n = utcp->priv;
 	meshlink_handle_t *mesh = n->mesh;
-	return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? len : -1;
+	return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? (ssize_t)len : -1;
 }
 
 void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb) {
@@ -2150,6 +2154,7 @@ void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t
 }
 
 static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
+	(void)mesh;
 	node_t *n = (node_t *)source;
 	if(!n->utcp)
 		abort();
@@ -2167,6 +2172,7 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 }
 
 void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_poll_cb_t cb) {
+	(void)mesh;
 	channel->poll_cb = cb;
 	utcp_set_poll_cb(channel->c, cb ? channel_poll : NULL);
 }
@@ -2188,6 +2194,9 @@ void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_ac
 }
 
 meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len, uint32_t flags) {
+	if(data || len)
+		abort(); // TODO: handle non-NULL data
+
 	if(!mesh || !node) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;

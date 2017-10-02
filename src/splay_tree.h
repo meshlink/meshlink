@@ -57,7 +57,7 @@ typedef struct splay_tree_t {
 	splay_compare_t compare;
 	splay_action_t delete;
 
-	int count;
+	unsigned int count;
 
 } splay_tree_t;
 

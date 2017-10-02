@@ -1,6 +1,6 @@
 /*
     logger.c -- logging code
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ void logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *for
 	int len = vsnprintf(message, sizeof(message), format, ap);
 	va_end(ap);
 
-	if(len > 0 && len < sizeof(message) && message[len - 1] == '\n')
+	if(len > 0 && (size_t)len < sizeof(message) && message[len - 1] == '\n')
 		message[len - 1] = 0;
 
 	if(mesh)

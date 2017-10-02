@@ -1,6 +1,6 @@
 /*
     protocol_misc.c -- handle the meta-protocol, miscellaneous functions
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -33,13 +33,6 @@ int maxoutbufsize = 0;
 
 /* Status and error notification routines */
 
-bool send_status(meshlink_handle_t *mesh, connection_t *c, int statusno, const char *statusstring) {
-	if(!statusstring)
-		statusstring = "Status";
-
-	return send_request(mesh, c, "%d %d %s", STATUS, statusno, statusstring);
-}
-
 bool status_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	int statusno;
 	char statusstring[MAX_STRING_SIZE];
@@ -52,13 +45,6 @@ bool status_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	logger(mesh, MESHLINK_INFO, "Status message from %s: %d: %s", c->name, statusno, statusstring);
 
 	return true;
-}
-
-bool send_error(meshlink_handle_t *mesh, connection_t *c, int err, const char *errstring) {
-	if(!errstring)
-		errstring = "Error";
-
-	return send_request(mesh, c, "%d %d %s", ERROR, err, errstring);
 }
 
 bool error_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -75,11 +61,10 @@ bool error_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	return false;
 }
 
-bool send_termreq(meshlink_handle_t *mesh, connection_t *c) {
-	return send_request(mesh, c, "%d", TERMREQ);
-}
-
 bool termreq_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
+	(void)mesh;
+	(void)c;
+	(void)request;
 	return false;
 }
 
@@ -91,6 +76,7 @@ bool send_ping(meshlink_handle_t *mesh, connection_t *c) {
 }
 
 bool ping_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
+	(void)request;
 	return send_pong(mesh, c);
 }
 
@@ -99,6 +85,8 @@ bool send_pong(meshlink_handle_t *mesh, connection_t *c) {
 }
 
 bool pong_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
+	(void)mesh;
+	(void)request;
 	c->status.pinged = false;
 
 	/* Succesful connection, reset timeout if this is an outgoing connection. */
@@ -117,19 +105,6 @@ bool pong_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 /* Sending and receiving packets via TCP */
 
-bool send_tcppacket(meshlink_handle_t *mesh, connection_t *c, const vpn_packet_t *packet) {
-	/* If there already is a lot of data in the outbuf buffer, discard this packet.
-	   We use a very simple Random Early Drop algorithm. */
-
-	if(2.0 * c->outbuf.len / (float)maxoutbufsize - 1 > (float)rand() / (float)RAND_MAX)
-		return true;
-
-	if(!send_request(mesh, c, "%d %hd", PACKET, packet->len))
-		return false;
-
-	return send_meta(mesh, c, (char *)packet->data, packet->len);
-}
-
 bool tcppacket_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	short int len;
 
@@ -138,9 +113,6 @@ bool tcppacket_h(meshlink_handle_t *mesh, connection_t *c, const char *request) 
 		return false;
 	}
 
-	/* Set reqlen to len, this will tell receive_meta() that a tcppacket is coming. */
-
-	c->tcplen = len;
-
-	return true;
+	// This should never happen with MeshLink.
+	return false;
 }

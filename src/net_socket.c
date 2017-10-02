@@ -1,6 +1,6 @@
 /*
     net_socket.c -- Handle various kinds of sockets.
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -311,13 +311,14 @@ static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 
 	ssize_t outlen = send(c->socket, c->outbuf.data + c->outbuf.offset, c->outbuf.len - c->outbuf.offset, MSG_NOSIGNAL);
 	if(outlen <= 0) {
-		if(!errno || errno == EPIPE)
+		if(!errno || errno == EPIPE) {
 			logger(mesh, MESHLINK_INFO, "Connection closed by %s", c->name);
-		else if(sockwouldblock(sockerrno)) {
-			logger(mesh, MESHLINK_DEBUG, "Sending %d bytes to %s would block", c->outbuf.len - c->outbuf.offset, c->name);
+		} else if(sockwouldblock(sockerrno)) {
+			logger(mesh, MESHLINK_DEBUG, "Sending %lu bytes to %s would block", (unsigned long)(c->outbuf.len - c->outbuf.offset), c->name);
 			return;
-		} else
-			logger(mesh, MESHLINK_ERROR, "Could not send %d bytes of data to %s: %s", c->outbuf.len - c->outbuf.offset, c->name, strerror(errno));
+		} else {
+			logger(mesh, MESHLINK_ERROR, "Could not send %lu bytes of data to %s: %s", (unsigned long)(c->outbuf.len - c->outbuf.offset), c->name, strerror(errno));
+		}
 
 		terminate_connection(mesh, c, c->status.active);
 		return;
@@ -564,6 +565,7 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
   new connection
 */
 void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
+	(void)flags;
 	meshlink_handle_t *mesh = loop->data;
 	listen_socket_t *l = data;
 	connection_t *c;

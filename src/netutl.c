@@ -1,6 +1,6 @@
 /*
     netutl.c -- some supporting network utility code
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ bool hostnames = false;
   Return NULL on failure.
 */
 struct addrinfo *str2addrinfo(const char *address, const char *service, int socktype) {
-	struct addrinfo *ai, hint = {0};
+	struct addrinfo *ai, hint = {};
 	int err;
 
 	hint.ai_family = addressfamily;
@@ -49,8 +49,8 @@ struct addrinfo *str2addrinfo(const char *address, const char *service, int sock
 }
 
 sockaddr_t str2sockaddr(const char *address, const char *port) {
-	struct addrinfo *ai, hint = {0};
-	sockaddr_t result = {{0}};
+	struct addrinfo *ai, hint = {};
+	sockaddr_t result = {};
 	int err;
 
 	hint.ai_family = AF_UNSPEC;

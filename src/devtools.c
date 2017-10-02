@@ -42,19 +42,19 @@ devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *e
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
 	devtool_edge_t *result = NULL;
-	int result_size = 0;
+	unsigned int result_size = 0;
 
 	result_size = mesh->edges->count / 2;
 
 	// if result is smaller than edges, we have to dealloc all the excess devtool_edge_t
-	if(result_size > *nmemb)
+	if((size_t)result_size > *nmemb)
 		result = realloc(edges, result_size * sizeof(*result));
 	else
 		result = edges;
 
 	if(result) {
 		devtool_edge_t *p = result;
-		int n = 0;
+		unsigned int n = 0;
 
 		for splay_each(edge_t, e, mesh->edges) {
 			// skip edges that do not represent a two-directional connection

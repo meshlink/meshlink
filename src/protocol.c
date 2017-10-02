@@ -1,6 +1,6 @@
 /*
     protocol.c -- handle the meta-protocol, basic functions
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -158,6 +158,7 @@ static void free_past_request(past_request_t *r) {
 }
 
 static void age_past_requests(event_loop_t *loop, void *data) {
+	(void)data;
 	meshlink_handle_t *mesh = loop->data;
 	int left = 0, deleted = 0;
 
@@ -178,7 +179,7 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 }
 
 bool seen_request(meshlink_handle_t *mesh, const char *request) {
-	past_request_t *new, p = {NULL};
+	past_request_t *new, p = {};
 
 	p.request = request;
 

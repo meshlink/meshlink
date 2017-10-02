@@ -1,6 +1,6 @@
 /*
     net_packet.c -- Handles in- and outgoing VPN packets
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -195,14 +195,6 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 	}
 }
 
-static uint16_t compress_packet(uint8_t *dest, const uint8_t *source, uint16_t len, int level) {
-	abort();
-}
-
-static uint16_t uncompress_packet(uint8_t *dest, const uint8_t *source, uint16_t len, int level) {
-	abort();
-}
-
 /* VPN packet I/O */
 
 static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
@@ -219,6 +211,7 @@ static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *pac
 }
 
 static bool try_mac(meshlink_handle_t *mesh, node_t *n, const vpn_packet_t *inpkt) {
+	(void)mesh;
 	return sptps_verify_datagram(&n->sptps, inpkt->data, inpkt->len);
 }
 
@@ -232,19 +225,6 @@ static void receive_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 		return;
 	}
 	sptps_receive_data(&n->sptps, inpkt->data, inpkt->len);
-}
-
-void receive_tcppacket(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int len) {
-	vpn_packet_t outpkt;
-
-	if(len > sizeof(outpkt).data)
-		return;
-
-	outpkt.len = len;
-	outpkt.tcp = true;
-	memcpy(outpkt.data, buffer, len);
-
-	receive_packet(mesh, c->node, &outpkt);
 }
 
 static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
@@ -269,17 +249,9 @@ static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 		return;
 	}
 
-	vpn_packet_t outpkt;
-
 	if(n->outcompression) {
-		int len = compress_packet(outpkt.data, origpkt->data, origpkt->len, n->outcompression);
-		if(len < 0)
-			logger(mesh, MESHLINK_ERROR, "Error while compressing packet to %s", n->name);
-		else if(len < origpkt->len) {
-			outpkt.len = len;
-			origpkt = &outpkt;
-			type |= PKT_COMPRESSED;
-		}
+		logger(mesh, MESHLINK_ERROR, "Error while compressing packet to %s", n->name);
+		return;
 	}
 
 	sptps_send_record(&n->sptps, type, origpkt->data, origpkt->len);
@@ -463,17 +435,12 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 	}
 
 	if(type & PKT_COMPRESSED) {
-		uint16_t ulen = uncompress_packet(inpkt.data, (const uint8_t *)data, len, from->incompression);
-		if(ulen < 0)
-			return false;
-		else
-			inpkt.len = ulen;
-		if(inpkt.len > MAXSIZE)
-			abort();
-	} else {
-		memcpy(inpkt.data, data, len);
-		inpkt.len = len;
+		logger(mesh, MESHLINK_ERROR, "Error while decompressing packet from %s", from->name);
+		return false;
 	}
+
+	memcpy(inpkt.data, data, len); // TODO: get rid of memcpy
+	inpkt.len = len;
 
 	receive_packet(mesh, from, &inpkt);
 	return true;
@@ -548,11 +515,12 @@ static node_t *try_harder(meshlink_handle_t *mesh, const sockaddr_t *from, const
 }
 
 void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
+	(void)flags;
 	meshlink_handle_t *mesh = loop->data;
 	listen_socket_t *ls = data;
 	vpn_packet_t pkt;
 	char *hostname;
-	sockaddr_t from = {{0}};
+	sockaddr_t from = {};
 	socklen_t fromlen = sizeof(from);
 	node_t *n;
 	int len;

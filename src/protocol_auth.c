@@ -1,6 +1,6 @@
 /*
     protocol_auth.c -- handle the meta-protocol, authentication
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -138,6 +138,7 @@ bool send_id(meshlink_handle_t *mesh, connection_t *c) {
 }
 
 static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data, uint16_t len) {
+	(void)len;
 	if(strchr(data, '\n')) {
 		logger(mesh, MESHLINK_ERROR, "Received invalid key from invited node %s!\n", c->name);
 		return false;

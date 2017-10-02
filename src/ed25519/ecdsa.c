@@ -1,6 +1,6 @@
 /*
     ecdsa.c -- ECDSA key handling
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -79,6 +79,7 @@ ecdsa_t *ecdsa_read_pem_private_key(FILE *fp) {
 }
 
 size_t ecdsa_size(ecdsa_t *ecdsa) {
+	(void)ecdsa;
 	return 64;
 }
 

@@ -1,6 +1,6 @@
 /*
     event.c -- I/O, timeout and signal event handling
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -133,6 +133,8 @@ static int signal_compare(const signal_t *a, const signal_t *b) {
 }
 
 static void signalio_handler(event_loop_t *loop, void *data, int flags) {
+	(void)data;
+	(void)flags;
 	unsigned char signum;
 	if(read(loop->pipefd[0], &signum, 1) != 1)
 		return;

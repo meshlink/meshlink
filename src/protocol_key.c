@@ -1,6 +1,6 @@
 /*
     protocol_key.c -- handle the meta-protocol, key exchange
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -68,6 +68,7 @@ bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request
 }
 
 static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
+	(void)type;
 	node_t *to = handle;
 	meshlink_handle_t *mesh = to->mesh;
 	to->sptps.send_data = send_sptps_data;
@@ -99,6 +100,7 @@ bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 /* REQ_KEY is overloaded to allow arbitrary requests to be routed between two nodes. */
 
 static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *request, node_t *from, int reqno) {
+	(void)c;
 	switch(reqno) {
 	case REQ_PUBKEY: {
 		char *pubkey = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
@@ -219,8 +221,8 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		if(reqno)
 			return req_key_ext_h(mesh, c, request, from, reqno);
 
-		/* No, just send our key back */
-		send_ans_key(mesh, from);
+		/* This should never happen. Ignore it, unless it came directly from the connected peer, in which case we disconnect. */
+		return from->connection != c;
 	} else {
 		if(!to->status.reachable) {
 			logger(mesh, MESHLINK_WARNING, "Got %s from %s destination %s which is not reachable",
@@ -235,6 +237,8 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool send_ans_key(meshlink_handle_t *mesh, node_t *to) {
+	(void)mesh;
+	(void)to;
 	abort();
 }
 

@@ -28,6 +28,8 @@ static void generate_rand_string(char *buffer, size_t size) {
 }
 
 static void discovery_entry_group_callback(CattaServer *server, CattaSEntryGroup *group, CattaEntryGroupState state, void *userdata) {
+	(void)server;
+	(void)group;
 	meshlink_handle_t *mesh = userdata;
 
 	// asserts
@@ -128,6 +130,7 @@ done:
 }
 
 static void discovery_server_callback(CattaServer *server, CattaServerState state, void *userdata) {
+	(void)server;
 	meshlink_handle_t *mesh = userdata;
 
 	// asserts
@@ -193,6 +196,8 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 }
 
 static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfIndex interface_, CattaProtocol protocol, CattaResolverEvent event, const char *name, const char *type, const char *domain, const char *host_name, const CattaAddress *address, uint16_t port, CattaStringList *txt, CattaLookupResultFlags flags, void *userdata) {
+	(void)interface_;
+	(void)protocol;
 	meshlink_handle_t *mesh = userdata;
 
 	// asserts
@@ -306,6 +311,8 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 }
 
 static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfIndex interface_, CattaProtocol protocol, CattaBrowserEvent event, const char *name, const char *type, const char *domain, CattaLookupResultFlags flags, void *userdata) {
+	(void)browser;
+	(void)flags;
 	meshlink_handle_t *mesh = userdata;
 
 	// asserts
