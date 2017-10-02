@@ -77,8 +77,9 @@ int vasprintf(char **buf, const char *fmt, va_list ap) {
 	status = vsnprintf(*buf, len, fmt, aq);
 	va_end(aq);
 
-	if(status >= 0)
+	if(status >= 0) {
 		*buf = xrealloc(*buf, status + 1);
+	}
 
 	if(status > len - 1) {
 		len = status;

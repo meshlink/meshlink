@@ -50,12 +50,14 @@ static char (*request_name[]) = {
 };
 
 bool check_id(const char *id) {
-	if(!id || !*id)
+	if(!id || !*id) {
 		return false;
+	}
 
 	for(; *id; id++)
-		if(!isalnum(*id) && *id != '_' && *id != '-')
+		if(!isalnum(*id) && *id != '_' && *id != '-') {
 			return false;
+		}
 
 	return true;
 }
@@ -88,8 +90,9 @@ bool send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, 
 	if(c == mesh->everyone) {
 		broadcast_meta(mesh, NULL, request, len);
 		return true;
-	} else
+	} else {
 		return send_meta(mesh, c, request, len);
+	}
 }
 
 void forward_request(meshlink_handle_t *mesh, connection_t *from, const char *request) {
@@ -105,8 +108,10 @@ void forward_request(meshlink_handle_t *mesh, connection_t *from, const char *re
 
 bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	if(c->outgoing && mesh->proxytype == PROXY_HTTP && c->allow_request == ID) {
-		if(!request[0] || request[0] == '\r')
+		if(!request[0] || request[0] == '\r') {
 			return true;
+		}
+
 		if(!strncasecmp(request, "HTTP/1.1 ", 9)) {
 			if(!strncmp(request + 9, "200", 3)) {
 				logger(mesh, MESHLINK_DEBUG, "Proxy request granted");
@@ -124,8 +129,9 @@ bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *reque
 		if((reqno < 0) || (reqno >= LAST) || !request_handlers[reqno]) {
 			logger(mesh, MESHLINK_DEBUG, "Unknown request from %s: %s", c->name, request);
 			return false;
-		} else
+		} else {
 			logger(mesh, MESHLINK_DEBUG, "Got %s from %s: %s", request_name[reqno], c->name, request);
+		}
 
 		if((c->allow_request != ALL) && (c->allow_request != reqno)) {
 			logger(mesh, MESHLINK_ERROR, "Unauthorized request from %s", c->name);
@@ -151,8 +157,9 @@ static int past_request_compare(const past_request_t *a, const past_request_t *b
 }
 
 static void free_past_request(past_request_t *r) {
-	if(r->request)
+	if(r->request) {
 		free((void *)r->request);
+	}
 
 	free(r);
 }
@@ -163,14 +170,16 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 	int left = 0, deleted = 0;
 
 	for splay_each(past_request_t, p, mesh->past_request_tree) {
-		if(p->firstseen + mesh->pinginterval <= mesh->loop.now.tv_sec)
+		if(p->firstseen + mesh->pinginterval <= mesh->loop.now.tv_sec) {
 			splay_delete_node(mesh->past_request_tree, node), deleted++;
-		else
+		} else {
 			left++;
+		}
 	}
 
-	if(left || deleted)
+	if(left || deleted) {
 		logger(mesh, MESHLINK_DEBUG, "Aging past requests: deleted %d, left %d", deleted, left);
+	}
 
 	if(left)
 		timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timeval) {
@@ -203,8 +212,10 @@ void init_requests(meshlink_handle_t *mesh) {
 }
 
 void exit_requests(meshlink_handle_t *mesh) {
-	if(mesh->past_request_tree)
+	if(mesh->past_request_tree) {
 		splay_delete_tree(mesh->past_request_tree);
+	}
+
 	mesh->past_request_tree = NULL;
 
 	timeout_del(&mesh->loop, &mesh->past_request_timeout);

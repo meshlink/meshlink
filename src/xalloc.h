@@ -23,31 +23,43 @@
 static inline void *xmalloc(size_t n) __attribute__((__malloc__));
 static inline void *xmalloc(size_t n) {
 	void *p = malloc(n);
-	if(!p)
+
+	if(!p) {
 		abort();
+	}
+
 	return p;
 }
 
 static inline void *xzalloc(size_t n) __attribute__((__malloc__));
 static inline void *xzalloc(size_t n) {
 	void *p = calloc(1, n);
-	if(!p)
+
+	if(!p) {
 		abort();
+	}
+
 	return p;
 }
 
 static inline void *xrealloc(void *p, size_t n) {
 	p = realloc(p, n);
-	if(!p)
+
+	if(!p) {
 		abort();
+	}
+
 	return p;
 }
 
 static inline char *xstrdup(const char *s) __attribute__((__malloc__));
 static inline char *xstrdup(const char *s) {
 	char *p = strdup(s);
-	if(!p)
+
+	if(!p) {
 		abort();
+	}
+
 	return p;
 }
 
@@ -55,13 +67,19 @@ static inline int xvasprintf(char **strp, const char *fmt, va_list ap) {
 #ifdef HAVE_MINGW
 	char buf[1024];
 	int result = vsnprintf(buf, sizeof(buf), fmt, ap);
-	if(result < 0)
+
+	if(result < 0) {
 		abort();
+	}
+
 	*strp = xstrdup(buf);
 #else
 	int result = vasprintf(strp, fmt, ap);
-	if(result < 0)
+
+	if(result < 0) {
 		abort();
+	}
+
 #endif
 	return result;
 }

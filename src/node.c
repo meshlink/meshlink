@@ -39,10 +39,14 @@ void init_nodes(meshlink_handle_t *mesh) {
 }
 
 void exit_nodes(meshlink_handle_t *mesh) {
-	if(mesh->node_udp_cache)
+	if(mesh->node_udp_cache) {
 		hash_free(mesh->node_udp_cache);
-	if(mesh->nodes)
+	}
+
+	if(mesh->nodes) {
 		splay_delete_tree(mesh->nodes);
+	}
+
 	mesh->node_udp_cache = NULL;
 	mesh->nodes = NULL;
 }
@@ -61,16 +65,18 @@ node_t *new_node(void) {
 void free_node(node_t *n) {
 	n->status.destroyed = true;
 
-	if(n->edge_tree)
+	if(n->edge_tree) {
 		free_edge_tree(n->edge_tree);
+	}
 
 	sockaddrfree(&n->address);
 
 	ecdsa_free(n->ecdsa);
 	sptps_stop(&n->sptps);
 
-	if(n->mtutimeout.cb)
+	if(n->mtutimeout.cb) {
 		abort();
+	}
 
 	free(n->name);
 
@@ -87,8 +93,9 @@ void node_add(meshlink_handle_t *mesh, node_t *n) {
 void node_del(meshlink_handle_t *mesh, node_t *n) {
 	timeout_del(&mesh->loop, &n->mtutimeout);
 
-	for splay_each(edge_t, e, n->edge_tree)
+	for splay_each(edge_t, e, n->edge_tree) {
 		edge_del(mesh, e);
+	}
 
 	splay_delete(mesh->nodes, n);
 }
@@ -117,6 +124,7 @@ void update_node_udp(meshlink_handle_t *mesh, node_t *n, const sockaddr_t *sa) {
 	if(sa) {
 		n->address = *sa;
 		n->sock = 0;
+
 		for(int i = 0; i < mesh->listen_sockets; i++) {
 			if(mesh->listen_socket[i].sa.sa.sa_family == sa->sa.sa_family) {
 				n->sock = i;

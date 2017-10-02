@@ -53,31 +53,41 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 		free(port);
 		return true;
 	}
+
 	case PROXY_SOCKS4: {
 		if(c->address.sa.sa_family != AF_INET) {
 			logger(mesh, MESHLINK_ERROR, "Cannot connect to an IPv6 host through a SOCKS 4 proxy!");
 			return false;
 		}
+
 		char s4req[9 + (mesh->proxyuser ? strlen(mesh->proxyuser) : 0)];
 		s4req[0] = 4;
 		s4req[1] = 1;
 		memcpy(s4req + 2, &c->address.in.sin_port, 2);
 		memcpy(s4req + 4, &c->address.in.sin_addr, 4);
-		if(mesh->proxyuser)
+
+		if(mesh->proxyuser) {
 			memcpy(s4req + 8, mesh->proxyuser, strlen(mesh->proxyuser));
+		}
+
 		s4req[sizeof(s4req) - 1] = 0;
 		c->tcplen = 8;
 		return send_meta(mesh, c, s4req, sizeof(s4req));
 	}
+
 	case PROXY_SOCKS5: {
 		int len = 3 + 6 + (c->address.sa.sa_family == AF_INET ? 4 : 16);
 		c->tcplen = 2;
-		if(mesh->proxypass)
+
+		if(mesh->proxypass) {
 			len += 3 + strlen(mesh->proxyuser) + strlen(mesh->proxypass);
+		}
+
 		char s5req[len];
 		int i = 0;
 		s5req[i++] = 5;
 		s5req[i++] = 1;
+
 		if(mesh->proxypass) {
 			s5req[i++] = 2;
 			s5req[i++] = 1;
@@ -88,11 +98,14 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 			memcpy(s5req + i, mesh->proxypass, strlen(mesh->proxypass));
 			i += strlen(mesh->proxypass);
 			c->tcplen += 2;
-		} else
+		} else {
 			s5req[i++] = 0;
+		}
+
 		s5req[i++] = 5;
 		s5req[i++] = 1;
 		s5req[i++] = 0;
+
 		if(c->address.sa.sa_family == AF_INET) {
 			s5req[i++] = 1;
 			memcpy(s5req + i, &c->address.in.sin_addr, 4);
@@ -111,15 +124,21 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 			logger(mesh, MESHLINK_ERROR, "Address family %hx not supported for SOCKS 5 proxies!", c->address.sa.sa_family);
 			return false;
 		}
-		if(i > len)
+
+		if(i > len) {
 			abort();
+		}
+
 		return send_meta(mesh, c, s5req, sizeof(s5req));
 	}
+
 	case PROXY_SOCKS4A:
 		logger(mesh, MESHLINK_ERROR, "Proxy type not implemented yet");
 		return false;
+
 	case PROXY_EXEC:
 		return true;
+
 	default:
 		logger(mesh, MESHLINK_ERROR, "Unknown proxy type");
 		return false;
@@ -131,14 +150,16 @@ bool send_id(meshlink_handle_t *mesh, connection_t *c) {
 	int minor = mesh->self->connection->protocol_minor;
 
 	if(mesh->proxytype && c->outgoing)
-		if(!send_proxyrequest(mesh, c))
+		if(!send_proxyrequest(mesh, c)) {
 			return false;
+		}
 
 	return send_request(mesh, c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
 }
 
 static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data, uint16_t len) {
 	(void)len;
+
 	if(strchr(data, '\n')) {
 		logger(mesh, MESHLINK_ERROR, "Received invalid key from invited node %s!\n", c->name);
 		return false;
@@ -147,12 +168,14 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 	// Create a new host config file
 	char filename[PATH_MAX];
 	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, c->name);
+
 	if(!access(filename, F_OK)) {
 		logger(mesh, MESHLINK_ERROR, "Host config file for %s already exists!\n", c->name);
 		return false;
 	}
 
 	FILE *f = fopen(filename, "w");
+
 	if(!f) {
 		logger(mesh, MESHLINK_ERROR, "Error trying to create %s: %s\n", filename, strerror(errno));
 		return false;
@@ -176,14 +199,17 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	connection_t *c = handle;
 	meshlink_handle_t *mesh = c->mesh;
 
-	if(type == 128)
+	if(type == 128) {
 		return true;
+	}
 
-	if(type == 1 && c->status.invitation_used)
+	if(type == 1 && c->status.invitation_used) {
 		return finalize_invitation(mesh, c, data, len);
+	}
 
-	if(type != 0 || len != 18 || c->status.invitation_used)
+	if(type != 0 || len != 18 || c->status.invitation_used) {
 		return false;
+	}
 
 	// Recover the filename from the cookie and the key
 	char *fingerprint = ecdsa_get_base64_public_key(mesh->invitation_key);
@@ -202,15 +228,18 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 
 	// Atomically rename the invitation file
 	if(rename(filename, usedname)) {
-		if(errno == ENOENT)
+		if(errno == ENOENT) {
 			logger(mesh, MESHLINK_ERROR, "Peer %s tried to use non-existing invitation %s\n", c->name, cookie);
-		else
+		} else {
 			logger(mesh, MESHLINK_ERROR, "Error trying to rename invitation %s\n", cookie);
+		}
+
 		return false;
 	}
 
 	// Open the renamed file
 	FILE *f = fopen(usedname, "r");
+
 	if(!f) {
 		logger(mesh, MESHLINK_ERROR, "Error trying to open invitation %s\n", cookie);
 		return false;
@@ -219,16 +248,20 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	// Read the new node's Name from the file
 	char buf[1024];
 	fgets(buf, sizeof(buf), f);
-	if(*buf)
+
+	if(*buf) {
 		buf[strlen(buf) - 1] = 0;
+	}
 
 	len = strcspn(buf, " \t=");
 	char *name = buf + len;
 	name += strspn(name, " \t");
+
 	if(*name == '=') {
 		name++;
 		name += strspn(name, " \t");
 	}
+
 	buf[len] = 0;
 
 	if(!*buf || !*name || strcasecmp(buf, "Name") || !check_id(name)) {
@@ -243,8 +276,11 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	// Send the node the contents of the invitation file
 	rewind(f);
 	size_t result;
-	while((result = fread(buf, 1, sizeof(buf), f)))
+
+	while((result = fread(buf, 1, sizeof(buf), f))) {
 		sptps_send_record(&c->sptps, 0, buf, result);
+	}
+
 	sptps_send_record(&c->sptps, 1, buf, 0);
 	fclose(f);
 	unlink(usedname);
@@ -272,6 +308,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		}
 
 		c->ecdsa = ecdsa_set_base64_public_key(name + 1);
+
 		if(!c->ecdsa) {
 			logger(mesh, MESHLINK_ERROR, "Got bad invitation from %s", c->name);
 			return false;
@@ -279,10 +316,15 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 		c->status.invitation = true;
 		char *mykey = ecdsa_get_base64_public_key(mesh->invitation_key);
-		if(!mykey)
+
+		if(!mykey) {
 			return false;
-		if(!send_request(mesh, c, "%d %s", ACK, mykey))
+		}
+
+		if(!send_request(mesh, c, "%d %s", ACK, mykey)) {
 			return false;
+		}
+
 		free(mykey);
 
 		c->protocol_minor = 2;
@@ -306,8 +348,10 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			return false;
 		}
 	} else {
-		if(c->name)
+		if(c->name) {
 			free(c->name);
+		}
+
 		c->name = xstrdup(name);
 	}
 
@@ -334,6 +378,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		logger(mesh, MESHLINK_ERROR, "No key known for peer %s", c->name);
 
 		node_t *n = lookup_node(mesh, c->name);
+
 		if(n && !n->status.waitingforkey) {
 			logger(mesh, MESHLINK_INFO, "Requesting key from peer %s", c->name);
 			send_req_key(mesh, n);
@@ -353,10 +398,11 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	c->allow_request = ACK;
 	char label[sizeof(meshlink_tcp_label) + strlen(mesh->self->name) + strlen(c->name) + 2];
 
-	if(c->outgoing)
+	if(c->outgoing) {
 		snprintf(label, sizeof(label), "%s %s %s", meshlink_tcp_label, mesh->self->name, c->name);
-	else
+	} else {
 		snprintf(label, sizeof(label), "%s %s %s", meshlink_tcp_label, c->name, mesh->self->name);
+	}
 
 	return sptps_start(&c->sptps, c, c->outgoing, false, mesh->self->connection->ecdsa, c->ecdsa, label, sizeof(label) - 1, send_meta_sptps, receive_meta_sptps);
 }
@@ -365,8 +411,9 @@ bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
 
 	/* Check some options */
 
-	if(mesh->self->options & OPTION_PMTU_DISCOVERY)
+	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		c->options |= OPTION_PMTU_DISCOVERY;
+	}
 
 	return send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
 }
@@ -375,8 +422,9 @@ static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
 	/* Send all known subnets and edges */
 
 	for splay_each(node_t, n, mesh->nodes) {
-		for splay_each(edge_t, e, n->edge_tree)
+		for splay_each(edge_t, e, n->edge_tree) {
 			send_add_edge(mesh, c, e);
+		}
 	}
 }
 
@@ -411,10 +459,11 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			logger(mesh, MESHLINK_DEBUG, "Established a second connection with %s, closing old connection", n->connection->name);
 
 			if(n->connection->outgoing) {
-				if(c->outgoing)
+				if(c->outgoing) {
 					logger(mesh, MESHLINK_WARNING, "Two outgoing connections to the same node!");
-				else
+				} else {
 					c->outgoing = n->connection->outgoing;
+				}
 
 				n->connection->outgoing = NULL;
 			}
@@ -432,10 +481,12 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	n->connection = c;
 	c->node = n;
+
 	if(!(c->options & options & OPTION_PMTU_DISCOVERY)) {
 		c->options &= ~OPTION_PMTU_DISCOVERY;
 		options &= ~OPTION_PMTU_DISCOVERY;
 	}
+
 	c->options |= options;
 
 	/* Activate this connection */

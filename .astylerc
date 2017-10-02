@@ -1,8 +1,10 @@
 --indent=tab=8
 --convert-tabs
--xj
+-j
+-f
 -A2
 -U
 -p
 -xg
 -k3
+-w

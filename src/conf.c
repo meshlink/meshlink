@@ -36,15 +36,17 @@ static int config_compare(const config_t *a, const config_t *b) {
 
 	result = strcasecmp(a->variable, b->variable);
 
-	if(result)
+	if(result) {
 		return result;
+	}
 
 	result = a->line - b->line;
 
-	if(result)
+	if(result) {
 		return result;
-	else
+	} else {
 		return a->file ? strcmp(a->file, b->file) : 0;
+	}
 }
 
 void init_configuration(splay_tree_t **config_tree) {
@@ -52,8 +54,10 @@ void init_configuration(splay_tree_t **config_tree) {
 }
 
 void exit_configuration(splay_tree_t **config_tree) {
-	if(*config_tree)
+	if(*config_tree) {
 		splay_delete_tree(*config_tree);
+	}
+
 	*config_tree = NULL;
 }
 
@@ -62,14 +66,17 @@ config_t *new_config(void) {
 }
 
 void free_config(config_t *cfg) {
-	if(cfg->variable)
+	if(cfg->variable) {
 		free(cfg->variable);
+	}
 
-	if(cfg->value)
+	if(cfg->value) {
 		free(cfg->value);
+	}
 
-	if(cfg->file)
+	if(cfg->file) {
 		free(cfg->file);
+	}
 
 	free(cfg);
 }
@@ -87,11 +94,13 @@ config_t *lookup_config(splay_tree_t *config_tree, char *variable) {
 
 	found = splay_search_closest_greater(config_tree, &cfg);
 
-	if(!found)
+	if(!found) {
 		return NULL;
+	}
 
-	if(strcasecmp(found->variable, variable))
+	if(strcasecmp(found->variable, variable)) {
 		return NULL;
+	}
 
 	return found;
 }
@@ -106,8 +115,9 @@ config_t *lookup_config_next(splay_tree_t *config_tree, const config_t *cfg) {
 		if(node->next) {
 			found = node->next->data;
 
-			if(!strcasecmp(found->variable, cfg->variable))
+			if(!strcasecmp(found->variable, cfg->variable)) {
 				return found;
+			}
 		}
 	}
 
@@ -115,8 +125,9 @@ config_t *lookup_config_next(splay_tree_t *config_tree, const config_t *cfg) {
 }
 
 bool get_config_bool(const config_t *cfg, bool *result) {
-	if(!cfg)
+	if(!cfg) {
 		return false;
+	}
 
 	if(!strcasecmp(cfg->value, "yes")) {
 		*result = true;
@@ -133,11 +144,13 @@ bool get_config_bool(const config_t *cfg, bool *result) {
 }
 
 bool get_config_int(const config_t *cfg, int *result) {
-	if(!cfg)
+	if(!cfg) {
 		return false;
+	}
 
-	if(sscanf(cfg->value, "%d", result) == 1)
+	if(sscanf(cfg->value, "%d", result) == 1) {
 		return true;
+	}
 
 	logger(NULL, MESHLINK_ERROR, "Integer expected for configuration variable %s in %s line %d",
 	       cfg->variable, cfg->file, cfg->line);
@@ -146,14 +159,16 @@ bool get_config_int(const config_t *cfg, int *result) {
 }
 
 bool set_config_int(config_t *cfg, int val) {
-	if(!cfg)
+	if(!cfg) {
 		return false;
+	}
 
 	char val_str[1024];
 	snprintf(val_str, sizeof(val_str), "%d", val);
 
-	if(cfg->value)
+	if(cfg->value) {
 		free(cfg->value);
+	}
 
 	cfg->value = xstrdup(val_str);
 
@@ -161,8 +176,9 @@ bool set_config_int(config_t *cfg, int val) {
 }
 
 bool get_config_string(const config_t *cfg, char **result) {
-	if(!cfg)
+	if(!cfg) {
 		return false;
+	}
 
 	*result = xstrdup(cfg->value);
 
@@ -170,11 +186,13 @@ bool get_config_string(const config_t *cfg, char **result) {
 }
 
 bool set_config_string(config_t *cfg, const char *val) {
-	if(!cfg)
+	if(!cfg) {
 		return false;
+	}
 
-	if(cfg->value)
+	if(cfg->value) {
 		free(cfg->value);
+	}
 
 	cfg->value = xstrdup(val);
 
@@ -184,8 +202,9 @@ bool set_config_string(config_t *cfg, const char *val) {
 bool get_config_address(const config_t *cfg, struct addrinfo **result) {
 	struct addrinfo *ai;
 
-	if(!cfg)
+	if(!cfg) {
 		return false;
+	}
 
 	ai = str2addrinfo(cfg->value, NULL, 0);
 
@@ -207,23 +226,28 @@ static char *readline(FILE *fp, char *buf, size_t buflen) {
 	char *newline = NULL;
 	char *p;
 
-	if(feof(fp))
+	if(feof(fp)) {
 		return NULL;
+	}
 
 	p = fgets(buf, buflen, fp);
 
-	if(!p)
+	if(!p) {
 		return NULL;
+	}
 
 	newline = strchr(p, '\n');
 
-	if(!newline)
+	if(!newline) {
 		return buf;
+	}
 
 	/* kill newline and carriage return if necessary */
 	*newline = '\0';
-	if(newline > p && newline[-1] == '\r')
+
+	if(newline > p && newline[-1] == '\r') {
 		newline[-1] = '\0';
+	}
 
 	return buf;
 }
@@ -235,16 +259,20 @@ config_t *parse_config_line(char *line, const char *fname, int lineno) {
 	variable = value = line;
 
 	eol = line + strlen(line);
-	while(strchr("\t ", *--eol))
+
+	while(strchr("\t ", *--eol)) {
 		*eol = '\0';
+	}
 
 	len = strcspn(value, "\t =");
 	value += len;
 	value += strspn(value, "\t ");
+
 	if(*value == '=') {
 		value++;
 		value += strspn(value, "\t ");
 	}
+
 	variable[len] = '\0';
 
 	if(!*value) {
@@ -287,19 +315,24 @@ bool read_config_file(splay_tree_t *config_tree, const char *fname) {
 		line = readline(fp, buffer, sizeof(buffer));
 
 		if(!line) {
-			if(feof(fp))
+			if(feof(fp)) {
 				result = true;
+			}
+
 			break;
 		}
 
 		lineno++;
 
-		if(!*line || *line == '#')
+		if(!*line || *line == '#') {
 			continue;
+		}
 
 		if(ignore) {
-			if(!strncmp(line, "-----END", 8))
+			if(!strncmp(line, "-----END", 8)) {
 				ignore = false;
+			}
+
 			continue;
 		}
 
@@ -309,8 +342,11 @@ bool read_config_file(splay_tree_t *config_tree, const char *fname) {
 		}
 
 		cfg = parse_config_line(line, fname, lineno);
-		if(!cfg)
+
+		if(!cfg) {
 			break;
+		}
+
 		config_add(config_tree, cfg);
 	}
 
@@ -330,17 +366,21 @@ bool write_config_file(const struct splay_tree_t *config_tree, const char *fname
 	}
 
 	for splay_each(config_t, cnf, config_tree) {
-		if(fwrite(cnf->variable, sizeof(char), strlen(cnf->variable), fp) < strlen(cnf->variable))
+		if(fwrite(cnf->variable, sizeof(char), strlen(cnf->variable), fp) < strlen(cnf->variable)) {
 			goto error;
+		}
 
-		if(fwrite(" = ", sizeof(char), 3, fp) < 3)
+		if(fwrite(" = ", sizeof(char), 3, fp) < 3) {
 			goto error;
+		}
 
-		if(fwrite(cnf->value, sizeof(char), strlen(cnf->value), fp) < strlen(cnf->value))
+		if(fwrite(cnf->value, sizeof(char), strlen(cnf->value), fp) < strlen(cnf->value)) {
 			goto error;
+		}
 
-		if(fwrite("\n", sizeof(char), 1, fp) < 1)
+		if(fwrite("\n", sizeof(char), 1, fp) < 1) {
 			goto error;
+		}
 	}
 
 	fclose(fp);
@@ -360,8 +400,9 @@ bool read_server_config(meshlink_handle_t *mesh) {
 	errno = 0;
 	x = read_config_file(mesh->config, filename);
 
-	if(!x && errno)
+	if(!x && errno) {
 		logger(mesh, MESHLINK_ERROR, "Failed to read `%s': %s", filename, strerror(errno));
+	}
 
 	return x;
 }
@@ -418,27 +459,34 @@ bool modify_config_file(struct meshlink_handle *mesh, const char *name, const ch
 	}
 
 	while(readline(fr, buf, sizeof(buf))) {
-		if(!*buf || *buf == '#')
+		if(!*buf || *buf == '#') {
 			goto copy;
+		}
 
 		sep = strchr(buf, ' ');
-		if(!sep)
+
+		if(!sep) {
 			goto copy;
+		}
 
 		*sep = 0;
+
 		if(strcmp(buf, key)) {
 			*sep = ' ';
 			goto copy;
 		}
 
 		// We found the key and the value. We already added it at the top, so ignore this one.
-		if(value && sep[1] == '=' && sep[2] == ' ' && !strcmp(sep + 3, value))
+		if(value && sep[1] == '=' && sep[2] == ' ' && !strcmp(sep + 3, value)) {
 			continue;
+		}
 
 		// We found the key but with a different value, delete it if wanted.
 		found++;
-		if((!value || trim) && found > trim)
+
+		if((!value || trim) && found > trim) {
 			continue;
+		}
 
 		*sep = ' ';
 
@@ -446,16 +494,19 @@ copy:
 		fprintf(fw, "%s\n", buf);
 	}
 
-	if(ferror(fr))
+	if(ferror(fr)) {
 		error = true;
+	}
 
 	fclose(fr);
 
-	if(ferror(fw))
+	if(ferror(fw)) {
 		error = true;
+	}
 
-	if(fclose(fw))
+	if(fclose(fw)) {
 		error = true;
+	}
 
 	// If any error occured during reading or writing, exit.
 	if(error) {
@@ -467,9 +518,11 @@ copy:
 #ifdef HAVE_MINGW
 	char bakname[PATH_MAX];
 	snprintf(bakname, sizeof(bakname), "%s.bak", filename);
+
 	if(rename(filename, bakname) || rename(tmpname, filename)) {
 		rename(bakname, filename);
 #else
+
 	if(rename(tmpname, filename)) {
 #endif
 		return false;

@@ -23,8 +23,9 @@
 #include "ed25519/sha512.h"
 
 static void memxor(char *buf, char c, size_t len) {
-	for(size_t i = 0; i < len; i++)
+	for(size_t i = 0; i < len; i++) {
 		buf[i] ^= c;
+	}
 }
 
 static const size_t mdlen = 64;
@@ -39,29 +40,37 @@ static bool hmac_sha512(const char *key, size_t keylen, const char *msg, size_t 
 		memcpy(tmp, key, keylen);
 		memset(tmp + keylen, 0, mdlen - keylen);
 	} else {
-		if(sha512(key, keylen, tmp) != 0)
+		if(sha512(key, keylen, tmp) != 0) {
 			return false;
+		}
 	}
 
-	if(sha512_init(&md) != 0)
+	if(sha512_init(&md) != 0) {
 		return false;
+	}
 
 	// ipad
 	memxor(tmp, 0x36, mdlen);
-	if(sha512_update(&md, tmp, mdlen) != 0)
+
+	if(sha512_update(&md, tmp, mdlen) != 0) {
 		return false;
+	}
 
 	// message
-	if(sha512_update(&md, msg, msglen) != 0)
+	if(sha512_update(&md, msg, msglen) != 0) {
 		return false;
+	}
 
-	if(sha512_final(&md, tmp + mdlen) != 0)
+	if(sha512_final(&md, tmp + mdlen) != 0) {
 		return false;
+	}
 
 	// opad
 	memxor(tmp, 0x36 ^ 0x5c, mdlen);
-	if(sha512(tmp, sizeof(tmp), out) != 0)
+
+	if(sha512(tmp, sizeof(tmp), out) != 0) {
 		return false;
+	}
 
 	return true;
 }
@@ -83,18 +92,23 @@ bool prf(const char *secret, size_t secretlen, char *seed, size_t seedlen, char 
 
 	while(outlen > 0) {
 		/* Inner HMAC */
-		if(!hmac_sha512(data, sizeof(data), secret, secretlen, data))
+		if(!hmac_sha512(data, sizeof(data), secret, secretlen, data)) {
 			return false;
+		}
 
 		/* Outer HMAC */
 		if(outlen >= mdlen) {
-			if(!hmac_sha512(data, sizeof(data), secret, secretlen, out))
+			if(!hmac_sha512(data, sizeof(data), secret, secretlen, out)) {
 				return false;
+			}
+
 			out += mdlen;
 			outlen -= mdlen;
 		} else {
-			if(!hmac_sha512(data, sizeof(data), secret, secretlen, hash))
+			if(!hmac_sha512(data, sizeof(data), secret, secretlen, hash)) {
 				return false;
+			}
+
 			memcpy(out, hash, outlen);
 			out += outlen;
 			outlen = 0;

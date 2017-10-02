@@ -33,15 +33,18 @@
 #include "xalloc.h"
 
 bool node_read_ecdsa_public_key(meshlink_handle_t *mesh, node_t *n) {
-	if(ecdsa_active(n->ecdsa))
+	if(ecdsa_active(n->ecdsa)) {
 		return true;
+	}
 
 	splay_tree_t *config_tree;
 	char *p;
 
 	init_configuration(&config_tree);
-	if(!read_host_config(mesh, config_tree, n->name))
+
+	if(!read_host_config(mesh, config_tree, n->name)) {
 		goto exit;
+	}
 
 	/* First, check for simple ECDSAPublicKey statement */
 
@@ -56,15 +59,18 @@ exit:
 }
 
 bool read_ecdsa_public_key(meshlink_handle_t *mesh, connection_t *c) {
-	if(ecdsa_active(c->ecdsa))
+	if(ecdsa_active(c->ecdsa)) {
 		return true;
+	}
 
 	char *p;
 
 	if(!c->config_tree) {
 		init_configuration(&c->config_tree);
-		if(!read_host_config(mesh, c->config_tree, c->name))
+
+		if(!read_host_config(mesh, c->config_tree, c->name)) {
 			return false;
+		}
 	}
 
 	/* First, check for simple ECDSAPublicKey statement */
@@ -93,8 +99,9 @@ bool read_ecdsa_private_key(meshlink_handle_t *mesh) {
 	mesh->self->connection->ecdsa = ecdsa_read_pem_private_key(fp);
 	fclose(fp);
 
-	if(!mesh->self->connection->ecdsa)
+	if(!mesh->self->connection->ecdsa) {
 		logger(mesh, MESHLINK_ERROR, "Reading ECDSA private key file failed: %s", strerror(errno));
+	}
 
 	return mesh->self->connection->ecdsa;
 }
@@ -115,8 +122,10 @@ static bool read_invitation_key(meshlink_handle_t *mesh) {
 	if(fp) {
 		mesh->invitation_key = ecdsa_read_pem_private_key(fp);
 		fclose(fp);
-		if(!mesh->invitation_key)
+
+		if(!mesh->invitation_key) {
 			logger(mesh, MESHLINK_ERROR, "Reading ECDSA private key file `%s' failed: %s", filename, strerror(errno));
+		}
 	}
 
 	return mesh->invitation_key;
@@ -128,16 +137,19 @@ bool node_read_devclass(meshlink_handle_t *mesh, node_t *n) {
 	char *p;
 
 	init_configuration(&config_tree);
-	if(!read_host_config(mesh, config_tree, n->name))
+
+	if(!read_host_config(mesh, config_tree, n->name)) {
 		goto exit;
+	}
 
 	if(get_config_string(lookup_config(config_tree, "DeviceClass"), &p)) {
 		n->devclass = atoi(p);
 		free(p);
 	}
 
-	if((int)n->devclass < 0 || n->devclass > _DEV_CLASS_MAX)
+	if((int)n->devclass < 0 || n->devclass > _DEV_CLASS_MAX) {
 		n->devclass = _DEV_CLASS_MAX;
+	}
 
 exit:
 	exit_configuration(&config_tree);
@@ -146,8 +158,9 @@ exit:
 
 bool node_write_devclass(meshlink_handle_t *mesh, node_t *n) {
 
-	if((int)n->devclass < 0 || n->devclass > _DEV_CLASS_MAX)
+	if((int)n->devclass < 0 || n->devclass > _DEV_CLASS_MAX) {
 		return false;
+	}
 
 	bool result = false;
 
@@ -167,8 +180,9 @@ bool node_write_devclass(meshlink_handle_t *mesh, node_t *n) {
 
 	set_config_int(cnf, n->devclass);
 
-	if(!write_host_config(mesh, config_tree, n->name))
+	if(!write_host_config(mesh, config_tree, n->name)) {
 		goto fail;
+	}
 
 	result = true;
 
@@ -184,18 +198,22 @@ void load_all_nodes(meshlink_handle_t *mesh) {
 
 	snprintf(dname, PATH_MAX, "%s" SLASH "hosts", mesh->confbase);
 	dir = opendir(dname);
+
 	if(!dir) {
 		logger(mesh, MESHLINK_ERROR, "Could not open %s: %s", dname, strerror(errno));
 		return;
 	}
 
 	while((ent = readdir(dir))) {
-		if(!check_id(ent->d_name))
+		if(!check_id(ent->d_name)) {
 			continue;
+		}
 
 		node_t *n = lookup_node(mesh, ent->d_name);
-		if(n)
+
+		if(n) {
 			continue;
+		}
 
 		n = new_node();
 		n->name = xstrdup(ent->d_name);
@@ -212,8 +230,9 @@ char *get_name(meshlink_handle_t *mesh) {
 
 	get_config_string(lookup_config(mesh->config, "Name"), &name);
 
-	if(!name)
+	if(!name) {
 		return NULL;
+	}
 
 	if(!check_id(name)) {
 		logger(mesh, MESHLINK_ERROR, "Invalid name for mesh->self!");
@@ -243,22 +262,29 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 
 	if(address) {
 		char *space = strchr(address, ' ');
+
 		if(space) {
 			*space++ = 0;
 			port = space;
 		}
 
-		if(!strcmp(address, "*"))
+		if(!strcmp(address, "*")) {
 			*address = 0;
+		}
 	}
 
 	struct addrinfo *ai, hint = {};
+
 	hint.ai_family = addressfamily;
+
 	hint.ai_socktype = SOCK_STREAM;
+
 	hint.ai_protocol = IPPROTO_TCP;
+
 	hint.ai_flags = AI_PASSIVE;
 
 	int err = getaddrinfo(address && *address ? address : NULL, port, &hint, &ai);
+
 	free(address);
 
 	if(err || !ai) {
@@ -278,8 +304,9 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 				break;
 			}
 
-		if(found)
+		if(found) {
 			continue;
+		}
 
 		if(mesh->listen_sockets >= MAXSOCKETS) {
 			logger(mesh, MESHLINK_ERROR, "Too many listening sockets");
@@ -288,8 +315,9 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 
 		int tcp_fd = setup_listen_socket((sockaddr_t *) aip->ai_addr);
 
-		if(tcp_fd < 0)
+		if(tcp_fd < 0) {
 			continue;
+		}
 
 		int udp_fd = setup_vpn_in_socket(mesh, (sockaddr_t *) aip->ai_addr);
 
@@ -347,16 +375,20 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	mesh->self->options |= PROT_MINOR << 24;
 
-	if(!read_ecdsa_private_key(mesh))
+	if(!read_ecdsa_private_key(mesh)) {
 		return false;
+	}
 
 	/* Ensure mesh->myport is numeric */
 
 	if(!atoi(mesh->myport)) {
 		struct addrinfo *ai = str2addrinfo("localhost", mesh->myport, SOCK_DGRAM);
 		sockaddr_t sa;
-		if(!ai || !ai->ai_addr)
+
+		if(!ai || !ai->ai_addr) {
 			return false;
+		}
+
 		free(mesh->myport);
 		memcpy(&sa, ai->ai_addr, ai->ai_addrlen);
 		sockaddr2str(&sa, NULL, &mesh->myport);
@@ -364,8 +396,9 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	/* Check some options */
 
-	if(!setup_myself_reloadable(mesh))
+	if(!setup_myself_reloadable(mesh)) {
 		return false;
+	}
 
 	/* Compression */
 
@@ -396,12 +429,17 @@ bool setup_myself(meshlink_handle_t *mesh) {
 			logger(mesh, MESHLINK_INFO, "Could not bind to port %s, asking OS to choose one for us", mesh->myport);
 			free(mesh->myport);
 			mesh->myport = strdup("0");
-			if(!mesh->myport)
+
+			if(!mesh->myport) {
 				return false;
-			if(!add_listen_address(mesh, address, NULL))
+			}
+
+			if(!add_listen_address(mesh, address, NULL)) {
 				return false;
-		} else
+			}
+		} else {
 			return false;
+		}
 	}
 
 	if(!mesh->listen_sockets) {
@@ -429,8 +467,9 @@ bool setup_network(meshlink_handle_t *mesh) {
 	mesh->pingtimeout = 5;
 	maxoutbufsize = 10 * MTU;
 
-	if(!setup_myself(mesh))
+	if(!setup_myself(mesh)) {
 		return false;
+	}
 
 	return true;
 }
@@ -448,8 +487,9 @@ void close_network_connections(meshlink_handle_t *mesh) {
 		}
 	}
 
-	if(mesh->outgoings)
+	if(mesh->outgoings) {
 		list_delete_list(mesh->outgoings);
+	}
 
 	if(mesh->self && mesh->self->connection) {
 		terminate_connection(mesh, mesh->self->connection, false);
@@ -468,7 +508,9 @@ void close_network_connections(meshlink_handle_t *mesh) {
 	exit_nodes(mesh);
 	exit_connections(mesh);
 
-	if(mesh->myport) free(mesh->myport);
+	if(mesh->myport) {
+		free(mesh->myport);
+	}
 
 	return;
 }

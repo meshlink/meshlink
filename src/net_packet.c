@@ -91,10 +91,12 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 	}
 
 	if(n->mtuprobes == 30 || (n->mtuprobes < 30 && n->minmtu >= n->maxmtu)) {
-		if(n->minmtu > n->maxmtu)
+		if(n->minmtu > n->maxmtu) {
 			n->minmtu = n->maxmtu;
-		else
+		} else {
 			n->maxmtu = n->minmtu;
+		}
+
 		n->mtu = n->minmtu;
 		logger(mesh, MESHLINK_INFO, "Fixing MTU of %s to %d after %d probes", n->name, n->mtu, n->mtuprobes);
 		n->mtuprobes = 31;
@@ -103,23 +105,28 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 	if(n->mtuprobes == 31) {
 		timeout = mesh->pinginterval;
 		goto end;
-	} else if(n->mtuprobes == 32)
+	} else if(n->mtuprobes == 32) {
 		timeout = mesh->pingtimeout;
+	}
 
 	for(int i = 0; i < 4 + mesh->localdiscovery; i++) {
 		int len;
 
 		if(i == 0) {
-			if(n->mtuprobes < 30 || n->maxmtu + 8 >= MTU)
+			if(n->mtuprobes < 30 || n->maxmtu + 8 >= MTU) {
 				continue;
-			len = n->maxmtu + 8;
-		} else if(n->maxmtu <= n->minmtu)
-			len = n->maxmtu;
-		else
-			len = n->minmtu + 1 + rand() % (n->maxmtu - n->minmtu);
+			}
 
-		if(len < 64)
+			len = n->maxmtu + 8;
+		} else if(n->maxmtu <= n->minmtu) {
+			len = n->maxmtu;
+		} else {
+			len = n->minmtu + 1 + rand() % (n->maxmtu - n->minmtu);
+		}
+
+		if(len < 64) {
 			len = 64;
+		}
 
 		vpn_packet_t packet;
 		packet.probe = true;
@@ -180,18 +187,22 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 				return;
 			}
 
-			if(n->minmtu)
+			if(n->minmtu) {
 				n->mtuprobes = 30;
-			else
+			} else {
 				n->mtuprobes = 1;
+			}
 		}
 
 		/* If applicable, raise the minimum supported MTU */
 
-		if(len > n->maxmtu)
+		if(len > n->maxmtu) {
 			len = n->maxmtu;
-		if(n->minmtu < len)
+		}
+
+		if(n->minmtu < len) {
 			n->minmtu = len;
+		}
 	}
 }
 
@@ -200,9 +211,9 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	logger(mesh, MESHLINK_DEBUG, "Received packet of %d bytes from %s", packet->len, n->name);
 
-	if(n->status.blacklisted)
+	if(n->status.blacklisted) {
 		logger(mesh, MESHLINK_WARNING, "Dropping packet from blacklisted node %s", n->name);
-	else {
+	} else {
 		n->in_packets++;
 		n->in_bytes += packet->len;
 
@@ -220,24 +231,29 @@ static void receive_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 		if(!n->status.waitingforkey) {
 			logger(mesh, MESHLINK_DEBUG, "Got packet from %s but we haven't exchanged keys yet", n->name);
 			send_req_key(mesh, n);
-		} else
+		} else {
 			logger(mesh, MESHLINK_DEBUG, "Got packet from %s but he hasn't got our key yet", n->name);
+		}
+
 		return;
 	}
+
 	sptps_receive_data(&n->sptps, inpkt->data, inpkt->len);
 }
 
 static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
 	if(!n->status.validkey) {
 		logger(mesh, MESHLINK_INFO, "No valid key known yet for %s", n->name);
-		if(!n->status.waitingforkey)
+
+		if(!n->status.waitingforkey) {
 			send_req_key(mesh, n);
-		else if(n->last_req_key + 10 < mesh->loop.now.tv_sec) {
+		} else if(n->last_req_key + 10 < mesh->loop.now.tv_sec) {
 			logger(mesh, MESHLINK_DEBUG, "No key from %s after 10 seconds, restarting SPTPS", n->name);
 			sptps_stop(&n->sptps);
 			n->status.waitingforkey = false;
 			send_req_key(mesh, n);
 		}
+
 		return;
 	}
 
@@ -264,14 +280,16 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 	*sock = n->sock;
 
 	/* If the UDP address is confirmed, use it. */
-	if(n->status.udp_confirmed)
+	if(n->status.udp_confirmed) {
 		return;
+	}
 
 	/* Send every third packet to n->address; that could be set
 	   to the node's reflexive UDP address discovered during key
 	   exchange. */
 
 	static int x = 0;
+
 	if(++x >= 3) {
 		x = 0;
 		return;
@@ -364,13 +382,15 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	if(type >= SPTPS_HANDSHAKE || ((mesh->self->options | to->options) & OPTION_TCPONLY) || (type != PKT_PROBE && len > to->minmtu)) {
 		char buf[len * 4 / 3 + 5];
 		b64encode(data, buf, len);
+
 		/* If no valid key is known yet, send the packets using ANS_KEY requests,
 		   to ensure we get to learn the reflexive UDP address. */
 		if(!to->status.validkey) {
 			to->incompression = mesh->self->incompression;
 			return send_request(mesh, to->nexthop->connection, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, to->incompression);
-		} else
+		} else {
 			return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_SPTPS, buf);
+		}
 	}
 
 	/* Otherwise, send the packet via UDP */
@@ -378,17 +398,21 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	const sockaddr_t *sa;
 	int sock;
 
-	if(to->status.broadcast)
+	if(to->status.broadcast) {
 		choose_broadcast_address(mesh, to, &sa, &sock);
-	else
+	} else {
 		choose_udp_address(mesh, to, &sa, &sock);
+	}
 
 	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
 		if(sockmsgsize(sockerrno)) {
-			if(to->maxmtu >= len)
+			if(to->maxmtu >= len) {
 				to->maxmtu = len - 1;
-			if(to->mtu >= len)
+			}
+
+			if(to->mtu >= len) {
 				to->mtu = len - 1;
+			}
 		} else {
 			logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s: %s", to->name, sockstrerror(sockerrno));
 			return false;
@@ -407,9 +431,12 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 			logger(mesh, MESHLINK_INFO, "SPTPS key exchange with %s succesful", from->name);
 			from->status.validkey = true;
 			from->status.waitingforkey = false;
-			if(from->utcp)
+
+			if(from->utcp) {
 				utcp_reset_timers(from->utcp);
+			}
 		}
+
 		return true;
 	}
 
@@ -426,8 +453,9 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 		memcpy(inpkt.data, data, len);
 		mtu_probe_h(mesh, from, &inpkt, len);
 		return true;
-	} else
+	} else {
 		inpkt.probe = false;
+	}
 
 	if(type & ~(PKT_COMPRESSED)) {
 		logger(mesh, MESHLINK_ERROR, "Unexpected SPTPS record type %d len %d from %s", type, len, from->name);
@@ -475,14 +503,16 @@ void send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 
 void broadcast_packet(meshlink_handle_t *mesh, const node_t *from, vpn_packet_t *packet) {
 	// Always give ourself a copy of the packet.
-	if(from != mesh->self)
+	if(from != mesh->self) {
 		send_packet(mesh, mesh->self, packet);
+	}
 
 	logger(mesh, MESHLINK_INFO, "Broadcasting packet of %d bytes from %s", packet->len, from->name);
 
 	for list_each(connection_t, c, mesh->connections)
-		if(c->status.active && c->status.mst && c != from->nexthop->connection)
+		if(c->status.active && c->status.mst && c != from->nexthop->connection) {
 			send_packet(mesh, c->node, packet);
+		}
 }
 
 static node_t *try_harder(meshlink_handle_t *mesh, const sockaddr_t *from, const vpn_packet_t *pkt) {
@@ -491,24 +521,29 @@ static node_t *try_harder(meshlink_handle_t *mesh, const sockaddr_t *from, const
 	static time_t last_hard_try = 0;
 
 	for splay_each(edge_t, e, mesh->edges) {
-		if(!e->to->status.reachable || e->to == mesh->self)
+		if(!e->to->status.reachable || e->to == mesh->self) {
 			continue;
+		}
 
 		if(sockaddrcmp_noport(from, &e->address)) {
-			if(last_hard_try == mesh->loop.now.tv_sec)
+			if(last_hard_try == mesh->loop.now.tv_sec) {
 				continue;
+			}
+
 			hard = true;
 		}
 
-		if(!try_mac(mesh, e->to, pkt))
+		if(!try_mac(mesh, e->to, pkt)) {
 			continue;
+		}
 
 		n = e->to;
 		break;
 	}
 
-	if(hard)
+	if(hard) {
 		last_hard_try = mesh->loop.now.tv_sec;
+	}
 
 	last_hard_try = mesh->loop.now.tv_sec;
 	return n;
@@ -528,8 +563,10 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 	len = recvfrom(ls->udp.fd, pkt.data, MAXSIZE, 0, &from.sa, &fromlen);
 
 	if(len <= 0 || len > MAXSIZE) {
-		if(!sockwouldblock(sockerrno))
+		if(!sockwouldblock(sockerrno)) {
 			logger(mesh, MESHLINK_ERROR, "Receiving packet failed: %s", sockstrerror(sockerrno));
+		}
+
 		return;
 	}
 
@@ -541,21 +578,24 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 
 	if(!n) {
 		n = try_harder(mesh, &from, &pkt);
-		if(n)
+
+		if(n) {
 			update_node_udp(mesh, n, &from);
-		else if(mesh->log_level >= MESHLINK_WARNING) {
+		} else if(mesh->log_level >= MESHLINK_WARNING) {
 			hostname = sockaddr2hostname(&from);
 			logger(mesh, MESHLINK_WARNING, "Received UDP packet from unknown source %s", hostname);
 			free(hostname);
 			return;
-		} else
+		} else {
 			return;
+		}
 	}
 
 	if(n->status.blacklisted) {
 		logger(mesh, MESHLINK_WARNING, "Dropping packet from blacklisted node %s", n->name);
 		return;
 	}
+
 	n->sock = ls - mesh->listen_socket;
 
 	receive_udppacket(mesh, n, &pkt);

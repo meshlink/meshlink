@@ -42,8 +42,9 @@ ecdsa_t *ecdsa_set_base64_public_key(const char *p) {
 		return 0;
 	}
 
-	ecdsa_t *ecdsa = xzalloc(sizeof *ecdsa);
+	ecdsa_t *ecdsa = xzalloc(sizeof * ecdsa);
 	len = b64decode(p, ecdsa->public, len);
+
 	if(len != 32) {
 		logger(NULL, MESHLINK_ERROR, "Invalid format of public key! len = %d", len);
 		free(ecdsa);
@@ -63,17 +64,23 @@ char *ecdsa_get_base64_public_key(ecdsa_t *ecdsa) {
 // Read PEM ECDSA keys
 
 ecdsa_t *ecdsa_read_pem_public_key(FILE *fp) {
-	ecdsa_t *ecdsa = xzalloc(sizeof *ecdsa);
-	if(fread(ecdsa->public, sizeof ecdsa->public, 1, fp) == 1)
+	ecdsa_t *ecdsa = xzalloc(sizeof * ecdsa);
+
+	if(fread(ecdsa->public, sizeof ecdsa->public, 1, fp) == 1) {
 		return ecdsa;
+	}
+
 	free(ecdsa);
 	return 0;
 }
 
 ecdsa_t *ecdsa_read_pem_private_key(FILE *fp) {
-	ecdsa_t *ecdsa = xmalloc(sizeof *ecdsa);
-	if(fread(ecdsa, sizeof *ecdsa, 1, fp) == 1)
+	ecdsa_t *ecdsa = xmalloc(sizeof * ecdsa);
+
+	if(fread(ecdsa, sizeof * ecdsa, 1, fp) == 1) {
 		return ecdsa;
+	}
+
 	free(ecdsa);
 	return 0;
 }

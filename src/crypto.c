@@ -29,8 +29,11 @@ static int random_fd = -1;
 
 void crypto_init(void) {
 	random_fd = open("/dev/urandom", O_RDONLY);
-	if(random_fd < 0)
+
+	if(random_fd < 0) {
 		random_fd = open("/dev/random", O_RDONLY);
+	}
+
 	if(random_fd < 0) {
 		fprintf(stderr, "Could not open source of random numbers: %s\n", strerror(errno));
 		abort();
@@ -44,12 +47,16 @@ void crypto_exit(void) {
 void randomize(void *out, size_t outlen) {
 	while(outlen) {
 		size_t len = read(random_fd, out, outlen);
+
 		if(len <= 0) {
-			if(errno == EAGAIN || errno == EINTR)
+			if(errno == EAGAIN || errno == EINTR) {
 				continue;
+			}
+
 			fprintf(stderr, "Could not read random numbers: %s\n", strerror(errno));
 			abort();
 		}
+
 		out += len;
 		outlen -= len;
 	}

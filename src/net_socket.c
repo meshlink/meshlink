@@ -50,13 +50,17 @@ static void configure_tcp(connection_t *c) {
 #ifdef O_NONBLOCK
 	int flags = fcntl(c->socket, F_GETFL);
 
-	if(fcntl(c->socket, F_SETFL, flags | O_NONBLOCK) < 0)
+	if(fcntl(c->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
 		logger(c->mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "fcntl", strerror(errno));
+	}
+
 #elif defined(WIN32)
 	unsigned long arg = 1;
 
-	if(ioctlsocket(c->socket, FIONBIO, &arg) != 0)
+	if(ioctlsocket(c->socket, FIONBIO, &arg) != 0) {
 		logger(c->mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "ioctlsocket", sockstrerror(sockerrno));
+	}
+
 #endif
 
 #if defined(SOL_TCP) && defined(TCP_NODELAY)
@@ -74,21 +78,28 @@ static bool bind_to_address(meshlink_handle_t *mesh, connection_t *c) {
 	int s = -1;
 
 	for(int i = 0; i < mesh->listen_sockets && mesh->listen_socket[i].bindto; i++) {
-		if(mesh->listen_socket[i].sa.sa.sa_family != c->address.sa.sa_family)
+		if(mesh->listen_socket[i].sa.sa.sa_family != c->address.sa.sa_family) {
 			continue;
-		if(s >= 0)
+		}
+
+		if(s >= 0) {
 			return false;
+		}
+
 		s = i;
 	}
 
-	if(s < 0)
+	if(s < 0) {
 		return false;
+	}
 
 	sockaddr_t sa = mesh->listen_socket[s].sa;
-	if(sa.sa.sa_family == AF_INET)
+
+	if(sa.sa.sa_family == AF_INET) {
 		sa.in.sin_port = 0;
-	else if(sa.sa.sa_family == AF_INET6)
+	} else if(sa.sa.sa_family == AF_INET6) {
 		sa.in6.sin6_port = 0;
+	}
 
 	if(bind(c->socket, &sa.sa, SALEN(sa.sa))) {
 		logger(mesh, MESHLINK_WARNING, "Can't bind outgoing socket: %s", strerror(errno));
@@ -120,8 +131,11 @@ int setup_listen_socket(const sockaddr_t *sa) {
 	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
 
 #if defined(SOL_IPV6) && defined(IPV6_V6ONLY)
-	if(sa->sa.sa_family == AF_INET6)
+
+	if(sa->sa.sa_family == AF_INET6) {
 		setsockopt(nfd, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
+	}
+
 #endif
 
 	if(bind(nfd, &sa->sa, SALEN(sa->sa))) {
@@ -171,6 +185,7 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 #elif defined(WIN32)
 	{
 		unsigned long arg = 1;
+
 		if(ioctlsocket(nfd, FIONBIO, &arg) != 0) {
 			closesocket(nfd);
 			logger(mesh, MESHLINK_ERROR, "Call to `%s' failed: %s", "ioctlsocket", sockstrerror(sockerrno));
@@ -184,8 +199,11 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	setsockopt(nfd, SOL_SOCKET, SO_BROADCAST, (void *)&option, sizeof(option));
 
 #if defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
-	if(sa->sa.sa_family == AF_INET6)
+
+	if(sa->sa.sa_family == AF_INET6) {
 		setsockopt(nfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
+	}
+
 #endif
 
 #if defined(IP_DONTFRAG) && !defined(IP_DONTFRAGMENT)
@@ -193,29 +211,37 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 #endif
 
 #if defined(SOL_IP) && defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DO)
+
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = IP_PMTUDISC_DO;
 		setsockopt(nfd, SOL_IP, IP_MTU_DISCOVER, (void *)&option, sizeof(option));
 	}
+
 #elif defined(IPPROTO_IP) && defined(IP_DONTFRAGMENT)
+
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = 1;
 		setsockopt(nfd, IPPROTO_IP, IP_DONTFRAGMENT, (void *)&option, sizeof(option));
 	}
+
 #else
 #warning No way to disable IPv4 fragmentation
 #endif
 
 #if defined(SOL_IPV6) && defined(IPV6_MTU_DISCOVER) && defined(IPV6_PMTUDISC_DO)
+
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = IPV6_PMTUDISC_DO;
 		setsockopt(nfd, SOL_IPV6, IPV6_MTU_DISCOVER, (void *)&option, sizeof(option));
 	}
+
 #elif defined(IPPROTO_IPV6) && defined(IPV6_DONTFRAG)
+
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = 1;
 		setsockopt(nfd, IPPROTO_IPV6, IPV6_DONTFRAG, (void *)&option, sizeof(option));
 	}
+
 #else
 #warning No way to disable IPv6 fragmentation
 #endif
@@ -240,8 +266,9 @@ static void retry_outgoing_handler(event_loop_t *loop, void *data) {
 void retry_outgoing(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	outgoing->timeout += 5;
 
-	if(outgoing->timeout > mesh->maxtimeout)
+	if(outgoing->timeout > mesh->maxtimeout) {
 		outgoing->timeout = mesh->maxtimeout;
+	}
 
 	timeout_add(&mesh->loop, &outgoing->ev, retry_outgoing_handler, outgoing, &(struct timeval) {
 		outgoing->timeout, rand() % 100000
@@ -294,10 +321,13 @@ static void do_outgoing_pipe(meshlink_handle_t *mesh, connection_t *c, char *com
 	setenv("NAME", mesh->self->name, true);
 
 	int result = system(command);
-	if(result < 0)
+
+	if(result < 0) {
 		logger(mesh, MESHLINK_ERROR, "Could not execute %s: %s", command, strerror(errno));
-	else if(result)
+	} else if(result) {
 		logger(mesh, MESHLINK_ERROR, "%s exited with non-zero status %d", command, result);
+	}
+
 	exit(result);
 #else
 	logger(mesh, MESHLINK_ERROR, "Proxy type exec not supported on this platform!");
@@ -306,10 +336,12 @@ static void do_outgoing_pipe(meshlink_handle_t *mesh, connection_t *c, char *com
 }
 
 static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
-	if(c->outbuf.len <= c->outbuf.offset)
+	if(c->outbuf.len <= c->outbuf.offset) {
 		return;
+	}
 
 	ssize_t outlen = send(c->socket, c->outbuf.data + c->outbuf.offset, c->outbuf.len - c->outbuf.offset, MSG_NOSIGNAL);
+
 	if(outlen <= 0) {
 		if(!errno || errno == EPIPE) {
 			logger(mesh, MESHLINK_INFO, "Connection closed by %s", c->name);
@@ -325,8 +357,10 @@ static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 	}
 
 	buffer_read(&c->outbuf, outlen);
-	if(!c->outbuf.len)
+
+	if(!c->outbuf.len) {
 		io_set(&mesh->loop, &c->io, IO_READ);
+	}
 }
 
 static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
@@ -340,19 +374,20 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 		socklen_t len = sizeof(result);
 		getsockopt(c->socket, SOL_SOCKET, SO_ERROR, (void *)&result, &len);
 
-		if(!result)
+		if(!result) {
 			finish_connecting(mesh, c);
-		else {
+		} else {
 			logger(mesh, MESHLINK_DEBUG, "Error while connecting to %s: %s", c->name, sockstrerror(result));
 			terminate_connection(mesh, c, false);
 			return;
 		}
 	}
 
-	if(flags & IO_WRITE)
+	if(flags & IO_WRITE) {
 		handle_meta_write(mesh, c);
-	else
+	} else {
 		handle_meta_connection_data(mesh, c);
+	}
 }
 
 // Find edges pointing to this node, and use them to build a list of unique, known addresses.
@@ -360,18 +395,22 @@ static struct addrinfo *get_known_addresses(node_t *n) {
 	struct addrinfo *ai = NULL;
 
 	for splay_each(edge_t, e, n->edge_tree) {
-		if(!e->reverse)
+		if(!e->reverse) {
 			continue;
+		}
 
 		bool found = false;
+
 		for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
 			if(!sockaddrcmp(&e->reverse->address, (sockaddr_t *)aip->ai_addr)) {
 				found = true;
 				break;
 			}
 		}
-		if(found)
+
+		if(found) {
 			continue;
+		}
 
 		// Create a new struct addrinfo, and put it at the head of the list.
 		struct addrinfo *nai = xzalloc(sizeof(*nai) + SALEN(e->reverse->address.sa));
@@ -403,6 +442,7 @@ bool do_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	int result;
 
 begin:
+
 	if(!outgoing->ai && !outgoing->nai) {
 		if(!outgoing->cfg) {
 			logger(mesh, MESHLINK_ERROR, "Could not set up a meta connection to %s", outgoing->name);
@@ -413,6 +453,7 @@ begin:
 		get_config_string(outgoing->cfg, &address);
 
 		space = strchr(address, ' ');
+
 		if(space) {
 			port = xstrdup(space + 1);
 			*space = 0;
@@ -434,12 +475,16 @@ begin:
 	}
 
 	if(!outgoing->aip) {
-		if(outgoing->ai)
+		if(outgoing->ai) {
 			freeaddrinfo(outgoing->ai);
+		}
+
 		outgoing->ai = NULL;
 
-		if(outgoing->nai)
+		if(outgoing->nai) {
 			free_known_addresses(outgoing->nai);
+		}
+
 		outgoing->nai = NULL;
 
 		goto begin;
@@ -458,15 +503,17 @@ begin:
 	if(!mesh->proxytype) {
 		c->socket = socket(c->address.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 		configure_tcp(c);
-	} else if(mesh->proxytype == PROXY_EXEC)
+	} else if(mesh->proxytype == PROXY_EXEC) {
 		do_outgoing_pipe(mesh, c, mesh->proxyhost);
-	else {
+	} else {
 		proxyai = str2addrinfo(mesh->proxyhost, mesh->proxyport, SOCK_STREAM);
+
 		if(!proxyai) {
 			free_connection(c);
 			free(hostname);
 			goto begin;
 		}
+
 		logger(mesh, MESHLINK_INFO, "Using proxy at %s port %s", mesh->proxyhost, mesh->proxyport);
 		c->socket = socket(proxyai->ai_family, SOCK_STREAM, IPPROTO_TCP);
 		configure_tcp(c);
@@ -488,8 +535,11 @@ begin:
 	if(mesh->proxytype != PROXY_EXEC) {
 #if defined(SOL_IPV6) && defined(IPV6_V6ONLY)
 		int option = 1;
-		if(c->address.sa.sa_family == AF_INET6)
+
+		if(c->address.sa.sa_family == AF_INET6) {
 			setsockopt(c->socket, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
+		}
+
 #endif
 
 		bind_to_address(mesh, c);
@@ -497,11 +547,11 @@ begin:
 
 	/* Connect */
 
-	if(!mesh->proxytype)
+	if(!mesh->proxytype) {
 		result = connect(c->socket, &c->address.sa, SALEN(c->address.sa));
-	else if(mesh->proxytype == PROXY_EXEC)
+	} else if(mesh->proxytype == PROXY_EXEC) {
 		result = 0;
-	else {
+	} else {
 		result = connect(c->socket, proxyai->ai_addr, proxyai->ai_addrlen);
 		freeaddrinfo(proxyai);
 	}
@@ -546,11 +596,16 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	outgoing->cfg = lookup_config(outgoing->config_tree, "Address");
 
 	get_config_bool(lookup_config(outgoing->config_tree, "blacklisted"), &blacklisted);
-	if(blacklisted) return;
+
+	if(blacklisted) {
+		return;
+	}
 
 	if(!outgoing->cfg) {
-		if(n)
+		if(n) {
 			outgoing->aip = outgoing->nai = get_known_addresses(n);
+		}
+
 		if(!outgoing->nai) {
 			logger(mesh, MESHLINK_ERROR, "No address known for %s", outgoing->name);
 			return;
@@ -601,10 +656,11 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 		static int samehost_burst;
 		static int samehost_burst_time;
 
-		if(mesh->loop.now.tv_sec - samehost_burst_time > samehost_burst)
+		if(mesh->loop.now.tv_sec - samehost_burst_time > samehost_burst) {
 			samehost_burst = 0;
-		else
+		} else {
 			samehost_burst -= mesh->loop.now.tv_sec - samehost_burst_time;
+		}
 
 		samehost_burst_time = mesh->loop.now.tv_sec;
 		samehost_burst++;
@@ -622,10 +678,11 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	static int connection_burst;
 	static int connection_burst_time;
 
-	if(mesh->loop.now.tv_sec - connection_burst_time > connection_burst)
+	if(mesh->loop.now.tv_sec - connection_burst_time > connection_burst) {
 		connection_burst = 0;
-	else
+	} else {
 		connection_burst -= mesh->loop.now.tv_sec - connection_burst_time;
+	}
 
 	connection_burst_time = mesh->loop.now.tv_sec;
 	connection_burst++;
@@ -665,17 +722,21 @@ static void free_outgoing(outgoing_t *outgoing) {
 
 	timeout_del(&mesh->loop, &outgoing->ev);
 
-	if(outgoing->ai)
+	if(outgoing->ai) {
 		freeaddrinfo(outgoing->ai);
+	}
 
-	if(outgoing->nai)
+	if(outgoing->nai) {
 		free_known_addresses(outgoing->nai);
+	}
 
-	if(outgoing->config_tree)
+	if(outgoing->config_tree) {
 		exit_configuration(&outgoing->config_tree);
+	}
 
-	if(outgoing->name)
+	if(outgoing->name) {
 		free(outgoing->name);
+	}
 
 	free(outgoing);
 }
@@ -683,11 +744,12 @@ static void free_outgoing(outgoing_t *outgoing) {
 void try_outgoing_connections(meshlink_handle_t *mesh) {
 	/* If there is no outgoing list yet, create one. Otherwise, mark all outgoings as deleted. */
 
-	if(!mesh->outgoings)
+	if(!mesh->outgoings) {
 		mesh->outgoings = list_alloc((list_action_t)free_outgoing);
-	else {
-		for list_each(outgoing_t, outgoing, mesh->outgoings)
+	} else {
+		for list_each(outgoing_t, outgoing, mesh->outgoings) {
 			outgoing->timeout = -1;
+		}
 	}
 
 	/* Make sure there is one outgoing_t in the list for each ConnectTo. */
@@ -737,6 +799,7 @@ void try_outgoing_connections(meshlink_handle_t *mesh) {
 	/* Delete outgoing_ts for which there is no ConnectTo. */
 
 	for list_each(outgoing_t, outgoing, mesh->outgoings)
-		if(outgoing->timeout == -1)
+		if(outgoing->timeout == -1) {
 			list_delete_node(mesh->outgoings, node);
+		}
 }

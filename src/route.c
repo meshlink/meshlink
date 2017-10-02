@@ -31,8 +31,9 @@ static bool checklength(node_t *source, vpn_packet_t *packet, uint16_t length) {
 	if(packet->len < length) {
 		logger(source->mesh, MESHLINK_WARNING, "Got too short packet from %s", source->name);
 		return false;
-	} else
+	} else {
 		return true;
+	}
 }
 
 void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
@@ -45,8 +46,9 @@ void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 	logger(mesh, MESHLINK_DEBUG, "Routing packet from \"%s\" to \"%s\"\n", hdr->source, hdr->destination);
 
 	//Check Lenght
-	if(!checklength(source, packet, sizeof(*hdr)))
+	if(!checklength(source, packet, sizeof(*hdr))) {
 		return;
+	}
 
 	if(owner == NULL) {
 		//Lookup failed
@@ -60,12 +62,17 @@ void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 		size_t len = packet->len - sizeof(*hdr);
 
 		char hex[len * 2 + 1];
-		if(mesh->log_level >= MESHLINK_DEBUG)
-			bin2hex(payload, hex, len);     // don't do this unless it's going to be logged
+
+		if(mesh->log_level >= MESHLINK_DEBUG) {
+			bin2hex(payload, hex, len);        // don't do this unless it's going to be logged
+		}
+
 		logger(mesh, MESHLINK_DEBUG, "I received a packet for me with payload: %s\n", hex);
 
-		if(mesh->receive_cb)
+		if(mesh->receive_cb) {
 			mesh->receive_cb(mesh, (meshlink_node_t *)source, payload, len);
+		}
+
 		return;
 	}
 
@@ -76,6 +83,7 @@ void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 	}
 
 	via = (owner->via == mesh->self) ? owner->nexthop : owner->via;
+
 	if(via == source) {
 		logger(mesh, MESHLINK_ERROR, "Routing loop for packet from %s!", source->name);
 		return;

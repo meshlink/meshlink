@@ -37,8 +37,9 @@ void send_key_changed(meshlink_handle_t *mesh) {
 	/* Force key exchange for connections using SPTPS */
 
 	for splay_each(node_t, n, mesh->nodes)
-		if(n->status.reachable && n->status.validkey)
+		if(n->status.reachable && n->status.validkey) {
 			sptps_force_kex(&n->sptps);
+		}
 }
 
 bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -50,8 +51,9 @@ bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request
 		return false;
 	}
 
-	if(seen_request(mesh, request))
+	if(seen_request(mesh, request)) {
 		return true;
+	}
 
 	n = lookup_node(mesh, name);
 
@@ -84,8 +86,9 @@ bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 		return true;
 	}
 
-	if(to->sptps.label)
+	if(to->sptps.label) {
 		logger(mesh, MESHLINK_DEBUG, "send_req_key(%s) called while sptps->label != NULL!", to->name);
+	}
 
 	char label[sizeof(meshlink_udp_label) + strlen(mesh->self->name) + strlen(to->name) + 2];
 	snprintf(label, sizeof(label), "%s %s %s", meshlink_udp_label, mesh->self->name, to->name);
@@ -101,6 +104,7 @@ bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 
 static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *request, node_t *from, int reqno) {
 	(void)c;
+
 	switch(reqno) {
 	case REQ_PUBKEY: {
 		char *pubkey = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
@@ -116,6 +120,7 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		}
 
 		char pubkey[MAX_STRING_SIZE];
+
 		if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, pubkey) != 1 || !(from->ecdsa = ecdsa_set_base64_public_key(pubkey))) {
 			logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ANS_PUBKEY", from->name, "invalid pubkey");
 			return true;
@@ -135,6 +140,7 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 
 		if(from->sptps.label) {
 			logger(mesh, MESHLINK_DEBUG, "Got REQ_KEY from %s while we already started a SPTPS session!", from->name);
+
 			if(strcmp(mesh->self->name, from->name) < 0) {
 				logger(mesh, MESHLINK_DEBUG, "Ignoring REQ_KEY from %s.", from->name);
 				return true;
@@ -168,10 +174,12 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 
 		char buf[MAX_STRING_SIZE];
 		int len;
+
 		if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, buf) != 1 || !(len = b64decode(buf, buf, strlen(buf)))) {
 			logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "REQ_SPTPS", from->name, "invalid SPTPS data");
 			return true;
 		}
+
 		sptps_receive_data(&from->sptps, buf, len);
 		return true;
 	}
@@ -218,8 +226,9 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(to == mesh->self) {                      /* Yes */
 		/* Is this an extended REQ_KEY message? */
-		if(reqno)
+		if(reqno) {
 			return req_key_ext_h(mesh, c, request, from, reqno);
+		}
 
 		/* This should never happen. Ignore it, unless it came directly from the connected peer, in which case we disconnect. */
 		return from->connection != c;
@@ -317,8 +326,9 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char buf[strlen(key)];
 	int len = b64decode(key, buf, strlen(key));
 
-	if(!len || !sptps_receive_data(&from->sptps, buf, len))
+	if(!len || !sptps_receive_data(&from->sptps, buf, len)) {
 		logger(mesh, MESHLINK_ERROR, "Error processing SPTPS data from %s", from->name);
+	}
 
 	if(from->status.validkey) {
 		if(*address && *port) {
@@ -327,8 +337,9 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			update_node_udp(mesh, from, &sa);
 		}
 
-		if(from->options & OPTION_PMTU_DISCOVERY && !(from->options & OPTION_TCPONLY))
+		if(from->options & OPTION_PMTU_DISCOVERY && !(from->options & OPTION_TCPONLY)) {
 			send_mtu_probe(mesh, from);
+		}
 	}
 
 	return true;

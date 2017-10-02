@@ -21,8 +21,9 @@
 #define MESHLINK_MDNS_FINGERPRINT_KEY "fingerprint"
 
 static void generate_rand_string(char *buffer, size_t size) {
-	for(size_t i = 0; i < (size - 1); ++i)
+	for(size_t i = 0; i < (size - 1); ++i) {
 		buffer[i] = 'a' + (rand() % ('z' - 'a' + 1));
+	}
 
 	buffer[size - 1] = '\0';
 }
@@ -106,6 +107,7 @@ static void discovery_create_services(meshlink_handle_t *mesh) {
 
 	/* Add the service */
 	int ret = 0;
+
 	if((ret = catta_server_add_service(mesh->catta_server, mesh->catta_group, CATTA_IF_UNSPEC, CATTA_PROTO_UNSPEC, 0, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self), mesh->catta_servicetype, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0) {
 		logger(mesh, MESHLINK_ERROR, "Failed to add service: %s\n", catta_strerror(ret));
 		goto fail;
@@ -123,8 +125,10 @@ fail:
 	catta_simple_poll_quit(mesh->catta_poll);
 
 done:
-	if(txt_name)
+
+	if(txt_name) {
 		free(txt_name);
+	}
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
@@ -142,8 +146,9 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 	case CATTA_SERVER_RUNNING: {
 		/* The serve has startup successfully and registered its host
 		 * name on the network, so it's time to create our services */
-		if(!mesh->catta_group)
+		if(!mesh->catta_group) {
 			discovery_create_services(mesh);
+		}
 	}
 	break;
 
@@ -291,16 +296,20 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 						break;
 					}
 
-					if(naddress.unknown.family != AF_UNKNOWN)
+					if(naddress.unknown.family != AF_UNKNOWN) {
 						meshlink_hint_address(mesh, (meshlink_node_t *)node, (struct sockaddr *)&naddress);
-					else
+					} else {
 						logger(mesh, MESHLINK_WARNING, "Could not resolve node %s to a known address family type.\n", node->name);
-				} else
+					}
+				} else {
 					logger(mesh, MESHLINK_WARNING, "Node %s is not part of the mesh network.\n", node_name);
-			} else
+				}
+			} else {
 				logger(mesh, MESHLINK_WARNING, "TXT records invalid.\n");
-		} else
+			}
+		} else {
 			logger(mesh, MESHLINK_WARNING, "TXT records missing.\n");
+		}
 	}
 	break;
 	}
@@ -337,12 +346,14 @@ static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfInde
 		assert(domain != NULL);
 
 		logger(mesh, MESHLINK_DEBUG, "(Browser) NEW: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
+
 		/* We ignore the returned resolver object. In the callback
 		   function we free it. Ifthe server is terminated before
 		   the callback function is called the server will free
 		   the resolver for us. */
-		if(!(catta_s_service_resolver_new(mesh->catta_server, interface_, protocol, name, type, domain, CATTA_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh)))
+		if(!(catta_s_service_resolver_new(mesh->catta_server, interface_, protocol, name, type, domain, CATTA_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh))) {
 			logger(mesh, MESHLINK_DEBUG, "Failed to resolve service '%s': %s\n", name, catta_strerror(catta_server_errno(mesh->catta_server)));
+		}
 	}
 	break;
 
@@ -480,6 +491,7 @@ bool discovery_start(meshlink_handle_t *mesh) {
 	return true;
 
 fail:
+
 	if(mesh->catta_browser != NULL) {
 		catta_s_service_browser_free(mesh->catta_browser);
 		mesh->catta_browser = NULL;
@@ -510,8 +522,9 @@ void discovery_stop(meshlink_handle_t *mesh) {
 	assert(mesh != NULL);
 
 	// Shut down
-	if(mesh->catta_poll)
+	if(mesh->catta_poll) {
 		catta_simple_poll_quit(mesh->catta_poll);
+	}
 
 	// Wait for the discovery thread to finish
 	if(mesh->discovery_threadstarted == true) {

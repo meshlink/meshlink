@@ -10,3 +10,6 @@ EXTRA_DIST = README.android
 
 ChangeLog:
 	git log > ChangeLog
+
+astyle:
+	astyle --options=.astylerc -nQ src/*.[ch] src/ed25519/e*.[ch]

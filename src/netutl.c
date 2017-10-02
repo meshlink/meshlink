@@ -80,10 +80,14 @@ void sockaddr2str(const sockaddr_t *sa, char **addrstr, char **portstr) {
 	int err;
 
 	if(sa->sa.sa_family == AF_UNKNOWN) {
-		if(addrstr)
+		if(addrstr) {
 			*addrstr = xstrdup(sa->unknown.address);
-		if(portstr)
+		}
+
+		if(portstr) {
 			*portstr = xstrdup(sa->unknown.port);
+		}
+
 		return;
 	}
 
@@ -96,13 +100,17 @@ void sockaddr2str(const sockaddr_t *sa, char **addrstr, char **portstr) {
 
 	scopeid = strchr(address, '%');
 
-	if(scopeid)
-		*scopeid = '\0'; /* Descope. */
+	if(scopeid) {
+		*scopeid = '\0';        /* Descope. */
+	}
 
-	if(addrstr)
+	if(addrstr) {
 		*addrstr = xstrdup(address);
-	if(portstr)
+	}
+
+	if(portstr) {
 		*portstr = xstrdup(port);
+	}
 }
 
 char *sockaddr2hostname(const sockaddr_t *sa) {
@@ -118,8 +126,10 @@ char *sockaddr2hostname(const sockaddr_t *sa) {
 
 	err = getnameinfo(&sa->sa, SALEN(sa->sa), address, sizeof(address), port, sizeof(port),
 	                  hostnames ? 0 : (NI_NUMERICHOST | NI_NUMERICSERV));
-	if(err)
+
+	if(err) {
 		logger(NULL, MESHLINK_ERROR, "Error while looking up hostname: %s", err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
+	}
 
 	xasprintf(&str, "%s port %s", address, port);
 
@@ -131,8 +141,9 @@ int sockaddrcmp_noport(const sockaddr_t *a, const sockaddr_t *b) {
 
 	result = a->sa.sa_family - b->sa.sa_family;
 
-	if(result)
+	if(result) {
 		return result;
+	}
 
 	switch(a->sa.sa_family) {
 	case AF_UNSPEC:
@@ -159,8 +170,9 @@ int sockaddrcmp(const sockaddr_t *a, const sockaddr_t *b) {
 
 	result = a->sa.sa_family - b->sa.sa_family;
 
-	if(result)
+	if(result) {
 		return result;
+	}
 
 	switch(a->sa.sa_family) {
 	case AF_UNSPEC:
@@ -169,24 +181,27 @@ int sockaddrcmp(const sockaddr_t *a, const sockaddr_t *b) {
 	case AF_UNKNOWN:
 		result = strcmp(a->unknown.address, b->unknown.address);
 
-		if(result)
+		if(result) {
 			return result;
+		}
 
 		return strcmp(a->unknown.port, b->unknown.port);
 
 	case AF_INET:
 		result = memcmp(&a->in.sin_addr, &b->in.sin_addr, sizeof(a)->in.sin_addr);
 
-		if(result)
+		if(result) {
 			return result;
+		}
 
 		return memcmp(&a->in.sin_port, &b->in.sin_port, sizeof(a)->in.sin_port);
 
 	case AF_INET6:
 		result = memcmp(&a->in6.sin6_addr, &b->in6.sin6_addr, sizeof(a)->in6.sin6_addr);
 
-		if(result)
+		if(result) {
 			return result;
+		}
 
 		return memcmp(&a->in6.sin6_port, &b->in6.sin6_port, sizeof(a)->in6.sin6_port);
 
@@ -198,9 +213,9 @@ int sockaddrcmp(const sockaddr_t *a, const sockaddr_t *b) {
 }
 
 void sockaddrcpy(sockaddr_t *a, const sockaddr_t *b) {
-	if(b->sa.sa_family != AF_UNKNOWN)
+	if(b->sa.sa_family != AF_UNKNOWN) {
 		*a = *b;
-	else {
+	} else {
 		a->unknown.family = AF_UNKNOWN;
 		a->unknown.address = xstrdup(b->unknown.address);
 		a->unknown.port = xstrdup(b->unknown.port);

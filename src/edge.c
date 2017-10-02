@@ -37,13 +37,15 @@ static int edge_weight_compare(const edge_t *a, const edge_t *b) {
 
 	result = a->weight - b->weight;
 
-	if(result)
+	if(result) {
 		return result;
+	}
 
 	result = strcmp(a->from->name, b->from->name);
 
-	if(result)
+	if(result) {
 		return result;
+	}
 
 	return strcmp(a->to->name, b->to->name);
 }
@@ -61,8 +63,10 @@ void free_edge_tree(splay_tree_t *edge_tree) {
 }
 
 void exit_edges(meshlink_handle_t *mesh) {
-	if(mesh->edges)
+	if(mesh->edges) {
 		splay_delete_tree(mesh->edges);
+	}
+
 	mesh->edges = NULL;
 }
 
@@ -84,13 +88,15 @@ void edge_add(meshlink_handle_t *mesh, edge_t *e) {
 
 	e->reverse = lookup_edge(e->to, e->from);
 
-	if(e->reverse)
+	if(e->reverse) {
 		e->reverse->reverse = e;
+	}
 }
 
 void edge_del(meshlink_handle_t *mesh, edge_t *e) {
-	if(e->reverse)
+	if(e->reverse) {
 		e->reverse->reverse = NULL;
+	}
 
 	splay_delete(mesh->edges, e);
 	splay_delete(e->from->edge_tree, e);

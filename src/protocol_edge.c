@@ -88,8 +88,9 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		return false;
 	}
 
-	if(seen_request(mesh, request))
+	if(seen_request(mesh, request)) {
 		return true;
+	}
 
 	/* Lookup nodes */
 
@@ -137,8 +138,9 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 				edge_del(mesh, e);
 				graph(mesh);
 			}
-		} else
+		} else {
 			return true;
+		}
 	} else if(from == mesh->self) {
 		logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself which does not exist",
 		       "ADD_EDGE", c->name);
@@ -193,8 +195,9 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		return false;
 	}
 
-	if(seen_request(mesh, request))
+	if(seen_request(mesh, request)) {
 		return true;
+	}
 
 	/* Lookup nodes */
 
@@ -247,6 +250,7 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!to->status.reachable) {
 		e = lookup_edge(to, mesh->self);
+
 		if(e) {
 			send_del_edge(mesh, mesh->everyone, e);
 			edge_del(mesh, e);

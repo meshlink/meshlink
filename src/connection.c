@@ -35,8 +35,9 @@ void init_connections(meshlink_handle_t *mesh) {
 }
 
 void exit_connections(meshlink_handle_t *mesh) {
-	if(mesh->connections)
+	if(mesh->connections) {
 		list_delete_list(mesh->connections);
+	}
 
 	free_connection(mesh->everyone);
 
@@ -49,8 +50,9 @@ connection_t *new_connection(void) {
 }
 
 void free_connection(connection_t *c) {
-	if(!c)
+	if(!c) {
 		return;
+	}
 
 	sptps_stop(&c->sptps);
 	ecdsa_free(c->ecdsa);
@@ -58,16 +60,19 @@ void free_connection(connection_t *c) {
 	buffer_clear(&c->inbuf);
 	buffer_clear(&c->outbuf);
 
-	if(c->io.cb)
+	if(c->io.cb) {
 		abort();
+	}
 
-	if(c->socket > 0)
+	if(c->socket > 0) {
 		closesocket(c->socket);
+	}
 
 	free(c->name);
 
-	if(c->config_tree)
+	if(c->config_tree) {
 		exit_configuration(&c->config_tree);
+	}
 
 	free(c);
 }

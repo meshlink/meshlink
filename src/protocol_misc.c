@@ -94,8 +94,11 @@ bool pong_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	if(c->outgoing) {
 		c->outgoing->timeout = 0;
 		c->outgoing->cfg = NULL;
-		if(c->outgoing->ai)
+
+		if(c->outgoing->ai) {
 			freeaddrinfo(c->outgoing->ai);
+		}
+
 		c->outgoing->ai = NULL;
 		c->outgoing->aip = NULL;
 	}

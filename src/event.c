@@ -33,24 +33,38 @@ static int io_compare(const io_t *a, const io_t *b) {
 static int timeout_compare(const timeout_t *a, const timeout_t *b) {
 	struct timeval diff;
 	timersub(&a->tv, &b->tv, &diff);
-	if(diff.tv_sec < 0)
+
+	if(diff.tv_sec < 0) {
 		return -1;
-	if(diff.tv_sec > 0)
+	}
+
+	if(diff.tv_sec > 0) {
 		return 1;
-	if(diff.tv_usec < 0)
+	}
+
+	if(diff.tv_usec < 0) {
 		return -1;
-	if(diff.tv_usec > 0)
+	}
+
+	if(diff.tv_usec > 0) {
 		return 1;
-	if(a < b)
+	}
+
+	if(a < b) {
 		return -1;
-	if(a > b)
+	}
+
+	if(a > b) {
 		return 1;
+	}
+
 	return 0;
 }
 
 void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int flags) {
-	if(io->cb)
+	if(io->cb) {
 		return;
+	}
 
 	io->fd = fd;
 	io->cb = cb;
@@ -59,27 +73,31 @@ void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int fl
 
 	io_set(loop, io, flags);
 
-	if(!splay_insert_node(&loop->ios, &io->node))
+	if(!splay_insert_node(&loop->ios, &io->node)) {
 		abort();
+	}
 }
 
 void io_set(event_loop_t *loop, io_t *io, int flags) {
 	io->flags = flags;
 
-	if(flags & IO_READ)
+	if(flags & IO_READ) {
 		FD_SET(io->fd, &loop->readfds);
-	else
+	} else {
 		FD_CLR(io->fd, &loop->readfds);
+	}
 
-	if(flags & IO_WRITE)
+	if(flags & IO_WRITE) {
 		FD_SET(io->fd, &loop->writefds);
-	else
+	} else {
 		FD_CLR(io->fd, &loop->writefds);
+	}
 }
 
 void io_del(event_loop_t *loop, io_t *io) {
-	if(!io->cb)
+	if(!io->cb) {
 		return;
+	}
 
 	loop->deletion = true;
 
@@ -96,28 +114,34 @@ void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *
 	};
 
 	timeout->cb = cb;
+
 	timeout->data = data;
+
 	timeout->node.data = timeout;
 
 	timeout_set(loop, timeout, tv);
 }
 
 void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv) {
-	if(timerisset(&timeout->tv))
+	if(timerisset(&timeout->tv)) {
 		splay_unlink_node(&loop->timeouts, &timeout->node);
+	}
 
-	if(!loop->now.tv_sec)
+	if(!loop->now.tv_sec) {
 		gettimeofday(&loop->now, NULL);
+	}
 
 	timeradd(&loop->now, tv, &timeout->tv);
 
-	if(!splay_insert_node(&loop->timeouts, &timeout->node))
+	if(!splay_insert_node(&loop->timeouts, &timeout->node)) {
 		abort();
+	}
 }
 
 void timeout_del(event_loop_t *loop, timeout_t *timeout) {
-	if(!timeout->cb)
+	if(!timeout->cb) {
 		return;
+	}
 
 	loop->deletion = true;
 
@@ -136,19 +160,24 @@ static void signalio_handler(event_loop_t *loop, void *data, int flags) {
 	(void)data;
 	(void)flags;
 	unsigned char signum;
-	if(read(loop->pipefd[0], &signum, 1) != 1)
+
+	if(read(loop->pipefd[0], &signum, 1) != 1) {
 		return;
+	}
 
 	signal_t *sig = splay_search(&loop->signals, &((signal_t) {
 		.signum = signum
 	}));
-	if(sig)
+
+	if(sig) {
 		sig->cb(loop, sig->data);
+	}
 }
 
 static void pipe_init(event_loop_t *loop) {
-	if(!pipe(loop->pipefd))
+	if(!pipe(loop->pipefd)) {
 		io_add(loop, &loop->signalio, signalio_handler, NULL, loop->pipefd[0], IO_READ);
+	}
 }
 
 void signal_trigger(event_loop_t *loop, signal_t *sig) {
@@ -160,24 +189,28 @@ void signal_trigger(event_loop_t *loop, signal_t *sig) {
 }
 
 void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum) {
-	if(sig->cb)
+	if(sig->cb) {
 		return;
+	}
 
 	sig->cb = cb;
 	sig->data = data;
 	sig->signum = signum;
 	sig->node.data = sig;
 
-	if(loop->pipefd[0] == -1)
+	if(loop->pipefd[0] == -1) {
 		pipe_init(loop);
+	}
 
-	if(!splay_insert_node(&loop->signals, &sig->node))
+	if(!splay_insert_node(&loop->signals, &sig->node)) {
 		abort();
+	}
 }
 
 void signal_del(event_loop_t *loop, signal_t *sig) {
-	if(!sig->cb)
+	if(!sig->cb) {
 		return;
+	}
 
 	loop->deletion = true;
 
@@ -204,8 +237,10 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 
 			if(diff.tv_sec < 0) {
 				timeout->cb(loop, timeout->data);
-				if(timercmp(&timeout->tv, &loop->now, <))
+
+				if(timercmp(&timeout->tv, &loop->now, <)) {
 					timeout_del(loop, timeout);
+				}
 			} else {
 				tv = &diff;
 				break;
@@ -214,8 +249,10 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 
 		if(loop->idle_cb) {
 			it = loop->idle_cb(loop, loop->idle_data);
-			if(it.tv_sec >= 0 && (!tv || timercmp(&it, tv, <)))
+
+			if(it.tv_sec >= 0 && (!tv || timercmp(&it, tv, <))) {
 				tv = &it;
+			}
 		}
 
 		memcpy(&readable, &loop->readfds, sizeof(readable));
@@ -229,21 +266,27 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		}
 
 		// release mesh mutex during select
-		if(mutex)
+		if(mutex) {
 			pthread_mutex_unlock(mutex);
-		int n = select(fds, &readable, &writable, NULL, tv);
-		if(mutex)
-			pthread_mutex_lock(mutex);
-
-		if(n < 0) {
-			if(sockwouldblock(errno))
-				continue;
-			else
-				return false;
 		}
 
-		if(!n)
+		int n = select(fds, &readable, &writable, NULL, tv);
+
+		if(mutex) {
+			pthread_mutex_lock(mutex);
+		}
+
+		if(n < 0) {
+			if(sockwouldblock(errno)) {
+				continue;
+			} else {
+				return false;
+			}
+		}
+
+		if(!n) {
 			continue;
+		}
 
 		// Normally, splay_each allows the current node to be deleted. However,
 		// it can be that one io callback triggers the deletion of another io,
@@ -252,14 +295,21 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		loop->deletion = false;
 
 		for splay_each(io_t, io, &loop->ios) {
-			if(FD_ISSET(io->fd, &writable) && io->cb)
+			if(FD_ISSET(io->fd, &writable) && io->cb) {
 				io->cb(loop, io->data, IO_WRITE);
-			if(loop->deletion)
+			}
+
+			if(loop->deletion) {
 				break;
-			if(FD_ISSET(io->fd, &readable) && io->cb)
+			}
+
+			if(FD_ISSET(io->fd, &readable) && io->cb) {
 				io->cb(loop, io->data, IO_READ);
-			if(loop->deletion)
+			}
+
+			if(loop->deletion) {
 				break;
+			}
 		}
 	}
 
@@ -268,8 +318,9 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 
 void event_flush_output(event_loop_t *loop) {
 	for splay_each(io_t, io, &loop->ios)
-		if(FD_ISSET(io->fd, &loop->writefds))
+		if(FD_ISSET(io->fd, &loop->writefds)) {
 			io->cb(loop, io->data, IO_WRITE);
+		}
 }
 
 void event_loop_start(event_loop_t *loop) {
@@ -290,10 +341,15 @@ void event_loop_init(event_loop_t *loop) {
 }
 
 void event_loop_exit(event_loop_t *loop) {
-	for splay_each(io_t, io, &loop->ios)
+	for splay_each(io_t, io, &loop->ios) {
 		splay_unlink_node(&loop->ios, node);
-	for splay_each(timeout_t, timeout, &loop->timeouts)
+	}
+
+	for splay_each(timeout_t, timeout, &loop->timeouts) {
 		splay_unlink_node(&loop->timeouts, node);
-	for splay_each(signal_t, signal, &loop->signals)
+	}
+
+	for splay_each(signal_t, signal, &loop->signals) {
 		splay_unlink_node(&loop->signals, node);
+	}
 }

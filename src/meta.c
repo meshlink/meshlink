@@ -63,8 +63,9 @@ bool send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int
 
 void broadcast_meta(meshlink_handle_t *mesh, connection_t *from, const char *buffer, int length) {
 	for list_each(connection_t, c, mesh->connections)
-		if(c != from && c->status.active)
+		if(c != from && c->status.active) {
 			send_meta(mesh, c, buffer, length);
+		}
 }
 
 bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t length) {
@@ -78,14 +79,16 @@ bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t l
 	}
 
 	if(type == SPTPS_HANDSHAKE) {
-		if(c->allow_request == ACK)
+		if(c->allow_request == ACK) {
 			return send_ack(mesh, c);
-		else
+		} else {
 			return true;
+		}
 	}
 
-	if(!request)
+	if(!request) {
 		return true;
+	}
 
 	/* Are we receiving a TCPpacket? */
 
@@ -95,8 +98,9 @@ bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t l
 
 	/* Change newline to null byte, just like non-SPTPS requests */
 
-	if(request[length - 1] == '\n')
+	if(request[length - 1] == '\n') {
 		request[length - 1] = 0;
+	}
 
 	/* Otherwise we are waiting for a request */
 
@@ -112,10 +116,12 @@ bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 	if(inlen <= 0) {
 		if(!inlen || !errno) {
 			logger(mesh, MESHLINK_INFO, "Connection closed by %s", c->name);
-		} else if(sockwouldblock(sockerrno))
+		} else if(sockwouldblock(sockerrno)) {
 			return true;
-		else
+		} else {
 			logger(mesh, MESHLINK_ERROR, "Metadata socket read error for %s: %s", c->name, sockstrerror(sockerrno));
+		}
+
 		return false;
 	}
 
@@ -125,22 +131,26 @@ bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 		char *request = buffer_readline(&c->inbuf);
 
 		if(request) {
-			if(!receive_request(mesh, c, request) || c->allow_request == ID)
+			if(!receive_request(mesh, c, request) || c->allow_request == ID) {
 				return false;
+			}
 
 			int left = c->inbuf.len - c->inbuf.offset;
+
 			if(left > 0) {
 				fprintf(stderr, "GOT A LITTLE MORE\n");
 				return sptps_receive_data(&c->sptps, buffer_read(&c->inbuf, left), left);
-			} else
+			} else {
 				return true;
+			}
 		}
 
 		if(c->inbuf.len >= sizeof(inbuf)) {
 			logger(mesh, MESHLINK_ERROR, "Input buffer full for %s", c->name);
 			return false;
-		} else
+		} else {
 			return true;
+		}
 	}
 
 	return sptps_receive_data(&c->sptps, inbuf, inlen);

@@ -47,10 +47,11 @@ devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *e
 	result_size = mesh->edges->count / 2;
 
 	// if result is smaller than edges, we have to dealloc all the excess devtool_edge_t
-	if((size_t)result_size > *nmemb)
+	if((size_t)result_size > *nmemb) {
 		result = realloc(edges, result_size * sizeof(*result));
-	else
+	} else {
 		result = edges;
+	}
 
 	if(result) {
 		devtool_edge_t *p = result;
@@ -58,12 +59,14 @@ devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *e
 
 		for splay_each(edge_t, e, mesh->edges) {
 			// skip edges that do not represent a two-directional connection
-			if((!e->reverse) || (e->reverse->to != e->from))
+			if((!e->reverse) || (e->reverse->to != e->from)) {
 				continue;
+			}
 
 			// don't count edges twice
-			if(e->to < e->from)
+			if(e->to < e->from) {
 				continue;
+			}
 
 			assert(n < result_size);
 
@@ -93,8 +96,9 @@ devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *e
 static bool fstrwrite(const char *str, FILE *stream) {
 	size_t len = strlen(str);
 
-	if(fwrite((void *)str, 1, len, stream) != len)
+	if(fwrite((void *)str, 1, len, stream) != len) {
 		return false;
+	}
 
 	return true;
 }
@@ -102,8 +106,9 @@ static bool fstrwrite(const char *str, FILE *stream) {
 static const char *__itoa(int value) {
 	static char buffer[sizeof(int) * 8 + 1];        // not thread safe
 
-	if(snprintf(buffer, sizeof(buffer), "%d", value) == -1)
+	if(snprintf(buffer, sizeof(buffer), "%d", value) == -1) {
 		return "";
+	}
 
 	return buffer;
 }
@@ -120,57 +125,71 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) 
 	meshlink_node_t **nodes = meshlink_get_all_nodes(mesh, NULL, &node_count);
 	devtool_edge_t *edges = devtool_get_all_edges(mesh, NULL, &edge_count);
 
-	if((!nodes && node_count != 0) || (!edges && edge_count != 0))
+	if((!nodes && node_count != 0) || (!edges && edge_count != 0)) {
 		goto fail;
-
-	// export begin
-	if(!fstrwrite("{\n", stream))
-		goto fail;
-
-	// export nodes
-	if(!fstrwrite("\t\"nodes\": {\n", stream))
-		goto fail;
-
-	for(size_t i = 0; i < node_count; ++i) {
-		if(!fstrwrite("\t\t\"", stream) || !fstrwrite(((node_t *)nodes[i])->name, stream) || !fstrwrite("\": {\n", stream))
-			goto fail;
-
-		if(!fstrwrite("\t\t\t\"name\": \"", stream) || !fstrwrite(((node_t *)nodes[i])->name, stream) || !fstrwrite("\",\n", stream))
-			goto fail;
-
-		if(!fstrwrite("\t\t\t\"options\": ", stream) || !fstrwrite(__itoa(((node_t *)nodes[i])->options), stream) || !fstrwrite(",\n", stream))
-			goto fail;
-
-		if(!fstrwrite("\t\t\t\"devclass\": ", stream) || !fstrwrite(__itoa(((node_t *)nodes[i])->devclass), stream) || !fstrwrite("\n", stream))
-			goto fail;
-
-		if(!fstrwrite((i + 1) != node_count ? "\t\t},\n" : "\t\t}\n", stream))
-			goto fail;
 	}
 
-	if(!fstrwrite("\t},\n", stream))
+	// export begin
+	if(!fstrwrite("{\n", stream)) {
 		goto fail;
+	}
+
+	// export nodes
+	if(!fstrwrite("\t\"nodes\": {\n", stream)) {
+		goto fail;
+	}
+
+	for(size_t i = 0; i < node_count; ++i) {
+		if(!fstrwrite("\t\t\"", stream) || !fstrwrite(((node_t *)nodes[i])->name, stream) || !fstrwrite("\": {\n", stream)) {
+			goto fail;
+		}
+
+		if(!fstrwrite("\t\t\t\"name\": \"", stream) || !fstrwrite(((node_t *)nodes[i])->name, stream) || !fstrwrite("\",\n", stream)) {
+			goto fail;
+		}
+
+		if(!fstrwrite("\t\t\t\"options\": ", stream) || !fstrwrite(__itoa(((node_t *)nodes[i])->options), stream) || !fstrwrite(",\n", stream)) {
+			goto fail;
+		}
+
+		if(!fstrwrite("\t\t\t\"devclass\": ", stream) || !fstrwrite(__itoa(((node_t *)nodes[i])->devclass), stream) || !fstrwrite("\n", stream)) {
+			goto fail;
+		}
+
+		if(!fstrwrite((i + 1) != node_count ? "\t\t},\n" : "\t\t}\n", stream)) {
+			goto fail;
+		}
+	}
+
+	if(!fstrwrite("\t},\n", stream)) {
+		goto fail;
+	}
 
 	// export edges
 
-	if(!fstrwrite("\t\"edges\": {\n", stream))
+	if(!fstrwrite("\t\"edges\": {\n", stream)) {
 		goto fail;
+	}
 
 	for(size_t i = 0; i < edge_count; ++i) {
-		if(!fstrwrite("\t\t\"", stream) || !fstrwrite(edges[i].from->name, stream) || !fstrwrite("_to_", stream) || !fstrwrite(edges[i].to->name, stream) || !fstrwrite("\": {\n", stream))
+		if(!fstrwrite("\t\t\"", stream) || !fstrwrite(edges[i].from->name, stream) || !fstrwrite("_to_", stream) || !fstrwrite(edges[i].to->name, stream) || !fstrwrite("\": {\n", stream)) {
 			goto fail;
+		}
 
-		if(!fstrwrite("\t\t\t\"from\": \"", stream) || !fstrwrite(edges[i].from->name, stream) || !fstrwrite("\",\n", stream))
+		if(!fstrwrite("\t\t\t\"from\": \"", stream) || !fstrwrite(edges[i].from->name, stream) || !fstrwrite("\",\n", stream)) {
 			goto fail;
+		}
 
-		if(!fstrwrite("\t\t\t\"to\": \"", stream) || !fstrwrite(edges[i].to->name, stream) || !fstrwrite("\",\n", stream))
+		if(!fstrwrite("\t\t\t\"to\": \"", stream) || !fstrwrite(edges[i].to->name, stream) || !fstrwrite("\",\n", stream)) {
 			goto fail;
+		}
 
 		char *host = NULL, *port = NULL, *address = NULL;
 		sockaddr2str((const sockaddr_t *) & (edges[i].address), &host, &port);
 
-		if(host && port)
+		if(host && port) {
 			xasprintf(&address, "{ \"host\": \"%s\", \"port\": %s }", host, port);
+		}
 
 		free(host);
 		free(port);
@@ -182,23 +201,28 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) 
 
 		free(address);
 
-		if(!fstrwrite("\t\t\t\"options\": ", stream) || !fstrwrite(__itoa(edges[i].options), stream) || !fstrwrite(",\n", stream))
+		if(!fstrwrite("\t\t\t\"options\": ", stream) || !fstrwrite(__itoa(edges[i].options), stream) || !fstrwrite(",\n", stream)) {
 			goto fail;
+		}
 
-		if(!fstrwrite("\t\t\t\"weight\": ", stream) || !fstrwrite(__itoa(edges[i].weight), stream) || !fstrwrite("\n", stream))
+		if(!fstrwrite("\t\t\t\"weight\": ", stream) || !fstrwrite(__itoa(edges[i].weight), stream) || !fstrwrite("\n", stream)) {
 			goto fail;
+		}
 
-		if(!fstrwrite((i + 1) != edge_count ? "\t\t},\n" : "\t\t}\n", stream))
+		if(!fstrwrite((i + 1) != edge_count ? "\t\t},\n" : "\t\t}\n", stream)) {
 			goto fail;
+		}
 	}
 
-	if(!fstrwrite("\t}\n", stream))
+	if(!fstrwrite("\t}\n", stream)) {
 		goto fail;
+	}
 
 	// DONE!
 
-	if(!fstrwrite("}", stream))
+	if(!fstrwrite("}", stream)) {
 		goto fail;
+	}
 
 	goto done;
 

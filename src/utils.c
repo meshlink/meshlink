@@ -45,26 +45,32 @@ static const char base64_decode[256] = {
 };
 
 static int charhex2bin(char c) {
-	if(isdigit(c))
+	if(isdigit(c)) {
 		return c - '0';
-	else
+	} else {
 		return toupper(c) - 'A' + 10;
+	}
 }
 
 int hex2bin(const char *src, void *vdst, int length) {
 	uint8_t *dst = vdst;
 	int i;
-	for(i = 0; i < length && isxdigit(src[i * 2]) && isxdigit(src[i * 2 + 1]); i++)
+
+	for(i = 0; i < length && isxdigit(src[i * 2]) && isxdigit(src[i * 2 + 1]); i++) {
 		dst[i] = charhex2bin(src[i * 2]) * 16 + charhex2bin(src[i * 2 + 1]);
+	}
+
 	return i;
 }
 
 int bin2hex(const void *vsrc, char *dst, int length) {
 	const uint8_t *src = vsrc;
+
 	for(int i = length - 1; i >= 0; i--) {
 		dst[i * 2 + 1] = hexadecimals[(unsigned char) src[i] & 15];
 		dst[i * 2] = hexadecimals[(unsigned char) src[i] >> 4];
 	}
+
 	dst[length * 2] = 0;
 	return length * 2;
 }
@@ -76,9 +82,12 @@ int b64decode(const char *src, void *dst, int length) {
 
 	for(i = 0; i < length / 3 * 4 && src[i]; i++) {
 		triplet |= base64_decode[src[i] & 0xff] << (6 * (i & 3));
+
 		if((i & 3) == 3) {
-			if(triplet & 0xff000000U)
+			if(triplet & 0xff000000U) {
 				return 0;
+			}
+
 			udst[0] = triplet & 0xff;
 			triplet >>= 8;
 			udst[1] = triplet & 0xff;
@@ -88,8 +97,11 @@ int b64decode(const char *src, void *dst, int length) {
 			udst += 3;
 		}
 	}
-	if(triplet & 0xff000000U)
+
+	if(triplet & 0xff000000U) {
 		return 0;
+	}
+
 	if((i & 3) == 3) {
 		udst[0] = triplet & 0xff;
 		triplet >>= 8;
@@ -98,8 +110,9 @@ int b64decode(const char *src, void *dst, int length) {
 	} else if((i & 3) == 2) {
 		udst[0] = triplet & 0xff;
 		return i / 4 * 3 + 1;
-	} else
+	} else {
 		return i / 4 * 3;
+	}
 }
 
 static int b64encode_internal(const void *src, char *dst, int length, const char *alphabet) {
@@ -119,6 +132,7 @@ static int b64encode_internal(const void *src, char *dst, int length, const char
 		dst[di + 3] = 0;
 		length = di + 2;
 		break;
+
 	case 1:
 		triplet = usrc[si];
 		dst[di] = alphabet[triplet & 63];
@@ -127,6 +141,7 @@ static int b64encode_internal(const void *src, char *dst, int length, const char
 		dst[di + 2] = 0;
 		length = di + 1;
 		break;
+
 	default:
 		dst[di] = 0;
 		length = di;
@@ -168,12 +183,15 @@ const char *winerror(int err) {
 	ptr = buf + sprintf(buf, "(%d) ", err);
 
 	if(!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-	                  NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), ptr, sizeof(buf) - (ptr - buf), NULL))
+	                  NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), ptr, sizeof(buf) - (ptr - buf), NULL)) {
 		strncpy(buf, "(unable to format errormessage)", sizeof(buf));
+	}
+
 	;
 
-	if((ptr = strchr(buf, '\r')))
-		*ptr = '\0';
+	if((ptr = strchr(buf, '\r'))) {
+		* ptr = '\0';
+	}
 
 	return buf;
 }
@@ -181,8 +199,11 @@ const char *winerror(int err) {
 
 unsigned int bitfield_to_int(const void *bitfield, size_t size) {
 	unsigned int value = 0;
-	if(size > sizeof(value))
+
+	if(size > sizeof(value)) {
 		size = sizeof(value);
+	}
+
 	memcpy(&value, bitfield, size);
 	return value;
 }

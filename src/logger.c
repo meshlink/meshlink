@@ -26,11 +26,13 @@
 // TODO: refactor logging code to use a meshlink_handle_t *.
 void logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *format, ...) {
 	if(mesh) {
-		if(level < mesh->log_level || !mesh->log_cb)
+		if(level < mesh->log_level || !mesh->log_cb) {
 			return;
+		}
 	} else {
-		if(level < global_log_level || !global_log_cb)
+		if(level < global_log_level || !global_log_cb) {
 			return;
+		}
 	}
 
 	va_list ap;
@@ -40,11 +42,13 @@ void logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *for
 	int len = vsnprintf(message, sizeof(message), format, ap);
 	va_end(ap);
 
-	if(len > 0 && (size_t)len < sizeof(message) && message[len - 1] == '\n')
+	if(len > 0 && (size_t)len < sizeof(message) && message[len - 1] == '\n') {
 		message[len - 1] = 0;
+	}
 
-	if(mesh)
+	if(mesh) {
 		mesh->log_cb(mesh, level, message);
-	else
+	} else {
 		global_log_cb(NULL, level, message);
+	}
 }

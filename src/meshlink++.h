@@ -139,8 +139,10 @@ public:
 	 */
 	bool open(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
 		handle = meshlink_open(confbase, name, appname, devclass);
-		if(handle)
+
+		if(handle) {
 			handle->priv = this;
+		}
 
 		return isOpen();
 	}
@@ -159,6 +161,7 @@ public:
 			handle->priv = 0;
 			meshlink_close(handle);
 		}
+
 		handle = 0;
 	}
 
@@ -575,48 +578,62 @@ private:
 
 	/// static callback trampolines:
 	static void receive_trampoline(meshlink_handle_t *handle, meshlink_node_t *source, const void *data, size_t length) {
-		if(!(handle->priv))
+		if(!(handle->priv)) {
 			return;
+		}
+
 		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
 		that->receive(static_cast<node *>(source), data, length);
 	}
 
 	static void node_status_trampoline(meshlink_handle_t *handle, meshlink_node_t *peer, bool reachable) {
-		if(!(handle->priv))
+		if(!(handle->priv)) {
 			return;
+		}
+
 		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
 		that->node_status(static_cast<node *>(peer), reachable);
 	}
 
 	static void log_trampoline(meshlink_handle_t *handle, log_level_t level, const char *message) {
-		if(!(handle->priv))
+		if(!(handle->priv)) {
 			return;
+		}
+
 		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
 		that->log(level, message);
 	}
 
 	static bool channel_accept_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, uint16_t port, const void *data, size_t len) {
-		if(!(handle->priv))
+		if(!(handle->priv)) {
 			return false;
+		}
+
 		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
 		bool accepted = that->channel_accept(static_cast<meshlink::channel *>(channel), port, data, len);
+
 		if(accepted) {
 			meshlink_set_channel_receive_cb(handle, channel, &channel_receive_trampoline);
 			meshlink_set_channel_poll_cb(handle, channel, &channel_poll_trampoline);
 		}
+
 		return accepted;
 	}
 
 	static void channel_receive_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, const void *data, size_t len) {
-		if(!(handle->priv))
+		if(!(handle->priv)) {
 			return;
+		}
+
 		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
 		that->channel_receive(static_cast<meshlink::channel *>(channel), data, len);
 	}
 
 	static void channel_poll_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, size_t len) {
-		if(!(handle->priv))
+		if(!(handle->priv)) {
 			return;
+		}
+
 		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
 		that->channel_poll(static_cast<meshlink::channel *>(channel), len);
 	}

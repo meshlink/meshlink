@@ -64,15 +64,17 @@
 static void mst_kruskal(meshlink_handle_t *mesh) {
 	/* Clear MST status on connections */
 
-	for list_each(connection_t, c, mesh->connections)
+	for list_each(connection_t, c, mesh->connections) {
 		c->status.mst = false;
+	}
 
 	logger(mesh, MESHLINK_DEBUG, "Running Kruskal's algorithm:");
 
 	/* Clear visited status on nodes */
 
-	for splay_each(node_t, n, mesh->nodes)
+	for splay_each(node_t, n, mesh->nodes) {
 		n->status.visited = false;
+	}
 
 	/* Starting point */
 
@@ -96,11 +98,13 @@ static void mst_kruskal(meshlink_handle_t *mesh) {
 		e->from->status.visited = true;
 		e->to->status.visited = true;
 
-		if(e->connection)
+		if(e->connection) {
 			e->connection->status.mst = true;
+		}
 
-		if(e->reverse->connection)
+		if(e->reverse->connection) {
 			e->reverse->connection->status.mst = true;
+		}
 
 		logger(mesh, MESHLINK_DEBUG, " Adding edge %s - %s weight %d", e->from->name, e->to->name, e->weight);
 
@@ -141,12 +145,14 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 	for list_each(node_t, n, todo_list) {                   /* "n" is the node from which we start */
 		logger(mesh, MESHLINK_DEBUG, " Examining edges from %s", n->name);
 
-		if(n->distance < 0)
+		if(n->distance < 0) {
 			abort();
+		}
 
 		for splay_each(edge_t, e, n->edge_tree) {       /* "e" is the edge connected to "from" */
-			if(!e->reverse)
+			if(!e->reverse) {
 				continue;
+			}
 
 			/* Situation:
 
@@ -169,8 +175,9 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 
 			if(e->to->status.visited
 			                && (!e->to->status.indirect || indirect)
-			                && (e->to->distance != n->distance + 1 || e->weight >= e->to->prevedge->weight))
+			                && (e->to->distance != n->distance + 1 || e->weight >= e->to->prevedge->weight)) {
 				continue;
+			}
 
 			e->to->status.visited = true;
 			e->to->status.indirect = indirect;
@@ -180,8 +187,9 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 			e->to->options = e->options;
 			e->to->distance = n->distance + 1;
 
-			if(!e->to->status.reachable || (e->to->address.sa.sa_family == AF_UNSPEC && e->address.sa.sa_family != AF_UNKNOWN))
+			if(!e->to->status.reachable || (e->to->address.sa.sa_family == AF_UNSPEC && e->address.sa.sa_family != AF_UNKNOWN)) {
 				update_node_udp(mesh, e->to, &e->address);
+			}
 
 			list_insert_tail(todo_list, e->to);
 		}
@@ -201,10 +209,11 @@ static void check_reachability(meshlink_handle_t *mesh) {
 			n->status.reachable = !n->status.reachable;
 			n->last_state_change = mesh->loop.now.tv_sec;
 
-			if(n->status.reachable)
+			if(n->status.reachable) {
 				logger(mesh, MESHLINK_DEBUG, "Node %s became reachable", n->name);
-			else
+			} else {
 				logger(mesh, MESHLINK_DEBUG, "Node %s became unreachable", n->name);
+			}
 
 			/* TODO: only clear status.validkey if node is unreachable? */
 
@@ -227,8 +236,9 @@ static void check_reachability(meshlink_handle_t *mesh) {
 				memset(&n->status, 0, sizeof(n)->status);
 				n->options = 0;
 			} else if(n->connection) {
-				if(n->connection->outgoing)
+				if(n->connection->outgoing) {
 					send_req_key(mesh, n);
+				}
 			}
 		}
 	}

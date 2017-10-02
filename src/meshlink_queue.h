@@ -38,15 +38,21 @@ typedef struct meshlink_queue_item {
 
 static inline bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
 	meshlink_queue_item_t *item = malloc(sizeof(*item));
-	if(!item)
+
+	if(!item) {
 		return false;
+	}
+
 	item->data = data;
 	item->next = NULL;
 	pthread_mutex_lock(&queue->mutex);
-	if(!queue->tail)
+
+	if(!queue->tail) {
 		queue->head = queue->tail = item;
-	else
+	} else {
 		queue->tail = queue->tail->next = item;
+	}
+
 	pthread_mutex_unlock(&queue->mutex);
 	return true;
 }
@@ -55,11 +61,15 @@ static inline void *meshlink_queue_pop(meshlink_queue_t *queue) {
 	meshlink_queue_item_t *item;
 	void *data;
 	pthread_mutex_lock(&queue->mutex);
+
 	if((item = queue->head)) {
 		queue->head = item->next;
-		if(!queue->head)
+
+		if(!queue->head) {
 			queue->tail = NULL;
+		}
 	}
+
 	pthread_mutex_unlock(&queue->mutex);
 	data = item ? item->data : NULL;
 	free(item);
