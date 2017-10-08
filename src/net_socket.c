@@ -286,55 +286,6 @@ void finish_connecting(meshlink_handle_t *mesh, connection_t *c) {
 	send_id(mesh, c);
 }
 
-static void do_outgoing_pipe(meshlink_handle_t *mesh, connection_t *c, char *command) {
-#ifndef HAVE_MINGW
-	int fd[2];
-
-	if(socketpair(AF_UNIX, SOCK_STREAM, 0, fd)) {
-		logger(mesh, MESHLINK_ERROR, "Could not create socketpair: %s", strerror(errno));
-		return;
-	}
-
-	if(fork()) {
-		c->socket = fd[0];
-		close(fd[1]);
-		logger(mesh, MESHLINK_DEBUG, "Using proxy %s", command);
-		return;
-	}
-
-	close(0);
-	close(1);
-	close(fd[0]);
-	dup2(fd[1], 0);
-	dup2(fd[1], 1);
-	close(fd[1]);
-
-	// Other filedescriptors should be closed automatically by CLOEXEC
-
-	char *host = NULL;
-	char *port = NULL;
-
-	sockaddr2str(&c->address, &host, &port);
-	setenv("REMOTEADDRESS", host, true);
-	setenv("REMOTEPORT", port, true);
-	setenv("NODE", c->name, true);
-	setenv("NAME", mesh->self->name, true);
-
-	int result = system(command);
-
-	if(result < 0) {
-		logger(mesh, MESHLINK_ERROR, "Could not execute %s: %s", command, strerror(errno));
-	} else if(result) {
-		logger(mesh, MESHLINK_ERROR, "%s exited with non-zero status %d", command, result);
-	}
-
-	exit(result);
-#else
-	logger(mesh, MESHLINK_ERROR, "Proxy type exec not supported on this platform!");
-	return;
-#endif
-}
-
 static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 	if(c->outbuf.len <= c->outbuf.offset) {
 		return;
@@ -503,8 +454,6 @@ begin:
 	if(!mesh->proxytype) {
 		c->socket = socket(c->address.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 		configure_tcp(c);
-	} else if(mesh->proxytype == PROXY_EXEC) {
-		do_outgoing_pipe(mesh, c, mesh->proxyhost);
 	} else {
 		proxyai = str2addrinfo(mesh->proxyhost, mesh->proxyport, SOCK_STREAM);
 
@@ -532,25 +481,21 @@ begin:
 	fcntl(c->socket, F_SETFD, FD_CLOEXEC);
 #endif
 
-	if(mesh->proxytype != PROXY_EXEC) {
 #if defined(SOL_IPV6) && defined(IPV6_V6ONLY)
-		int option = 1;
 
-		if(c->address.sa.sa_family == AF_INET6) {
-			setsockopt(c->socket, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
-		}
+	if(c->address.sa.sa_family == AF_INET6) {
+		static const int option = 1;
+		setsockopt(c->socket, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
+	}
 
 #endif
 
-		bind_to_address(mesh, c);
-	}
+	bind_to_address(mesh, c);
 
 	/* Connect */
 
 	if(!mesh->proxytype) {
 		result = connect(c->socket, &c->address.sa, SALEN(c->address.sa));
-	} else if(mesh->proxytype == PROXY_EXEC) {
-		result = 0;
 	} else {
 		result = connect(c->socket, proxyai->ai_addr, proxyai->ai_addrlen);
 		freeaddrinfo(proxyai);

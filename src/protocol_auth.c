@@ -136,9 +136,6 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 		logger(mesh, MESHLINK_ERROR, "Proxy type not implemented yet");
 		return false;
 
-	case PROXY_EXEC:
-		return true;
-
 	default:
 		logger(mesh, MESHLINK_ERROR, "Unknown proxy type");
 		return false;

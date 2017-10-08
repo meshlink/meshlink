@@ -55,7 +55,6 @@ typedef enum proxytype_t {
 	PROXY_SOCKS4A,
 	PROXY_SOCKS5,
 	PROXY_HTTP,
-	PROXY_EXEC,
 } proxytype_t;
 
 /// A handle for an instance of MeshLink.
