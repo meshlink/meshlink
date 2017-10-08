@@ -11,7 +11,7 @@ TESTS = \
 
 dist_check_SCRIPTS = $(TESTS)
 
-AM_CPPFLAGS = -I../src -Wall
+AM_CPPFLAGS = -I${top_srcdir}/src -iquote. -Wall
 
 check_PROGRAMS = \
 	basic \
@@ -38,13 +38,13 @@ basicpp_LDADD = ../src/libmeshlink.la
 trio_SOURCES = trio.c
 trio_LDADD = ../src/libmeshlink.la
 
-channels_SOURCES = channels.cpp
+channels_SOURCES = channels.c
 channels_LDADD = ../src/libmeshlink.la
 
-channels_fork_SOURCES = channels-fork.cpp
+channels_fork_SOURCES = channels-fork.c
 channels_fork_LDADD = ../src/libmeshlink.la
 
-channels_cornercases_SOURCES = channels-cornercases.cpp utils.cpp utils.h
+channels_cornercases_SOURCES = channels-cornercases.c utils.c utils.h
 channels_cornercases_LDADD = ../src/libmeshlink.la
 
 echo_fork_SOURCES = echo-fork.c

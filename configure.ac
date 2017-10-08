@@ -102,17 +102,17 @@ MeshLink_ATTRIBUTE(__malloc__)
 MeshLink_ATTRIBUTE(__warn_unused_result__)
 
 AC_CHECK_TYPES([socklen_t, struct addrinfo, struct sockaddr_in6], , ,
-  [#include "src/have.h"]
+  [#include "$srcdir/src/have.h"]
 )
 
 AC_CHECK_TYPES([struct sockaddr_storage], ,AC_MSG_ERROR([System must support struct sockaddr_storage.]),
-  [#include "src/have.h"]
+  [#include "$srcdir/src/have.h"]
 )
 
 dnl Checks for library functions.
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([asprintf fchmod fork gettimeofday random select strdup usleep],
-  [], [], [#include "src/have.h"]
+  [], [], [#include "$srcdir/src/have.h"]
 )
 
 dnl Support for SunOS
@@ -125,11 +125,11 @@ AC_CHECK_FUNC(gethostbyname, [], [
 ])
 
 AC_CHECK_DECLS([freeaddrinfo, gai_strerror, getaddrinfo, getnameinfo],
-  [], [], [#include "src/have.h"]
+  [], [], [#include "$srcdir/src/have.h"]
 )
 
 AC_CACHE_SAVE
 
-AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile m4/Makefile test/Makefile examples/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile test/Makefile examples/Makefile])
 
 AC_OUTPUT

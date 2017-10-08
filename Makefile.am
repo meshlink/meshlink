@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = gnu
 
-SUBDIRS =  m4 catta src doc test examples
+SUBDIRS =  catta src doc test examples
 
 ACLOCAL_AMFLAGS = -I m4 
 

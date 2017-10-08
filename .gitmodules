@@ -1,6 +1,6 @@
 [submodule "catta"]
 	path = catta
-	url = https://github.com/everbase/catta.git
+	url = git://meshlink.io/catta
 	branch = develop
 [submodule "src/utcp"]
 	path = src/utcp

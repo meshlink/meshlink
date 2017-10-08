@@ -23,7 +23,8 @@ chacha_poly1305_SOURCES = \
 	chacha-poly1305/poly1305.c chacha-poly1305/poly1305.h
 
 utcp_SOURCES = \
-	utcp/utcp.c utcp/utcp.h
+	utcp/utcp.c utcp/utcp.h \
+	utcp/utcp_priv.h
 
 lib_LTLIBRARIES = libmeshlink.la
 
@@ -32,9 +33,7 @@ pkginclude_HEADERS = meshlink++.h meshlink.h
 libmeshlink_la_LDFLAGS = -export-symbols-regex '^(meshlink_|devtool_)'
 
 libmeshlink_la_SOURCES = \
-	meshlink.c meshlink.h \
 	buffer.c buffer.h \
-	cipher.h \
 	conf.c conf.h \
 	connection.c connection.h \
 	crypto.c crypto.h \
@@ -53,6 +52,9 @@ libmeshlink_la_SOURCES = \
 	have.h \
 	list.c list.h \
 	logger.c logger.h \
+	meshlink.c meshlink.h \
+	meshlink_internal.h \
+	meshlink_queue.h \
 	meta.c meta.h \
 	net.c net.h \
 	net_packet.c \
@@ -67,6 +69,7 @@ libmeshlink_la_SOURCES = \
 	protocol_key.c \
 	protocol_misc.c \
 	route.c route.h \
+	sockaddr.h \
 	splay_tree.c splay_tree.h \
 	sptps.c sptps.h \
 	system.h \
@@ -77,13 +80,13 @@ libmeshlink_la_SOURCES = \
 	$(chacha_poly1305_SOURCES) \
 	$(utcp_SOURCES)
 
-libmeshlink_la_CFLAGS = -fPIC -I../catta/include/
+libmeshlink_la_CFLAGS = -fPIC -I${top_srcdir}/catta/include/ -iquote.
 
 if MINGW
-libmeshlink_la_CFLAGS += -I../catta/src/compat/windows/include/
+libmeshlink_la_CFLAGS += -I${top_srcdir}/catta/src/compat/windows/include/
 endif
 
-libmeshlink_la_LIBADD = -lpthread ../catta/src/libcatta.la
+libmeshlink_la_LIBADD = -lpthread ${top_builddir}/catta/src/libcatta.la
 
 libmeshlink_la_SOURCES += \
 	ed25519/ecdh.c \
