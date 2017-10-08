@@ -23,10 +23,6 @@
 #include "fake-getaddrinfo.h"
 #include "fake-getnameinfo.h"
 
-#ifndef HAVE_GET_CURRENT_DIR_NAME
-extern char *get_current_dir_name(void);
-#endif
-
 #ifndef HAVE_ASPRINTF
 extern int asprintf(char **, const char *, ...);
 extern int vasprintf(char **, const char *, va_list ap);

@@ -95,20 +95,9 @@ AM_CONDITIONAL(INSTALL_TESTS, test "$install_tests" = true)
 dnl Checks for header files.
 dnl We do this in multiple stages, because unlike Linux all the other operating systems really suck and don't include their own dependencies.
 
-AC_HEADER_STDC
-AC_CHECK_HEADERS([stdbool.h syslog.h sys/file.h sys/param.h sys/resource.h sys/socket.h sys/time.h sys/un.h sys/wait.h netdb.h arpa/inet.h dirent.h])
-AC_CHECK_HEADERS([time.h],
-  [], [], [#include "src/have.h"]
-)
+AC_CHECK_HEADERS([syslog.h sys/file.h sys/param.h sys/resource.h sys/socket.h sys/time.h sys/un.h sys/wait.h netdb.h arpa/inet.h dirent.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
-AC_C_VOLATILE
-AC_TYPE_PID_T
-AC_TYPE_SIZE_T
-AC_HEADER_TIME
-AC_STRUCT_TM
-
 MeshLink_ATTRIBUTE(__malloc__)
 MeshLink_ATTRIBUTE(__warn_unused_result__)
 
@@ -122,7 +111,7 @@ AC_CHECK_TYPES([struct sockaddr_storage], ,AC_MSG_ERROR([System must support str
 
 dnl Checks for library functions.
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS([asprintf fchmod fork get_current_dir_name gettimeofday random select strdup strerror time usleep],
+AC_CHECK_FUNCS([asprintf fchmod fork gettimeofday random select strdup usleep],
   [], [], [#include "src/have.h"]
 )
 
