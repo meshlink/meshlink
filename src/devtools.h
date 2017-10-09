@@ -82,4 +82,42 @@ extern devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_ed
  */
 extern bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream);
 
+/// The status of a node.
+typedef struct devtool_node_status devtool_node_status_t;
+
+/// The status of a node.
+struct devtool_node_status {
+	uint32_t options;
+	uint32_t status;
+	sockaddr_t address;
+	uint16_t mtu;
+	uint16_t minmtu;
+	uint16_t maxmtu;
+	int mtuprobes;
+	enum {
+		DEVTOOL_UDP_FAILED = -2,     /// UDP tried but failed
+		DEVTOOL_UDP_IMPOSSIBLE = -1, /// UDP not possible (node unreachable)
+		DEVTOOL_UDP_UNKNOWN = 0,     /// UDP status not known (never tried to communicate with the node)
+		DEVTOOL_UDP_TRYING,          /// UDP detection in progress
+		DEVTOOL_UDP_WORKING,         /// UDP communication established
+	} udp_status;
+	uint64_t in_packets;
+	uint64_t in_bytes;
+	uint64_t out_packets;
+	uint64_t out_bytes;
+};
+
+/// Get the status of a node.
+/** This function returns a struct containing extra information about a node.
+ *  The information is a snapshot taken at call time.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A pointer to a meshlink_node_t.
+ *  @param status       A pointer to a devtools_node_status_t variable that has
+ *                      to be provided by the caller.
+ *                      The contents of this variable will be changed to reflect
+ *                      the current status of the node.
+ */
+extern void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, devtool_node_status_t *status);
+
 #endif

@@ -237,3 +237,45 @@ done:
 
 	return result;
 }
+
+void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, devtool_node_status_t *status) {
+	if(!mesh || !node || !status) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	node_t *internal = (node_t *)node;
+
+	pthread_mutex_lock(&mesh->mesh_mutex);
+
+	status->options = internal->options;
+	memcpy(&status->status, &internal->status, sizeof status->status);
+	status->address = internal->address;
+	status->mtu = internal->mtu;
+	status->minmtu = internal->minmtu;
+	status->maxmtu = internal->maxmtu;
+	status->mtuprobes = internal->mtuprobes;
+	status->in_packets = internal->in_packets;
+	status->in_bytes = internal->in_bytes;
+	status->out_packets = internal->out_packets;
+	status->out_bytes = internal->out_bytes;
+
+	// Derive UDP connection status
+	if(internal == mesh->self) {
+		status->udp_status = DEVTOOL_UDP_WORKING;
+	} else if(!internal->status.reachable) {
+		status->udp_status = DEVTOOL_UDP_IMPOSSIBLE;
+	} else if(!internal->status.validkey) {
+		status->udp_status = DEVTOOL_UDP_UNKNOWN;
+	} else if(internal->status.udp_confirmed) {
+		status->udp_status = DEVTOOL_UDP_WORKING;
+	} else if(internal->mtuprobes > 30) {
+		status->udp_status = DEVTOOL_UDP_FAILED;
+	} else if(internal->mtuprobes > 0) {
+		status->udp_status = DEVTOOL_UDP_TRYING;
+	} else {
+		status->udp_status = DEVTOOL_UDP_UNKNOWN;
+	}
+
+	pthread_mutex_unlock(&mesh->mesh_mutex);
+}
