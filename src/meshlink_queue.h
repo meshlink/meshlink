@@ -36,6 +36,15 @@ typedef struct meshlink_queue_item {
 	struct meshlink_queue_item *next;
 } meshlink_queue_item_t;
 
+static inline void meshlink_queue_init(meshlink_queue_t *queue) {
+	queue->head = NULL;
+	queue->tail = NULL;
+	pthread_mutexattr_t attr;
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_DEFAULT);
+	pthread_mutex_init(&queue->mutex, &attr);
+}
+
 static inline bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
 	meshlink_queue_item_t *item = malloc(sizeof(*item));
 

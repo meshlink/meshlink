@@ -110,8 +110,6 @@ extern void retry(struct meshlink_handle *mesh);
 
 #ifndef HAVE_MINGW
 #define closesocket(s) close(s)
-#else
-extern CRITICAL_SECTION mutex;
 #endif
 
 #endif

@@ -1013,6 +1013,8 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	event_loop_init(&mesh->loop);
 	mesh->loop.data = mesh;
 
+	meshlink_queue_init(&mesh->outpacketqueue);
+
 	// Check whether meshlink.conf already exists
 
 	char filename[PATH_MAX];
