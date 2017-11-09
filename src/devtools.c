@@ -185,7 +185,7 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) 
 		}
 
 		char *host = NULL, *port = NULL, *address = NULL;
-		sockaddr2str((const sockaddr_t *) & (edges[i].address), &host, &port);
+		sockaddr2str((const sockaddr_t *)&edges[i].address, &host, &port);
 
 		if(host && port) {
 			xasprintf(&address, "{ \"host\": \"%s\", \"port\": %s }", host, port);
@@ -250,7 +250,7 @@ void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, dev
 
 	status->options = internal->options;
 	memcpy(&status->status, &internal->status, sizeof status->status);
-	status->address = internal->address;
+	memcpy(&status->address, &internal->address, sizeof status->address);
 	status->mtu = internal->mtu;
 	status->minmtu = internal->minmtu;
 	status->maxmtu = internal->maxmtu;

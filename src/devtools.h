@@ -89,7 +89,7 @@ typedef struct devtool_node_status devtool_node_status_t;
 struct devtool_node_status {
 	uint32_t options;
 	uint32_t status;
-	sockaddr_t address;
+	struct sockaddr_storage address;
 	uint16_t mtu;
 	uint16_t minmtu;
 	uint16_t maxmtu;
