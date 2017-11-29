@@ -776,7 +776,7 @@ namespace meshlink {
      *
      *  @return         This function will return true if the MeshLink instance was succesfully destroyed, false otherwise.
      */
-    static bool destroy(const char *confbase) {
+    static inline bool destroy(const char *confbase) {
         return meshlink_destroy(confbase);
     }
 
