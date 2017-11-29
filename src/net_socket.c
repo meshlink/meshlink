@@ -120,10 +120,13 @@ int setup_listen_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 
 	nfd = socket(sa->sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 
+    const char* fam = sa->sa.sa_family == AF_INET ? "AF_INET" : sa->sa.sa_family == AF_INET6 ? "AF_INET6" : "";
+
 	if(nfd < 0) {
-		logger(mesh, MESHLINK_ERROR, "Creating metasocket failed: %s", sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Failed to creating TCP metasocket for sa_family=%s(%d): %s", fam, sa->sa.sa_family, sockstrerror(sockerrno));
 		return -1;
 	}
+    logger(mesh, MESHLINK_INFO, "Created TCP metasocket for sa_family=%s(%d): %d", fam, sa->sa.sa_family, nfd);
 
 #ifdef FD_CLOEXEC
 	fcntl(nfd, F_SETFD, FD_CLOEXEC);
@@ -163,10 +166,13 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 
 	nfd = socket(sa->sa.sa_family, SOCK_DGRAM, IPPROTO_UDP);
 
+    const char* fam = sa->sa.sa_family == AF_INET ? "AF_INET" : sa->sa.sa_family == AF_INET6 ? "AF_INET6" : "";
+
 	if(nfd < 0) {
-		logger(mesh, MESHLINK_ERROR, "Creating UDP socket failed: %s", sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Failed to create UDP socket for sa_family=%s(%d): %s", fam, sa->sa.sa_family, sockstrerror(sockerrno));
 		return -1;
 	}
+    logger(mesh, MESHLINK_INFO, "Created UDP socket for sa_family=%s(%d): %d", fam, sa->sa.sa_family, nfd);
 
 #ifdef FD_CLOEXEC
 	fcntl(nfd, F_SETFD, FD_CLOEXEC);
