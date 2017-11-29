@@ -880,7 +880,7 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
     return true;
 }
 
-meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dev_class_t devclass) {
+meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char* appname, dev_class_t devclass, meshlink_log_level_t log_level, meshlink_log_cb_t log_cb, void* priv) {
     // Validate arguments provided by the application
 
     logger(NULL, MESHLINK_DEBUG, "meshlink_open called\n");
@@ -915,6 +915,13 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
     mesh->devclass = devclass;
     if(name)
         mesh->name = xstrdup(name);
+
+    // init log callback for setup below
+    mesh->log_cb = log_cb;
+    mesh->log_level = log_cb ? log_level : 0;
+
+    // set private member to determine the context during setup callbacks
+    mesh->priv = priv;
 
     // initialize mutex
     pthread_mutexattr_t attr;

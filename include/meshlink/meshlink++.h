@@ -162,13 +162,8 @@ namespace meshlink {
          *  @return         This function will return a pointer to a meshlink::mesh if MeshLink has succesfully set up its configuration files, NULL otherwise.
          */ 
         bool open(const char *confbase, const char *name, const char* appname, dev_class_t devclass, meshlink_log_level_t loglevel) {
-            handle = meshlink_open(confbase, name, appname, devclass);
-            if(handle) {
-                handle->priv = this;
-                    meshlink_set_log_cb(handle, loglevel, &log_trampoline);
-                        }
-            
-            return isOpen();
+            handle = meshlink_open( confbase, name, appname, devclass, loglevel, &log_trampoline, (void*)this );
+            return handle != 0;
         }
         
         mesh(const char *confbase, const char *name, const char* appname, dev_class_t devclass, meshlink_log_level_t loglevel) {
