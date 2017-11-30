@@ -395,16 +395,15 @@ int main(int argc, char *argv[]) {
 		snprintf(filename, sizeof filename, "%s/%s", basebase, nodename);
 		bool itsnew = access(filename, R_OK);
 		if ( i < 2 ) {
-			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_BACKBONE);
+			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_BACKBONE, MESHLINK_DEBUG, log_message, NULL);
 		}
 		else
 		if ( i < 6 ) {
-			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_STATIONARY);
+			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_STATIONARY, MESHLINK_DEBUG, log_message, NULL);
 		}
 		else {
-			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_PORTABLE);
+			mesh[i] = meshlink_open(filename, nodename, "manynodes", DEV_CLASS_PORTABLE, MESHLINK_DEBUG, log_message, NULL);
 		}
-		meshlink_set_log_cb(mesh[i], MESHLINK_DEBUG, log_message);
 		if(!mesh[i]) {
 			fprintf(stderr, "errno is: %d\n", meshlink_errno);
 			fprintf(stderr, "Could not open %s: %s\n", filename, meshlink_strerror(meshlink_errno));

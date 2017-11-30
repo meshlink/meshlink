@@ -388,6 +388,11 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 			}
 		}
 	}
+
+    if(mesh->listen_socket[*sock].sa.sa.sa_family != (*sa)->sa.sa_family) {
+        /// fails when during setup no matching socket could be created or bound
+        logger(mesh, MESHLINK_ERROR, "choose_udp_address: No matching socket for sa_family=%d available.", (*sa)->sa.sa_family);
+    }
 }
 
 static void choose_broadcast_address(meshlink_handle_t *mesh, const node_t *n, const sockaddr_t **sa, int *sock) {
