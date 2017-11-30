@@ -31,11 +31,6 @@
 #include "utils.h"
 #include "xalloc.h"
 
-/* Needed on Mac OS/X */
-#ifndef SOL_TCP
-#define SOL_TCP IPPROTO_TCP
-#endif
-
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
@@ -74,14 +69,14 @@ static bool set_non_blocking(meshlink_handle_t *mesh, int socket) {
 static void configure_tcp(connection_t *c) {
 	set_non_blocking(c->mesh, c->socket);
 
-#if defined(SOL_TCP) && defined(TCP_NODELAY)
+#if defined(TCP_NODELAY)
 	int nodelay = 1;
-	setsockopt(c->socket, SOL_TCP, TCP_NODELAY, (void *)&nodelay, sizeof nodelay);
+	setsockopt(c->socket, IPPROTO_TCP, TCP_NODELAY, (void *)&nodelay, sizeof nodelay);
 #endif
 
-#if defined(SOL_IP) && defined(IP_TOS) && defined(IPTOS_LOWDELAY)
+#if defined(IP_TOS) && defined(IPTOS_LOWDELAY)
 	int lowdelay = IPTOS_LOWDELAY;
-	setsockopt(c->socket, SOL_IP, IP_TOS, (void *)&lowdelay, sizeof lowdelay);
+	setsockopt(c->socket, IPPROTO_IP, IP_TOS, (void *)&lowdelay, sizeof lowdelay);
 #endif
 }
 
@@ -196,12 +191,12 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 #define IP_DONTFRAGMENT IP_DONTFRAG
 #endif
 
-#if defined(SOL_IP) && defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DO)
+#if defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DO)
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = IP_PMTUDISC_DO;
-		setsockopt(nfd, SOL_IP, IP_MTU_DISCOVER, (void *)&option, sizeof(option));
+		setsockopt(nfd, IPPROTO_IP, IP_MTU_DISCOVER, (void *)&option, sizeof(option));
 	}
-#elif defined(IPPROTO_IP) && defined(IP_DONTFRAGMENT)
+#elif defined(IP_DONTFRAGMENT)
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = 1;
 		setsockopt(nfd, IPPROTO_IP, IP_DONTFRAGMENT, (void *)&option, sizeof(option));
