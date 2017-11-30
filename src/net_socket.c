@@ -31,11 +31,6 @@
 #include "utils.h"
 #include "xalloc.h"
 
-/* Needed on Mac OS/X */
-#ifndef SOL_TCP
-#define SOL_TCP IPPROTO_TCP
-#endif
-
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
@@ -74,14 +69,14 @@ static bool set_non_blocking(meshlink_handle_t *mesh, int socket) {
 static void configure_tcp(connection_t *c) {
 	set_non_blocking(c->mesh, c->socket);
 
-#if defined(SOL_TCP) && defined(TCP_NODELAY)
+#if defined(TCP_NODELAY)
 	int nodelay = 1;
-	setsockopt(c->socket, SOL_TCP, TCP_NODELAY, (void *)&nodelay, sizeof nodelay);
+	setsockopt(c->socket, IPPROTO_TCP, TCP_NODELAY, (void *)&nodelay, sizeof nodelay);
 #endif
 
-#if defined(SOL_IP) && defined(IP_TOS) && defined(IPTOS_LOWDELAY)
+#if defined(IP_TOS) && defined(IPTOS_LOWDELAY)
 	int lowdelay = IPTOS_LOWDELAY;
-	setsockopt(c->socket, SOL_IP, IP_TOS, (void *)&lowdelay, sizeof lowdelay);
+	setsockopt(c->socket, IPPROTO_IP, IP_TOS, (void *)&lowdelay, sizeof lowdelay);
 #endif
 }
 
@@ -137,10 +132,10 @@ int setup_listen_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	option = 1;
 	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof option);
 
-#if defined(SOL_IPV6) && defined(IPV6_V6ONLY)
+    /// to not break ipv4 socket creation in net_setup.c add_listen_address, the IPV6_V6ONLY flag must be set
+    /// e.g. on OS X it randomly breaks with an "Address already in use" error, whenever the ipv6 socket creation comes first
 	if(sa->sa.sa_family == AF_INET6)
-		setsockopt(nfd, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof option);
-#endif
+		setsockopt(nfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof option);
 
 	if(bind(nfd, &sa->sa, SALEN(sa->sa))) {
 		closesocket(nfd);
@@ -187,21 +182,21 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof option);
 	setsockopt(nfd, SOL_SOCKET, SO_BROADCAST, (void *)&option, sizeof option);
 
-#if defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
+    /// to not break ipv4 socket creation in net_setup.c add_listen_address, the IPV6_V6ONLY flag must be set
+    /// e.g. on OS X it randomly breaks with an "Address already in use" error, whenever the ipv6 socket creation comes first
 	if(sa->sa.sa_family == AF_INET6)
 		setsockopt(nfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof option);
-#endif
 
 #if defined(IP_DONTFRAG) && !defined(IP_DONTFRAGMENT)
 #define IP_DONTFRAGMENT IP_DONTFRAG
 #endif
 
-#if defined(SOL_IP) && defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DO)
+#if defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DO)
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = IP_PMTUDISC_DO;
-		setsockopt(nfd, SOL_IP, IP_MTU_DISCOVER, (void *)&option, sizeof(option));
+		setsockopt(nfd, IPPROTO_IP, IP_MTU_DISCOVER, (void *)&option, sizeof(option));
 	}
-#elif defined(IPPROTO_IP) && defined(IP_DONTFRAGMENT)
+#elif defined(IP_DONTFRAGMENT)
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = 1;
 		setsockopt(nfd, IPPROTO_IP, IP_DONTFRAGMENT, (void *)&option, sizeof(option));
@@ -210,12 +205,12 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 #warning No way to disable IPv4 fragmentation
 #endif
 
-#if defined(SOL_IPV6) && defined(IPV6_MTU_DISCOVER) && defined(IPV6_PMTUDISC_DO)
+#if defined(IPV6_MTU_DISCOVER) && defined(IPV6_PMTUDISC_DO)
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = IPV6_PMTUDISC_DO;
-		setsockopt(nfd, SOL_IPV6, IPV6_MTU_DISCOVER, (void *)&option, sizeof(option));
+		setsockopt(nfd, IPPROTO_IPV6, IPV6_MTU_DISCOVER, (void *)&option, sizeof(option));
 	}
-#elif defined(IPPROTO_IPV6) && defined(IPV6_DONTFRAG)
+#elif defined(IPV6_DONTFRAG)
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = 1;
 		setsockopt(nfd, IPPROTO_IPV6, IPV6_DONTFRAG, (void *)&option, sizeof(option));
@@ -489,11 +484,9 @@ begin:
 #endif
 
 	if(mesh->proxytype != PROXY_EXEC) {
-#if defined(SOL_IPV6) && defined(IPV6_V6ONLY)
 		int option = 1;
 		if(c->address.sa.sa_family == AF_INET6)
-			setsockopt(c->socket, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof option);
-#endif
+			setsockopt(c->socket, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof option);
 
 		bind_to_address(mesh, c);
 	}
