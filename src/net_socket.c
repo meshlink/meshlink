@@ -68,9 +68,9 @@ static void configure_tcp(connection_t *c) {
 	setsockopt(c->socket, SOL_TCP, TCP_NODELAY, (void *)&nodelay, sizeof(nodelay));
 #endif
 
-#if defined(SOL_IP) && defined(IP_TOS) && defined(IPTOS_LOWDELAY)
+#if defined(IP_TOS) && defined(IPTOS_LOWDELAY)
 	int lowdelay = IPTOS_LOWDELAY;
-	setsockopt(c->socket, SOL_IP, IP_TOS, (void *)&lowdelay, sizeof(lowdelay));
+	setsockopt(c->socket, IPPROTO_IP, IP_TOS, (void *)&lowdelay, sizeof(lowdelay));
 #endif
 }
 
@@ -130,12 +130,14 @@ int setup_listen_socket(const sockaddr_t *sa) {
 	option = 1;
 	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
 
-#if defined(SOL_IPV6) && defined(IPV6_V6ONLY)
+#if defined(IPV6_V6ONLY)
 
 	if(sa->sa.sa_family == AF_INET6) {
-		setsockopt(nfd, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
+		setsockopt(nfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
 	}
 
+#else
+#warning IPV6_V6ONLY not defined
 #endif
 
 	if(bind(nfd, &sa->sa, SALEN(sa->sa))) {
@@ -198,7 +200,7 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
 	setsockopt(nfd, SOL_SOCKET, SO_BROADCAST, (void *)&option, sizeof(option));
 
-#if defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
+#if defined(IPV6_V6ONLY)
 
 	if(sa->sa.sa_family == AF_INET6) {
 		setsockopt(nfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
@@ -210,14 +212,14 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 #define IP_DONTFRAGMENT IP_DONTFRAG
 #endif
 
-#if defined(SOL_IP) && defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DO)
+#if defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DO)
 
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = IP_PMTUDISC_DO;
-		setsockopt(nfd, SOL_IP, IP_MTU_DISCOVER, (void *)&option, sizeof(option));
+		setsockopt(nfd, IPPROTO_IP, IP_MTU_DISCOVER, (void *)&option, sizeof(option));
 	}
 
-#elif defined(IPPROTO_IP) && defined(IP_DONTFRAGMENT)
+#elif defined(IP_DONTFRAGMENT)
 
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = 1;
@@ -228,14 +230,14 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 #warning No way to disable IPv4 fragmentation
 #endif
 
-#if defined(SOL_IPV6) && defined(IPV6_MTU_DISCOVER) && defined(IPV6_PMTUDISC_DO)
+#if defined(IPV6_MTU_DISCOVER) && defined(IPV6_PMTUDISC_DO)
 
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = IPV6_PMTUDISC_DO;
-		setsockopt(nfd, SOL_IPV6, IPV6_MTU_DISCOVER, (void *)&option, sizeof(option));
+		setsockopt(nfd, IPPROTO_IPV6, IPV6_MTU_DISCOVER, (void *)&option, sizeof(option));
 	}
 
-#elif defined(IPPROTO_IPV6) && defined(IPV6_DONTFRAG)
+#elif defined(IPV6_DONTFRAG)
 
 	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
 		option = 1;
@@ -481,11 +483,11 @@ begin:
 	fcntl(c->socket, F_SETFD, FD_CLOEXEC);
 #endif
 
-#if defined(SOL_IPV6) && defined(IPV6_V6ONLY)
+#if defined(IPV6_V6ONLY)
 
 	if(c->address.sa.sa_family == AF_INET6) {
 		static const int option = 1;
-		setsockopt(c->socket, SOL_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
+		setsockopt(c->socket, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
 	}
 
 #endif
