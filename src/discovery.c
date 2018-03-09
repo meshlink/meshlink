@@ -7,6 +7,7 @@
 #include <catta/alternative.h>
 #include <catta/error.h>
 
+#include <meshlink/compat.h>
 #include "meshlink_internal.h"
 #include "discovery.h"
 #include "sockaddr.h"

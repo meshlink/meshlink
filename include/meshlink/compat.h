@@ -12,6 +12,10 @@
   #include <sys/socket.h>
 #endif
 
+#ifndef _WIN32
+  #define closesocket(s) close(s)
+#endif
+
 #ifdef _WIN32
   #ifdef MESHLINK_DLLEXPORT
     #define MESHLINK_API __declspec(dllexport)

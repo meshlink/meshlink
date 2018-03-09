@@ -80,9 +80,7 @@ extern void send_mtu_probe(struct meshlink_handle *mesh, struct node_t *);
 extern void handle_meta_connection_data(struct meshlink_handle *mesh, struct connection_t *);
 extern void retry(struct meshlink_handle *mesh);
 
-#ifndef HAVE_MINGW
-#define closesocket(s) close(s)
-#else
+#ifdef HAVE_MINGW
 extern CRITICAL_SECTION mutex;
 #endif
 

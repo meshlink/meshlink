@@ -19,8 +19,8 @@
 
 #include "system.h"
 
+#include <meshlink/compat.h>
 #include <poll.h>
-
 #include "crypto.h"
 #include "ecdh.h"
 #include "ecdsa.h"
@@ -176,8 +176,8 @@ int main(int argc, char *argv[]) {
 
 	// SPTPS datagram authentication phase
 
-	close(fd[0]);
-	close(fd[1]);
+	closesocket(fd[0]);
+	closesocket(fd[1]);
 
 	if(socketpair(AF_UNIX, SOCK_DGRAM, 0, fd)) {
 		fprintf(stderr, "Could not create a UNIX socket pair: %s\n", strerror(errno));
@@ -229,8 +229,8 @@ int main(int argc, char *argv[]) {
 
 	// Clean up
 
-	close(fd[0]);
-	close(fd[1]);
+	closesocket(fd[0]);
+	closesocket(fd[1]);
 	ecdsa_free(key1);
 	ecdsa_free(key2);
 	crypto_exit();

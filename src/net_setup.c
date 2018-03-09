@@ -294,7 +294,7 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 		int udp_fd = setup_vpn_in_socket(mesh, (sockaddr_t *) aip->ai_addr);
 
 		if(udp_fd < 0) {
-			close(tcp_fd);
+			closesocket(tcp_fd);
 			continue;
 		}
 
@@ -451,8 +451,8 @@ void close_network_connections(meshlink_handle_t *mesh) {
 	for(int i = 0; i < mesh->listen_sockets; i++) {
 		io_del(&mesh->loop, &mesh->listen_socket[i].tcp);
 		io_del(&mesh->loop, &mesh->listen_socket[i].udp);
-		close(mesh->listen_socket[i].tcp.fd);
-		close(mesh->listen_socket[i].udp.fd);
+		closesocket(mesh->listen_socket[i].tcp.fd);
+		closesocket(mesh->listen_socket[i].udp.fd);
 	}
 
 	exit_requests(mesh);
