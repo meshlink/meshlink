@@ -27,6 +27,19 @@ The following libraries are used by default, but can be disabled if necessary:
 
 - zlib (http://www.gzip.org/zlib/)
 
+On Linux: libtoolize must be installed
+On MacOSx: automake, autoconf, and libtool (glibtoolize) must be installed
+
+Build Steps
+-----------
+git submodule init
+git submodule update
+autoreconf -fsi
+./configure
+make
+sudo make install
+
+
 Features
 --------
 
