@@ -27,4 +27,6 @@ core.*
 /test-driver
 /stamp-h1
 /INSTALL
+/src/build
+/example/build
 ar-lib

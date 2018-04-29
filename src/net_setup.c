@@ -273,7 +273,7 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 		}
 	}
 
-	struct addrinfo *ai, hint = {};
+	struct addrinfo *ai, hint;
 
 	hint.ai_family = addressfamily;
 

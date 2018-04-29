@@ -188,7 +188,7 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 }
 
 bool seen_request(meshlink_handle_t *mesh, const char *request) {
-	past_request_t *new, p = {};
+	past_request_t *new, p;
 
 	p.request = request;
 

@@ -649,7 +649,7 @@ static bool invitation_send(void *handle, uint8_t type, const void *data, size_t
 			return false;
 		}
 
-		data += result;
+		data = (char *)((char *)data + result);
 		len -= result;
 	}
 

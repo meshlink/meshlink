@@ -57,7 +57,7 @@ void randomize(void *out, size_t outlen) {
 			abort();
 		}
 
-		out += len;
+		out = (char *)((char *)out + len);
 		outlen -= len;
 	}
 }
