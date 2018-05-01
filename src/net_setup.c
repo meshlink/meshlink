@@ -365,8 +365,10 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	read_host_config(mesh, mesh->config, name);
 
 	if(!get_config_string(lookup_config(mesh->config, "Port"), &mesh->myport)) {
-		logger(mesh, MESHLINK_ERROR, "Port for MeshLink instance required!");
-		return false;
+		int port = check_port(mesh);
+		if (port == 0)
+			return false;
+		xasprintf(&mesh->myport, "%d", port);
 	}
 
 	mesh->self->connection->options = 0;

@@ -444,7 +444,7 @@ static bool try_bind(int port) {
 	return true;
 }
 
-static int check_port(meshlink_handle_t *mesh) {
+int check_port(meshlink_handle_t *mesh) {
 	for(int i = 0; i < 1000; i++) {
 		int port = 0x1000 + (rand() & 0x7fff);
 
@@ -454,7 +454,8 @@ static int check_port(meshlink_handle_t *mesh) {
 			FILE *f = fopen(filename, "a");
 
 			if(!f) {
-				logger(mesh, MESHLINK_DEBUG, "Please change MeshLink's Port manually.\n");
+				meshlink_errno = MESHLINK_ESTORAGE;
+				logger(mesh, MESHLINK_DEBUG, "Could not store Port.\n");
 				return 0;
 			}
 
@@ -464,7 +465,8 @@ static int check_port(meshlink_handle_t *mesh) {
 		}
 	}
 
-	logger(mesh, MESHLINK_DEBUG, "Please change MeshLink's Port manually.\n");
+	meshlink_errno = MESHLINK_ENETWORK;
+	logger(mesh, MESHLINK_DEBUG, "Could not find any available network port.\n");
 	return 0;
 }
 
@@ -948,10 +950,15 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 
 	if(!ecdsa_keygen(mesh)) {
 		meshlink_errno = MESHLINK_EINTERNAL;
+		unlink(filename);
 		return false;
 	}
 
-	check_port(mesh);
+	if (check_port(mesh) == 0) {
+		meshlink_errno = MESHLINK_ENETWORK;
+		unlink(filename);
+		return false;
+	}
 
 	return true;
 }
