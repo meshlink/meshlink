@@ -273,15 +273,13 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 		}
 	}
 
-	struct addrinfo *ai, hint = {};
-
-	hint.ai_family = addressfamily;
-
-	hint.ai_socktype = SOCK_STREAM;
-
-	hint.ai_protocol = IPPROTO_TCP;
-
-	hint.ai_flags = AI_PASSIVE;
+	struct addrinfo *ai;
+	struct addrinfo hint = {
+		.ai_family = addressfamily,
+		.ai_socktype = SOCK_STREAM,
+		.ai_protocol = IPPROTO_TCP,
+		.ai_flags = AI_PASSIVE,
+	};
 
 	int err = getaddrinfo(address && *address ? address : NULL, port, &hint, &ai);
 

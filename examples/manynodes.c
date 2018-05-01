@@ -53,7 +53,7 @@ static void testmesh() {
 		} else {
 			printf("%zu known nodes:\n", nnodes);
 
-			for(int i = 0; i < nnodes; i++) {
+			for(size_t i = 0; i < nnodes; i++) {
 				//printf(" %s\n", nodes[i]->name);
 				if(!meshlink_send(mesh[nindex], nodes[i], "magic", strlen("magic") + 1)) {
 					fprintf(stderr, "Could not send message to '%s': %s\n", nodes[i]->name, meshlink_strerror(meshlink_errno));
@@ -115,6 +115,8 @@ static bool exportmeshgraph(const char *path) {
 
 
 void exportmeshgraph_timer(int signum) {
+	(void)signum;
+
 	struct timeval ts;
 	gettimeofday(&ts, NULL);
 
@@ -127,12 +129,12 @@ void exportmeshgraph_timer(int signum) {
 #ifndef _WIN32
 static bool exportmeshgraph_started = false;
 
-static bool exportmeshgraph_end(const char *none) {
+static bool exportmeshgraph_end(void) {
 	if(!exportmeshgraph_started) {
 		return false;
 	}
 
-	struct itimerval zero_timer = { 0 };
+	struct itimerval zero_timer;
 
 	setitimer(ITIMER_REAL, &zero_timer, NULL);
 
@@ -147,7 +149,7 @@ static bool exportmeshgraph_begin(const char *timeout_str) {
 	}
 
 	if(exportmeshgraph_started) {
-		if(!exportmeshgraph_end(NULL)) {
+		if(!exportmeshgraph_end()) {
 			return false;
 		}
 	}
@@ -182,7 +184,7 @@ static bool exportmeshgraph_begin(const char *timeout_str) {
 	return true;
 }
 #else
-static bool exportmeshgraph_end(const char *none) {
+static bool exportmeshgraph_end(void) {
 	return false;
 }
 
@@ -258,7 +260,7 @@ static void parse_command(char *buf) {
 			} else {
 				printf("%zu known nodes:", nnodes);
 
-				for(int i = 0; i < nnodes; i++) {
+				for(size_t i = 0; i < nnodes; i++) {
 					printf(" %s", nodes[i]->name);
 				}
 
@@ -280,7 +282,7 @@ static void parse_command(char *buf) {
 	} else if(!strcasecmp(buf, "egb")) {
 		exportmeshgraph_begin(arg);
 	} else if(!strcasecmp(buf, "ege")) {
-		exportmeshgraph_end(NULL);
+		exportmeshgraph_end();
 	} else if(!strcasecmp(buf, "test")) {
 		testmesh();
 	} else if(!strcasecmp(buf, "select")) {
@@ -345,7 +347,8 @@ static void parse_input(char *buf) {
 	// Commands start with '/'
 
 	if(*buf == '/') {
-		return parse_command(buf + 1);
+		parse_command(buf + 1);
+		return;
 	}
 
 	// Lines in the form "name: message..." set the destination node.
@@ -465,7 +468,7 @@ int main(int argc, char *argv[]) {
 		parse_input(buf);
 	}
 
-	exportmeshgraph_end(NULL);
+	exportmeshgraph_end();
 
 	printf("Nodes stopping.\n");
 

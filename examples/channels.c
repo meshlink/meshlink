@@ -7,7 +7,9 @@
 #define CHAT_PORT 531
 
 static void log_message(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
-	const char *levelstr[] = {
+	(void) mesh;
+
+	static const char *levelstr[] = {
 		[MESHLINK_DEBUG] = "\x1b[34mDEBUG",
 		[MESHLINK_INFO] = "\x1b[32mINFO",
 		[MESHLINK_WARNING] = "\x1b[33mWARNING",
@@ -38,6 +40,9 @@ static void channel_receive(meshlink_handle_t *mesh, meshlink_channel_t *channel
 }
 
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	(void)data;
+	(void)len;
+
 	// Only accept connections to the chat port
 	if(port != CHAT_PORT) {
 		fprintf(stderr, "Rejected incoming channel from '%s' to port %u\n", channel->node->name, port);
@@ -57,11 +62,15 @@ static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel,
 }
 
 static void channel_poll(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+	(void)len;
+
 	fprintf(stderr, "Channel to '%s' connected\n", channel->node->name);
 	meshlink_set_channel_poll_cb(mesh, channel, NULL);
 }
 
 static void node_status(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
+
 	if(reachable) {
 		printf("%s joined.\n", node->name);
 	} else {
@@ -139,7 +148,7 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			} else {
 				printf("%zu known nodes:", nnodes);
 
-				for(int i = 0; i < nnodes; i++) {
+				for(size_t i = 0; i < nnodes; i++) {
 					printf(" %s", nodes[i]->name);
 				}
 
@@ -201,7 +210,8 @@ static void parse_input(meshlink_handle_t *mesh, char *buf) {
 	// Commands start with '/'
 
 	if(*buf == '/') {
-		return parse_command(mesh, buf + 1);
+		parse_command(mesh, buf + 1);
+		return;
 	}
 
 	// Lines in the form "name: message..." set the destination node.

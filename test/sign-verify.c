@@ -5,7 +5,7 @@
 
 #include "meshlink.h"
 
-int main(int argc, char *argv[]) {
+int main() {
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("sign_verify_conf.1", "foo", "sign-verify", DEV_CLASS_BACKBONE);

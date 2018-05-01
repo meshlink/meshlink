@@ -641,9 +641,10 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 static bool invitation_send(void *handle, uint8_t type, const void *data, size_t len) {
 	(void)type;
 	meshlink_handle_t *mesh = handle;
+	const char *ptr = data;
 
 	while(len) {
-		int result = send(mesh->sock, data, len, 0);
+		int result = send(mesh->sock, ptr, len, 0);
 
 		if(result == -1 && errno == EINTR) {
 			continue;
@@ -651,7 +652,7 @@ static bool invitation_send(void *handle, uint8_t type, const void *data, size_t
 			return false;
 		}
 
-		data += result;
+		ptr += result;
 		len -= result;
 	}
 
@@ -790,7 +791,12 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 		logger(mesh, MESHLINK_DEBUG, "Done.\n");
 	}
 
-	snprintf(privname, sizeof(privname), "%s" SLASH "ecdsa_key.priv", mesh->confbase);
+	if (snprintf(privname, sizeof(privname), "%s" SLASH "ecdsa_key.priv", mesh->confbase) >= PATH_MAX) {
+		logger(mesh, MESHLINK_DEBUG, "Filename too long: %s" SLASH "ecdsa_key.priv\n", mesh->confbase);
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return false;
+	}
+
 	f = fopen(privname, "wb");
 
 	if(!f) {
@@ -1580,7 +1586,10 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 
 		char invname[PATH_MAX];
 		struct stat st;
-		snprintf(invname, sizeof(invname), "%s" SLASH "%s", filename, ent->d_name);
+		if (snprintf(invname, sizeof(invname), "%s" SLASH "%s", filename, ent->d_name) >= PATH_MAX) {
+			logger(mesh, MESHLINK_DEBUG, "Filename too long: %s" SLASH "%s", filename, ent->d_name);
+			continue;
+		}
 
 		if(!stat(invname, &st)) {
 			if(mesh->invitation_key && deadline < st.st_mtime) {

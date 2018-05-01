@@ -447,7 +447,7 @@ bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len) {
 
 	char buffer[len];
 	size_t outlen;
-	return chacha_poly1305_decrypt(s->incipher, seqno, data + 4, len - 4, buffer, &outlen);
+	return chacha_poly1305_decrypt(s->incipher, seqno, (const char *)data + 4, len - 4, buffer, &outlen);
 }
 
 // Receive incoming data, datagram version.
@@ -561,6 +561,8 @@ bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 		return sptps_receive_data_datagram(s, data, len);
 	}
 
+	const char *ptr = data;
+
 	while(len) {
 		// First read the 2 length bytes.
 		if(s->buflen < 2) {
@@ -570,11 +572,11 @@ bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 				toread = len;
 			}
 
-			memcpy(s->inbuf + s->buflen, data, toread);
+			memcpy(s->inbuf + s->buflen, ptr, toread);
 
 			s->buflen += toread;
 			len -= toread;
-			data += toread;
+			ptr += toread;
 
 			// Exit early if we don't have the full length.
 			if(s->buflen < 2) {
@@ -606,10 +608,10 @@ bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 			toread = len;
 		}
 
-		memcpy(s->inbuf + s->buflen, data, toread);
+		memcpy(s->inbuf + s->buflen, ptr, toread);
 		s->buflen += toread;
 		len -= toread;
-		data += toread;
+		ptr += toread;
 
 		// If we don't have a whole record, exit.
 		if(s->buflen < s->reclen + (s->instate ? 19UL : 3UL)) {
