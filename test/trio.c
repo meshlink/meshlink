@@ -12,6 +12,8 @@
 #include "utils.h"
 
 static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	(void)mesh;
+
 	static struct timeval tv0;
 	struct timeval tv;
 
@@ -32,6 +34,9 @@ static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const ch
 static bool received = false;
 
 static void receive_cb(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
+	(void)mesh;
+	(void)source;
+
 	fprintf(stderr, "RECEIVED SOMETHING\n");
 
 	if(len == 5 && !memcmp(data, "Hello", 5)) {
@@ -39,7 +44,7 @@ static void receive_cb(meshlink_handle_t *mesh, meshlink_node_t *source, const v
 	}
 }
 
-int main(int argc, char *argv[]) {
+int main() {
 	// Create three instances.
 
 	const char *name[3] = {"foo", "bar", "baz"};

@@ -40,9 +40,9 @@ cmake_policy(SET CMP0042 NEW)
 file(GLOB CHANNELS_SRCS channels.c)
 
 # Set global compilation flags at project elvel
-#set(CMAKE_C_FLAGS           "${CMAKE_C_FLAGS} -pedantic-errors -Wall -fPIC -g -std=c11 -D_GNU_SOURCE")
-link_directories(/usr/local/lib)
-
+set(CMAKE_C_FLAGS           "${CMAKE_C_FLAGS} -fPIC -g -std=c11 -D_GNU_SOURCE") # -pedantic-errors -Wall
+#link_directories(/usr/local/lib)
+link_directories(/home/himanshu/meshlink_clean_android/src/build)
 #add_library(meshlink SHARED ${MESHLINK_SRCS})
 add_executable(channel ${CHANNELS_SRCS}) 
 

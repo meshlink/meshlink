@@ -18,12 +18,18 @@ void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *tex
 }
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
+
 	if(!strcmp(node->name, "bar")) {
 		bar_reachable = reachable;
 	}
 }
 
 void foo_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+	(void)mesh;
+	(void)channel;
+	(void)len;
+
 	if(len == 5 && !memcmp(data, "Hello", 5)) {
 		bar_responded = true;
 	}
@@ -35,6 +41,12 @@ void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const 
 }
 
 bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	(void)mesh;
+	(void)channel;
+	(void)port;
+	(void)data;
+	(void)len;
+
 	return false;
 }
 
@@ -53,6 +65,8 @@ bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 }
 
 void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+	(void)len;
+
 	meshlink_set_channel_poll_cb(mesh, channel, NULL);
 
 	if(meshlink_channel_send(mesh, channel, "Hello", 5) != 5) {
@@ -210,7 +224,7 @@ int main2(int rfd, int wfd) {
 }
 
 
-int main(int argc, char *argv[]) {
+int main() {
 	int fda[2], fdb[2];
 
 	pipe2(fda, 0);
