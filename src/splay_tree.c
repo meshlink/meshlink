@@ -22,10 +22,12 @@
 #include "splay_tree.h"
 #include "xalloc.h"
 
+#define SPLAY_NODE_T_INIT {NULL, NULL, NULL, NULL, NULL, NULL}
+
 /* Splay operation */
 
 static splay_node_t *splay_top_down(splay_tree_t *tree, const void *data, int *result) {
-	splay_node_t left = {NULL}, right = {NULL};
+	splay_node_t left = SPLAY_NODE_T_INIT, right = SPLAY_NODE_T_INIT;
 	splay_node_t *leftbottom = &left, *rightbottom = &right, *child, *grandchild;
 	splay_node_t *root = tree->root;
 	int c;

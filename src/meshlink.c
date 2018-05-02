@@ -407,6 +407,7 @@ static char *get_value(const char *data, const char *var) {
 
 static bool try_bind(int port) {
 	struct addrinfo *ai = NULL;
+  struct addrinfo *ai_head = NULL;
 	struct addrinfo hint = {
 		.ai_flags = AI_PASSIVE,
 		.ai_family = AF_UNSPEC,
@@ -420,7 +421,7 @@ static bool try_bind(int port) {
 	if(getaddrinfo(NULL, portstr, &hint, &ai) || !ai) {
 		return false;
 	}
-
+  ai_head = ai;
 	while(ai) {
 		int fd = socket(ai->ai_family, SOCK_STREAM, IPPROTO_TCP);
 
@@ -440,7 +441,7 @@ static bool try_bind(int port) {
 		ai = ai->ai_next;
 	}
 
-	freeaddrinfo(ai);
+	freeaddrinfo(ai_head);
 	return true;
 }
 
