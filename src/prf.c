@@ -28,7 +28,7 @@ static void memxor(char *buf, char c, size_t len) {
 	}
 }
 
-static const size_t mdlen = 64;
+#define mdlen 64
 
 // TODO: separate key setup from hmac_sha512
 

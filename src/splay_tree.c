@@ -25,11 +25,7 @@
 /* Splay operation */
 
 static splay_node_t *splay_top_down(splay_tree_t *tree, const void *data, int *result) {
-<<<<<<< Updated upstream
-	splay_node_t left, right;
-=======
-	splay_node_t left = {NULL, NULL, NULL, NULL, NULL, NULL}, right = {NULL, NULL, NULL, NULL, NULL, NULL};
->>>>>>> Stashed changes
+	splay_node_t left = {NULL}, right = {NULL};
 	splay_node_t *leftbottom = &left, *rightbottom = &right, *child, *grandchild;
 	splay_node_t *root = tree->root;
 	int c;

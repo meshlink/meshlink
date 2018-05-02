@@ -28,9 +28,20 @@ core.*
 /stamp-h1
 /INSTALL
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 /src/build
 /example/build
 ar-lib
+=======
+/src/CMakeLists.txt
+/src/build
+/examples/CMakeLists.txt
+/examples/channel
+/examples/ecdsa_key.priv
+/examples/meshlink.conf
+ar-lib
+meshlink.layout
+>>>>>>> Stashed changes
 =======
 /src/CMakeLists.txt
 /src/build

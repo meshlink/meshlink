@@ -371,7 +371,6 @@ static void send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *ori
 	}
 
 	send_sptps_packet(mesh, n, origpkt);
-  return;
 }
 
 bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
