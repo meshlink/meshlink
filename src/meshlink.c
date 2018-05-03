@@ -1930,6 +1930,14 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
+	//Before doing meshlink_join make sure we are not connected to another mesh
+	if(mesh->threadstarted) {
+		logger(mesh, MESHLINK_DEBUG, "Already connected to a mesh\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
 	//TODO: think of a better name for this variable, or of a different way to tokenize the invitation URL.
 	char copy[strlen(invitation) + 1];
 	strcpy(copy, invitation);
@@ -1949,32 +1957,13 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	}
 
 	char *address = copy;
-	char *port = NULL;
+	char *port = strrchr(address, ':');
 
-	if(*address == '[') {
-		address++;
-		char *bracket = strchr(address, ']');
-
-		if(!bracket) {
-			goto invalid;
-		}
-
-		*bracket = 0;
-
-		if(bracket[1] == ':') {
-			port = bracket + 2;
-		}
-	} else {
-		port = strchr(address, ':');
-
-		if(port) {
-			*port++ = 0;
-		}
-	}
-
-	if(!port) {
+	if (!port) {
 		goto invalid;
 	}
+
+	*port++ = 0;
 
 	if(!b64decode(slash, mesh->hash, 18) || !b64decode(slash + 24, mesh->cookie, 18)) {
 		goto invalid;
@@ -1990,43 +1979,64 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	}
 
 	char *b64key = ecdsa_get_base64_public_key(key);
+	char *comma;
+	mesh->sock = -1;
 
-	//Before doing meshlink_join make sure we are not connected to another mesh
-	if(mesh->threadstarted) {
-		goto invalid;
+	while (address && *address) {
+		// We allow commas in the address part to support multiple addresses in one invitation URL.
+		comma = strchr(address, ',');
+		if (comma)
+			*comma++ = 0;
+
+		// IPv6 address are enclosed in brackets, per RFC 3986
+		if (*address == '[') {
+			address++;
+			char *bracket = strchr(address, ']');
+			if (!bracket)
+				goto invalid;
+			*bracket++ = 0;
+			if (comma && bracket != comma)
+				goto invalid;
+		}
+
+		// Connect to the meshlink daemon mentioned in the URL.
+		struct addrinfo *ai = str2addrinfo(address, port, SOCK_STREAM);
+		if (ai) {
+			for (struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
+				mesh->sock = socket(aip->ai_family, aip->ai_socktype, aip->ai_protocol);
+
+				if(mesh->sock == -1) {
+					logger(mesh, MESHLINK_DEBUG, "Could not open socket: %s\n", strerror(errno));
+					meshlink_errno = MESHLINK_ENETWORK;
+					continue;
+				}
+
+				set_timeout(mesh->sock, 5000);
+
+				if(connect(mesh->sock, aip->ai_addr, aip->ai_addrlen)) {
+					logger(mesh, MESHLINK_DEBUG, "Could not connect to %s port %s: %s\n", address, port, strerror(errno));
+					meshlink_errno = MESHLINK_ENETWORK;
+					closesocket(mesh->sock);
+					mesh->sock = -1;
+					continue;
+				}
+			}
+
+			freeaddrinfo(ai);
+		} else {
+			meshlink_errno = MESHLINK_ERESOLV;
+		}
+
+		if (mesh->sock != -1 || !comma)
+			break;
+
+		address = comma;
 	}
 
-	// Connect to the meshlink daemon mentioned in the URL.
-	struct addrinfo *ai = str2addrinfo(address, port, SOCK_STREAM);
-
-	if(!ai) {
-		meshlink_errno = MESHLINK_ERESOLV;
-		pthread_mutex_unlock(&(mesh->mesh_mutex));
+	if (mesh->sock == -1) {
+		pthread_mutex_unlock(&mesh->mesh_mutex);
 		return false;
 	}
-
-	mesh->sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-
-	if(mesh->sock <= 0) {
-		logger(mesh, MESHLINK_DEBUG, "Could not open socket: %s\n", strerror(errno));
-		freeaddrinfo(ai);
-		meshlink_errno = MESHLINK_ENETWORK;
-		pthread_mutex_unlock(&(mesh->mesh_mutex));
-		return false;
-	}
-
-	set_timeout(mesh->sock, 5000);
-
-	if(connect(mesh->sock, ai->ai_addr, ai->ai_addrlen)) {
-		logger(mesh, MESHLINK_DEBUG, "Could not connect to %s port %s: %s\n", address, port, strerror(errno));
-		closesocket(mesh->sock);
-		freeaddrinfo(ai);
-		meshlink_errno = MESHLINK_ENETWORK;
-		pthread_mutex_unlock(&(mesh->mesh_mutex));
-		return false;
-	}
-
-	freeaddrinfo(ai);
 
 	logger(mesh, MESHLINK_DEBUG, "Connected to %s port %s...\n", address, port);
 
@@ -2133,7 +2143,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	return true;
 
 invalid:
-	logger(mesh, MESHLINK_DEBUG, "Invalid invitation URL or you are already connected to a Mesh ?\n");
+	logger(mesh, MESHLINK_DEBUG, "Invalid invitation URL\n");
 	meshlink_errno = MESHLINK_EINVAL;
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return false;
