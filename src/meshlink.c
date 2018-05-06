@@ -1050,6 +1050,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	mesh->confbase = xstrdup(confbase);
 	mesh->appname = xstrdup(appname);
 	mesh->devclass = devclass;
+	mesh->discovery = true;
 
 	if(usingname) {
 		mesh->name = xstrdup(name);
