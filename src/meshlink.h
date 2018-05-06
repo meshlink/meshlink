@@ -436,6 +436,31 @@ extern bool meshlink_add_address(meshlink_handle_t *mesh, const char *address);
  */
 extern char *meshlink_get_external_address(meshlink_handle_t *mesh);
 
+/// Try to discover the external address for the local node.
+/** This function performs tries to discover the local node's external address
+ *  by contacting the meshlink.io server. If a reverse lookup of the address works,
+ *  the FQDN associated with the address will be returned.
+ *
+ *  Please note that this is function only returns a single address,
+ *  even if the local node might have more than one external address.
+ *  In that case, there is no control over which address will be selected.
+ *  Also note that if you have a dynamic IP address, or are behind carrier-grade NAT,
+ *  there is no guarantee that the external address will be valid for an extended period of time.
+ *
+ *  This function is blocking. It can take several seconds before it returns.
+ *  There is no guarantee it will be able to resolve the external address.
+ *  Failures might be because by temporary network outages.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param family       The address family to check, for example AF_INET or AF_INET6. If AF_UNSPEC is given,
+ *                      this might return the external address for any working address family.
+ *
+ *  @return             This function returns a pointer to a C string containing the discovered external address,
+ *                      or NULL if there was an error looking up the address.
+ *                      After meshlink_get_external_address() returns, the application is free to overwrite or free this string.
+ */
+extern char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int address_family);
+
 /// Try to discover the external address for the local node, and add it to its list of addresses.
 /** This function is equivalent to:
  *

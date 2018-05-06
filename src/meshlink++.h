@@ -360,12 +360,15 @@ public:
 	 *  There is no guarantee it will be able to resolve the external address.
 	 *  Failures might be because by temporary network outages.
 	 *
+	 *  @param family       The address family to check, for example AF_INET or AF_INET6. If AF_UNSPEC is given,
+	 *                      this might return the external address for any working address family.
+	 *
 	 *  @return             This function returns a pointer to a C string containing the discovered external address,
 	 *                      or NULL if there was an error looking up the address.
 	 *                      After get_external_address() returns, the application is free to overwrite or free this string.
 	 */
-	bool get_external_address() {
-		return meshlink_get_external_address(handle);
+	bool get_external_address(int family = AF_UNSPEC) {
+		return meshlink_get_external_address_for_family(handle, family);
 	}
 
 	/// Try to discover the external address for the local node, and add it to its list of addresses.
