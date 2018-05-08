@@ -86,7 +86,7 @@ if MINGW
 libmeshlink_la_CFLAGS += -I${top_srcdir}/catta/src/compat/windows/include/
 endif
 
-libmeshlink_la_LDFLAGS = $(PTHREAD_LIBS)
+libmeshlink_la_LDFLAGS += $(PTHREAD_LIBS)
 libmeshlink_la_LIBADD = ${top_builddir}/catta/src/libcatta.la
 
 libmeshlink_la_SOURCES += \
