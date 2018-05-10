@@ -1,7 +1,7 @@
 ANDROID_NDK_DIR=/opt/elear-solutions
 LIBICONV_INSTALL_DIR=/opt/elear-solutions/android
 
-declare -a COMPILE_ARCHITECTURES=("armv7") # "arm64" "x86" "x86_64")
+declare -a COMPILE_ARCHITECTURES=("armv7" "arm64" "x86" "x86_64")
 SAVED_PATH="${PATH}"
 for ARCH in "${COMPILE_ARCHITECTURES[@]}"
 do
@@ -34,34 +34,36 @@ do
     export CFLAGS="--sysroot=${ANDROID_SYSROOT_DIR}"
     export CXXFLAGS="--sysroot=${ANDROID_SYSROOT_DIR}"
     case ${ARCH} in
-	"armv7" )
+	      "armv7" )
             ABI_NAME=armv7
             COMPILER_PREFIX=arm-linux-androideabi
             ;;
         "arm64" )
-	    ABI_NAME=arm64
+	          ABI_NAME=arm64
             COMPILER_PREFIX=aarch64-linux-android
             ;;
         "x86" )
-	    ABI_NAME=x86
+	          ABI_NAME=x86
             COMPILER_PREFIX=i686-linux-android
             ;;
-	"x86_64" )
-	    ABI_NAME=x86_64
+	      "x86_64" )
+	          ABI_NAME=x86_64
             COMPILER_PREFIX=x86_64-linux-android
             ;;
-
-
     esac
 
 
     export CC=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-clang
     export CPP=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-cpp
-    export CXX=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-c++
+    export CXX=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-clang++
     export LD=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-ld
     export AR=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-ar
     export RANLIB=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-ranlib
     export STRIP=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-strip
+
+    export ANDROID_LD_LIB=${ANDROID_NDK_ROOT}/${COMPILER_PREFIX}/lib
+
+    export LDFLAGS="-L${ANDROID_LD_LIB}"
 
    echo "---- Compiling for ${ARCH}"
    ./configure --host="${COMPILER_PREFIX}" --prefix="${ANDROID_SYSROOT_DIR}/usr"
