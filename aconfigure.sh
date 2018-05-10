@@ -64,9 +64,9 @@ do
     export STRIP=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-strip
 
    echo "---- Compiling for ${ARCH}"
-   ./configure --host="${COMPILER_PREFIX}" #--prefix="${LIBICONV_INSTALL_DIR}/${ABI_NAME}"
+   ./configure --host="${COMPILER_PREFIX}" --prefix="${ANDROID_SYSROOT_DIR}/usr"
    make
-   #make install
+   make install
 done
 
 export PATH="${SAVED_PATH}"
