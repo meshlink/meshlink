@@ -57,7 +57,7 @@ do
 
     export CC=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-clang
     export CPP=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-cpp
-    export CXX=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-clang++
+    export CXX=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-c++
     export LD=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-ld
     export AR=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-ar
     export RANLIB=${ANDROID_NDK_BIN}/${COMPILER_PREFIX}-ranlib
