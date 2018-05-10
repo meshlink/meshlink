@@ -107,12 +107,14 @@ static void discovery_create_services(meshlink_handle_t *mesh) {
 
 	/* Add the service */
 	int ret = 0;
-
-	if((ret = catta_server_add_service(mesh->catta_server, mesh->catta_group, CATTA_IF_UNSPEC, CATTA_PROTO_UNSPEC, 0, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self), mesh->catta_servicetype, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0) {
+  /*<ES_mod>
+    Positions of arguments were changed in catta_server_add_service function in catta/include/publish.h. 
+  */
+	if((ret = catta_server_add_service(mesh->catta_server, mesh->catta_group, CATTA_IF_UNSPEC, CATTA_PROTO_UNSPEC, 0, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self), mesh->catta_servicetype, NULL, atoi(mesh->myport), NULL, txt_name, txt_fingerprint, NULL)) < 0) {
 		logger(mesh, MESHLINK_ERROR, "Failed to add service: %s\n", catta_strerror(ret));
 		goto fail;
 	}
-
+  /*</ES_mod>*/
 	/* Tell the server to register the service */
 	if((ret = catta_s_entry_group_commit(mesh->catta_group)) < 0) {
 		logger(mesh, MESHLINK_ERROR, "Failed to commit entry_group: %s\n", catta_strerror(ret));
