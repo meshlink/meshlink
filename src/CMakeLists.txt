@@ -44,7 +44,7 @@ set(CMAKE_C_FLAGS           "${CMAKE_C_FLAGS} -pedantic-errors -Wall -fPIC -g -s
 
 add_library(meshlink STATIC ${MESHLINK_SRCS})
  
-
+install (TARGETS meshlink DESTINATION lib)
 
 #target_link_libraries(meshlink catta)
 
