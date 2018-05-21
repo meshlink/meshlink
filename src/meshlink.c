@@ -1211,10 +1211,18 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	event_loop_stop(&mesh->loop);
 
 	// Send ourselves a UDP packet to kick the event loop
-	listen_socket_t *s = &mesh->listen_socket[0];
+	for(int i = 0; i < mesh->listen_sockets; i++) {
+		sockaddr_t sa;
+		socklen_t salen = sizeof(sa.sa);
 
-	if(sendto(s->udp.fd, "", 1, MSG_NOSIGNAL, &s->sa.sa, SALEN(s->sa.sa)) == -1) {
-		logger(mesh, MESHLINK_ERROR, "Could not send a UDP packet to ourself");
+		if(getsockname(mesh->listen_socket[i].udp.fd, &sa.sa, &salen) == -1) {
+			logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "getsockname", sockstrerror(sockerrno));
+			continue;
+		}
+
+		if(sendto(mesh->listen_socket[i].udp.fd, "", 1, MSG_NOSIGNAL, &sa.sa, salen) == -1) {
+			logger(mesh, MESHLINK_ERROR, "Could not send a UDP packet to ourself: %s", sockstrerror(sockerrno));
+		}
 	}
 
 	// Wait for the main thread to finish
