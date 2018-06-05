@@ -274,6 +274,7 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 	}
 
 	struct addrinfo *ai;
+
 	struct addrinfo hint = {
 		.ai_family = addressfamily,
 		.ai_socktype = SOCK_STREAM,
@@ -364,8 +365,11 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	if(!get_config_string(lookup_config(mesh->config, "Port"), &mesh->myport)) {
 		int port = check_port(mesh);
-		if (port == 0)
+
+		if(port == 0) {
 			return false;
+		}
+
 		xasprintf(&mesh->myport, "%d", port);
 	}
 

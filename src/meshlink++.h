@@ -174,13 +174,26 @@ public:
 	 */
 
 	/// This function is called whenever another node sends data to the local node.
-	virtual void receive(node *source, const void *data, size_t length) { /* do nothing */ (void)source; (void)data; (void) length; }
+	virtual void receive(node *source, const void *data, size_t length) {
+		/* do nothing */
+		(void)source;
+		(void)data;
+		(void) length;
+	}
 
 	/// This functions is called  whenever another node's status changed.
-	virtual void node_status(node *peer, bool reachable)                { /* do nothing */ (void)peer; (void)reachable; }
+	virtual void node_status(node *peer, bool reachable)                {
+		/* do nothing */
+		(void)peer;
+		(void)reachable;
+	}
 
 	/// This functions is called whenever MeshLink has some information to log.
-	virtual void log(log_level_t level, const char *message)            { /* do nothing */ (void)level; (void)message; }
+	virtual void log(log_level_t level, const char *message)            {
+		/* do nothing */
+		(void)level;
+		(void)message;
+	}
 
 	/// This functions is called whenever another node attemps to open a channel to the local node.
 	/**
@@ -203,7 +216,10 @@ public:
 	 */
 	virtual bool channel_accept(channel *channel, uint16_t port, const void *data, size_t len) {
 		/* by default reject all channels */
-		(void)channel; (void)port; (void)data; (void)len;
+		(void)channel;
+		(void)port;
+		(void)data;
+		(void)len;
 		return false;
 	}
 
@@ -218,7 +234,12 @@ public:
 	 *  @param data         A pointer to a buffer containing data sent by the source.
 	 *  @param len          The length of the data.
 	 */
-	virtual void channel_receive(channel *channel, const void *data, size_t len) { /* do nothing */ (void)channel; (void)data; (void)len; }
+	virtual void channel_receive(channel *channel, const void *data, size_t len) {
+		/* do nothing */
+		(void)channel;
+		(void)data;
+		(void)len;
+	}
 
 	/// This function is called by Meshlink when data can be send on a channel.
 	/**
@@ -230,7 +251,11 @@ public:
 	 *  @param channel      A handle for the channel.
 	 *  @param len          The maximum length of data that is guaranteed to be accepted by a call to channel_send().
 	 */
-	virtual void channel_poll(channel *channel, size_t len) { /* do nothing */ (void)channel; (void)len; }
+	virtual void channel_poll(channel *channel, size_t len) {
+		/* do nothing */
+		(void)channel;
+		(void)len;
+	}
 
 	/// Start MeshLink.
 	/** This function causes MeshLink to open network sockets, make outgoing connections, and
@@ -578,7 +603,7 @@ public:
 private:
 	// non-copyable:
 	mesh(const mesh &) /* TODO: C++11: = delete */;
-	void operator=(const mesh &) /* TODO: C++11: = delete */ ;
+	void operator=(const mesh &) /* TODO: C++11: = delete */;
 
 	/// static callback trampolines:
 	static void receive_trampoline(meshlink_handle_t *handle, meshlink_node_t *source, const void *data, size_t length) {
