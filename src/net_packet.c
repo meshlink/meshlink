@@ -403,22 +403,22 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	} else {
 		choose_udp_address(mesh, to, &sa, &sock);
 	}
+  if(sa->sa.sa_family == AF_INET) {
+    if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
+      if(sockmsgsize(sockerrno)) {
+        if(to->maxmtu >= len) {
+          to->maxmtu = len - 1;
+        }
 
-	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
-		if(sockmsgsize(sockerrno)) {
-			if(to->maxmtu >= len) {
-				to->maxmtu = len - 1;
-			}
-
-			if(to->mtu >= len) {
-				to->mtu = len - 1;
-			}
-		} else {
-			logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s: %s", to->name, sockstrerror(sockerrno));
-			return false;
-		}
-	}
-
+        if(to->mtu >= len) {
+          to->mtu = len - 1;
+        }
+      } else {
+        logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s: %s", to->name, sockstrerror(sockerrno));
+        return false;
+      }
+    }
+  }
 	return true;
 }
 
