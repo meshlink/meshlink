@@ -388,7 +388,7 @@ static char *get_my_hostname(meshlink_handle_t *mesh) {
 		return NULL;
 	}
 
-	if(!strcmp(hostname[0], hostname[1])) {
+	if(hostname[0] && hostname[1] && !strcmp(hostname[0], hostname[1])) {
 		free(hostname[1]);
 		hostname[1] = NULL;
 	}
