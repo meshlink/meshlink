@@ -56,64 +56,12 @@ meshlink_log_level_t global_log_level;
 //TODO: this can go away completely
 const var_t variables[] = {
 	/* Server configuration */
-	{"AddressFamily", VAR_SERVER},
-	{"AutoConnect", VAR_SERVER | VAR_SAFE},
-	{"BindToAddress", VAR_SERVER | VAR_MULTIPLE},
-	{"BindToInterface", VAR_SERVER},
-	{"Broadcast", VAR_SERVER | VAR_SAFE},
 	{"ConnectTo", VAR_SERVER | VAR_MULTIPLE | VAR_SAFE},
-	{"DecrementTTL", VAR_SERVER},
-	{"Device", VAR_SERVER},
-	{"DeviceType", VAR_SERVER},
-	{"DirectOnly", VAR_SERVER},
-	{"ECDSAPrivateKeyFile", VAR_SERVER},
-	{"ExperimentalProtocol", VAR_SERVER},
-	{"Forwarding", VAR_SERVER},
-	{"GraphDumpFile", VAR_SERVER | VAR_OBSOLETE},
-	{"Hostnames", VAR_SERVER},
-	{"IffOneQueue", VAR_SERVER},
-	{"Interface", VAR_SERVER},
-	{"KeyExpire", VAR_SERVER},
-	{"ListenAddress", VAR_SERVER | VAR_MULTIPLE},
-	{"LocalDiscovery", VAR_SERVER},
-	{"MACExpire", VAR_SERVER},
-	{"MaxConnectionBurst", VAR_SERVER},
-	{"MaxOutputBufferSize", VAR_SERVER},
-	{"MaxTimeout", VAR_SERVER},
-	{"Mode", VAR_SERVER | VAR_SAFE},
 	{"Name", VAR_SERVER},
-	{"PingInterval", VAR_SERVER},
-	{"PingTimeout", VAR_SERVER},
-	{"PriorityInheritance", VAR_SERVER},
-	{"PrivateKey", VAR_SERVER | VAR_OBSOLETE},
-	{"PrivateKeyFile", VAR_SERVER},
-	{"ProcessPriority", VAR_SERVER},
-	{"Proxy", VAR_SERVER},
-	{"ReplayWindow", VAR_SERVER},
-	{"ScriptsExtension", VAR_SERVER},
-	{"ScriptsInterpreter", VAR_SERVER},
-	{"StrictSubnets", VAR_SERVER},
-	{"TunnelServer", VAR_SERVER},
-	{"VDEGroup", VAR_SERVER},
-	{"VDEPort", VAR_SERVER},
 	/* Host configuration */
 	{"Address", VAR_HOST | VAR_MULTIPLE},
-	{"Cipher", VAR_SERVER | VAR_HOST},
-	{"ClampMSS", VAR_SERVER | VAR_HOST},
-	{"Compression", VAR_SERVER | VAR_HOST},
-	{"Digest", VAR_SERVER | VAR_HOST},
 	{"ECDSAPublicKey", VAR_HOST},
-	{"ECDSAPublicKeyFile", VAR_SERVER | VAR_HOST},
-	{"IndirectData", VAR_SERVER | VAR_HOST},
-	{"MACLength", VAR_SERVER | VAR_HOST},
-	{"PMTU", VAR_SERVER | VAR_HOST},
-	{"PMTUDiscovery", VAR_SERVER | VAR_HOST},
 	{"Port", VAR_HOST},
-	{"PublicKey", VAR_HOST | VAR_OBSOLETE},
-	{"PublicKeyFile", VAR_SERVER | VAR_HOST | VAR_OBSOLETE},
-	{"Subnet", VAR_HOST | VAR_MULTIPLE | VAR_SAFE},
-	{"TCPOnly", VAR_SERVER | VAR_HOST},
-	{"Weight", VAR_HOST | VAR_SAFE},
 	{NULL, 0}
 };
 
@@ -619,7 +567,7 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 			continue;
 		}
 
-		// Check the list of known variables //TODO: most variables will not be available in meshlink, only name and key will be absolutely necessary
+		// Check the list of known variables
 		bool found = false;
 		int i;
 
@@ -1924,8 +1872,6 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 
 	// Fill in the details.
 	fprintf(f, "Name = %s\n", name);
-	//if(netname)
-	//      fprintf(f, "NetName = %s\n", netname);
 	fprintf(f, "ConnectTo = %s\n", mesh->self->name);
 
 	// Copy Broadcast and Mode
