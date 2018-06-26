@@ -2396,6 +2396,11 @@ static void channel_accept(struct utcp_connection *utcp_connection, uint16_t por
 
 static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
 	node_t *n = utcp->priv;
+
+	if(n->status.destroyed) {
+		return -1;
+	}
+
 	meshlink_handle_t *mesh = n->mesh;
 	return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? (ssize_t)len : -1;
 }
