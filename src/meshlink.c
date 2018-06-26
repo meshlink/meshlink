@@ -59,6 +59,7 @@ const var_t variables[] = {
 	{"ConnectTo", VAR_SERVER | VAR_MULTIPLE | VAR_SAFE},
 	{"Name", VAR_SERVER},
 	/* Host configuration */
+	{"CanonicalAddress", VAR_HOST},
 	{"Address", VAR_HOST | VAR_MULTIPLE},
 	{"ECDSAPublicKey", VAR_HOST},
 	{"Port", VAR_HOST},
@@ -96,6 +97,7 @@ static int rstrip(char *value) {
 
 static void scan_for_hostname(const char *filename, char **hostname, char **port) {
 	char line[4096];
+	bool canonical = false;
 
 	if(!filename || (*hostname && *port)) {
 		return;
@@ -135,17 +137,25 @@ static void scan_for_hostname(const char *filename, char **hostname, char **port
 
 		p += strspn(p, "\t ");
 		p[strcspn(p, "\t ")] = 0;
-		// p is now pointing to the port
-
-		// Check that the hostname is a symbolic name (it's not a numeric IPv4 or IPv6 address)
-		if(!q[strspn(q, "0123456789.")] || strchr(q, ':')) {
-			continue;
-		}
+		// p is now pointing to the port, if present
 
 		if(!*port && !strcasecmp(line, "Port")) {
 			*port = xstrdup(q);
-		} else if(!*hostname && !strcasecmp(line, "Address")) {
+		} else if(!canonical && !*hostname && !strcasecmp(line, "Address")) {
+			// Check that the hostname is a symbolic name (it's not a numeric IPv4 or IPv6 address)
+			if(!q[strspn(q, "0123456789.")] || strchr(q, ':')) {
+				continue;
+			}
+
 			*hostname = xstrdup(q);
+
+			if(*p) {
+				free(*port);
+				*port = xstrdup(p);
+			}
+		} else if(!strcasecmp(line, "CanonicalAddress")) {
+			*hostname = xstrdup(q);
+			canonical = true;
 
 			if(*p) {
 				free(*port);
@@ -153,7 +163,7 @@ static void scan_for_hostname(const char *filename, char **hostname, char **port
 			}
 		}
 
-		if(*hostname && *port) {
+		if(canonical && *hostname && *port) {
 			break;
 		}
 	}
@@ -162,8 +172,32 @@ static void scan_for_hostname(const char *filename, char **hostname, char **port
 }
 
 static bool is_valid_hostname(const char *hostname) {
+	if(!*hostname) {
+		return false;
+	}
+
 	for(const char *p = hostname; *p; p++) {
 		if(!(isalnum(*p) || *p == '-' || *p == '.' || *p == ':')) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static bool is_valid_port(const char *port) {
+	if(!*port) {
+		return false;
+	}
+
+	if(isdigit(*port)) {
+		char *end;
+		unsigned long int result = strtoul(port, &end, 10);
+		return result && result < 65536 && !*end;
+	}
+
+	for(const char *p = port; *p; p++) {
+		if(!(isalnum(*p) || *p == '-')) {
 			return false;
 		}
 	}
@@ -1675,8 +1709,8 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 	return mesh->invitation_key;
 }
 
-bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
-	if(!mesh || !address) {
+bool meshlink_set_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *node, const char *address, const char *port) {
+	if(!mesh || !node || !address) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
@@ -1687,13 +1721,30 @@ bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
 		return false;
 	}
 
-	bool rval = false;
+	if(port && !is_valid_port(port)) {
+		logger(mesh, MESHLINK_DEBUG, "Invalid character in port: %s\n", address);
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	char *canonical_address;
+
+	if(port) {
+		xasprintf(&canonical_address, "%s %s", address, port);
+	} else {
+		canonical_address = xstrdup(address);
+	}
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
-	rval = append_config_file(mesh, mesh->self->name, "Address", address);
+	bool rval = modify_config_file(mesh, node->name, "CanonicalAddress", canonical_address, 1);
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 
+	free(canonical_address);
 	return rval;
+}
+
+bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
+	return meshlink_set_canonical_address(mesh, mesh->self, address, NULL);
 }
 
 bool meshlink_add_external_address(meshlink_handle_t *mesh) {

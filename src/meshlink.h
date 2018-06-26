@@ -403,6 +403,25 @@ extern bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len,
  */
 extern bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len, const void *signature, size_t siglen);
 
+/// Set the canonical Address for a node.
+/** This function sets the canonical Address for a node.
+ *  This address is stored permanently until it is changed by another call to this function,
+ *  unlike other addresses associated with a node,
+ *  such as those added with meshlink_hint_address() or addresses discovered at runtime.
+ *
+ *  If a canonical Address is set for the local node,
+ *  it will be used for the hostname part of generated invitation URLs.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A pointer to a meshlink_node_t describing the node.
+ *  @param address      A nul-terminated C string containing the address, which can be either in numeric format or a hostname.
+ *  @param port         A nul-terminated C string containing the port, which can be either in numeric or symbolic format.
+ *                      If it is NULL, the listening port's number will be used.
+ *
+ *  @return             This function returns true if the address was added, false otherwise.
+ */
+extern bool meshlink_set_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *node, const char *address, const char *port);
+
 /// Add an Address for the local node.
 /** This function adds an Address for the local node, which will be used for invitation URLs.
  *

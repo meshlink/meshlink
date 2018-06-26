@@ -59,6 +59,8 @@ int main() {
 		mesh[i] = meshlink_open(path, name[i], "trio", DEV_CLASS_BACKBONE);
 		assert(mesh[i]);
 
+		meshlink_add_address(mesh[i], "localhost");
+
 		data[i] = meshlink_export(mesh[i]);
 		assert(data[i]);
 	}
@@ -81,7 +83,7 @@ int main() {
 	// start the nodes
 
 	for(int i = 0; i < 3; i++) {
-		meshlink_start(mesh[i]);
+		assert(meshlink_start(mesh[i]));
 	}
 
 	// the nodes should now learn about each other
@@ -122,7 +124,7 @@ int main() {
 	meshlink_set_log_cb(mesh[1], MESHLINK_DEBUG, log_cb);
 
 	for(int i = 1; i < 3; i++) {
-		meshlink_start(mesh[i]);
+		assert(meshlink_start(mesh[i]));
 	}
 
 	assert(meshlink_get_node(mesh[1], name[2]));
