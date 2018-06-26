@@ -520,6 +520,16 @@ extern int meshlink_get_port(meshlink_handle_t *mesh);
 
 extern bool meshlink_set_port(meshlink_handle_t *mesh, int port);
 
+/// Set the timeout for invitations.
+/** This function sets the timeout for invitations.
+ *  Note that timeouts are only checked at the time a node tries to join using an invitation.
+ *  The default timeout for invitations is 1 week.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param timeout      The timeout for invitations in seconds.
+ */
+extern void meshlink_set_invitation_timeout(meshlink_handle_t *mesh, int timeout);
+
 /// Invite another node into the mesh.
 /** This function generates an invitation that can be used by another node to join the same mesh as the local node.
  *  The generated invitation is a string containing a URL.

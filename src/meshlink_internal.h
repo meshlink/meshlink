@@ -120,6 +120,7 @@ struct meshlink_handle {
 	hash_t *node_udp_cache;
 	struct connection_t *everyone;
 	struct ecdsa *invitation_key;
+	int invitation_timeout;
 
 	int pinginterval;       /* seconds between pings */
 	int pingtimeout;        /* seconds to wait for response */

@@ -239,6 +239,24 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 
 	if(!f) {
 		logger(mesh, MESHLINK_ERROR, "Error trying to open invitation %s\n", cookie);
+		unlink(usedname);
+		return false;
+	}
+
+	// Check the timestamp
+	struct stat st;
+
+	if(fstat(fileno(f), &st)) {
+		logger(mesh, MESHLINK_ERROR, "Could not stat invitation file %s\n", usedname);
+		fclose(f);
+		unlink(usedname);
+		return false;
+	}
+
+	if(time(NULL) > st.st_mtime + mesh->invitation_timeout) {
+		logger(mesh, MESHLINK_ERROR, "Peer %s tried to use an outdated invitation file %s\n", c->name, usedname);
+		fclose(f);
+		unlink(usedname);
 		return false;
 	}
 

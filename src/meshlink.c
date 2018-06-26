@@ -1033,6 +1033,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	mesh->appname = xstrdup(appname);
 	mesh->devclass = devclass;
 	mesh->discovery = true;
+	mesh->invitation_timeout = 604800; // 1 week
 
 	if(usingname) {
 		mesh->name = xstrdup(name);
@@ -1830,6 +1831,10 @@ done:
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 
 	return rval;
+}
+
+void meshlink_set_invitation_timeout(meshlink_handle_t *mesh, int timeout) {
+	mesh->invitation_timeout = timeout;
 }
 
 char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {

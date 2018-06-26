@@ -474,6 +474,16 @@ public:
 		return meshlink_set_port(handle, port);
 	}
 
+	/// Set the timeout for invitations.
+	/** This function sets the timeout for invitations.
+	 *  The timeout is retroactively applied to all outstanding invitations.
+	 *
+	 *  @param timeout      The timeout for invitations in seconds.
+	 */
+	void set_invitation_timeout(int timeout) {
+		meshlink_set_invitation_timeout(handle, timeout);
+	}
+
 	/// Invite another node into the mesh.
 	/** This function generates an invitation that can be used by another node to join the same mesh as the local node.
 	 *  The generated invitation is a string containing a URL.
