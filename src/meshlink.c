@@ -534,6 +534,31 @@ int check_port(meshlink_handle_t *mesh) {
 	return 0;
 }
 
+static void deltree(const char *dirname) {
+	DIR *d = opendir(dirname);
+
+	if(d) {
+		struct dirent *ent;
+
+		while((ent = readdir(d))) {
+			if(ent->d_name[0] == '.') {
+				continue;
+			}
+
+			char filename[PATH_MAX];
+			snprintf(filename, sizeof(filename), "%s" SLASH "%s", dirname, ent->d_name);
+
+			if(unlink(filename)) {
+				deltree(filename);
+			}
+		}
+
+		closedir(d);
+	}
+
+	rmdir(dirname);
+}
+
 static bool finalize_join(meshlink_handle_t *mesh) {
 	char *name = xstrdup(get_value(mesh->data, "Name"));
 
@@ -559,6 +584,19 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 
 	fprintf(f, "Name = %s\n", name);
 
+	// Wipe all old host config files and invitations
+	snprintf(filename, sizeof(filename), "%s" SLASH "hosts", mesh->confbase);
+	deltree(filename);
+
+	if(mkdir(filename, 0777) && errno != EEXIST) {
+		logger(mesh, MESHLINK_DEBUG, "Could not create directory %s: %s\n", filename, strerror(errno));
+		return false;
+	}
+
+	snprintf(filename, sizeof(filename), "%s" SLASH "invitations", mesh->confbase);
+	deltree(filename);
+
+	// Create a new host config file for ourself
 	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
 	FILE *fh = fopen(filename, "w");
 
@@ -690,8 +728,10 @@ static bool finalize_join(meshlink_handle_t *mesh) {
 	sptps_send_record(&(mesh->sptps), 1, b64key, strlen(b64key));
 	free(b64key);
 
+	free(mesh->name);
 	free(mesh->self->name);
 	free(mesh->self->connection->name);
+	mesh->name = xstrdup(name);
 	mesh->self->name = xstrdup(name);
 	mesh->self->connection->name = name;
 
@@ -1275,32 +1315,6 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	memset(mesh, 0, sizeof(*mesh));
 
 	free(mesh);
-}
-
-static void deltree(const char *dirname) {
-	DIR *d = opendir(dirname);
-
-	if(d) {
-		struct dirent *ent;
-
-		while((ent = readdir(d))) {
-			if(ent->d_name[0] == '.') {
-				continue;
-			}
-
-			char filename[PATH_MAX];
-			snprintf(filename, sizeof(filename), "%s" SLASH "%s", dirname, ent->d_name);
-
-			if(unlink(filename)) {
-				deltree(filename);
-			}
-		}
-
-		closedir(d);
-	}
-
-	rmdir(dirname);
-	return;
 }
 
 bool meshlink_destroy(const char *confbase) {
