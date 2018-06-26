@@ -1127,6 +1127,7 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 		logger(mesh, MESHLINK_DEBUG, "Could not start thread: %s\n", strerror(errno));
 		memset(&mesh->thread, 0, sizeof(mesh)->thread);
 		meshlink_errno = MESHLINK_EINTERNAL;
+		event_loop_stop(&mesh->loop);
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
 		return false;
 	}
@@ -1173,12 +1174,14 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 		}
 	}
 
-	// Wait for the main thread to finish
-	pthread_mutex_unlock(&(mesh->mesh_mutex));
-	pthread_join(mesh->thread, NULL);
-	pthread_mutex_lock(&(mesh->mesh_mutex));
+	if(mesh->threadstarted) {
+		// Wait for the main thread to finish
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		pthread_join(mesh->thread, NULL);
+		pthread_mutex_lock(&(mesh->mesh_mutex));
 
-	mesh->threadstarted = false;
+		mesh->threadstarted = false;
+	}
 
 	// Close all metaconnections
 	if(mesh->connections) {
@@ -1192,9 +1195,8 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	if(mesh->outgoings) {
 		list_delete_list(mesh->outgoings);
+		mesh->outgoings = NULL;
 	}
-
-	mesh->outgoings = NULL;
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
