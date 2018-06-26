@@ -1744,7 +1744,7 @@ bool meshlink_set_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *no
 }
 
 bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
-	return meshlink_set_canonical_address(mesh, mesh->self, address, NULL);
+	return meshlink_set_canonical_address(mesh, (meshlink_node_t *)mesh->self, address, NULL);
 }
 
 bool meshlink_add_external_address(meshlink_handle_t *mesh) {
