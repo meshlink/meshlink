@@ -52,7 +52,7 @@ struct addrinfo *str2addrinfo(const char *address, const char *service, int sock
 
 sockaddr_t str2sockaddr(const char *address, const char *port) {
 	struct addrinfo *ai;
-	sockaddr_t result;
+	sockaddr_t result = {0};
 	int err;
 
 	struct addrinfo hint = {

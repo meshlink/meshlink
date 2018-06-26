@@ -555,7 +555,7 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 	listen_socket_t *ls = data;
 	vpn_packet_t pkt;
 	char *hostname;
-	sockaddr_t from;
+	sockaddr_t from = {0};
 	socklen_t fromlen = sizeof(from);
 	node_t *n;
 	int len;

@@ -571,7 +571,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	meshlink_handle_t *mesh = loop->data;
 	listen_socket_t *l = data;
 	connection_t *c;
-	sockaddr_t sa;
+	sockaddr_t sa = {0};
 	int fd;
 	socklen_t len = sizeof(sa);
 
