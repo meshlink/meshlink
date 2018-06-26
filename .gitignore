@@ -12,6 +12,8 @@ Makefile.in
 !.astylerc
 core
 core.*
+vgcore.*
+tags
 /config.*
 /autom4te.cache
 /aclocal.m4
@@ -27,3 +29,5 @@ core.*
 /test-driver
 /stamp-h1
 /INSTALL
+/meshlink-*
+/ChangeLog
