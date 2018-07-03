@@ -1048,6 +1048,12 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 		return NULL;
 	}
 
+	if(strchr(appname, ' ')) {
+		logger(NULL, MESHLINK_ERROR, "Invalid appname given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
 	if(!name || !*name) {
 		logger(NULL, MESHLINK_ERROR, "No name given!\n");
 		//return NULL;
