@@ -2126,7 +2126,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 
 	mesh->blen = 0;
 
-	if(!sendline(mesh->sock, "0 ?%s %d.%d", b64key, PROT_MAJOR, 1)) {
+	if(!sendline(mesh->sock, "0 ?%s %d.%d %s", b64key, PROT_MAJOR, 1, mesh->appname)) {
 		logger(mesh, MESHLINK_DEBUG, "Error sending request to %s port %s: %s\n", address, port, strerror(errno));
 		closesocket(mesh->sock);
 		meshlink_errno = MESHLINK_ENETWORK;
