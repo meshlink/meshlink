@@ -6,7 +6,9 @@ SUBDIRS =  catta src doc test examples
 
 ACLOCAL_AMFLAGS = -I m4 
 
-EXTRA_DIST = README.android
+EXTRA_DIST = \
+	COPYING.README \
+	README.android
 
 ChangeLog:
 	git log > ChangeLog

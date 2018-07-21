@@ -19,10 +19,6 @@
 
 #include "system.h"
 
-#ifdef HAVE_ZLIB
-#include <zlib.h>
-#endif
-
 #include "conf.h"
 #include "connection.h"
 #include "crypto.h"
