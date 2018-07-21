@@ -1,6 +1,6 @@
 /*
     meshlink.c -- Implementation of the MeshLink API.
-    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2018 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -1215,9 +1215,11 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 
 	mesh->threadstarted = true;
 
+#if HAVE_CATTA
 	if(mesh->discovery) {
 		discovery_start(mesh);
 	}
+#endif
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return true;
@@ -1232,10 +1234,12 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 	logger(mesh, MESHLINK_DEBUG, "meshlink_stop called\n");
 
+#if HAVE_CATTA
 	// Stop discovery
 	if(mesh->discovery) {
 		discovery_stop(mesh);
 	}
+#endif
 
 	// Shut down the main thread
 	event_loop_stop(&mesh->loop);
@@ -2653,6 +2657,7 @@ void update_node_status(meshlink_handle_t *mesh, node_t *n) {
 }
 
 void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable) {
+#if HAVE_CATTA
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -2676,6 +2681,11 @@ void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable) {
 
 end:
 	pthread_mutex_unlock(&mesh->mesh_mutex);
+#else
+	(void)mesh;
+	(void)enable;
+	meshlink_errno = MESHLINK_ENOTSUP;
+#endif
 }
 
 static void __attribute__((constructor)) meshlink_init(void) {

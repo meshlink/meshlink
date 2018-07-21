@@ -3,7 +3,7 @@
 
 /*
     meshlink.h -- MeshLink API
-    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2018 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -63,6 +63,7 @@ typedef enum {
 	MESHLINK_ESTORAGE, ///< MeshLink coud not load or write data from/to disk
 	MESHLINK_ENETWORK, ///< MeshLink encountered a network error
 	MESHLINK_EPEER, ///< A peer caused an error
+	MESHLINK_ENOTSUP, ///< The operation is not supported in the current configuration of MeshLink
 } meshlink_errno_t;
 
 /// Device class

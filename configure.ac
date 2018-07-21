@@ -5,7 +5,6 @@ AC_INIT([MeshLink], [0.1])
 AM_INIT_AUTOMAKE([std-options subdir-objects nostdinc silent-rules -Wall])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_SUBDIRS([catta])
 AM_SILENT_RULES([yes])
 
 # Enable GNU extensions.
@@ -78,6 +77,14 @@ AS_IF([test "x$enable_hardening" != "xno"],
    AX_CHECK_LINK_FLAG([-Wl,-z,now], [LDFLAGS="$LDFLAGS -Wl,-z,now"])
   ]
 );
+
+dnl Allow building without Catta
+AC_ARG_ENABLE([catta], AS_HELP_STRING([--disable-catta], [disable linking with the Catta library]))
+AS_IF([test "x$enable_catta" != "xno"],
+  AC_DEFINE(HAVE_CATTA, 1, [Link with Catta])
+  AC_CONFIG_SUBDIRS([catta])
+)
+AM_CONDITIONAL(CATTA, test "x$enable_catta" != "xno")
 
 dnl UTCP debug flags
 AC_ARG_ENABLE([utcp_debug], AS_HELP_STRING([--enable-utcp-debug], [compile utcp with debug output]))
