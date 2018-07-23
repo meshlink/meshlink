@@ -164,10 +164,6 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	int option;
 
 	nfd = socket(sa->sa.sa_family, SOCK_DGRAM, IPPROTO_UDP);
-  printf("nfd socket fd: %d\n", nfd);
-  
-  printf("mesh->myport = %s, family = %d\n", mesh->myport, sa->sa.sa_family);
-  printf("PF_INET4=%d, PF_INET6=%d\n", PF_INET, PF_INET6);
 	if(nfd < 0) {
 		logger(mesh, MESHLINK_ERROR, "Creating UDP socket failed: %s", sockstrerror(sockerrno));
 		return -1;

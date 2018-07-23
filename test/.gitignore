@@ -1,1 +1,17 @@
-*/
+#*/
+# Ignore all
+*
+# Unignore all files with extensions
+!*.*
+# Unignore all directories
+!*/
+
+# The above three commands combined will ignore all files without extensions
+# The commands below specify patterns to specifically ignore
+*.log
+*.o
+*.trs
+*conf*
+.deps
+.dirstamp
+Makefile.in

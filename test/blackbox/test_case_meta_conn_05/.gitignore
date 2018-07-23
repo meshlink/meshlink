@@ -1,0 +1,11 @@
+*.cbp
+*.depend
+*.layout
+bin
+obj
+test
+node_sim*
+.deps
+.libs
+Makefile
+Makefile.in

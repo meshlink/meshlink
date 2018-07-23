@@ -1043,7 +1043,6 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 			}
 		} else {
 			logger(NULL, MESHLINK_ERROR, "Cannot not read from %s: %s\n", filename, strerror(errno));
-      printf("File access error\n");
 			meshlink_close(mesh);
 			meshlink_errno = MESHLINK_ESTORAGE;
 			return NULL;
@@ -1055,7 +1054,6 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	init_configuration(&mesh->config);
 
 	if(!read_server_config(mesh)) {
-    printf("read_server_config error\n");
 		meshlink_close(mesh);
 		meshlink_errno = MESHLINK_ESTORAGE;
 		return NULL;
@@ -1072,7 +1070,6 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	// TODO: we should not open listening sockets yet
 
 	if(!setup_network(mesh)) {
-    printf("setup_networkerror\n");
 		meshlink_close(mesh);
 		meshlink_errno = MESHLINK_ENETWORK;
 		return NULL;
@@ -1158,7 +1155,6 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 }
 
 void meshlink_stop(meshlink_handle_t *mesh) {
-  printf("Meshlink_stop called\n");
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -1177,7 +1173,6 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	// Send ourselves a UDP packet to kick the event loop
 	listen_socket_t *s = &mesh->listen_socket[1];
-  printf("s->udp.fd = %d\n", s->udp.fd);
   if(s->sa.sa.sa_family == AF_INET) {
     if(sendto(s->udp.fd, "", 1, MSG_NOSIGNAL, &s->sa.sa, SALEN(s->sa.sa)) == -1) {
       perror("Could not send a UDP packet to ourself :");
@@ -1215,7 +1210,6 @@ void meshlink_close(meshlink_handle_t *mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
 	}
-  printf("Calling meshlink_stop from meshlink_close\n");
 	// stop can be called even if mesh has not been started
 	meshlink_stop(mesh);
 
@@ -1930,7 +1924,6 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 }
 
 bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
-  printf("meshlink_join started");
 	if(!mesh || !invitation) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
