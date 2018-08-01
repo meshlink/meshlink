@@ -1,5 +1,5 @@
 /*
-    test_cases_get_port.h -- Declarations for Individual Test Case implementation functions
+    test_cases_get_self.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -18,17 +18,12 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef TEST_CASES_CHANNELS_GET_H
-#define TEST_CASES_CHANNELS_GET_H
+#ifndef TEST_CASES_CHANNELS_SET_ACCEPT_H
+#define TEST_CASES_CHANNELS_SET_ACCEPT_H
 
 #include <stdbool.h>
-void test_case_channel_get_flags_01(void **state);
-bool test_steps_channel_get_flags_01(void);
-void test_case_channel_get_flags_02(void **state);
-bool test_steps_channel_get_flags_02(void);
-void test_case_channel_get_flags_03(void **state);
-bool test_steps_channel_get_flags_03(void);
-void test_case_channel_get_flags_04(void **state);
-bool test_steps_channel_get_flags_04(void);
+
+extern int total_tests;
+extern int test_meshlink_channel_get_flags(void);
 
 #endif

@@ -1,5 +1,6 @@
+
 /*
-    test_cases_add_ex_addr.c -- Execution of specific meshlink black box test cases
+    test_cases_add_ex_addr.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -9,7 +10,7 @@
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty o
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
@@ -17,13 +18,13 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-#include "execute_tests.h"
-#include "test_cases_set_channel_accept_cb.h"
-#include "../common/containers.h"
-#include "../common/test_step.h"
-#include "../common/common_handlers.h"
-#include <assert.h>
-#include <string.h>
-/* Modify this to change the logging level of Meshlink */
-#define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
 
+#ifndef TEST_CASES_SET_POLL_CB_H
+#define TEST_CASES_SET_POLL_CB_H
+
+#include <stdbool.h>
+
+extern int test_meshlink_set_channel_poll_cb(void);
+extern int total_tests;
+
+#endif

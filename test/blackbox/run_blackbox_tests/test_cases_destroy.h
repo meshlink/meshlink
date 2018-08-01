@@ -23,15 +23,7 @@
 
 #include <stdbool.h>
 
-void test_case_meshlink_destroy_01(void **state);
-bool test_meshlink_destroy_01(void);
-void test_case_meshlink_destroy_02(void **state);
-bool test_meshlink_destroy_02(void);
-void test_case_meshlink_destroy_03(void **state);
-bool test_meshlink_destroy_03(void);
-void test_case_meshlink_destroy_04(void **state);
-bool test_meshlink_destroy_04(void);
-void test_case_meshlink_destroy_05(void **state);
-bool test_meshlink_destroy_05(void);
+extern int total_tests;
+extern int test_meshlink_destroy(void);
 
 #endif // TEST_CASES_DESTROY_H

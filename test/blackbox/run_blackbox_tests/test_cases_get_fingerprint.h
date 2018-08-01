@@ -1,5 +1,5 @@
 /*
-    test_cases.h -- Declarations for Individual Test Case implementation functions
+    test_cases_get_fingerprint.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -23,13 +23,7 @@
 
 #include <stdbool.h>
 
-void test_case_get_fingerprint_cb_01(void **state);
-bool test_get_fingerprint_cb_01(void);
-void test_case_get_fingerprint_cb_02(void **state);
-bool test_get_fingerprint_cb_02(void);
-void test_case_get_fingerprint_cb_03(void **state);
-bool test_get_fingerprint_cb_03(void);
-void test_case_get_fingerprint_cb_04(void **state);
-bool test_get_fingerprint_cb_04(void);
+extern int test_meshlink_get_fingerprint(void);
+extern int total_tests;
 
 #endif // TEST_CASES_GET_FINGERPRINT_H

@@ -22,52 +22,73 @@
 #include "../common/containers.h"
 #include "../common/test_step.h"
 #include "../common/common_handlers.h"
+#define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
+#include <assert.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
 
-/* Execute Meta-connections Test Case # 1 - re-connection to peer after disconnection when
-    connected via a third node */
+static bool join_status;
+static void status_callback(meshlink_handle_t *mesh, meshlink_node_t *source, bool reach) {
+   fprintf(stderr, "In status callback\n");
+   if (reach) {
+     fprintf(stdout, "[ %s ] node reachable\n", source->name);
+   }
+   else {
+     fprintf(stdout, "[ %s ] node not reachable\n", source->name) ;
+   }
+   join_status = true;
+
+   return;
+}
+
+/* Execute meshlink_discovery Test Case # 1 - connection with relay after being off-line*/
 void test_case_discovery_01(void **state) {
     execute_test(test_steps_discovery_01, state);
     return;
 }
 
-/* Test Steps for Meta-connections Test Case # 1 - re-connection to peer after disconnection when
-    connected via a third (relay) node
-
-    Test Steps:
-    1. Run NUT, relay and peer nodes with relay inviting the other two nodes
-    2. After connection to peer, terminate the peer node's running instance
-    3. After peer becomes unreachable, wait 60 seconds then re-start the peer node's instance
-
-    Expected Result:
-    NUT is re-connected to peer
-*/
 bool test_steps_discovery_01(void) {
-    char *invite_peer, *invite_nut;
-    bool result = false;
-    int i;
+  join_status = false;
+  bool ret ;
 
-    invite_peer = invite_in_container("relay", "peer");
-    invite_nut = invite_in_container("relay", NUT_NODE_NAME);
-    printf("Please turn your interface internet down in 10 seconds");
-    sleep(10);
+  meshlink_destroy("discconf");
+  char *invite_nut = invite_in_container("relay", NUT_NODE_NAME);
+  node_sim_in_container("relay", "1", NULL);
 
-     meshlink_enable_discovery(mesh_handle, true);
-    node_sim_in_container("relay", "1", NULL);
-    node_sim_in_container("peer", "1", invite_peer);
-    PRINT_TEST_CASE_MSG("Waiting for peer to be connected when discovery being enabled\n");
+    /* Set up logging for Meshlink */
+    meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-    for(i = 0; i < 60; i++) {
-        if(meta_conn_status[1]) {
-            result = true;
-            break;
-        }
-        sleep(1);
+    /* Create meshlink instance */
+    mesh_handle = meshlink_open("discconf", "nut", "node_sim", 1);
+    PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
+    assert(mesh_handle);
+
+    /* Set up logging for Meshlink with the newly acquired Mesh Handle */
+    meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+    /* Set up callback for node status (reachable / unreachable) */
+    meshlink_set_node_status_cb(mesh_handle, status_callback);
+
+    sleep(2);
+    /*Joining the NUT with relay*/
+   ret = meshlink_join(mesh_handle, invite_nut);
+   assert(ret);
+    PRINT_TEST_CASE_MSG("meshlink_join status: %s\n", meshlink_strerror(meshlink_errno));
+    assert(meshlink_start(mesh_handle));
+
+    sleep(2);
+
+    if (join_status) {
+    PRINT_TEST_CASE_MSG("after 2 seconds NUT joined with relay\n");
     }
-
-    free(invite_peer);
+    else {
+    PRINT_TEST_CASE_MSG("after 2 seconds NUT didn't join with relay\n");
+    }
     free(invite_nut);
-
-    return result;
+    meshlink_stop(mesh_handle);
+    meshlink_close(mesh_handle);
+  meshlink_destroy("discconf");
+    return join_status && ret;
 }
 
 /* Execute Meta-connections Test Case # 1 - re-connection to peer after disconnection when
@@ -89,32 +110,48 @@ void test_case_discovery_02(void **state) {
     NUT is re-connected to peer
 */
 bool test_steps_discovery_02(void) {
-    char *invite_peer, *invite_nut;
-    bool result = false;
-    int i;
+    char  *invite_nut;
+    join_status = false;
 
-    invite_peer = invite_in_container("relay", "peer");
+    meshlink_destroy("discconf02");
     invite_nut = invite_in_container("relay", NUT_NODE_NAME);
-    printf("Please turn your interface internet down in 10 seconds");
+    printf("Please turn your interface internet down in 10 seconds\n");
     sleep(10);
+    fprintf(stderr, "[discovery 01]enabling discovery\n");
+    meshlink_enable_discovery(mesh_handle, false);
 
-     meshlink_enable_discovery(mesh_handle, false);
+    /* Set up logging for Meshlink */
+    meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+
+    /* Create meshlink instance */
+    mesh_handle = meshlink_open("discconf02", "nut", "node_sim", 1);
+    fprintf(stderr, "[discovery 01]meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
+    assert(mesh_handle);
+
+    /* Set up logging for Meshlink with the newly acquired Mesh Handle */
+    meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+    /* Set up callback for node status (reachable / unreachable) */
+    meshlink_set_node_status_cb(mesh_handle, status_callback);
+    meshlink_join(mesh_handle, invite_nut);
+    assert(meshlink_start(mesh_handle));
+    /*starting relay in container*/
     node_sim_in_container("relay", "1", NULL);
-    node_sim_in_container("peer", "1", invite_peer);
-    PRINT_TEST_CASE_MSG("Waiting for peer to be connected when discovery being disabled\n");
+    fprintf(stderr, "[discovery 01]Waiting for peer to be connected when discovery being enabled\n");
+    sleep(2);
 
-    for(i = 0; i < 60; i++) {
-        if(meta_conn_status[1]) {
-            result = true;
-            break;
-        }
-        sleep(1);
-    }
-
-    free(invite_peer);
     free(invite_nut);
 
-    return !result;
+    if (join_status) {
+      fprintf(stderr, "[discovery 01]NUT and relay discovered each other when internet is off and discovery was enabled\n");
+    }
+    else {
+      fprintf(stderr, "[discovery 01]NUT and relay didn't discovered each other when internet is off and discovery was enabled\n");
+    }
+
+    meshlink_stop(mesh_handle);
+    meshlink_close(mesh_handle);
+    meshlink_destroy("testconf");
+    return join_status;
 }
 
 /* Execute Meta-connections Test Case # 1 - re-connection to peer after disconnection when

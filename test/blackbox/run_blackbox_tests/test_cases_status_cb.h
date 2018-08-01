@@ -1,5 +1,5 @@
 /*
-    test_cases.h -- Declarations for Individual Test Case implementation functions
+    test_cases_status_cb.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -23,12 +23,7 @@
 
 #include <stdbool.h>
 
-
-void test_case_set_status_cb_01(void **state);
-bool test_set_status_cb_01(void);
-void test_case_set_status_cb_02(void **state);
-bool test_set_status_cb_02(void);
-void test_case_set_status_cb_03(void **state);
-bool test_set_status_cb_03(void);
+extern int test_meshlink_set_status_cb(void);
+extern int total_tests;
 
 #endif // TEST_CASES_SET_STATUS_CB_H

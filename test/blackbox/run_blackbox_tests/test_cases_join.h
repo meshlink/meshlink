@@ -1,7 +1,7 @@
 
 
 /*
-    test_cases.h -- Declarations for Individual Test Case implementation functions
+    test_cases_join.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -25,16 +25,8 @@
 
 #include <stdbool.h>
 
-void test_case_meshlink_join_01(void **state);
-bool test_meshlink_join_01(void);
-void test_case_meshlink_join_02(void **state);
-bool test_meshlink_join_02(void);
-void test_case_meshlink_join_03(void **state);
-bool test_meshlink_join_03(void);
-void test_case_meshlink_join_04(void **state);
-bool test_meshlink_join_04(void);
-void test_case_meshlink_join_05(void **state);
-bool test_meshlink_join_05(void);
+extern int test_meshlink_join(void);
+extern int total_tests;
 
 
 #endif

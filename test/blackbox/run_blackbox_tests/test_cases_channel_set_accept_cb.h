@@ -1,6 +1,5 @@
-
 /*
-    test_cases_set_log_cb.h -- Declarations for Individual Test Case implementation functions
+    test_cases_channel_set_accept_cb.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -19,12 +18,12 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef TEST_CASES_SET_LOG_CB_H
-#define TEST_CASES_SET_LOG_CB_H
+#ifndef TEST_CASES_CHANNELS_SET_ACCEPT_CB_H
+#define TEST_CASES_CHANNELS_SET_ACCEPT_CB_H
 
 #include <stdbool.h>
 
-extern  int test_meshlink_set_log_cb(void);
-extern  int total_tests;
+extern int total_tests;
+extern int test_meshlink_set_channel_accept_cb(void);
 
-#endif // TEST_CASES_SET_LOG_H
+#endif

@@ -1,5 +1,5 @@
 /*
-    test_cases.h -- Declarations for Individual Test Case implementation functions
+    test_cases_set_port.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -23,16 +23,7 @@
 
 #include <stdbool.h>
 
-void test_case_set_port_01(void **state);
-bool test_set_port_01(void);
-void test_case_set_port_02(void **state);
-bool test_set_port_02(void);
-void test_case_set_port_03(void **state);
-bool test_set_port_03(void);
-void test_case_set_port_04(void **state);
-bool test_set_port_04(void);
-void test_case_set_port_05(void **state);
-bool test_set_port_05(void);
-
+extern int total_tests;
+extern int test_meshlink_set_port(void);
 
 #endif // TEST_CASES_SET_PORT

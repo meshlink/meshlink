@@ -1,5 +1,5 @@
 /*
-    test_cases.h -- Declarations for Individual Test Case implementation functions
+    test_cases_verify.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -23,22 +23,7 @@
 
 #include <stdbool.h>
 
-
-void test_case_verify_01(void **state);
-bool test_verify_01(void);
-void test_case_verify_02(void **state);
-bool test_verify_02(void);
-void test_case_verify_03(void **state);
-bool test_verify_03(void);
-void test_case_verify_04(void **state);
-bool test_verify_04(void);
-void test_case_verify_05(void **state);
-bool test_verify_05(void);
-void test_case_verify_06(void **state);
-bool test_verify_06(void);
-void test_case_verify_07(void **state);
-bool test_verify_07(void);
-void test_case_verify_08(void **state);
-bool test_verify_08(void);
+extern int total_tests;
+extern int test_meshlink_verify(void);
 
 #endif // TEST_CASES_VERIFY_H

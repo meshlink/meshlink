@@ -1,6 +1,6 @@
 
 /*
-    test_cases.h -- Declarations for Individual Test Case implementation functions
+    test_cases_export.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -24,13 +24,7 @@
 
 #include <stdbool.h>
 
-void test_case_export_01(void **state);
-bool test_export_01(void);
-void test_case_export_02(void **state);
-bool test_export_02(void);
-void test_case_export_03(void **state);
-bool test_export_03(void);
-void test_case_export_04(void **state);
-bool test_export_04(void);
+extern int total_tests;
+extern int test_meshlink_export(void);
 
 #endif

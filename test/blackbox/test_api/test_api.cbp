@@ -75,6 +75,13 @@
 		<Unit filename="../run_blackbox_tests/test_cases_channel_set_accept_cb.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="../run_blackbox_tests/test_cases_channel_set_accept_cb.h" />
+		<Unit filename="../run_blackbox_tests/test_cases_channel_set_poll_cb.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../run_blackbox_tests/test_cases_channel_set_receive_cb.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="../run_blackbox_tests/test_cases_destroy.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -111,6 +118,9 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../run_blackbox_tests/test_cases_get_self.h" />
+		<Unit filename="../run_blackbox_tests/test_cases_hint_address.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="../run_blackbox_tests/test_cases_import.c">
 			<Option compilerVar="CC" />
 		</Unit>

@@ -77,7 +77,7 @@ int teardown_test(void **state) {
     }
 
     PRINT_TEST_CASE_MSG("Terminating NUT.\n");
-    execute_close();
+//    execute_close();
     state_ptr = NULL;
 
     return EXIT_SUCCESS;

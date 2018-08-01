@@ -1,5 +1,5 @@
 /*
-    test_cases.h -- Declarations for Individual Test Case implementation functions
+    test_cases_get_all_nodes.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -23,11 +23,7 @@
 
 #include <stdbool.h>
 
-void test_case_get_all_nodes_01(void **state);
-bool test_get_all_nodes_01(void);
-void test_case_get_all_nodes_02(void **state);
-bool test_get_all_nodes_02(void);
-void test_case_get_all_nodes_03(void **state);
-bool test_get_all_nodes_03(void);
+extern int total_tests;
+extern int test_meshlink_get_all_nodes(void);
 
-#endif // TEST_CASES_GET_ALL_NODES_H
+#endif

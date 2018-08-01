@@ -1,5 +1,5 @@
 /*
-    test_cases_get_port.h -- Declarations for Individual Test Case implementation functions
+    test_cases_channel_ex.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -22,23 +22,8 @@
 #define TEST_CASES_CHANNELS_EX_H
 
 #include <stdbool.h>
-void test_case_channel_ex_01(void **state);
-bool test_steps_channel_ex_01(void);
-void test_case_channel_ex_02(void **state);
-bool test_steps_channel_ex_02(void);
-void test_case_channel_ex_03(void **state);
-bool test_steps_channel_ex_03(void);
-void test_case_channel_ex_04(void **state);
-bool test_steps_channel_ex_04(void);
-void test_case_channel_ex_05(void **state);
-bool test_steps_channel_ex_05(void);
-void test_case_channel_ex_06(void **state);
-bool test_steps_channel_ex_06(void);
-void test_case_channel_ex_07(void **state);
-bool test_steps_channel_ex_07(void);
-void test_case_channel_ex_08(void **state);
-bool test_steps_channel_ex_08(void);
-void test_case_channel_ex_09(void **state);
-bool test_steps_channel_ex_09(void);
+
+extern int total_tests;
+extern int test_meshlink_channel_open_ex(void);
 
 #endif

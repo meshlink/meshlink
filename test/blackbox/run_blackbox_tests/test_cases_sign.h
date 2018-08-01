@@ -1,5 +1,5 @@
 /*
-    test_cases.h -- Declarations for Individual Test Case implementation functions
+    test_cases_sign.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -23,20 +23,7 @@
 
 #include <stdbool.h>
 
-
-void test_case_sign_01(void **state);
-bool test_sign_01(void);
-void test_case_sign_02(void **state);
-bool test_sign_02(void);
-void test_case_sign_03(void **state);
-bool test_sign_03(void);
-void test_case_sign_04(void **state);
-bool test_sign_04(void);
-void test_case_sign_05(void **state);
-bool test_sign_05(void);
-void test_case_sign_06(void **state);
-bool test_sign_06(void);
-void test_case_sign_07(void **state);
-bool test_sign_07(void);
+extern int total_tests;
+extern int test_meshlink_sign(void);
 
 #endif // TEST_CASES_SIGN_H
