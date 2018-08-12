@@ -1216,9 +1216,11 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 	mesh->threadstarted = true;
 
 #if HAVE_CATTA
+
 	if(mesh->discovery) {
 		discovery_start(mesh);
 	}
+
 #endif
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
@@ -1235,10 +1237,12 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	logger(mesh, MESHLINK_DEBUG, "meshlink_stop called\n");
 
 #if HAVE_CATTA
+
 	// Stop discovery
 	if(mesh->discovery) {
 		discovery_stop(mesh);
 	}
+
 #endif
 
 	// Shut down the main thread
@@ -1371,6 +1375,17 @@ void meshlink_set_node_status_cb(meshlink_handle_t *mesh, meshlink_node_status_c
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 	mesh->node_status_cb = cb;
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
+}
+
+void meshlink_set_node_duplicate_cb(meshlink_handle_t *mesh, meshlink_node_duplicate_cb_t cb) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	pthread_mutex_lock(&(mesh->mesh_mutex));
+	mesh->node_duplicate_cb = cb;
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
@@ -2365,8 +2380,14 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	//Make blacklisting persistent in the config file
 	append_config_file(mesh, n->name, "blacklisted", "yes");
 
+	//Immediately terminate any connections we have with the blacklisted node
+	for list_each(connection_t, c, mesh->connections) {
+		if(c->node == n) {
+			terminate_connection(mesh, c, c->status.active);
+		}
+	}
+
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
-	return;
 }
 
 void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
@@ -2656,8 +2677,18 @@ void update_node_status(meshlink_handle_t *mesh, node_t *n) {
 	}
 }
 
+void handle_duplicate_node(meshlink_handle_t *mesh, node_t *n) {
+	if(!mesh->node_duplicate_cb || n->status.duplicate) {
+		return;
+	}
+
+	n->status.duplicate = true;
+	mesh->node_duplicate_cb(mesh, (meshlink_node_t *)n);
+}
+
 void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable) {
 #if HAVE_CATTA
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;

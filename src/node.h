@@ -37,7 +37,8 @@ typedef struct node_status_t {
 	unsigned int broadcast: 1;              /* 1 if the next UDP packet should be broadcast to the local network */
 	unsigned int blacklisted: 1;            /* 1 if the node is blacklist so we never want to speak with him anymore */
 	unsigned int destroyed: 1;              /* 1 if the node is being destroyed, deallocate channels when any callback is triggered */
-	unsigned int unused: 22;
+	unsigned int duplicate: 1;              /* 1 if the node is duplicate, ie. multiple nodes using the same Name are online */
+	unsigned int unused: 20;
 } node_status_t;
 
 typedef struct node_t {

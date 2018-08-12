@@ -1,13 +1,14 @@
 TESTS = \
 	basic.test \
 	basicpp.test \
-	trio.test \
 	channels.test \
 	channels-fork.test \
 	channels-cornercases.test \
+	duplicate.test \
 	import-export.test \
 	invite-join.test \
-	sign-verify.test
+	sign-verify.test \
+	trio.test
 
 dist_check_SCRIPTS = $(TESTS)
 
@@ -17,14 +18,15 @@ AM_LDFLAGS = $(PTHREAD_LIBS)
 check_PROGRAMS = \
 	basic \
 	basicpp \
-	trio \
 	channels \
 	channels-fork \
 	channels-cornercases \
+	duplicate \
+	echo-fork \
 	import-export \
 	invite-join \
 	sign-verify \
-	echo-fork
+	trio
 
 if INSTALL_TESTS
 bin_PROGRAMS = $(check_PROGRAMS)
@@ -36,9 +38,6 @@ basic_LDADD = ../src/libmeshlink.la
 basicpp_SOURCES = basicpp.cpp
 basicpp_LDADD = ../src/libmeshlink.la
 
-trio_SOURCES = trio.c
-trio_LDADD = ../src/libmeshlink.la
-
 channels_SOURCES = channels.c
 channels_LDADD = ../src/libmeshlink.la
 
@@ -47,6 +46,9 @@ channels_fork_LDADD = ../src/libmeshlink.la
 
 channels_cornercases_SOURCES = channels-cornercases.c utils.c utils.h
 channels_cornercases_LDADD = ../src/libmeshlink.la
+
+duplicate_SOURCES = duplicate.c
+duplicate_LDADD = ../src/libmeshlink.la
 
 echo_fork_SOURCES = echo-fork.c
 echo_fork_LDADD = ../src/libmeshlink.la
@@ -59,3 +61,6 @@ invite_join_LDADD = ../src/libmeshlink.la
 
 sign_verify_SOURCES = sign-verify.c
 sign_verify_LDADD = ../src/libmeshlink.la
+
+trio_SOURCES = trio.c
+trio_LDADD = ../src/libmeshlink.la

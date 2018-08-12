@@ -73,6 +73,7 @@ struct meshlink_handle {
 	meshlink_log_level_t log_level;
 
 	meshlink_channel_accept_cb_t channel_accept_cb;
+	meshlink_node_duplicate_cb_t node_duplicate_cb;
 
 	pthread_t thread;
 	bool threadstarted;
@@ -172,6 +173,7 @@ extern void update_node_status(meshlink_handle_t *mesh, struct node_t *n);
 extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
 extern int check_port(meshlink_handle_t *mesh);
+extern void handle_duplicate_node(meshlink_handle_t *mesh, struct node_t *n);
 
 /// Device class traits
 typedef struct {

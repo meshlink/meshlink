@@ -387,6 +387,14 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		}
 	}
 
+	bool blacklisted = false;
+	get_config_bool(lookup_config(c->config_tree, "blacklisted"), &blacklisted);
+
+	if(blacklisted) {
+		logger(mesh, MESHLINK_EPEER, "Peer %s is blacklisted", c->name);
+		return false;
+	}
+
 	read_ecdsa_public_key(mesh, c);
 
 	if(!ecdsa_active(c->ecdsa)) {
@@ -438,7 +446,7 @@ static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
 
 	for splay_each(node_t, n, mesh->nodes) {
 		for splay_each(edge_t, e, n->edge_tree) {
-			send_add_edge(mesh, c, e);
+			send_add_edge(mesh, c, e, 0);
 		}
 	}
 }
@@ -533,7 +541,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	/* Notify everyone of the new edge */
 
-	send_add_edge(mesh, mesh->everyone, c->edge);
+	send_add_edge(mesh, mesh->everyone, c->edge, 0);
 
 	/* Run MST and SSSP algorithms */
 
