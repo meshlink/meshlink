@@ -24,6 +24,7 @@
 #include <cmocka.h>
 #include <assert.h>
 #include "execute_tests.h"
+#include "test_cases.h"
 #include "test_cases_destroy.h"
 #include "test_cases_get_all_nodes.h"
 #include "test_cases_get_fingerprint.h"
@@ -41,6 +42,7 @@
 #include "test_cases_import.h"
 #include "test_cases_channel_set_accept_cb.h"
 #include "test_cases_channel_set_poll_cb.h"
+#include "test_cases_hint_address.h"
 #include "../common/containers.h"
 #include "../common/common_handlers.h"
 
@@ -55,6 +57,85 @@ char *choose_arch = NULL;
 int total_tests;
 
 
+
+
+/* State structure for Meta-connections Test Case #1 */
+static char *test_meta_conn_1_nodes[] = { "relay", "peer", "nut" };
+static black_box_state_t test_meta_conn_1_state = {
+    /* test_case_name = */ "test_case_meta_conn_01",
+    /* node_names = */ test_meta_conn_1_nodes,
+    /* num_nodes = */ 3,
+    /* test_result (defaulted to) = */ false
+};
+
+/* State structure for Meta-connections Test Case #2 */
+static char *test_meta_conn_2_nodes[] = { "relay", "peer", "nut" };
+static black_box_state_t test_meta_conn_2_state = {
+    /* test_case_name = */ "test_case_meta_conn_02",
+    /* node_names = */ test_meta_conn_2_nodes,
+    /* num_nodes = */ 3,
+    /* test_result (defaulted to) = */ false
+};
+
+/* State structure for Meta-connections Test Case #3 */
+static char *test_meta_conn_3_nodes[] = { "relay", "peer", "nut" };
+static black_box_state_t test_meta_conn_3_state = {
+    /* test_case_name = */ "test_case_meta_conn_03",
+    /* node_names = */ test_meta_conn_3_nodes,
+    /* num_nodes = */ 3,
+    /* test_result (defaulted to) = */ false
+};
+
+/* State structure for Meta-connections Test Case #4 */
+static char *test_meta_conn_4_nodes[] = { "peer", "nut" };
+static black_box_state_t test_meta_conn_4_state = {
+    /* test_case_name = */ "test_case_meta_conn_04",
+    /* node_names = */ test_meta_conn_4_nodes,
+    /* num_nodes = */ 2,
+    /* test_result (defaulted to) = */ false
+};
+
+/* State structure for Meta-connections Test Case #5 */
+static char *test_meta_conn_5_nodes[] = { "peer", "nut" };
+static black_box_state_t test_meta_conn_5_state = {
+    /* test_case_name = */ "test_case_meta_conn_05",
+    /* node_names = */ test_meta_conn_5_nodes,
+    /* num_nodes = */ 2,
+    /* test_result (defaulted to) = */ false
+};
+
+int black_box_group0_setup(void **state) {
+    char *nodes[] = { "peer", "relay", "nut"};
+    int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
+
+    printf("Creating Containers\n");
+    destroy_containers();
+    create_containers(nodes, num_nodes);
+
+    return 0;
+}
+
+int black_box_group0_teardown(void **state) {
+    printf("Destroying Containers\n");
+    destroy_containers();
+
+    return 0;
+}
+
+int black_box_all_nodes_setup(void **state) {
+    char *nodes[] = { "peer" };
+    int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
+
+    printf("Creating Containers\n");
+    destroy_containers();
+    create_containers(nodes, num_nodes);
+    printf("Created Containers\n");
+    return 0;
+}
+
+
+
+
 int main(int argc, char *argv[]) {
   /* Set configuration */
   assert(argc >= (CMD_LINE_ARG_CHOOSE_ARCH + 1));
@@ -66,10 +147,32 @@ int main(int argc, char *argv[]) {
 
   int failed_tests = 0;
 
+
+
+
+  const struct CMUnitTest blackbox_group0_tests[] = {
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_01, setup_test, teardown_test,
+            (void *)&test_meta_conn_1_state),
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_02, setup_test, teardown_test,
+            (void *)&test_meta_conn_2_state),
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_03, setup_test, teardown_test,
+            (void *)&test_meta_conn_3_state),
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_04, setup_test, teardown_test,
+            (void *)&test_meta_conn_4_state),
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_05, setup_test, teardown_test,
+            (void *)&test_meta_conn_5_state)
+    };
+    int num_tests_group0 = sizeof(blackbox_group0_tests) / sizeof(blackbox_group0_tests[0]);
+
+    total_tests += num_tests_group0;
+
+    failed_tests += cmocka_run_group_tests(blackbox_group0_tests, black_box_group0_setup, black_box_group0_teardown);
+
+/*
   failed_tests += test_meshlink_set_status_cb();
   failed_tests += test_meshlink_join();
   failed_tests += test_meshlink_set_channel_poll_cb();
-  failed_tests += test_meshlink_channel_open_ex();
+//  failed_tests += test_meshlink_channel_open_ex();
   failed_tests += test_meshlink_channel_get_flags();
   failed_tests += test_meshlink_set_channel_accept_cb();
   failed_tests += test_meshlink_destroy();
@@ -82,7 +185,9 @@ int main(int argc, char *argv[]) {
   failed_tests += test_meshlink_import();
   failed_tests += test_meshlink_invite();
   failed_tests += test_meshlink_set_receive_cb();
-  failed_tests += test_meshlink_set_log_cb();
+  failed_tests += test_meshlink_set_log_cb();*/
+  //failed_tests += test_meshlink_set_channel_receive_cb();
+  //failed_tests += test_meshlink_hint_address();
 
   printf("[ PASSED ] %d test(s).\n", total_tests - failed_tests);
   printf("[ FAILED ] %d test(s).\n", failed_tests);
