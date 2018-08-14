@@ -1,25 +1,22 @@
-/*===================================================================================*/
-/*************************************************************************************/
-/**
- * @file      test_cases_invite.c -- Execution of specific meshlink black box test cases
- * @see
- * @author    Sai Roop, sairoop@elear.solutions
- * @copyright 2017  Guus Sliepen <guus@meshlink.io>
- *                  Manav Kumar Mehta <manavkumarm@yahoo.com>
- * @license   To any person (the "Recipient") obtaining a copy of this software and
- *            associated documentation files (the "Software"):\n
- *            All information contained in or disclosed by this software is
- *            confidential and proprietary information of Elear Solutions Tech
- *            Private Limited and all rights therein are expressly reserved.
- *            By accepting this material the recipient agrees that this material and
- *            the information contained therein is held in confidence and in trust
- *            and will NOT be used, copied, modified, merged, published, distributed,
- *            sublicensed, reproduced in whole or in part, nor its contents revealed
- *            in any manner to others without the express written permission of
- *            Elear Solutions Tech Private Limited.
- */
-/*************************************************************************************/
-/*===================================================================================*/
+/*
+    test_cases_invite.c -- Execution of specific meshlink black box test cases
+    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+                        Manav Kumar Mehta <manavkumarm@yahoo.com>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 #include "execute_tests.h"
 #include "test_cases_invite.h"
 #include "../common/containers.h"
@@ -32,15 +29,10 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
-/*************************************************************************************
- *                          LOCAL MACROS                                             *
- *************************************************************************************/
+
 /* Modify this to change the logging level of Meshlink */
 #define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
 
-/*************************************************************************************
- *                          LOCAL PROTOTYPES                                         *
- *************************************************************************************/
 static void test_case_invite_01(void **state);
 static bool test_invite_01(void);
 static void test_case_invite_02(void **state);
@@ -54,9 +46,6 @@ static bool test_invite_05(void);
 static void test_case_invite_06(void **state);
 static bool test_invite_06(void);
 
-/*************************************************************************************
- *                          LOCAL VARIABLES                                          *
- *************************************************************************************/
 /* State structure for invite API Test Case #1 */
 static black_box_state_t test_case_invite_01_state = {
     /* test_case_name = */ "test_case_invite_01",
@@ -64,7 +53,6 @@ static black_box_state_t test_case_invite_01_state = {
     /* num_nodes = */ 0,
     /* test_result (defaulted to) = */ false
 };
-
 /* State structure for invite API Test Case #2 */
 static black_box_state_t test_case_invite_02_state = {
     /* test_case_name = */ "test_case_invite_02",
@@ -72,7 +60,6 @@ static black_box_state_t test_case_invite_02_state = {
     /* num_nodes = */ 0,
     /* test_result (defaulted to) = */ false
 };
-
 /* State structure for invite API Test Case #3 */
 static black_box_state_t test_case_invite_03_state = {
     /* test_case_name = */ "test_case_invite_03",
@@ -81,16 +68,11 @@ static black_box_state_t test_case_invite_03_state = {
     /* test_result (defaulted to) = */ false
 };
 
-
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 /* Execute invite Test Case # 1 - valid case*/
 static void test_case_invite_01(void **state) {
     execute_test(test_invite_01, state);
     return;
 }
-
 /*Test Steps for meshlink_invite Test Case # 1 - Valid case
     Test Steps:
     1. Run NUT
@@ -101,7 +83,7 @@ static void test_case_invite_01(void **state) {
 */
 static bool test_invite_01(void) {
   meshlink_destroy("inviteconf");
-  fprintf(stderr, "[ invite 01 ] Opening NUT\n");
+  PRINT_TEST_CASE_MSG("Opening NUT\n");
   /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
@@ -112,20 +94,19 @@ static bool test_invite_01(void) {
   /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  fprintf(stderr, "\n[ invite 01 ]Generating INVITATION\n");
-  char *invitation = meshlink_invite(mesh_handle, "new");
-  if (NULL == invitation) {
-    fprintf(stderr, "\n[ invite 01 ]Failed to generate INVITATION\n");
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("inviteconf");
-    return false;
-  }
-  fprintf(stderr, "\n[ invite 01 ]Generated INVITATION successfully\t %s \n", invitation);
+  PRINT_TEST_CASE_MSG("Generating INVITATION\n");
   meshlink_stop(mesh_handle);
   meshlink_close(mesh_handle);
   meshlink_destroy("inviteconf");
-  return true;
+
+  char *invitation = meshlink_invite(mesh_handle, "new");
+  if(invitation == NULL) {
+    PRINT_TEST_CASE_MSG("Failed to generate INVITATION\n");
+    return false;
+  } else {
+    PRINT_TEST_CASE_MSG("Generated INVITATION successfully\t %s \n", invitation);
+    return true;
+  }
 }
 
 
@@ -134,7 +115,6 @@ static void test_case_invite_02(void **state) {
     execute_test(test_invite_02, state);
     return;
 }
-
 /*Test Steps for meshlink_invite Test Case # 2 - Invalid case
     Test Steps:
     1. Calling meshlink_invite API with NULL as mesh handle argument
@@ -143,15 +123,15 @@ static void test_case_invite_02(void **state) {
     Reports appropriate error by returning NULL
 */
 static bool test_invite_02(void) {
-    fprintf(stderr, "\n[ invite 02 ]Trying to generate INVITATION by passing NULL as mesh link handle\n");
+    PRINT_TEST_CASE_MSG("Trying to generate INVITATION by passing NULL as mesh link handle\n");
     char *invitation = meshlink_invite(NULL, "nut");
-    if (NULL == invitation && MESHLINK_EINVAL == meshlink_errno) {
-      fprintf(stderr, "[ invite 02 ]invite API reported error SUCCESSFULLY\n");
+    if(invitation == NULL && meshlink_errno == MESHLINK_EINVAL) {
+      PRINT_TEST_CASE_MSG("invite API reported error SUCCESSFULLY\n");
       return true;
+    } else {
+      PRINT_TEST_CASE_MSG("Failed to report error\n");
+      return false;
     }
-      fprintf(stderr, "[ invite 02 ]Failed to report error\n");
-
-    return false;
 }
 
 /* Execute invite Test Case # 3 - Invalid case*/
@@ -159,7 +139,6 @@ static void test_case_invite_03(void **state) {
     execute_test(test_invite_03, state);
     return;
 }
-
 /*Test Steps for meshlink_invite Test Case # 3 - Invalid case
     Test Steps:
     1. Run NUT
@@ -170,7 +149,7 @@ static void test_case_invite_03(void **state) {
 */
 static bool test_invite_03(void) {
   meshlink_destroy("inviteconf");
-  fprintf(stderr, "[ invite 03 ] Opening NUT\n");
+  PRINT_TEST_CASE_MSG("Opening NUT\n");
   /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
@@ -181,26 +160,22 @@ static bool test_invite_03(void) {
   /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  fprintf(stderr, "[ invite 03 ]Trying to generate INVITATION by passing NULL as mesh link handle\n");
+  PRINT_TEST_CASE_MSG("Trying to generate INVITATION by passing NULL as mesh link handle\n");
   char *invitation = meshlink_invite(mesh_handle, NULL);
-  if (NULL == invitation) {
-    fprintf(stderr, "[ invite 03 ]invite API reported error SUCCESSFULLY\n");
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("inviteconf");
-    return true;
-  }
-
-  fprintf(stderr, "[ invite 03 ]Failed to report error\n");
   meshlink_stop(mesh_handle);
   meshlink_close(mesh_handle);
   meshlink_destroy("inviteconf");
-  return false;
+
+  if (invitation == NULL) {
+    PRINT_TEST_CASE_MSG("invite API reported error SUCCESSFULLY\n");
+    return true;
+  } else {
+    PRINT_TEST_CASE_MSG("Failed to report error\n");
+    return false;
+  }
 }
 
-/*************************************************************************************
- *                          PUBLIC FUNCTIONS                                         *
- *************************************************************************************/
+
  int test_meshlink_invite(void) {
    const struct CMUnitTest blackbox_invite_tests[] = {
         cmocka_unit_test_prestate_setup_teardown(test_case_invite_01, NULL, NULL,

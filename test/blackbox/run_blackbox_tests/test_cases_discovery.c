@@ -1,5 +1,5 @@
 /*
-    test_cases.c -- Execution of specific meshlink black box test cases
+    test_cases_discovery.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -22,161 +22,203 @@
 #include "../common/containers.h"
 #include "../common/test_step.h"
 #include "../common/common_handlers.h"
-#define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
 #include <assert.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <setjmp.h>
+#include <cmocka.h>
+#include <pthread.h>
 
+
+/* Modify this to change the logging level of Meshlink */
+#define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
+/* Modify this to change the port number */
+#define PORT 8000
+
+static void test_case_discovery_01(void **state);
+static bool test_steps_discovery_01(void);
+static void test_case_discovery_02(void **state);
+static bool test_steps_discovery_02(void);
+static void test_case_discovery_03(void **state);
+static bool test_steps_discovery_03(void);
+static void status_callback(meshlink_handle_t *mesh, meshlink_node_t *source, bool reach);
+
+/* join_status gives us access to know whether node has joined or not */
 static bool join_status;
+
+/* mutex for the common variable */
+static pthread_mutex_t lock;
+
+/* State structure for discovery Test Case #1 */
+static black_box_state_t test_case_discovery_01_state = {
+    /* test_case_name = */ "test_case_discovery_01",
+    /* node_names = */ NULL,
+    /* num_nodes = */ 0,
+    /* test_result (defaulted to) = */ false
+};
+
+/* State structure for discovery Test Case #2 */
+static black_box_state_t test_case_discovery_02_state = {
+    /* test_case_name = */ "test_case_discovery_02",
+    /* node_names = */ NULL,
+    /* num_nodes = */ 0,
+    /* test_result (defaulted to) = */ false
+};
+
+/* State structure for discovery Test Case #3 */
+static black_box_state_t test_case_discovery_03_state = {
+    /* test_case_name = */ "test_case_discovery_03",
+    /* node_names = */ NULL,
+    /* num_nodes = */ 0,
+    /* test_result (defaulted to) = */ false
+};
+
+
 static void status_callback(meshlink_handle_t *mesh, meshlink_node_t *source, bool reach) {
-   fprintf(stderr, "In status callback\n");
-   if (reach) {
-     fprintf(stdout, "[ %s ] node reachable\n", source->name);
-   }
-   else {
-     fprintf(stdout, "[ %s ] node not reachable\n", source->name) ;
-   }
-   join_status = true;
+  fprintf(stderr, "In status callback\n");
+  if (reach) {
+    fprintf(stdout, "[ %s ] node reachable\n", source->name);
+  }
+  else {
+    fprintf(stdout, "[ %s ] node not reachable\n", source->name) ;
+  }
+  pthread_mutex_lock(&lock);
+  join_status = true;
+  pthread_mutex_unlock(&lock);
 
-   return;
+  return;
 }
-
 /* Execute meshlink_discovery Test Case # 1 - connection with relay after being off-line*/
-void test_case_discovery_01(void **state) {
+static void test_case_discovery_01(void **state) {
     execute_test(test_steps_discovery_01, state);
     return;
 }
 
-bool test_steps_discovery_01(void) {
-  join_status = false;
+static bool test_steps_discovery_01(void) {
   bool ret ;
 
-  meshlink_destroy("discconf");
-  char *invite_nut = invite_in_container("relay", NUT_NODE_NAME);
-  node_sim_in_container("relay", "1", NULL);
+  meshlink_destroy("discconf1");
+  meshlink_destroy("discconf2");
+  pthread_mutex_lock(&lock);
+  join_status = false;
+  pthread_mutex_unlock(&lock);
 
-    /* Set up logging for Meshlink */
-    meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+  /* Set up logging for Meshlink */
+  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-    /* Create meshlink instance */
-    mesh_handle = meshlink_open("discconf", "nut", "node_sim", 1);
-    PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
-    assert(mesh_handle);
+  /* Create meshlink instance for NUT */
+  fprintf(stderr, "[ discovery 01 ] Opening NUT\n");
+  meshlink_handle_t *mesh1 = meshlink_open("discconf1", "nut", "node_sim", DEV_CLASS_STATIONARY);
+  if(!mesh1) {
+    fprintf(stderr, "meshlink_open status for NUT: %s\n", meshlink_strerror(meshlink_errno));
+  }
+  assert(mesh1 != NULL);
 
-    /* Set up logging for Meshlink with the newly acquired Mesh Handle */
-    meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-    /* Set up callback for node status (reachable / unreachable) */
-    meshlink_set_node_status_cb(mesh_handle, status_callback);
+  /* Create meshlink instance for bar */
+  fprintf(stderr, "[ discovery 01 ] Opening bar\n");
+  meshlink_handle_t *mesh2 = meshlink_open("discconf2", "bar", "node_sim", DEV_CLASS_STATIONARY);
+  if(!mesh2) {
+    fprintf(stderr, "meshlink_open status for bar: %s\n", meshlink_strerror(meshlink_errno));
+  }
+  assert(mesh2 != NULL);
 
-    sleep(2);
-    /*Joining the NUT with relay*/
-   ret = meshlink_join(mesh_handle, invite_nut);
-   assert(ret);
-    PRINT_TEST_CASE_MSG("meshlink_join status: %s\n", meshlink_strerror(meshlink_errno));
-    assert(meshlink_start(mesh_handle));
+  /* Set up callback for node status (reachable / unreachable) */
+  meshlink_set_node_status_cb(mesh1, status_callback);
+  meshlink_set_node_status_cb(mesh2, NULL);
 
-    sleep(2);
+  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
+  meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+  meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-    if (join_status) {
-    PRINT_TEST_CASE_MSG("after 2 seconds NUT joined with relay\n");
-    }
-    else {
-    PRINT_TEST_CASE_MSG("after 2 seconds NUT didn't join with relay\n");
-    }
-    free(invite_nut);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-  meshlink_destroy("discconf");
-    return join_status && ret;
+  /* importing and exporting mesh meta data */
+  char *exp1 = meshlink_export(mesh1);
+  assert(exp1 != NULL);
+  char *exp2 = meshlink_export(mesh2);
+  assert(exp2 != NULL);
+
+  meshlink_enable_discovery(mesh1, true);
+  meshlink_enable_discovery(mesh2, true);
+
+  assert(meshlink_import(mesh1, exp2));
+  assert(meshlink_import(mesh2, exp1));
+
+
+  bool mesh1_start = meshlink_start(mesh1);
+  if (!mesh1_start) {
+    fprintf(stderr, "meshlink_start status: %s\n", meshlink_strerror(meshlink_errno));
+  }
+  assert(mesh1_start);
+
+  sleep(1);
+
+  bool mesh2_start = meshlink_start(mesh2);
+  if (!mesh2_start) {
+  	fprintf(stderr, "meshlink_start status: %s\n", meshlink_strerror(meshlink_errno));
+  }
+  assert(mesh2_start);
+
+  sleep(1);
+
+  pthread_mutex_lock(&lock);
+  bool stat_ret = join_status;
+  pthread_mutex_unlock(&lock);
+
+  if (stat_ret) {
+    PRINT_TEST_CASE_MSG("NUT discovered\n");
+  }
+  else {
+    PRINT_TEST_CASE_MSG("NUT not being discovered\n");
+  }
+
+  meshlink_stop(mesh1);
+  meshlink_stop(mesh2);
+  meshlink_close(mesh1);
+  meshlink_close(mesh2);
+  meshlink_destroy("discconf1");
+  meshlink_destroy("discconf2");
+
+  return stat_ret;
 }
 
-/* Execute Meta-connections Test Case # 1 - re-connection to peer after disconnection when
-    connected via a third node */
-void test_case_discovery_02(void **state) {
+/* Execute service discovery Test Case # 2 - Invalid case */
+static void test_case_discovery_02(void **state) {
     execute_test(test_steps_discovery_02, state);
     return;
 }
 
-/* Test Steps for Meta-connections Test Case # 1 - re-connection to peer after disconnection when
-    connected via a third (relay) node
+/* Test Steps for service discovery Test Case # 2 - Invalid case
 
     Test Steps:
-    1. Run NUT, relay and peer nodes with relay inviting the other two nodes
-    2. After connection to peer, terminate the peer node's running instance
-    3. After peer becomes unreachable, wait 60 seconds then re-start the peer node's instance
+    1. Pass meshlink_enable_discovery API with NULL as mesh handle argument.
 
     Expected Result:
-    NUT is re-connected to peer
+    meshlink_enable_discovery returns proper error reporting.
 */
-bool test_steps_discovery_02(void) {
-    char  *invite_nut;
-    join_status = false;
-
-    meshlink_destroy("discconf02");
-    invite_nut = invite_in_container("relay", NUT_NODE_NAME);
-    printf("Please turn your interface internet down in 10 seconds\n");
-    sleep(10);
-    fprintf(stderr, "[discovery 01]enabling discovery\n");
-    meshlink_enable_discovery(mesh_handle, false);
-
-    /* Set up logging for Meshlink */
-    meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
-    /* Create meshlink instance */
-    mesh_handle = meshlink_open("discconf02", "nut", "node_sim", 1);
-    fprintf(stderr, "[discovery 01]meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
-    assert(mesh_handle);
-
-    /* Set up logging for Meshlink with the newly acquired Mesh Handle */
-    meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-    /* Set up callback for node status (reachable / unreachable) */
-    meshlink_set_node_status_cb(mesh_handle, status_callback);
-    meshlink_join(mesh_handle, invite_nut);
-    assert(meshlink_start(mesh_handle));
-    /*starting relay in container*/
-    node_sim_in_container("relay", "1", NULL);
-    fprintf(stderr, "[discovery 01]Waiting for peer to be connected when discovery being enabled\n");
-    sleep(2);
-
-    free(invite_nut);
-
-    if (join_status) {
-      fprintf(stderr, "[discovery 01]NUT and relay discovered each other when internet is off and discovery was enabled\n");
-    }
-    else {
-      fprintf(stderr, "[discovery 01]NUT and relay didn't discovered each other when internet is off and discovery was enabled\n");
-    }
-
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("testconf");
-    return join_status;
-}
-
-/* Execute Meta-connections Test Case # 1 - re-connection to peer after disconnection when
-    connected via a third node */
-void test_case_discovery_03(void **state) {
-    execute_test(test_steps_discovery_03, state);
-    return;
-}
-
-/* Test Steps for Meta-connections Test Case # 1 - re-connection to peer after disconnection when
-    connected via a third (relay) node
-
-    Test Steps:
-    1. Run NUT, relay and peer nodes with relay inviting the other two nodes
-    2. After connection to peer, terminate the peer node's running instance
-    3. After peer becomes unreachable, wait 60 seconds then re-start the peer node's instance
-
-    Expected Result:
-    NUT is re-connected to peer
-*/
-bool test_steps_discovery_03(void) {
-    fprintf(stderr, "[test_steps_discovery_03] Passing NULL: as meshlink_enable_discovery mesh argument\n");
+static bool test_steps_discovery_02(void) {
+    fprintf(stderr, "[test_steps_discovery_02] Passing NULL: as meshlink_enable_discovery mesh argument\n");
      meshlink_enable_discovery(NULL, true);
      if (meshlink_errno == MESHLINK_EINVAL)
         return true;
     else
         return false;
+}
+
+/*************************************************************************************
+ *                          PUBLIC FUNCTIONS                                         *
+ *************************************************************************************/
+int test_meshlink_discovery(void) {
+  const struct CMUnitTest blackbox_discovery_tests[] = {
+    cmocka_unit_test_prestate_setup_teardown(test_case_discovery_01, setup_test, teardown_test,
+            (void *)&test_case_discovery_01_state),
+    cmocka_unit_test_prestate_setup_teardown(test_case_discovery_02, setup_test, teardown_test,
+            (void *)&test_case_discovery_02_state)
+  };
+  total_tests += sizeof(blackbox_discovery_tests) / sizeof(blackbox_discovery_tests[0]);
+
+  assert(pthread_mutex_init(&lock, NULL) == 0);
+  int failed = cmocka_run_group_tests(blackbox_discovery_tests ,NULL , NULL);
+  assert(pthread_mutex_destroy(&lock) == 0);
+
+  return failed;
 }

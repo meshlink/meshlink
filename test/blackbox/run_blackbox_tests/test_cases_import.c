@@ -1,25 +1,22 @@
-/*===================================================================================*/
-/*************************************************************************************/
-/**
- * @file      test_cases_import.c -- Execution of specific meshlink black box test cases
- * @see
- * @author    Sai Roop, sairoop@elear.solutions
- * @copyright 2017  Guus Sliepen <guus@meshlink.io>
- *                  Manav Kumar Mehta <manavkumarm@yahoo.com>
- * @license   To any person (the "Recipient") obtaining a copy of this software and
- *            associated documentation files (the "Software"):\n
- *            All information contained in or disclosed by this software is
- *            confidential and proprietary information of Elear Solutions Tech
- *            Private Limited and all rights therein are expressly reserved.
- *            By accepting this material the recipient agrees that this material and
- *            the information contained therein is held in confidence and in trust
- *            and will NOT be used, copied, modified, merged, published, distributed,
- *            sublicensed, reproduced in whole or in part, nor its contents revealed
- *            in any manner to others without the express written permission of
- *            Elear Solutions Tech Private Limited.
- */
-/*************************************************************************************/
-/*===================================================================================*/
+/*
+    test_cases_import.c -- Execution of specific meshlink black box test cases
+    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+                        Manav Kumar Mehta <manavkumarm@yahoo.com>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 #include "execute_tests.h"
 #include "test_cases_import.h"
 #include "../common/containers.h"
@@ -32,15 +29,10 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
-/*************************************************************************************
- *                          LOCAL MACROS                                             *
- *************************************************************************************/
+
 /* Modify this to change the logging level of Meshlink */
 #define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
 
-/*************************************************************************************
- *                          LOCAL PROTOTYPES                                         *
- *************************************************************************************/
 static void test_case_import_01(void **state);
 static bool test_import_01(void);
 static void test_case_import_02(void **state);
@@ -54,9 +46,6 @@ static bool test_import_05(void);
 static void test_case_import_06(void **state);
 static bool test_import_06(void);
 
-/*************************************************************************************
- *                          LOCAL VARIABLES                                          *
- *************************************************************************************/
 /* State structure for import API Test Case #1 */
 static black_box_state_t test_case_import_01_state = {
     /* test_case_name = */ "test_case_import_01",
@@ -64,7 +53,6 @@ static black_box_state_t test_case_import_01_state = {
     /* num_nodes = */ 0,
     /* test_result (defaulted to) = */ false
 };
-
 /* State structure for import API Test Case #2 */
 static black_box_state_t test_case_import_02_state = {
     /* test_case_name = */ "test_case_import_02",
@@ -72,7 +60,6 @@ static black_box_state_t test_case_import_02_state = {
     /* num_nodes = */ 0,
     /* test_result (defaulted to) = */ false
 };
-
 /* State structure for import API Test Case #3 */
 static black_box_state_t test_case_import_03_state = {
     /* test_case_name = */ "test_case_import_03",
@@ -80,7 +67,6 @@ static black_box_state_t test_case_import_03_state = {
     /* num_nodes = */ 0,
     /* test_result (defaulted to) = */ false
 };
-
 /* State structure for import API Test Case #4 */
 static black_box_state_t test_case_import_04_state = {
     /* test_case_name = */ "test_case_import_04",
@@ -88,7 +74,6 @@ static black_box_state_t test_case_import_04_state = {
     /* num_nodes = */ 0,
     /* test_result (defaulted to) = */ false
 };
-
 /* State structure for import API Test Case #5 */
 static black_box_state_t test_case_import_05_state = {
     /* test_case_name = */ "test_case_import_05",
@@ -96,7 +81,6 @@ static black_box_state_t test_case_import_05_state = {
     /* num_nodes = */ 0,
     /* test_result (defaulted to) = */ false
 };
-
 /* State structure for import API Test Case #6 */
 static black_box_state_t test_case_import_06_state = {
     /* test_case_name = */ "test_case_import_06",
@@ -105,15 +89,12 @@ static black_box_state_t test_case_import_06_state = {
     /* test_result (defaulted to) = */ false
 };
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
+
 /* Execute import Test Case # 1 - valid case*/
 static void test_case_import_01(void **state) {
     execute_test(test_import_01, state);
     return;
 }
-
 /* Test Steps for meshlink_import Test Case # 1 - Valid case
 
     Test Steps:
@@ -125,45 +106,39 @@ static void test_case_import_01(void **state) {
 */
 static bool test_import_01(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
+
   /* Opening NUT and bar nodes */
-  fprintf(stderr, "[ import 01 ] Opening NUT\n");
+  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh1 != NULL);
 	if(!mesh1) {
 		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
 		return false;
 	}
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
-  fprintf(stderr, "[ import 01 ] Opening bar\n");
+  PRINT_TEST_CASE_MSG("Opening bar\n");
   meshlink_handle_t *mesh2 = meshlink_open("importconf2", "bar", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh2 != NULL);
 	if(!mesh2) {
 		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
 		return false;
 	}
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /** Exporting and Importing mutually **/
-  fprintf(stderr, "[ import 01 ] Exporting NUT & bar\n");
+  PRINT_TEST_CASE_MSG("Exporting NUT & bar\n");
 	char *exp1 = meshlink_export(mesh1);
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-
-	fprintf(stderr, "[ import 01 ] Importing NUT & bar mutually \n");
+	PRINT_TEST_CASE_MSG("Importing NUT & bar mutually \n");
 	bool imp1 = meshlink_import(mesh1, exp2);
 	bool imp2 = meshlink_import(mesh2, exp1);
-
 	if(imp1 && imp2) {
-    fprintf(stderr, "meshlink_import mesh1 & mesh2 imported successfully\n");
-	}
-	else {
+    PRINT_TEST_CASE_MSG("meshlink_import mesh1 & mesh2 imported successfully\n");
+	} else {
     fprintf(stderr, "Failed to IMPORT mesh1 & mesh2\n");
 	}
 
@@ -179,7 +154,6 @@ static void test_case_import_02(void **state) {
     execute_test(test_import_02, state);
     return;
 }
-
 /* Test Steps for meshlink_import Test Case # 2 - Invalid case
 
     Test Steps:
@@ -191,46 +165,39 @@ static void test_case_import_02(void **state) {
 */
 static bool test_import_02(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
   /* Opening NUT and bar nodes */
-  fprintf(stderr, "\n[ import 02 ] Opening NUT\n");
+  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh1 != NULL);
 	if(!mesh1) {
 		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
 		return false;
 	}
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
-  fprintf(stderr, "[ import 02 ] Opening bar\n");
+  PRINT_TEST_CASE_MSG("Opening bar\n");
   meshlink_handle_t *mesh2 = meshlink_open("importconf2", "bar", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh2 != NULL);
 	if(!mesh2) {
 		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
 		return false;
 	}
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Exporting nodes */
-  fprintf(stderr, "[ import 02 ] Exporting NUT & bar\n");
+  /* Exporting & Importing nodes */
+  PRINT_TEST_CASE_MSG("Exporting NUT & bar\n");
 	char *exp1 = meshlink_export(mesh1);
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-
-	fprintf(stderr, "[ import 02 ] Importing NUT with NULL as mesh handle \n");
+	PRINT_TEST_CASE_MSG("Importing NUT with NULL as mesh handle \n");
 	bool imp1 = meshlink_import(NULL, exp2);
 	bool imp2 = meshlink_import(mesh2, exp1);
-
-	if( (!imp1) && imp2 ) {
-    fprintf(stderr, "meshlink_import mesh1 successfully reported error when NULL mesh handler argument error\n");
-	}
-	else {
-    fprintf(stderr, "Failed to report NULL argument error\n");
+	if((!imp1) && imp2 ) {
+    PRINT_TEST_CASE_MSG("meshlink_import mesh1 successfully reported error when NULL mesh handler argument error\n");
+	} else {
+    PRINT_TEST_CASE_MSG("Failed to report NULL argument error\n");
 	}
 
 	meshlink_close(mesh1);
@@ -246,7 +213,6 @@ static void test_case_import_03(void **state) {
     execute_test(test_import_03, state);
     return;
 }
-
 /* Test Steps for meshlink_import Test Case # 3 - Invalid case
 
     Test Steps:
@@ -262,42 +228,37 @@ static bool test_import_03(void) {
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
   /* Opening NUT and bar nodes */
-  fprintf(stderr, "\n[ import 03 ] Opening NUT\n");
+  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh1 != NULL);
 	if(!mesh1) {
 		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
 		return false;
 	}
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
-  fprintf(stderr, "[ import 03 ] Opening bar\n");
+  PRINT_TEST_CASE_MSG("Opening bar\n");
   meshlink_handle_t *mesh2 = meshlink_open("importconf2", "bar", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh2 != NULL);
 	if(!mesh2) {
 		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
 		return false;
 	}
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Exporting nodes */
-  fprintf(stderr, "[ import 03 ] Exporting NUT & bar\n");
+  /* Exporting & Importing nodes */
+  PRINT_TEST_CASE_MSG("Exporting NUT & bar\n");
 	char *exp1 = meshlink_export(mesh1);
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-
-	fprintf(stderr, "[ import 03 ] Importing NUT with NULL as exported data argument \n");
+	PRINT_TEST_CASE_MSG("Importing NUT with NULL as exported data argument \n");
 	bool imp1 = meshlink_import(mesh1, NULL);
 	bool imp2 = meshlink_import(mesh2, exp1);
-
 	if( (!imp1) && imp2 ) {
-    fprintf(stderr, "meshlink_import mesh1 successfully reported error when NULL is passed as exported data argument\n");
+    PRINT_TEST_CASE_MSG("meshlink_import mesh1 successfully reported error when NULL is passed as exported data argument\n");
 	}
 	else {
-    fprintf(stderr, "Failed to report NULL argument error\n");
+    PRINT_TEST_CASE_MSG("Failed to report NULL argument error\n");
 	}
 
 	meshlink_close(mesh1);
@@ -312,7 +273,6 @@ static void test_case_import_04(void **state) {
     execute_test(test_import_04, state);
     return;
 }
-
 /* Test Steps for meshlink_import Test Case # 4 - Invalid case
 
     Test Steps:
@@ -325,46 +285,39 @@ static void test_case_import_04(void **state) {
 */
 static bool test_import_04(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
   /* Opening NUT and bar nodes */
-  fprintf(stderr, "\n[ import 04 ] Opening NUT\n");
+  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh1 != NULL);
 	if(!mesh1) {
 		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
 		return false;
 	}
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
-  fprintf(stderr, "[ import 04 ] Opening bar\n");
+  PRINT_TEST_CASE_MSG("Opening bar\n");
   meshlink_handle_t *mesh2 = meshlink_open("importconf2", "bar", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh2 != NULL);
 	if(!mesh2) {
 		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
 		return false;
 	}
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Exporting nodes */
-  fprintf(stderr, "[ import 04 ] Exporting NUT & bar\n");
+  /* Exporting & Importing nodes */
+  PRINT_TEST_CASE_MSG("Exporting NUT & bar\n");
 	char *exp1 = meshlink_export(mesh1);
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-
-	fprintf(stderr, "[ import 04 ] Importing NUT with garbage string as exported data argument \n");
+	PRINT_TEST_CASE_MSG("Importing NUT with garbage string as exported data argument \n");
 	bool imp1 = meshlink_import(mesh1, "1/2/3");
 	bool imp2 = meshlink_import(mesh2, exp1);
-
-	if( (!imp1) && imp2 ) {
-    fprintf(stderr, "meshlink_import mesh1 successfully reported error when a garbage string is passed as exported data argument\n");
-	}
-	else {
-    fprintf(stderr, "Failed to report error when a garbage string is used for importing meta data\n");
+	if((!imp1) && imp2 ) {
+    PRINT_TEST_CASE_MSG("meshlink_import mesh1 successfully reported error when a garbage string is passed as exported data argument\n");
+	} else {
+    PRINT_TEST_CASE_MSG("Failed to report error when a garbage string is used for importing meta data\n");
 	}
 
 	meshlink_close(mesh1);
@@ -379,7 +332,6 @@ static void test_case_import_05(void **state) {
     execute_test(test_import_05, state);
     return;
 }
-
 /* Test Steps for meshlink_import Test Case # 5 - Invalid case
 
     Test Steps:
@@ -392,52 +344,45 @@ static void test_case_import_05(void **state) {
 */
 static bool test_import_05(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
   /* Opening NUT and bar nodes */
-  fprintf(stderr, "\n[ import 05 ] Opening NUT\n");
+  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh1 != NULL);
 	if(!mesh1) {
 		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
 		return false;
 	}
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
-  fprintf(stderr, "[ import 05 ] Opening bar\n");
+  PRINT_TEST_CASE_MSG("Opening bar\n");
   meshlink_handle_t *mesh2 = meshlink_open("importconf2", "bar", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh2 != NULL);
 	if(!mesh2) {
 		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
 		return false;
 	}
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Exporting nodes */
-  fprintf(stderr, "[ import 05 ] Exporting NUT & bar\n");
+  /* Exporting  & Importing nodes */
+  PRINT_TEST_CASE_MSG("Exporting NUT & bar\n");
 	char *exp1 = meshlink_export(mesh1);
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-
-	fprintf(stderr, "[ import 05 ] Importing NUT & bar\n");
+	PRINT_TEST_CASE_MSG("Importing NUT & bar\n");
 	bool imp1 = meshlink_import(mesh1, exp2);
 	assert(imp1);
 	bool imp2 = meshlink_import(mesh2, exp1);
 	assert(imp2);
 
 	/** Trying to import twice **/
-	fprintf(stderr, "[ import 05 ] trying to import twice \n");
+	PRINT_TEST_CASE_MSG("trying to import twice \n");
 	bool imp3 = meshlink_import(mesh2, exp1);
-
 	if(imp3) {
-    fprintf(stderr, "meshlink_import when imported twice returned 'true'\n");
-	}
-	else {
-    fprintf(stderr, "meshlink_import when imported twice returned 'false'\n");
+    PRINT_TEST_CASE_MSG("meshlink_import when imported twice returned 'true'\n");
+	} else {
+    PRINT_TEST_CASE_MSG("meshlink_import when imported twice returned 'false'\n");
 	}
 
 	meshlink_close(mesh1);
@@ -447,9 +392,7 @@ static bool test_import_05(void) {
   return !imp3;
 }
 
-/*************************************************************************************
- *                          PUBLIC FUNCTIONS                                         *
- *************************************************************************************/
+
 int test_meshlink_import(void) {
   const struct CMUnitTest blackbox_import_tests[] = {
       cmocka_unit_test_prestate_setup_teardown(test_case_import_01, NULL, NULL,

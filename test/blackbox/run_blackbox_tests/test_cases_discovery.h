@@ -1,5 +1,5 @@
 /*
-    test_cases.h -- Declarations for Individual Test Case implementation functions
+    test_cases_discovery.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -23,12 +23,7 @@
 
 #include <stdbool.h>
 
-
-void test_case_discovery_01(void **state);
-bool test_steps_discovery_01(void);
-void test_case_discovery_02(void **state);
-bool test_steps_discovery_02(void);
-void test_case_discovery_03(void **state);
-bool test_steps_discovery_03(void);
+extern int total_tests;
+extern int test_meshlink_discovery(void);
 
 #endif

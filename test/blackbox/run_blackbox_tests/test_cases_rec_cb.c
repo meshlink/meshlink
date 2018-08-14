@@ -1,25 +1,22 @@
-/*===================================================================================*/
-/*************************************************************************************/
-/**
- * @file      test_cases_rec_cb.c -- Execution of specific meshlink black box test cases
- * @see
- * @author    Sai Roop, sairoop@elear.solutions
- * @copyright 2017  Guus Sliepen <guus@meshlink.io>
- *                  Manav Kumar Mehta <manavkumarm@yahoo.com>
- * @license   To any person (the "Recipient") obtaining a copy of this software and
- *            associated documentation files (the "Software"):\n
- *            All information contained in or disclosed by this software is
- *            confidential and proprietary information of Elear Solutions Tech
- *            Private Limited and all rights therein are expressly reserved.
- *            By accepting this material the recipient agrees that this material and
- *            the information contained therein is held in confidence and in trust
- *            and will NOT be used, copied, modified, merged, published, distributed,
- *            sublicensed, reproduced in whole or in part, nor its contents revealed
- *            in any manner to others without the express written permission of
- *            Elear Solutions Tech Private Limited.
- */
-/*************************************************************************************/
-/*===================================================================================*/
+/*
+    test_cases_rec_cb.c -- Execution of specific meshlink black box test cases
+    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+                        Manav Kumar Mehta <manavkumarm@yahoo.com>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 #include "execute_tests.h"
 #include "test_cases.h"
 #include "../common/containers.h"
@@ -34,15 +31,10 @@
 #include <cmocka.h>
 #include <pthread.h>
 
-/*************************************************************************************
- *                          LOCAL MACROS                                             *
- *************************************************************************************/
+
 /* Modify this to change the logging level of Meshlink */
 #define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
 
-/*************************************************************************************
- *                          LOCAL PROTOTYPES                                         *
- *************************************************************************************/
 static void test_case_set_rec_cb_01(void **state);
 static bool test_set_rec_cb_01(void);
 static void test_case_set_rec_cb_02(void **state);
@@ -52,9 +44,6 @@ static bool test_set_rec_cb_03(void);
 static void test_case_set_rec_cb_04(void **state);
 static bool test_set_rec_cb_04(void);
 
-/*************************************************************************************
- *                          LOCAL VARIABLES                                          *
- *************************************************************************************/
  /* State structure for Meta-connections Test Case #1 */
 static black_box_state_t test_case_set_rec_cb_01_state = {
     /* test_case_name = */ "test_case_set_rec_cb_01",
@@ -62,7 +51,6 @@ static black_box_state_t test_case_set_rec_cb_01_state = {
     /* num_nodes = */ 0,
     /* test_result (defaulted to) = */ false
 };
-
 /* State structure for Meta-connections Test Case #1 */
 static black_box_state_t test_case_set_rec_cb_02_state = {
     /* test_case_name = */ "test_case_set_rec_cb_02",
@@ -70,7 +58,6 @@ static black_box_state_t test_case_set_rec_cb_02_state = {
     /* num_nodes = */ 0,
     /* test_result (defaulted to) = */ false
 };
-
 /* State structure for Meta-connections Test Case #1 */
 static black_box_state_t test_case_set_rec_cb_03_state = {
     /* test_case_name = */ "test_case_set_rec_cb_03",
@@ -78,16 +65,11 @@ static black_box_state_t test_case_set_rec_cb_03_state = {
     /* num_nodes = */ 0,
     /* test_result (defaulted to) = */ false
 };
-
 /* call variable gives access to deduce whether receive callback has invoked or not */
 static bool call;
-
 /* mutex for the common variable */
 pthread_mutex_t lock;
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 /* receive callback function */
 static void rec_cb(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
    fprintf(stderr, "In receive callback\n");
@@ -96,7 +78,6 @@ static void rec_cb(meshlink_handle_t *mesh, meshlink_node_t *source, const void 
    pthread_mutex_lock(&lock);
    call = true;
    pthread_mutex_unlock(&lock);
-
    return;
 }
 
@@ -105,7 +86,6 @@ static void test_case_set_rec_cb_01(void **state) {
     execute_test(test_set_rec_cb_01, state);
     return;
 }
-
 /* Test Steps for meshlink_set_receive_cb Test Case # 1
 
     Test Steps:
@@ -121,23 +101,19 @@ static bool test_set_rec_cb_01(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  fprintf(stderr, "[ rec_cb 01] Opening NUT\n");
+  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh_handle = meshlink_open("set_receive_cb_conf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
   /* Setting  receive callback */
-  fprintf(stderr, "[ rec_cb 01] Setting Valid receive callback\n");
+  PRINT_TEST_CASE_MSG("Setting Valid receive callback\n");
   meshlink_set_receive_cb(mesh_handle, rec_cb);
-
-  fprintf(stderr, "[ rec_cb 01] Starting mesh\n");
-  assert(meshlink_start(mesh_handle));
-
-  sleep(1);
-
   /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+  PRINT_TEST_CASE_MSG("Starting mesh\n");
+  assert(meshlink_start(mesh_handle));
+  sleep(1);
 
-  fprintf(stderr, "Sending Message\n");
+  PRINT_TEST_CASE_MSG("Sending Message\n");
   char *data = "Test message";
   /* making 'call' variable default false if receive callback not invoked */
   pthread_mutex_lock(&lock);
@@ -146,26 +122,21 @@ static bool test_set_rec_cb_01(void) {
 
   meshlink_node_t *node_handle = meshlink_get_self(mesh_handle);
   assert(node_handle);
-
   assert(meshlink_send(mesh_handle, node_handle, data, strlen(data) + 1));
   sleep(1);
 
   pthread_mutex_lock(&lock);
   bool ret = call;
   pthread_mutex_unlock(&lock);
+  meshlink_stop(mesh_handle);
+  meshlink_close(mesh_handle);
+  meshlink_destroy("set_receive_cb_conf");
 
-  if (ret) {
-    fprintf(stderr, "[ rec_cb 01 ]Invoked callback\n");
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("set_receive_cb_conf");
+  if(ret) {
+    PRINT_TEST_CASE_MSG("Invoked callback\n");
     return true;
-  }
-  else {
-    fprintf(stderr, "[ rec_cb 01 ]No callback invoked\n");
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("set_receive_cb_conf");
+  } else {
+    PRINT_TEST_CASE_MSG("No callback invoked\n");
     return false;
   }
 }
@@ -176,7 +147,6 @@ static void test_case_set_rec_cb_02(void **state) {
     execute_test(test_set_rec_cb_02, state);
     return;
 }
-
 /* Test Steps for meshlink_set_receive_cb Test Case # 2
 
     Test Steps:
@@ -189,18 +159,16 @@ static bool test_set_rec_cb_02(void) {
   /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  fprintf(stderr, "[ rec_cb 02 ]Setting receive callback with NULL as mesh handle\n");
+  PRINT_TEST_CASE_MSG("Setting receive callback with NULL as mesh handle\n");
   meshlink_set_receive_cb(NULL, rec_cb);
-  if ( meshlink_errno == MESHLINK_EINVAL ) {
-    fprintf(stderr, "[ rec_cb 02 ]meshlink_set_receive_cb API reports Invalid argument error successfully\n");
+  if(meshlink_errno == MESHLINK_EINVAL ) {
+    PRINT_TEST_CASE_MSG("meshlink_set_receive_cb API reports Invalid argument error successfully\n");
     return true;
-  }
-  else {
-    fprintf(stderr, "[ rec_cb 02 ]meshlink_set_receive_cb API failed to report Invalid argument error\n");
+  } else {
+    PRINT_TEST_CASE_MSG("meshlink_set_receive_cb API failed to report Invalid argument error\n");
     return false;
   }
 }
-
 
 /* Execute meshlink_set_receive_cb Test Case # 3 - Functionality Test, Trying to set receive call back after
       starting the mesh */
@@ -208,7 +176,6 @@ static void test_case_set_rec_cb_03(void **state) {
     execute_test(test_set_rec_cb_03, state);
     return;
 }
-
 /* Test Steps for meshlink_set_receive_cb Test Case # 1
 
     Test Steps:
@@ -223,25 +190,20 @@ static void test_case_set_rec_cb_03(void **state) {
 static bool test_set_rec_cb_03(void) {
   /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
   /* Create meshlink instance */
-  fprintf(stderr, "[ rec_cb 03] Opening NUT\n");
+  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh_handle = meshlink_open("set_receive_cb_conf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
   /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
-  fprintf(stderr, "[ rec_cb 03] Starting mesh\n");
+  PRINT_TEST_CASE_MSG("Starting mesh\n");
   assert(meshlink_start(mesh_handle));
-
   /* Setting  receive callback */
-  fprintf(stderr, "[ rec_cb 03] Setting Valid receive callback\n");
+  PRINT_TEST_CASE_MSG("Setting Valid receive callback\n");
   meshlink_set_receive_cb(mesh_handle, rec_cb);
-
   sleep(1);
 
-  fprintf(stderr, "Sending Message\n");
+  PRINT_TEST_CASE_MSG("Sending Message\n");
   char *data = "Test message";
   /* making 'call' variable default false if receive callback not invoked */
   pthread_mutex_lock(&lock);
@@ -250,34 +212,24 @@ static bool test_set_rec_cb_03(void) {
 
   meshlink_node_t *node_handle = meshlink_get_self(mesh_handle);
   assert(node_handle);
-
   assert(meshlink_send(mesh_handle, node_handle, data, strlen(data) + 1));
   sleep(1);
 
   pthread_mutex_lock(&lock);
   bool ret = call;
   pthread_mutex_unlock(&lock);
-
-  if (ret) {
-    fprintf(stderr, "[ rec_cb 03 ]Invoked callback when receive callback has been set even after starting mesh\n");
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("set_receive_cb_conf");
+  meshlink_stop(mesh_handle);
+  meshlink_close(mesh_handle);
+  meshlink_destroy("set_receive_cb_conf");
+  if(ret) {
+    PRINT_TEST_CASE_MSG("Invoked callback when receive callback has been set even after starting mesh\n");
     return true;
-  }
-  else {
-    fprintf(stderr, "[ rec_cb 03 ]No callback invoked when receive callback has been set after starting mesh\n");
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("set_receive_cb_conf");
+  } else {
+    PRINT_TEST_CASE_MSG("No callback invoked when receive callback has been set after starting mesh\n");
     return false;
   }
 }
 
-
-/*************************************************************************************
- *                          PUBLIC FUNCTIONS                                         *
- *************************************************************************************/
 int test_meshlink_set_receive_cb(void) {
   const struct CMUnitTest blackbox_receive_tests[] = {
     cmocka_unit_test_prestate_setup_teardown(test_case_set_rec_cb_01, NULL, NULL,

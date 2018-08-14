@@ -27,7 +27,7 @@
 #include "common_handlers.h"
 
 /* Modify this to change the logging level of Meshlink */
-#define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
+#define TEST_MESHLINK_LOG_LEVEL MESHLINK_INFO
 
 meshlink_handle_t *mesh_handle = NULL;
 bool mesh_started = false;

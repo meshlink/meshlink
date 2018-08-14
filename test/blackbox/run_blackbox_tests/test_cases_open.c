@@ -1,5 +1,5 @@
 /*
-    test_cases.c -- Execution of specific meshlink black box test cases
+    test_cases_open.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -130,10 +130,10 @@ bool test_steps_mesh_open_05(void) {
 		assert(mesh == NULL);
 		if (!mesh) {
 			fprintf(stderr, "meshlink_open status 5: %s\n", meshlink_strerror(meshlink_errno));
-			return true;		
+			return true;
 		} else {
 			result = false;
-		}	
+		}
     return result;
 }
 

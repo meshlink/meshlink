@@ -1,25 +1,22 @@
-/*===================================================================================*/
-/*************************************************************************************/
-/**
- * @file      test_cases_join.c -- Execution of specific meshlink black box test cases
- * @see
- * @author    Sai Roop, sairoop@elear.solutions
- * @copyright 2017  Guus Sliepen <guus@meshlink.io>
- *                  Manav Kumar Mehta <manavkumarm@yahoo.com>
- * @license   To any person (the "Recipient") obtaining a copy of this software and
- *            associated documentation files (the "Software"):\n
- *            All information contained in or disclosed by this software is
- *            confidential and proprietary information of Elear Solutions Tech
- *            Private Limited and all rights therein are expressly reserved.
- *            By accepting this material the recipient agrees that this material and
- *            the information contained therein is held in confidence and in trust
- *            and will NOT be used, copied, modified, merged, published, distributed,
- *            sublicensed, reproduced in whole or in part, nor its contents revealed
- *            in any manner to others without the express written permission of
- *            Elear Solutions Tech Private Limited.
- */
-/*************************************************************************************/
-/*===================================================================================*/
+/*
+    test_cases_join.c -- Execution of specific meshlink black box test cases
+    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+                        Manav Kumar Mehta <manavkumarm@yahoo.com>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 #include "execute_tests.h"
 #include "test_cases_join.h"
 #include "../common/containers.h"
@@ -33,15 +30,10 @@
 #include <cmocka.h>
 #include <pthread.h>
 
-/*************************************************************************************
- *                          LOCAL MACROS                                             *
- *************************************************************************************/
+
 /* Modify this to change the logging level of Meshlink */
 #define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
 
-/*************************************************************************************
- *                          LOCAL PROTOTYPES                                         *
- *************************************************************************************/
 static void test_case_meshlink_join_01(void **state);
 static bool test_meshlink_join_01(void);
 static void test_case_meshlink_join_02(void **state);
@@ -52,9 +44,6 @@ static void test_case_meshlink_join_04(void **state);
 static bool test_meshlink_join_04(void);
 static void status_callback(meshlink_handle_t *mesh, meshlink_node_t *source, bool reach);
 
-/*************************************************************************************
- *                          LOCAL VARIABLES                                          *
- *************************************************************************************/
  /* State structure for join Test Case #1 */
 static char *test_join_1_nodes[] = { "relay" };
 static black_box_state_t test_case_join_01_state = {
@@ -96,9 +85,7 @@ static bool join_status;
 /* mutex for the common variable */
 pthread_mutex_t lock;
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
+
   static int black_box_group_join_setup(void **state) {
     char *nodes[] = { "relay" };
     int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
@@ -121,20 +108,18 @@ static int black_box_group_join_teardown(void **state) {
  /* status callback */
 static void status_callback(meshlink_handle_t *mesh, meshlink_node_t *source, bool reach) {
   fprintf(stderr, "In status callback\n");
-  if (reach) {
+  if(reach) {
     fprintf(stdout, "[ %s ] node reachable\n", source->name);
-  }
-  else {
+  } else {
     fprintf(stdout, "[ %s ] node not reachable\n", source->name) ;
   }
 
-  if (0 == strcmp(source->name, "relay")) {
+  if(!strcmp(source->name, "relay")) {
     pthread_mutex_lock(&lock);
     join_status = true;
     pthread_mutex_unlock(&lock);
    PRINT_TEST_CASE_MSG("NUT joined with relay\n");
-  }
-  else {
+  } else {
     pthread_mutex_lock(&lock);
     join_status = false;
     pthread_mutex_unlock(&lock);
@@ -172,37 +157,31 @@ static bool test_meshlink_join_01(void) {
   /* generate invite in relay container */
   char *invite_nut = invite_in_container("relay", "nut");
   node_sim_in_container("relay", "1", NULL);
-
   /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
   /* Create meshlink instance */
   mesh_handle = meshlink_open("joinconf", "nut", "node_sim", 1);
   PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
   assert(mesh_handle);
-
   /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
   /* Set up callback for node status (reachable / unreachable) */
   meshlink_set_node_status_cb(mesh_handle, status_callback);
-
   sleep(2);
+
   /*Joining the NUT with relay*/
   ret = meshlink_join(mesh_handle, invite_nut);
   assert(ret);
   PRINT_TEST_CASE_MSG("meshlink_join status: %s\n", meshlink_strerror(meshlink_errno));
   assert(meshlink_start(mesh_handle));
-
   sleep(2);
 
   pthread_mutex_lock(&lock);
   bool stat_ret = join_status;
   pthread_mutex_unlock(&lock);
-
-  if (stat_ret) {
+  if(stat_ret) {
     PRINT_TEST_CASE_MSG("after 2 seconds NUT joined with relay\n");
-  }
-  else {
+  } else {
     PRINT_TEST_CASE_MSG("after 2 seconds NUT didn't join with relay\n");
   }
   free(invite_nut);
@@ -218,7 +197,6 @@ static void test_case_meshlink_join_02(void **state) {
     execute_test(test_meshlink_join_02, state);
     return;
 }
-
 /* Test Steps for meshlink_join Test Case # 2 - Invalid case
 
     Test Steps:
@@ -233,12 +211,10 @@ static bool test_meshlink_join_02(void) {
   bool ret = meshlink_join(NULL, invite_nut);
   PRINT_TEST_CASE_MSG("meshlink_join status: %s\n", meshlink_strerror(meshlink_errno));
   free(invite_nut);
-
-  if (ret) {
-  PRINT_TEST_CASE_MSG("meshlink_join reported error accordingly\n");
-  }
-  else {
-  PRINT_TEST_CASE_MSG("meshlink_join failed to report error accordingly\n");
+  if(ret) {
+    PRINT_TEST_CASE_MSG("meshlink_join reported error accordingly\n");
+  } else {
+    PRINT_TEST_CASE_MSG("meshlink_join failed to report error accordingly\n");
   }
 
   return !ret;
@@ -249,7 +225,6 @@ static void test_case_meshlink_join_03(void **state) {
     execute_test(test_meshlink_join_03, state);
     return;
 }
-
 /* Test Steps for meshlink_join Test Case # 3 - Invalid case
 
     Test Steps:
@@ -276,14 +251,11 @@ static bool test_meshlink_join_03(void) {
   /*Joining the NUT with relay*/
   bool ret  = meshlink_join(mesh_handle, NULL);
   PRINT_TEST_CASE_MSG("meshlink_join status: %s\n", meshlink_strerror(meshlink_errno));
-
-  if (ret) {
-  PRINT_TEST_CASE_MSG("meshlink_join reported error accordingly when NULL is passed as invite argument\n");
+  if(ret) {
+    PRINT_TEST_CASE_MSG("meshlink_join reported error accordingly when NULL is passed as invite argument\n");
+  } else {
+    PRINT_TEST_CASE_MSG("meshlink_join failed to report error accordingly when NULL is passed as invite argument\n");
   }
-  else {
-  PRINT_TEST_CASE_MSG("meshlink_join failed to report error accordingly when NULL is passed as invite argument\n");
-  }
-
   meshlink_close(mesh_handle);
   meshlink_destroy("joinconf");
   return !ret;
@@ -294,7 +266,6 @@ static void test_case_meshlink_join_04(void **state) {
     execute_test(test_meshlink_join_04, state);
     return;
 }
-
 /* Test Steps for meshlink_join Test Case # 1 - Valid case
 
     Test Steps:
@@ -313,47 +284,38 @@ static bool test_meshlink_join_04(void) {
 
   /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
   /* Create meshlink instance */
   mesh_handle = meshlink_open("joinconf", "nut", "node_sim", 1);
   PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
   assert(mesh_handle);
-
   /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
   /* Set up callback for node status (reachable / unreachable) */
   meshlink_set_node_status_cb(mesh_handle, status_callback);
-
   sleep(2);
+
   /*Joining the NUT with relay*/
   bool ret = meshlink_join(mesh_handle, invite_nut);
   assert(ret);
   PRINT_TEST_CASE_MSG("NUT joined for the 1st time\n");
-
   ret = meshlink_join(mesh_handle, invite_nut);
   PRINT_TEST_CASE_MSG("meshlink_join status[2nd time]: %s\n", meshlink_strerror(meshlink_errno));
   assert(meshlink_start(mesh_handle));
-
   sleep(2);
 
-  if (ret) {
-  PRINT_TEST_CASE_MSG("When NUT joined for the 2nd time meshlink_join returned true\n");
-  }
-  else {
-  PRINT_TEST_CASE_MSG("When NUT joined for the 2nd time meshlink_join returned false\n");
+  if(ret) {
+    PRINT_TEST_CASE_MSG("When NUT joined for the 2nd time meshlink_join returned true\n");
+  } else {
+    PRINT_TEST_CASE_MSG("When NUT joined for the 2nd time meshlink_join returned false\n");
   }
   free(invite_nut);
   meshlink_stop(mesh_handle);
   meshlink_close(mesh_handle);
   meshlink_destroy("joinconf");
-  sleep(1);
   return !ret;
 }
 
 
-/*************************************************************************************
- *                          PUBLIC FUNCTIONS                                         *
- *************************************************************************************/
 int test_meshlink_join(void) {
   const struct CMUnitTest blackbox_join_tests[] = {
     cmocka_unit_test_prestate_setup_teardown(test_case_meshlink_join_01, setup_test, teardown_test,

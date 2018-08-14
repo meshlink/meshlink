@@ -1,5 +1,5 @@
 /*
-    test_cases_channel_set_receive_cb.h -- Declarations for Individual Test Case implementation functions
+    test_cases_hint_address.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
                         Manav Kumar Mehta <manavkumarm@yahoo.com>
 
@@ -18,12 +18,12 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef TEST_CASES_CHANNELS_SET_RECEIVE_H
-#define TEST_CASES_CHANNELS_SET_RECEIVE_H
+#ifndef TEST_CASES_HINT_H
+#define TEST_CASES_HINT_H
 
 #include <stdbool.h>
 
-extern int test_meshlink_set_channel_receive_cb(void);
+extern int test_meshlink_hint_address(void);
 extern int total_tests;
 
 #endif

@@ -1,25 +1,22 @@
-/*===================================================================================*/
-/*************************************************************************************/
-/**
- * @file      test_cases_set_port.c -- Execution of specific meshlink black box test cases
- * @see
- * @author    Sai Roop, sairoop@elear.solutions
- * @copyright 2017  Guus Sliepen <guus@meshlink.io>
- *                  Manav Kumar Mehta <manavkumarm@yahoo.com>
- * @license   To any person (the "Recipient") obtaining a copy of this software and
- *            associated documentation files (the "Software"):\n
- *            All information contained in or disclosed by this software is
- *            confidential and proprietary information of Elear Solutions Tech
- *            Private Limited and all rights therein are expressly reserved.
- *            By accepting this material the recipient agrees that this material and
- *            the information contained therein is held in confidence and in trust
- *            and will NOT be used, copied, modified, merged, published, distributed,
- *            sublicensed, reproduced in whole or in part, nor its contents revealed
- *            in any manner to others without the express written permission of
- *            Elear Solutions Tech Private Limited.
- */
-/*************************************************************************************/
-/*===================================================================================*/
+/*
+    test_cases_set_port.c -- Execution of specific meshlink black box test cases
+    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+                        Manav Kumar Mehta <manavkumarm@yahoo.com>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 #include "execute_tests.h"
 #include "test_cases_destroy.h"
 #include "../common/containers.h"
@@ -33,15 +30,10 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
-/*************************************************************************************
- *                          LOCAL MACROS                                             *
- *************************************************************************************/
+
 /* Modify this to change the logging level of Meshlink */
 #define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
 
-/*************************************************************************************
- *                          LOCAL PROTOTYPES                                         *
- *************************************************************************************/
 static void test_case_set_port_01(void **state);
 static bool test_set_port_01(void);
 static void test_case_set_port_02(void **state);
@@ -49,9 +41,6 @@ static bool test_set_port_02(void);
 static void test_case_set_port_03(void **state);
 static bool test_set_port_03(void);
 
-/*************************************************************************************
- *                          LOCAL VARIABLES                                          *
- *************************************************************************************/
  /* State structure for set port API Test Case #1 */
 static black_box_state_t test_case_set_port_01_state = {
     /* test_case_name = */ "test_case_set_port_01",
@@ -59,7 +48,6 @@ static black_box_state_t test_case_set_port_01_state = {
     /* num_nodes = */ 0,
     /* test_result (defaulted to) = */ false
 };
-
 /* State structure for set port API Test Case #2 */
 static black_box_state_t test_case_set_port_02_state = {
     /* test_case_name = */ "test_case_set_port_02",
@@ -67,7 +55,6 @@ static black_box_state_t test_case_set_port_02_state = {
     /* num_nodes = */ 0,
     /* test_result (defaulted to) = */ false
 };
-
 /* State structure for set port API Test Case #3 */
 static black_box_state_t test_case_set_port_03_state = {
     /* test_case_name = */ "test_case_set_port_03",
@@ -77,16 +64,11 @@ static black_box_state_t test_case_set_port_03_state = {
 };
 
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
-
 /* Execute meshlink_set_port Test Case # 1 - valid case*/
 static void test_case_set_port_01(void **state) {
     execute_test(test_set_port_01, state);
     return;
 }
-
 /* Test Steps for meshlink_set_port Test Case # 1 - Valid case
 
     Test Steps:
@@ -105,37 +87,29 @@ static bool test_set_port_01(void) {
   mesh_handle = meshlink_open("setportconf", "nut", "node_sim", 1);
   PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
   assert(mesh_handle);
-
   /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   int port;
-
   port = meshlink_get_port(mesh_handle);
   assert(port > 0);
-  fprintf(stderr, "[ set_port 01 ] port of NUT before setting new port : %d \n", port);
-
-  fprintf(stderr, "[ set_port 01 ] seting port 8000 using meshlink_set_port API \n");
+  PRINT_TEST_CASE_MSG("port of NUT before setting new port : %d \n", port);
+  PRINT_TEST_CASE_MSG("seting port 8000 using meshlink_set_port API \n");
   bool ret = meshlink_set_port(mesh_handle, 8000);
 
   port = meshlink_get_port(mesh_handle);
   assert(port > 0);
-  fprintf(stderr, "[ set_port 01 ] port of NUT after setting new port(8000) : %d \n", port);
+  PRINT_TEST_CASE_MSG("port of NUT after setting new port(8000) : %d \n", port);
+  meshlink_stop(mesh_handle);
+  meshlink_close(mesh_handle);
+  meshlink_destroy("setportconf");
 
   if (ret && (port == 8000)) {
-    fprintf(stderr, "[ set_port 01 ] Port set successfully\n");
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("setportconf");
-    meshlink_destroy("setportconf");
-    meshlink_destroy("setportconf");
+    PRINT_TEST_CASE_MSG("Port set successfully\n");
     return true;
   }
   else {
     fprintf(stderr, "[ set_port 01 ] failed to set port\n");
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("exportconf");
     return false;
   }
 
@@ -220,9 +194,6 @@ static bool test_set_port_03(void) {
 }
 
 
-/*************************************************************************************
- *                          PUBLIC FUNCTIONS                                         *
- *************************************************************************************/
  int test_meshlink_set_port(void) {
   const struct CMUnitTest blackbox_set_port_tests[] = {
     cmocka_unit_test_prestate_setup_teardown(test_case_set_port_01, NULL, NULL,

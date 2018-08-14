@@ -213,11 +213,11 @@ void meshlink_callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t leve
     char connection_match_msg[100];
 
     fprintf(stderr, "meshlink>> %s\n", text);
-
-    if(state_ptr && (strstr(text, "Connection") || strstr(text, "connection")))
+    if(state_ptr && (strstr(text, "Connection") || strstr(text, "connection"))) {
         for(i = 0; i < state_ptr->num_nodes; i++) {
             assert(snprintf(connection_match_msg, sizeof(connection_match_msg),
                 "Connection with %s", state_ptr->node_names[i]) >= 0);
+
             if(strstr(text, connection_match_msg) && strstr(text, "activated")) {
                 meta_conn_status[i] = true;
                 continue;
@@ -244,6 +244,7 @@ void meshlink_callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t leve
                 continue;
             }
         }
+    }
 
     return;
 }

@@ -40,6 +40,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../common/containers.h" />
+		<Unit filename="../common/mesh_event_handler.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../common/mesh_event_handler.h" />
 		<Unit filename="../common/test_step.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -175,6 +179,45 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../run_blackbox_tests/test_cases_verify.h" />
+		<Unit filename="../test_case_meta_conn_01/node_sim_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../test_case_meta_conn_01/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../test_case_meta_conn_01/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../test_case_meta_conn_02/node_sim_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../test_case_meta_conn_02/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../test_case_meta_conn_02/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../test_case_meta_conn_03/node_sim_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../test_case_meta_conn_03/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../test_case_meta_conn_03/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../test_case_meta_conn_04/node_sim_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../test_case_meta_conn_04/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../test_case_meta_conn_05/node_sim_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../test_case_meta_conn_05/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Extensions>
 			<envvars />
 			<code_completion />
