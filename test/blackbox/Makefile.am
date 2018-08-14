@@ -17,6 +17,6 @@ SUBDIRS = \
 	test_case_join_04 \
 	test_case_join_05
 
-gen_invite_SOURCES = util/gen_invite.c common/common_handlers.c common/test_step.c
+gen_invite_SOURCES = util/gen_invite.c common/common_handlers.c common/test_step.c common/mesh_event_handler.c
 gen_invite_LDADD = ../../src/libmeshlink.la
 gen_invite_CFLAGS = -D_GNU_SOURCE
