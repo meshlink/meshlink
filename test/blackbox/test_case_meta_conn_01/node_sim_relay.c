@@ -23,14 +23,23 @@
 #include <stdlib.h>
 #include "../common/common_handlers.h"
 #include "../common/test_step.h"
+#include "../common/mesh_event_handler.h"
 
 #define CMD_LINE_ARG_NODENAME   1
 #define CMD_LINE_ARG_DEVCLASS   2
-#define CMD_LINE_ARG_INVITEURL  3
+#define CMD_LINE_ARG_CLIENTID   3
+#define CMD_LINE_ARG_IMPORTSTR  4
+#define CMD_LINE_ARG_INVITEURL  5
 
 int main(int argc, char *argv[]) {
     struct timeval main_loop_wait = { 5, 0 };
 
+    int client_id = -1;
+
+    if ((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR] )) {
+      client_id = atoi(argv[CMD_LINE_ARG_CLIENTID]);
+      mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
+    }
     /* Setup required signals */
     setup_signals();
 
@@ -38,7 +47,14 @@ int main(int argc, char *argv[]) {
     execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
     execute_start();
 
+    if (client_id != -1) {
+      if(!mesh_event_sock_send(client_id, NODE_STARTED, NULL, 0)) {
+        fprintf(stderr, "Trying to resend mesh event\n");
+        sleep(1);
+      }
+    }
     /* All test steps executed - wait for signals to stop/start or close the mesh */
     while(1)
         select(1, NULL, NULL, NULL, &main_loop_wait);
+
 }
