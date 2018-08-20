@@ -38,6 +38,8 @@ void destroy_containers(void);
 void restart_all_containers(void);
 char *invite_in_container(char *inviter, char *invitee);
 void node_sim_in_container(char *node, char *device_class, char *invite_url);
+void node_sim_in_container_event(char *node, char *device_class,
+                           char *invite_url, char *clientId, char *import);
 void node_step_in_container(char *node, char *sig);
 void change_ip(int node);
 

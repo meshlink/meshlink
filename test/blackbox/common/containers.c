@@ -265,13 +265,13 @@ void setup_containers(void **state) {
         container_wait_ip(i);
     }
 
-    /* Delete any existing NUT confbase folder - every test case starts on a clean state */
+    /* Delete any existing NUT confbase folder - every test case starts on a clean state
     confbase_del_status = system("rm -rf testconf");
     PRINT_TEST_CASE_MSG("Confbase Folder Delete Status: %d\n", confbase_del_status);
     assert(confbase_del_status == 0);
 
     assert(nut_ip = get_ip(eth_if_name));
-    PRINT_TEST_CASE_MSG("Node '%s' has IP Address %s\n", NUT_NODE_NAME, nut_ip);
+    PRINT_TEST_CASE_MSG("Node '%s' has IP Address %s\n", NUT_NODE_NAME, nut_ip);*/
 
     free(nut_ip);
 
@@ -355,6 +355,24 @@ void node_sim_in_container(char *node, char *device_class, char *invite_url) {
         (invite_url) ? invite_url : "", node) >= 0);
     run_in_container(node_sim_command, node, true);
     PRINT_TEST_CASE_MSG("node_sim_%s started in Container\n", node);
+
+    return;
+}
+
+/* Run the node_sim_<nodename> program inside the 'node''s container with event handling capable*/
+void node_sim_in_container_event(char *node, char *device_class,
+                           char *invite_url, char *clientId, char *import) {
+     char node_sim_command[200];
+
+    assert(snprintf(node_sim_command, sizeof(node_sim_command),
+        "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/node_sim_%s %s %s %s %s %s "
+        "1>&2 2>> node_sim_%s.log", node, node, device_class,
+         clientId, import, (invite_url) ? invite_url : "", node) >= 0);
+    run_in_container(node_sim_command, node, true);
+    PRINT_TEST_CASE_MSG("node_sim_%s(Client Id :%s) started in Container with event handling\n",
+                        node, clientId);
+    PRINT_TEST_CASE_MSG("node_sim_%s mesh event import string : %s\n",
+                        node, import);
 
     return;
 }
