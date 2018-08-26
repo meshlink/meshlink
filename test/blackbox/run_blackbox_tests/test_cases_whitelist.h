@@ -1,7 +1,7 @@
 /*===================================================================================*/
 /*************************************************************************************/
 /**
- * @file      test_cases_start.c -- Execution of specific meshlink black box test cases
+ * @file      test_cases_whitelist.h -- Execution of specific meshlink black box test cases
  * @see
  * @author    Sri Harsha K, sriharsha@elear.solutions
  * @copyright 2017  Guus Sliepen <guus@meshlink.io>
@@ -20,8 +20,8 @@
  */
 /*************************************************************************************/
 /*===================================================================================*/
-#ifndef TEST_CASES_START_H
-#define TEST_CASES_START_H
+#ifndef TEST_CASES_WHITELIST_H
+#define TEST_CASES_WHITELIST_H
 
 /*************************************************************************************
  *                          INCLUDES                                                 *
@@ -31,8 +31,9 @@
 /*************************************************************************************
  *                          PUBLIC FUNCTIONS                                         *
  *************************************************************************************/
-extern int test_meshlink_start(void);
+extern int test_meshlink_whitelist(void);
 extern int total_tests;
+
 
 
 

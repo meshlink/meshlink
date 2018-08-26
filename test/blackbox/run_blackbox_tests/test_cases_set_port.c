@@ -104,11 +104,10 @@ static bool test_set_port_01(void) {
   meshlink_close(mesh_handle);
   meshlink_destroy("setportconf");
 
-  if (ret && (port == 8000)) {
+  if(ret && (port == 8000)) {
     PRINT_TEST_CASE_MSG("Port set successfully\n");
     return true;
-  }
-  else {
+  } else {
     fprintf(stderr, "[ set_port 01 ] failed to set port\n");
     return false;
   }
@@ -130,15 +129,14 @@ static void test_case_set_port_02(void **state) {
     Report false indicating error.
 */
 static bool test_set_port_02(void) {
-  fprintf(stderr, "[ set_port 02 ]Setting NULL as mesh handle\n");
+  PRINT_TEST_CASE_MSG("Setting NULL as mesh handle\n");
   bool ret = meshlink_set_port(NULL, 8000);
 
-  if ( (false == ret) && (MESHLINK_EINVAL == meshlink_errno))  {
-    fprintf(stderr, "[ set_port 02 ]NULL argument reported SUCCESSFULY\n");
+  if((false == ret) && (MESHLINK_EINVAL == meshlink_errno))  {
+    PRINT_TEST_CASE_MSG("NULL argument reported SUCCESSFULY\n");
     return true;
   }
-
-  fprintf(stderr, "[ set_port 02 ]failed to report NULL argument\n");
+  PRINT_TEST_CASE_MSG("failed to report NULL argument\n");
   return false;
 }
 
@@ -158,7 +156,7 @@ static void test_case_set_port_03(void **state) {
     New port number cannot be set while mesh is running.
 */
 static bool test_set_port_03(void) {
-  fprintf(stderr, "[ set_port 03 ] Opening NUT\n");
+  PRINT_TEST_CASE_MSG(" Opening NUT\n");
   /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
@@ -170,12 +168,12 @@ static bool test_set_port_03(void) {
   /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  fprintf(stderr, "[ set_port 03 ] Starting NUT\n");
+  PRINT_TEST_CASE_MSG(" Starting NUT\n");
   assert(meshlink_start(mesh_handle));
 
-  fprintf(stderr, "[ set_port 03 ] Setting port after starting NUT\n");
+  PRINT_TEST_CASE_MSG("Setting port after starting NUT\n");
   bool ret = meshlink_set_port(mesh_handle, 50000);
-  if (!ret) {
+  if(!ret) {
     fprintf(stderr, "meshlink_set_port status : %s\n", meshlink_strerror(meshlink_errno));
   }
 
@@ -183,12 +181,11 @@ static bool test_set_port_03(void) {
   meshlink_close(mesh_handle);
   meshlink_destroy("getportconf");
 
-  if (!ret) {
-    fprintf(stderr, "[ set_port 03 ] New port cannot be set after starting mesh \n");
+  if(!ret) {
+    PRINT_TEST_CASE_MSG(" New port cannot be set after starting mesh \n");
     return true;
-  }
-  else {
-    fprintf(stderr, "[ set_port 03 ] Port can be set even after starting mesh \n");
+  } else {
+    PRINT_TEST_CASE_MSG("Port can be set even after starting mesh \n");
     return false;
   }
 }

@@ -261,60 +261,6 @@ static bool test_meshlink_join_03(void) {
   return !ret;
 }
 
-/* Execute join Test Case # 4 - NUT joins more than once into the mesh */
-static void test_case_meshlink_join_04(void **state) {
-    execute_test(test_meshlink_join_04, state);
-    return;
-}
-/* Test Steps for meshlink_join Test Case # 1 - Valid case
-
-    Test Steps:
-    1. Generate invite in relay container and run 'relay' node
-    2. Run NUT
-    3. Join NUT with relay using invitation generated.
-    4. Join once again or twice
-
-    Expected Result:
-    meshlink_join returning 'false' hinting joining error
-*/
-static bool test_meshlink_join_04(void) {
-  meshlink_destroy("joinconf");
-  char *invite_nut = invite_in_container("relay", NUT_NODE_NAME);
-  node_sim_in_container("relay", "1", NULL);
-
-  /* Set up logging for Meshlink */
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  /* Create meshlink instance */
-  mesh_handle = meshlink_open("joinconf", "nut", "node_sim", 1);
-  PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
-  assert(mesh_handle);
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  /* Set up callback for node status (reachable / unreachable) */
-  meshlink_set_node_status_cb(mesh_handle, status_callback);
-  sleep(2);
-
-  /*Joining the NUT with relay*/
-  bool ret = meshlink_join(mesh_handle, invite_nut);
-  assert(ret);
-  PRINT_TEST_CASE_MSG("NUT joined for the 1st time\n");
-  ret = meshlink_join(mesh_handle, invite_nut);
-  PRINT_TEST_CASE_MSG("meshlink_join status[2nd time]: %s\n", meshlink_strerror(meshlink_errno));
-  assert(meshlink_start(mesh_handle));
-  sleep(2);
-
-  if(ret) {
-    PRINT_TEST_CASE_MSG("When NUT joined for the 2nd time meshlink_join returned true\n");
-  } else {
-    PRINT_TEST_CASE_MSG("When NUT joined for the 2nd time meshlink_join returned false\n");
-  }
-  free(invite_nut);
-  meshlink_stop(mesh_handle);
-  meshlink_close(mesh_handle);
-  meshlink_destroy("joinconf");
-  return !ret;
-}
-
 
 int test_meshlink_join(void) {
   const struct CMUnitTest blackbox_join_tests[] = {
@@ -323,9 +269,7 @@ int test_meshlink_join(void) {
     cmocka_unit_test_prestate_setup_teardown(test_case_meshlink_join_02, setup_test, teardown_test,
             (void *)&test_case_join_02_state),
     cmocka_unit_test_prestate_setup_teardown(test_case_meshlink_join_03, NULL, NULL,
-            (void *)&test_case_join_03_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_meshlink_join_04, setup_test, teardown_test,
-            (void *)&test_case_join_04_state)
+            (void *)&test_case_join_03_state)
   };
   total_tests += sizeof(blackbox_join_tests) / sizeof(blackbox_join_tests[0]);
 

@@ -86,6 +86,7 @@
 		<Unit filename="../run_blackbox_tests/test_cases_channel_set_receive_cb.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="../run_blackbox_tests/test_cases_channel_set_receive_cb.h" />
 		<Unit filename="../run_blackbox_tests/test_cases_destroy.c">
 			<Option compilerVar="CC" />
 		</Unit>

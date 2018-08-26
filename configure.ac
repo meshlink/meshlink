@@ -144,6 +144,14 @@ AC_CONFIG_FILES([Makefile \
 		test/blackbox/test_case_meta_conn_03/Makefile \
 		test/blackbox/test_case_meta_conn_04/Makefile \
 		test/blackbox/test_case_meta_conn_05/Makefile \
+		test/blackbox/test_case_set_status_cb_01/Makefile \
+		test/blackbox/test_case_set_status_cb_02/Makefile \
+		test/blackbox/test_case_set_log_cb_01/Makefile \
+		test/blackbox/test_case_set_log_cb_02/Makefile \
+		test/blackbox/test_case_join_01/Makefile \
+		test/blackbox/test_case_join_02/Makefile \
+		test/blackbox/test_case_join_04/Makefile \
+		test/blackbox/test_case_join_05/Makefile \
 		examples/Makefile])
 
 AC_OUTPUT

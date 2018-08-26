@@ -85,17 +85,17 @@ bool test_steps_hint_address_01(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance for NUT */
-  fprintf(stderr, "[ hint 01 ] Opening NUT\n");
+  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh1 = meshlink_open("hintconf1", "nut", "node_sim", DEV_CLASS_STATIONARY);
   if(!mesh1) {
-    fprintf(stderr, "meshlink_open status for NUT: %s\n", meshlink_strerror(meshlink_errno));
+    PRINT_TEST_CASE_MSG("meshlink_open status for NUT: %s\n", meshlink_strerror(meshlink_errno));
   }
   assert(mesh1 != NULL);
   /* Create meshlink instance for bar */
   PRINT_TEST_CASE_MSG("Opening bar\n");
   meshlink_handle_t *mesh2 = meshlink_open("hintconf2", "bar", "node_sim", DEV_CLASS_STATIONARY);
   if(!mesh2) {
-    fprintf(stderr, "meshlink_open status for bar: %s\n", meshlink_strerror(meshlink_errno));
+    PRINT_TEST_CASE_MSG("meshlink_open status for bar: %s\n", meshlink_strerror(meshlink_errno));
   }
   assert(mesh2 != NULL);
 
@@ -125,7 +125,7 @@ bool test_steps_hint_address_01(void) {
   assert(node != NULL);
 
   meshlink_hint_address(mesh_handle, node, (struct sockaddr * )&hint);
-  fprintf(stderr, "meshlink_hint_address status: %s\n", meshlink_strerror(meshlink_errno));
+  PRINT_TEST_CASE_MSG("meshlink_hint_address status: %s\n", meshlink_strerror(meshlink_errno));
   sleep(1);
 
   int fp;

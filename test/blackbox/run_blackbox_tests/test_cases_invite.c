@@ -95,11 +95,11 @@ static bool test_invite_01(void) {
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   PRINT_TEST_CASE_MSG("Generating INVITATION\n");
+  char *invitation = meshlink_invite(mesh_handle, "new");
   meshlink_stop(mesh_handle);
   meshlink_close(mesh_handle);
   meshlink_destroy("inviteconf");
 
-  char *invitation = meshlink_invite(mesh_handle, "new");
   if(invitation == NULL) {
     PRINT_TEST_CASE_MSG("Failed to generate INVITATION\n");
     return false;

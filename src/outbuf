@@ -1,0 +1,674 @@
+./utcp/README:71:  But don't update it past c->snd.next. (RST in that case?)
+./utcp/utcp.c:3:    Copyright (C) 2014-2017 Guus Sliepen <guus@tinc-vpn.org>
+./utcp/utcp.c:53:			(r)->tv_sec--, (r)->tv_usec += USEC_PER_SEC;\
+./utcp/utcp.c:122:	c->state = state;
+./utcp/utcp.c:125:		timerclear(&c->conn_timeout);
+./utcp/utcp.c:128:	debug("%p new state: %s\n", c->utcp, strstate[state]);
+./utcp/utcp.c:132:	if(seq != c->snd.last) {
+./utcp/utcp.c:136:	switch(c->state) {
+./utcp/utcp.c:148:	return c->flags & UTCP_RELIABLE;
+./utcp/utcp.c:304:	struct utcp *utcp = c->utcp;
+./utcp/utcp.c:313:	buffer_exit(&c->rcvbuf);
+./utcp/utcp.c:314:	buffer_exit(&c->sndbuf);
+./utcp/utcp.c:363:	if(!buffer_init(&c->sndbuf, DEFAULT_SNDBUFSIZE, DEFAULT_MAXSNDBUFSIZE)) {
+./utcp/utcp.c:368:	if(!buffer_init(&c->rcvbuf, DEFAULT_RCVBUFSIZE, DEFAULT_MAXRCVBUFSIZE)) {
+./utcp/utcp.c:369:		buffer_exit(&c->sndbuf);
+./utcp/utcp.c:376:	c->src = src;
+./utcp/utcp.c:377:	c->dst = dst;
+./utcp/utcp.c:379:	c->snd.iss = 0;
+./utcp/utcp.c:381:	c->snd.iss = rand();
+./utcp/utcp.c:383:	c->snd.una = c->snd.iss;
+./utcp/utcp.c:384:	c->snd.nxt = c->snd.iss + 1;
+./utcp/utcp.c:385:	c->rcv.wnd = utcp->mtu;
+./utcp/utcp.c:386:	c->snd.last = c->snd.nxt;
+./utcp/utcp.c:387:	c->snd.cwnd = utcp->mtu;
+./utcp/utcp.c:388:	c->utcp = utcp;
+./utcp/utcp.c:413:	struct utcp *utcp = c->utcp;
+./utcp/utcp.c:433:	gettimeofday(&c->rtrx_timeout, NULL);
+./utcp/utcp.c:434:	c->rtrx_timeout.tv_usec += c->utcp->rto;
+./utcp/utcp.c:436:	while(c->rtrx_timeout.tv_usec >= 1000000) {
+./utcp/utcp.c:437:		c->rtrx_timeout.tv_usec -= 1000000;
+./utcp/utcp.c:438:		c->rtrx_timeout.tv_sec++;
+./utcp/utcp.c:441:	debug("timeout set to %lu.%06lu (%u)\n", c->rtrx_timeout.tv_sec, c->rtrx_timeout.tv_usec, c->utcp->rto);
+./utcp/utcp.c:445:	timerclear(&c->rtrx_timeout);
+./utcp/utcp.c:458:	c->flags = flags;
+./utcp/utcp.c:459:	c->recv = recv;
+./utcp/utcp.c:460:	c->priv = priv;
+./utcp/utcp.c:467:	pkt.hdr.src = c->src;
+./utcp/utcp.c:468:	pkt.hdr.dst = c->dst;
+./utcp/utcp.c:469:	pkt.hdr.seq = c->snd.iss;
+./utcp/utcp.c:471:	pkt.hdr.wnd = c->rcv.wnd;
+./utcp/utcp.c:484:	gettimeofday(&c->conn_timeout, NULL);
+./utcp/utcp.c:485:	c->conn_timeout.tv_sec += utcp->timeout;
+./utcp/utcp.c:497:	if(c->reapable || c->state != SYN_RECEIVED) {
+./utcp/utcp.c:498:		debug("Error: accept() called on invalid connection %p in state %s\n", c, strstate[c->state]);
+./utcp/utcp.c:503:	c->recv = recv;
+./utcp/utcp.c:504:	c->priv = priv;
+./utcp/utcp.c:509:	int32_t left = seqdiff(c->snd.last, c->snd.nxt);
+./utcp/utcp.c:510:	int32_t cwndleft = c->snd.cwnd - seqdiff(c->snd.nxt, c->snd.una);
+./utcp/utcp.c:532:	pkt = malloc(sizeof(pkt->hdr) + c->utcp->mtu);
+./utcp/utcp.c:538:	pkt->hdr.src = c->src;
+./utcp/utcp.c:539:	pkt->hdr.dst = c->dst;
+./utcp/utcp.c:540:	pkt->hdr.ack = c->rcv.nxt;
+./utcp/utcp.c:541:	pkt->hdr.wnd = c->snd.wnd;
+./utcp/utcp.c:546:		uint32_t seglen = left > c->utcp->mtu ? c->utcp->mtu : left;
+./utcp/utcp.c:547:		pkt->hdr.seq = c->snd.nxt;
+./utcp/utcp.c:549:		buffer_copy(&c->sndbuf, pkt->data, seqdiff(c->snd.nxt, c->snd.una), seglen);
+./utcp/utcp.c:551:		c->snd.nxt += seglen;
+./utcp/utcp.c:554:		if(seglen && fin_wanted(c, c->snd.nxt)) {
+./utcp/utcp.c:559:		if(!c->rtt_start.tv_sec) {
+./utcp/utcp.c:561:			gettimeofday(&c->rtt_start, NULL);
+./utcp/utcp.c:562:			c->rtt_seq = pkt->hdr.seq + seglen;
+./utcp/utcp.c:563:			debug("Starting RTT measurement, expecting ack %u\n", c->rtt_seq);
+./utcp/utcp.c:566:		print_packet(c->utcp, "send", pkt, sizeof(pkt->hdr) + seglen);
+./utcp/utcp.c:567:		c->utcp->send(c->utcp, pkt, sizeof(pkt->hdr) + seglen);
+./utcp/utcp.c:574:	if(c->reapable) {
+./utcp/utcp.c:580:	switch(c->state) {
+./utcp/utcp.c:616:	len = buffer_put(&c->sndbuf, data, len);
+./utcp/utcp.c:623:	c->snd.last += len;
+./utcp/utcp.c:627:		c->snd.una = c->snd.nxt = c->snd.last;
+./utcp/utcp.c:628:		buffer_get(&c->sndbuf, NULL, c->sndbuf.used);
+./utcp/utcp.c:631:	if(is_reliable(c) && !timerisset(&c->rtrx_timeout)) {
+./utcp/utcp.c:645:	if(c->state == CLOSED || c->snd.last == c->snd.una) {
+./utcp/utcp.c:651:	struct utcp *utcp = c->utcp;
+./utcp/utcp.c:658:	pkt = malloc(sizeof(pkt->hdr) + c->utcp->mtu);
+./utcp/utcp.c:664:	pkt->hdr.src = c->src;
+./utcp/utcp.c:665:	pkt->hdr.dst = c->dst;
+./utcp/utcp.c:666:	pkt->hdr.wnd = c->rcv.wnd;
+./utcp/utcp.c:669:	switch(c->state) {
+./utcp/utcp.c:672:		pkt->hdr.seq = c->snd.iss;
+./utcp/utcp.c:679:		pkt->data[3] = c->flags & 0x7;
+./utcp/utcp.c:680:		print_packet(c->utcp, "rtrx", pkt, sizeof(pkt->hdr) + 4);
+./utcp/utcp.c:686:		pkt->hdr.seq = c->snd.nxt;
+./utcp/utcp.c:687:		pkt->hdr.ack = c->rcv.nxt;
+./utcp/utcp.c:689:		print_packet(c->utcp, "rtrx", pkt, sizeof(pkt->hdr));
+./utcp/utcp.c:699:		pkt->hdr.seq = c->snd.una;
+./utcp/utcp.c:700:		pkt->hdr.ack = c->rcv.nxt;
+./utcp/utcp.c:702:		uint32_t len = seqdiff(c->snd.last, c->snd.una);
+./utcp/utcp.c:708:		if(fin_wanted(c, c->snd.una + len)) {
+./utcp/utcp.c:713:		c->snd.nxt = c->snd.una + len;
+./utcp/utcp.c:714:		c->snd.cwnd = utcp->mtu; // reduce cwnd on retransmit
+./utcp/utcp.c:715:		buffer_copy(&c->sndbuf, pkt->data, 0, len);
+./utcp/utcp.c:716:		print_packet(c->utcp, "rtrx", pkt, sizeof(pkt->hdr) + len);
+./utcp/utcp.c:739:	c->rtt_start.tv_sec = 0; // invalidate RTT timer
+./utcp/utcp.c:766:	if(len > c->rcvbuf.used) {
+./utcp/utcp.c:768:		c->sacks[0].len = 0;
+./utcp/utcp.c:772:	buffer_get(&c->rcvbuf, NULL, len);
+./utcp/utcp.c:774:	for(int i = 0; i < NSACKS && c->sacks[i].len;) {
+./utcp/utcp.c:775:		if(len < c->sacks[i].offset) {
+./utcp/utcp.c:776:			c->sacks[i].offset -= len;
+./utcp/utcp.c:778:		} else if(len < c->sacks[i].offset + c->sacks[i].len) {
+./utcp/utcp.c:779:			c->sacks[i].len -= len - c->sacks[i].offset;
+./utcp/utcp.c:780:			c->sacks[i].offset = 0;
+./utcp/utcp.c:784:				memmove(&c->sacks[i], &c->sacks[i + 1], (NSACKS - 1 - i) * sizeof(c->sacks)[i]);
+./utcp/utcp.c:785:				c->sacks[NSACKS - 1].len = 0;
+./utcp/utcp.c:787:				c->sacks[i].len = 0;
+./utcp/utcp.c:793:	for(int i = 0; i < NSACKS && c->sacks[i].len; i++) {
+./utcp/utcp.c:794:		debug("SACK[%d] offset %u len %u\n", i, c->sacks[i].offset, c->sacks[i].len);
+./utcp/utcp.c:801:	ssize_t rxd = buffer_put_at(&c->rcvbuf, offset, data, len);
+./utcp/utcp.c:809:		if(!c->sacks[i].len) { // nothing to merge, add new entry
+./utcp/utcp.c:811:			c->sacks[i].offset = offset;
+./utcp/utcp.c:812:			c->sacks[i].len = rxd;
+./utcp/utcp.c:814:		} else if(offset < c->sacks[i].offset) {
+./utcp/utcp.c:815:			if(offset + rxd < c->sacks[i].offset) { // insert before
+./utcp/utcp.c:816:				if(!c->sacks[NSACKS - 1].len) { // only if room left
+./utcp/utcp.c:818:					memmove(&c->sacks[i + 1], &c->sacks[i], (NSACKS - i - 1) * sizeof(c->sacks)[i]);
+./utcp/utcp.c:819:					c->sacks[i].offset = offset;
+./utcp/utcp.c:820:					c->sacks[i].len = rxd;
+./utcp/utcp.c:828:				c->sacks[i].offset = offset;
+./utcp/utcp.c:831:		} else if(offset <= c->sacks[i].offset + c->sacks[i].len) {
+./utcp/utcp.c:832:			if(offset + rxd > c->sacks[i].offset + c->sacks[i].len) { // merge
+./utcp/utcp.c:834:				c->sacks[i].len = offset + rxd - c->sacks[i].offset;
+./utcp/utcp.c:842:	for(int i = 0; i < NSACKS && c->sacks[i].len; i++) {
+./utcp/utcp.c:843:		debug("SACK[%d] offset %u len %u\n", i, c->sacks[i].offset, c->sacks[i].len);
+./utcp/utcp.c:849:	if(c->sacks[0].len && len >= c->sacks[0].offset) { // TODO: handle overlap with second SACK
+./utcp/utcp.c:850:		debug("incoming packet len %lu connected with SACK at %u\n", (unsigned long)len, c->sacks[0].offset);
+./utcp/utcp.c:851:		buffer_put_at(&c->rcvbuf, 0, data, len); // TODO: handle return value
+./utcp/utcp.c:852:		len = max(len, c->sacks[0].offset + c->sacks[0].len);
+./utcp/utcp.c:853:		data = c->rcvbuf.data;
+./utcp/utcp.c:856:	if(c->recv) {
+./utcp/utcp.c:857:		ssize_t rxd = c->recv(c, data, len);
+./utcp/utcp.c:865:	if(c->rcvbuf.used) {
+./utcp/utcp.c:869:	c->rcv.nxt += len;
+./utcp/utcp.c:875:		c->recv(c, data, len);
+./utcp/utcp.c:876:		c->rcv.nxt = seq + len;
+./utcp/utcp.c:880:	uint32_t offset = seqdiff(seq, c->rcv.nxt);
+./utcp/utcp.c:882:	if(offset + len > c->rcvbuf.maxsize) {
+./utcp/utcp.c:1019:				c->flags = init[3] & 0x7;
+./utcp/utcp.c:1021:				c->flags = UTCP_TCP;
+./utcp/utcp.c:1025:			c->snd.wnd = hdr.wnd;
+./utcp/utcp.c:1026:			c->rcv.irs = hdr.seq;
+./utcp/utcp.c:1027:			c->rcv.nxt = c->rcv.irs + 1;
+./utcp/utcp.c:1035:			pkt.hdr.src = c->src;
+./utcp/utcp.c:1036:			pkt.hdr.dst = c->dst;
+./utcp/utcp.c:1037:			pkt.hdr.ack = c->rcv.irs + 1;
+./utcp/utcp.c:1038:			pkt.hdr.seq = c->snd.iss;
+./utcp/utcp.c:1039:			pkt.hdr.wnd = c->rcv.wnd;
+./utcp/utcp.c:1047:				pkt.data[3] = c->flags & 0x7;
+./utcp/utcp.c:1048:				print_packet(c->utcp, "send", &pkt, sizeof(hdr) + 4);
+./utcp/utcp.c:1052:				print_packet(c->utcp, "send", &pkt, sizeof(hdr));
+./utcp/utcp.c:1064:	debug("%p state %s\n", c->utcp, strstate[c->state]);
+./utcp/utcp.c:1069:	if(c->state == CLOSED) {
+./utcp/utcp.c:1076:	uint32_t prevrcvnxt = c->rcv.nxt;
+./utcp/utcp.c:1082:	switch(c->state) {
+./utcp/utcp.c:1105:	if(c->state == SYN_SENT) {
+./utcp/utcp.c:1108:		acceptable = seqdiff(hdr.seq, c->rcv.nxt) >= 0;
+./utcp/utcp.c:1110:		int32_t rcv_offset = seqdiff(hdr.seq, c->rcv.nxt);
+./utcp/utcp.c:1122:			acceptable = seqdiff(hdr.seq, c->rcv.nxt) >= 0 && seqdiff(hdr.seq, c->rcv.nxt) + len <= c->rcvbuf.maxsize;
+./utcp/utcp.c:1127:		debug("Packet not acceptable, %u <= %u + %lu < %u\n", c->rcv.nxt, hdr.seq, (unsigned long)len, c->rcv.nxt + c->rcvbuf.maxsize);
+./utcp/utcp.c:1138:	c->snd.wnd = hdr.wnd; // TODO: move below
+./utcp/utcp.c:1142:	// (= snd.una + c->sndbuf.used).
+./utcp/utcp.c:1144:	if(hdr.ctl & ACK && (seqdiff(hdr.ack, c->snd.last) > 0 || seqdiff(hdr.ack, c->snd.una) < 0)) {
+./utcp/utcp.c:1145:		debug("Packet ack seqno out of range, %u <= %u < %u\n", c->snd.una, hdr.ack, c->snd.una + c->sndbuf.used);
+./utcp/utcp.c:1158:		switch(c->state) {
+./utcp/utcp.c:1168:			if(c->recv) {
+./utcp/utcp.c:1169:				c->recv(c, NULL, 0);
+./utcp/utcp.c:1195:			if(c->recv) {
+./utcp/utcp.c:1196:				c->recv(c, NULL, 0);
+./utcp/utcp.c:1210:			if(c->reapable) {
+./utcp/utcp.c:1236:	advanced = seqdiff(hdr.ack, c->snd.una);
+./utcp/utcp.c:1237:	prevrcvnxt = c->rcv.nxt;
+./utcp/utcp.c:1241:		if(c->rtt_start.tv_sec) {
+./utcp/utcp.c:1242:			if(c->rtt_seq == hdr.ack) {
+./utcp/utcp.c:1245:				timersub(&now, &c->rtt_start, &diff);
+./utcp/utcp.c:1247:				c->rtt_start.tv_sec = 0;
+./utcp/utcp.c:1248:			} else if(c->rtt_seq < hdr.ack) {
+./utcp/utcp.c:1249:				debug("Cancelling RTT measurement: %u < %u\n", c->rtt_seq, hdr.ack);
+./utcp/utcp.c:1250:				c->rtt_start.tv_sec = 0;
+./utcp/utcp.c:1256:		switch(c->state) {
+./utcp/utcp.c:1269:		int32_t bufused = seqdiff(c->snd.last, c->snd.una);
+./utcp/utcp.c:1273:			buffer_get(&c->sndbuf, NULL, data_acked);
+./utcp/utcp.c:1277:		if(seqdiff(c->snd.nxt, hdr.ack) < 0) {
+./utcp/utcp.c:1278:			c->snd.nxt = hdr.ack;
+./utcp/utcp.c:1281:		c->snd.una = hdr.ack;
+./utcp/utcp.c:1283:		c->dupack = 0;
+./utcp/utcp.c:1284:		c->snd.cwnd += utcp->mtu;
+./utcp/utcp.c:1286:		if(c->snd.cwnd > c->sndbuf.maxsize) {
+./utcp/utcp.c:1287:			c->snd.cwnd = c->sndbuf.maxsize;
+./utcp/utcp.c:1291:		switch(c->state) {
+./utcp/utcp.c:1293:			if(c->snd.una == c->snd.last) {
+./utcp/utcp.c:1300:			if(c->snd.una == c->snd.last) {
+./utcp/utcp.c:1301:				gettimeofday(&c->conn_timeout, NULL);
+./utcp/utcp.c:1302:				c->conn_timeout.tv_sec += 60;
+./utcp/utcp.c:1313:			c->dupack++;
+./utcp/utcp.c:1315:			if(c->dupack == 3) {
+./utcp/utcp.c:1320:				c->snd.nxt = c->snd.una;
+./utcp/utcp.c:1321:				c->snd.cwnd = utcp->mtu;
+./utcp/utcp.c:1330:		timerclear(&c->conn_timeout); // It will be set anew in utcp_timeout() if c->snd.una != c->snd.nxt.
+./utcp/utcp.c:1332:		if(c->snd.una == c->snd.last) {
+./utcp/utcp.c:1343:		switch(c->state) {
+./utcp/utcp.c:1351:			c->rcv.irs = hdr.seq;
+./utcp/utcp.c:1352:			c->rcv.nxt = hdr.seq;
+./utcp/utcp.c:1376:		c->rcv.nxt++;
+./utcp/utcp.c:1381:	if(c->state == SYN_RECEIVED) {
+./utcp/utcp.c:1389:			utcp->accept(c, c->src);
+./utcp/utcp.c:1392:		if(c->state != ESTABLISHED) {
+./utcp/utcp.c:1394:			c->reapable = true;
+./utcp/utcp.c:1400:		switch(c->state) {
+./utcp/utcp.c:1433:	if((hdr.ctl & FIN) && hdr.seq + len == c->rcv.nxt) {
+./utcp/utcp.c:1434:		switch(c->state) {
+./utcp/utcp.c:1452:			gettimeofday(&c->conn_timeout, NULL);
+./utcp/utcp.c:1453:			c->conn_timeout.tv_sec += 60;
+./utcp/utcp.c:1472:		c->rcv.nxt++;
+./utcp/utcp.c:1476:		if(c->recv) {
+./utcp/utcp.c:1478:			c->recv(c, NULL, 0);
+./utcp/utcp.c:1488:	ack(c, len || prevrcvnxt != c->rcv.nxt);
+./utcp/utcp.c:1512:	debug("%p shutdown %d at %u\n", c ? c->utcp : NULL, dir, c ? c->snd.last : 0);
+./utcp/utcp.c:1519:	if(c->reapable) {
+./utcp/utcp.c:1533:		c->recv = NULL;
+./utcp/utcp.c:1541:	switch(c->state) {
+./utcp/utcp.c:1570:	c->snd.last++;
+./utcp/utcp.c:1574:	if(!timerisset(&c->rtrx_timeout)) {
+./utcp/utcp.c:1586:	c->recv = NULL;
+./utcp/utcp.c:1587:	c->poll = NULL;
+./utcp/utcp.c:1588:	c->reapable = true;
+./utcp/utcp.c:1598:	if(c->reapable) {
+./utcp/utcp.c:1604:	c->recv = NULL;
+./utcp/utcp.c:1605:	c->poll = NULL;
+./utcp/utcp.c:1606:	c->reapable = true;
+./utcp/utcp.c:1608:	switch(c->state) {
+./utcp/utcp.c:1633:	hdr.src = c->src;
+./utcp/utcp.c:1634:	hdr.dst = c->dst;
+./utcp/utcp.c:1635:	hdr.seq = c->snd.nxt;
+./utcp/utcp.c:1640:	print_packet(c->utcp, "send", &hdr, sizeof(hdr));
+./utcp/utcp.c:1641:	c->utcp->send(c->utcp, &hdr, sizeof(hdr));
+./utcp/utcp.c:1664:		if(c->state == CLOSED) {
+./utcp/utcp.c:1665:			if(c->reapable) {
+./utcp/utcp.c:1674:		if(timerisset(&c->conn_timeout) && timercmp(&c->conn_timeout, &now, <)) {
+./utcp/utcp.c:1676:			c->state = CLOSED;
+./utcp/utcp.c:1678:			if(c->recv) {
+./utcp/utcp.c:1679:				c->recv(c, NULL, 0);
+./utcp/utcp.c:1685:		if(timerisset(&c->rtrx_timeout) && timercmp(&c->rtrx_timeout, &now, <)) {
+./utcp/utcp.c:1690:		if(c->poll) {
+./utcp/utcp.c:1691:			if((c->state == ESTABLISHED || c->state == CLOSE_WAIT)) {
+./utcp/utcp.c:1692:				uint32_t len =  buffer_free(&c->sndbuf);
+./utcp/utcp.c:1695:					c->poll(c, len);
+./utcp/utcp.c:1697:			} else if(c->state == CLOSED) {
+./utcp/utcp.c:1698:				c->poll(c, 0);
+./utcp/utcp.c:1702:		if(timerisset(&c->conn_timeout) && timercmp(&c->conn_timeout, &next, <)) {
+./utcp/utcp.c:1703:			next = c->conn_timeout;
+./utcp/utcp.c:1706:		if(timerisset(&c->rtrx_timeout) && timercmp(&c->rtrx_timeout, &next, <)) {
+./utcp/utcp.c:1707:			next = c->rtrx_timeout;
+./utcp/utcp.c:1762:		if(!c->reapable)
+./utcp/utcp.c:1763:			if(c->recv) {
+./utcp/utcp.c:1764:				c->recv(c, NULL, 0);
+./utcp/utcp.c:1767:		buffer_exit(&c->rcvbuf);
+./utcp/utcp.c:1768:		buffer_exit(&c->sndbuf);
+./utcp/utcp.c:1822:	return c ? c->sndbuf.maxsize : 0;
+./utcp/utcp.c:1826:	if(c && (c->state == ESTABLISHED || c->state == CLOSE_WAIT)) {
+./utcp/utcp.c:1827:		return buffer_free(&c->sndbuf);
+./utcp/utcp.c:1838:	c->sndbuf.maxsize = size;
+./utcp/utcp.c:1840:	if(c->sndbuf.maxsize != size) {
+./utcp/utcp.c:1841:		c->sndbuf.maxsize = -1;
+./utcp/utcp.c:1846:	return c ? c->rcvbuf.maxsize : 0;
+./utcp/utcp.c:1850:	if(c && (c->state == ESTABLISHED || c->state == CLOSE_WAIT)) {
+./utcp/utcp.c:1851:		return buffer_free(&c->rcvbuf);
+./utcp/utcp.c:1862:	c->rcvbuf.maxsize = size;
+./utcp/utcp.c:1864:	if(c->rcvbuf.maxsize != size) {
+./utcp/utcp.c:1865:		c->rcvbuf.maxsize = -1;
+./utcp/utcp.c:1870:	return c ? c->nodelay : false;
+./utcp/utcp.c:1875:		c->nodelay = nodelay;
+./utcp/utcp.c:1880:	return c ? c->keepalive : false;
+./utcp/utcp.c:1885:		c->keepalive = keepalive;
+./utcp/utcp.c:1890:	return c ? seqdiff(c->snd.nxt, c->snd.una) : 0;
+./utcp/utcp.c:1895:		c->recv = recv;
+./utcp/utcp.c:1901:		c->poll = poll;
+./utcp/utcp.h:3:    Copyright (C) 2014 Guus Sliepen <guus@tinc-vpn.org>
+./utcp/test.c:89:	utcp_set_accept_cb(c->utcp, NULL, NULL);
+./utcp/.deps/libmeshlink_la-utcp.Plo:1:utcp/libmeshlink_la-utcp.lo: utcp/utcp.c /usr/include/stdc-predef.h \
+./utcp/.deps/libmeshlink_la-utcp.Plo:59:/usr/include/stdc-predef.h:
+./utcp/utcp_priv.h:3:    Copyright (C) 2014 Guus Sliepen <guus@tinc-vpn.org>
+./net.c:50:	logger(mesh, MESHLINK_INFO, "Closing connection with %s", c->name);
+./net.c:52:	c->status.active = false;
+./net.c:54:	if(c->node && c->node->connection == c) {
+./net.c:55:		c->node->connection = NULL;
+./net.c:58:	if(c->edge) {
+./net.c:60:			send_del_edge(mesh, mesh->everyone, c->edge);
+./net.c:63:		edge_del(mesh, c->edge);
+./net.c:64:		c->edge = NULL;
+./net.c:72:		if(report && c->node && !c->node->status.reachable) {
+./net.c:74:			e = lookup_edge(c->node, mesh->self);
+./net.c:83:	outgoing_t *outgoing = c->outgoing;
+./net.c:114:		if(c->node) {
+./net.c:115:			if(c->node->status.waitingforkey && c->node->last_req_key + mesh->pingtimeout <= mesh->loop.now.tv_sec) {
+./net.c:116:				send_req_key(mesh, c->node);
+./net.c:120:		if(c->last_ping_time + mesh->pingtimeout <= mesh->loop.now.tv_sec) {
+./net.c:121:			if(c->status.active) {
+./net.c:122:				if(c->status.pinged) {
+./net.c:123:					logger(mesh, MESHLINK_INFO, "%s didn't respond to PING in %ld seconds", c->name, (long)mesh->loop.now.tv_sec - c->last_ping_time);
+./net.c:124:				} else if(c->last_ping_time + mesh->pinginterval <= mesh->loop.now.tv_sec) {
+./net.c:131:				if(c->status.connecting) {
+./net.c:132:					logger(mesh, MESHLINK_WARNING, "Timeout while connecting to %s", c->name);
+./net.c:134:					logger(mesh, MESHLINK_WARNING, "Timeout from %s during authentication", c->name);
+./net.c:138:			terminate_connection(mesh, c, c->status.active);
+./net.c:380:			if(c->status.active) {
+./net.c:432:					if(c->status.active && c->node && c->node->devclass == devclass) {
+./net.c:523:					if(c->status.active && c->node && c->node->devclass == devclass) {
+./net.c:532:						if(c->outgoing && c->node && c->node->devclass >= devclass) {
+./net.c:533:							splay_insert(nodes, c->node);
+./net.c:559:				if(c->status.active && c->node) {
+./net.c:560:					splay_insert(nodes, c->node);
+./net.c:599:		terminate_connection(mesh, c, c->status.active);
+./net.c:617:		if(c->outgoing && !c->node) {
+./net.c:618:			c->last_ping_time = 0;
+./dropin.h:55:			(r)->tv_sec--, (r)->tv_usec += 1000000;\
+./protocol_auth.c:50:		sockaddr2str(&c->address, &host, &port);
+./protocol_auth.c:58:		if(c->address.sa.sa_family != AF_INET) {
+./protocol_auth.c:66:		memcpy(s4req + 2, &c->address.in.sin_port, 2);
+./protocol_auth.c:67:		memcpy(s4req + 4, &c->address.in.sin_addr, 4);
+./protocol_auth.c:74:		c->tcplen = 8;
+./protocol_auth.c:79:		int len = 3 + 6 + (c->address.sa.sa_family == AF_INET ? 4 : 16);
+./protocol_auth.c:80:		c->tcplen = 2;
+./protocol_auth.c:100:			c->tcplen += 2;
+./protocol_auth.c:109:		if(c->address.sa.sa_family == AF_INET) {
+./protocol_auth.c:111:			memcpy(s5req + i, &c->address.in.sin_addr, 4);
+./protocol_auth.c:113:			memcpy(s5req + i, &c->address.in.sin_port, 2);
+./protocol_auth.c:115:			c->tcplen += 10;
+./protocol_auth.c:116:		} else if(c->address.sa.sa_family == AF_INET6) {
+./protocol_auth.c:118:			memcpy(s5req + i, &c->address.in6.sin6_addr, 16);
+./protocol_auth.c:120:			memcpy(s5req + i, &c->address.in6.sin6_port, 2);
+./protocol_auth.c:122:			c->tcplen += 22;
+./protocol_auth.c:124:			logger(mesh, MESHLINK_ERROR, "Address family %hx not supported for SOCKS 5 proxies!", c->address.sa.sa_family);
+./protocol_auth.c:149:	if(mesh->proxytype && c->outgoing)
+./protocol_auth.c:161:		logger(mesh, MESHLINK_ERROR, "Received invalid key from invited node %s!\n", c->name);
+./protocol_auth.c:167:	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, c->name);
+./protocol_auth.c:170:		logger(mesh, MESHLINK_ERROR, "Host config file for %s already exists!\n", c->name);
+./protocol_auth.c:184:	logger(mesh, MESHLINK_INFO, "Key succesfully received from %s", c->name);
+./protocol_auth.c:188:	sptps_send_record(&c->sptps, 2, data, 0);
+./protocol_auth.c:197:	meshlink_handle_t *mesh = c->mesh;
+./protocol_auth.c:203:	if(type == 1 && c->status.invitation_used) {
+./protocol_auth.c:207:	if(type != 0 || len != 18 || c->status.invitation_used) {
+./protocol_auth.c:229:			logger(mesh, MESHLINK_ERROR, "Peer %s tried to use non-existing invitation %s\n", c->name, cookie);
+./protocol_auth.c:270:	free(c->name);
+./protocol_auth.c:271:	c->name = xstrdup(name);
+./protocol_auth.c:278:		sptps_send_record(&c->sptps, 0, buf, result);
+./protocol_auth.c:281:	sptps_send_record(&c->sptps, 1, buf, 0);
+./protocol_auth.c:285:	c->status.invitation_used = true;
+./protocol_auth.c:287:	logger(mesh, MESHLINK_INFO, "Invitation %s succesfully sent to %s", cookie, c->name);
+./protocol_auth.c:294:	if(sscanf(request, "%*d " MAX_STRING " %d.%d", name, &c->protocol_major, &c->protocol_minor) < 2) {
+./protocol_auth.c:295:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ID", c->name);
+./protocol_auth.c:303:			logger(mesh, MESHLINK_ERROR, "Got invitation from %s but we don't have an invitation key", c->name);
+./protocol_auth.c:307:		c->ecdsa = ecdsa_set_base64_public_key(name + 1);
+./protocol_auth.c:309:		if(!c->ecdsa) {
+./protocol_auth.c:310:			logger(mesh, MESHLINK_ERROR, "Got bad invitation from %s", c->name);
+./protocol_auth.c:314:		c->status.invitation = true;
+./protocol_auth.c:327:		c->protocol_minor = 2;
+./protocol_auth.c:328:		c->allow_request = 1;
+./protocol_auth.c:330:		return sptps_start(&c->sptps, c, false, false, mesh->invitation_key, c->ecdsa, meshlink_invitation_label, sizeof(meshlink_invitation_label), send_meta_sptps, receive_invitation_sptps);
+./protocol_auth.c:336:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ID", c->name, "invalid name");
+./protocol_auth.c:342:	if(c->outgoing) {
+./protocol_auth.c:343:		if(strcmp(c->name, name)) {
+./protocol_auth.c:344:			logger(mesh, MESHLINK_ERROR, "Peer is %s instead of %s", name, c->name);
+./protocol_auth.c:348:		if(c->name) {
+./protocol_auth.c:349:			free(c->name);
+./protocol_auth.c:352:		c->name = xstrdup(name);
+./protocol_auth.c:357:	if(c->protocol_major != mesh->self->connection->protocol_major) {
+./protocol_auth.c:359:		       c->name, c->protocol_major, c->protocol_minor);
+./protocol_auth.c:363:	if(!c->config_tree) {
+./protocol_auth.c:364:		init_configuration(&c->config_tree);
+./protocol_auth.c:366:		if(!read_host_config(mesh, c->config_tree, c->name)) {
+./protocol_auth.c:367:			logger(mesh, MESHLINK_ERROR, "Peer %s has unknown identity", c->name);
+./protocol_auth.c:374:	if(!ecdsa_active(c->ecdsa)) {
+./protocol_auth.c:375:		logger(mesh, MESHLINK_ERROR, "No key known for peer %s", c->name);
+./protocol_auth.c:377:		node_t *n = lookup_node(mesh, c->name);
+./protocol_auth.c:380:			logger(mesh, MESHLINK_INFO, "Requesting key from peer %s", c->name);
+./protocol_auth.c:389:	if(ecdsa_active(c->ecdsa) && c->protocol_minor < 2) {
+./protocol_auth.c:391:		       c->name, c->protocol_major, c->protocol_minor);
+./protocol_auth.c:395:	c->allow_request = ACK;
+./protocol_auth.c:396:	char label[sizeof(meshlink_tcp_label) + strlen(mesh->self->name) + strlen(c->name) + 2];
+./protocol_auth.c:398:	if(c->outgoing) {
+./protocol_auth.c:399:		snprintf(label, sizeof(label), "%s %s %s", meshlink_tcp_label, mesh->self->name, c->name);
+./protocol_auth.c:401:		snprintf(label, sizeof(label), "%s %s %s", meshlink_tcp_label, c->name, mesh->self->name);
+./protocol_auth.c:404:	return sptps_start(&c->sptps, c, c->outgoing, false, mesh->self->connection->ecdsa, c->ecdsa, label, sizeof(label) - 1, send_meta_sptps, receive_meta_sptps);
+./protocol_auth.c:412:		c->options |= OPTION_PMTU_DISCOVERY;
+./protocol_auth.c:415:	return send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
+./protocol_auth.c:436:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ACK", c->name);
+./protocol_auth.c:441:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ACK", c->name, "devclass invalid");
+./protocol_auth.c:447:	n = lookup_node(mesh, c->name);
+./protocol_auth.c:451:		n->name = xstrdup(c->name);
+./protocol_auth.c:459:				if(c->outgoing) {
+./protocol_auth.c:462:					c->outgoing = n->connection->outgoing;
+./protocol_auth.c:480:	c->node = n;
+./protocol_auth.c:482:	if(!(c->options & options & OPTION_PMTU_DISCOVERY)) {
+./protocol_auth.c:483:		c->options &= ~OPTION_PMTU_DISCOVERY;
+./protocol_auth.c:487:	c->options |= options;
+./protocol_auth.c:491:	c->allow_request = ALL;
+./protocol_auth.c:492:	c->status.active = true;
+./protocol_auth.c:494:	logger(mesh, MESHLINK_INFO, "Connection with %s activated", c->name);
+./protocol_auth.c:504:	c->edge = new_edge();
+./protocol_auth.c:505:	c->edge->from = mesh->self;
+./protocol_auth.c:506:	c->edge->to = n;
+./protocol_auth.c:507:	sockaddr2str(&c->address, &hisaddress, NULL);
+./protocol_auth.c:508:	c->edge->address = str2sockaddr(hisaddress, hisport);
+./protocol_auth.c:510:	c->edge->weight = dev_class_traits[devclass].edge_weight;
+./protocol_auth.c:511:	c->edge->connection = c;
+./protocol_auth.c:512:	c->edge->options = c->options;
+./protocol_auth.c:514:	edge_add(mesh, c->edge);
+./protocol_auth.c:518:	send_add_edge(mesh, mesh->everyone, c->edge);
+./net_socket.c:52:	int flags = fcntl(c->socket, F_GETFL);
+./net_socket.c:54:	if(fcntl(c->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
+./net_socket.c:55:		logger(c->mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "fcntl", strerror(errno));
+./net_socket.c:61:	if(ioctlsocket(c->socket, FIONBIO, &arg) != 0) {
+./net_socket.c:62:		logger(c->mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "ioctlsocket", sockstrerror(sockerrno));
+./net_socket.c:69:	setsockopt(c->socket, SOL_TCP, TCP_NODELAY, (void *)&nodelay, sizeof(nodelay));
+./net_socket.c:74:	setsockopt(c->socket, IPPROTO_IP, IP_TOS, (void *)&lowdelay, sizeof(lowdelay));
+./net_socket.c:82:		if(mesh->listen_socket[i].sa.sa.sa_family != c->address.sa.sa_family) {
+./net_socket.c:105:	if(bind(c->socket, &sa.sa, SALEN(sa.sa))) {
+./net_socket.c:283:	logger(mesh, MESHLINK_INFO, "Connected to %s", c->name);
+./net_socket.c:285:	c->last_ping_time = mesh->loop.now.tv_sec;
+./net_socket.c:286:	c->status.connecting = false;
+./net_socket.c:292:	if(c->outbuf.len <= c->outbuf.offset) {
+./net_socket.c:296:	ssize_t outlen = send(c->socket, c->outbuf.data + c->outbuf.offset, c->outbuf.len - c->outbuf.offset, MSG_NOSIGNAL);
+./net_socket.c:300:			logger(mesh, MESHLINK_INFO, "Connection closed by %s", c->name);
+./net_socket.c:302:			logger(mesh, MESHLINK_DEBUG, "Sending %lu bytes to %s would block", (unsigned long)(c->outbuf.len - c->outbuf.offset), c->name);
+./net_socket.c:305:			logger(mesh, MESHLINK_ERROR, "Could not send %lu bytes of data to %s: %s", (unsigned long)(c->outbuf.len - c->outbuf.offset), c->name, strerror(errno));
+./net_socket.c:308:		terminate_connection(mesh, c, c->status.active);
+./net_socket.c:312:	buffer_read(&c->outbuf, outlen);
+./net_socket.c:314:	if(!c->outbuf.len) {
+./net_socket.c:315:		io_set(&mesh->loop, &c->io, IO_READ);
+./net_socket.c:323:	if(c->status.connecting) {
+./net_socket.c:324:		c->status.connecting = false;
+./net_socket.c:328:		getsockopt(c->socket, SOL_SOCKET, SO_ERROR, (void *)&result, &len);
+./net_socket.c:333:			logger(mesh, MESHLINK_DEBUG, "Error while connecting to %s: %s", c->name, sockstrerror(result));
+./net_socket.c:447:	c->outgoing = outgoing;
+./net_socket.c:449:	memcpy(&c->address, outgoing->aip->ai_addr, outgoing->aip->ai_addrlen);
+./net_socket.c:452:	char *hostname = sockaddr2hostname(&c->address);
+./net_socket.c:457:		c->socket = socket(c->address.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
+./net_socket.c:469:		c->socket = socket(proxyai->ai_family, SOCK_STREAM, IPPROTO_TCP);
+./net_socket.c:473:	if(c->socket == -1) {
+./net_socket.c:474:		logger(mesh, MESHLINK_ERROR, "Creating socket for %s at %s failed: %s", c->name, c->hostname, sockstrerror(sockerrno));
+./net_socket.c:483:	fcntl(c->socket, F_SETFD, FD_CLOEXEC);
+./net_socket.c:488:	if(c->address.sa.sa_family == AF_INET6) {
+./net_socket.c:490:		setsockopt(c->socket, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
+./net_socket.c:500:		result = connect(c->socket, &c->address.sa, SALEN(c->address.sa));
+./net_socket.c:502:		result = connect(c->socket, proxyai->ai_addr, proxyai->ai_addrlen);
+./net_socket.c:515:	c->status.connecting = true;
+./net_socket.c:516:	c->name = xstrdup(outgoing->name);
+./net_socket.c:517:	c->outcompression = mesh->self->connection->outcompression;
+./net_socket.c:518:	c->last_ping_time = mesh->loop.now.tv_sec;
+./net_socket.c:522:	io_add(&mesh->loop, &c->io, handle_meta_io, c, c->socket, IO_READ | IO_WRITE);
+./net_socket.c:646:	c->name = xstrdup("<unknown>");
+./net_socket.c:647:	c->outcompression = mesh->self->connection->outcompression;
+./net_socket.c:649:	c->address = sa;
+./net_socket.c:650:	c->socket = fd;
+./net_socket.c:651:	c->last_ping_time = mesh->loop.now.tv_sec;
+./net_socket.c:654:	logger(mesh, MESHLINK_INFO, "Connection from %s", c->hostname);
+./net_socket.c:657:	io_add(&mesh->loop, &c->io, handle_meta_io, c, c->socket, IO_READ);
+./net_socket.c:663:	c->allow_request = ID;
+./net_socket.c:739:		if(c->outgoing && c->outgoing->timeout == -1) {
+./net_socket.c:740:			c->outgoing = NULL;
+./net_socket.c:741:			logger(mesh, MESHLINK_INFO, "No more outgoing connection to %s", c->name);
+./net_socket.c:742:			terminate_connection(mesh, c, c->status.active);
+./CMakeLists.txt:43:set(CMAKE_C_FLAGS           "${CMAKE_C_FLAGS} -pedantic-errors -Wall -fPIC -g -std=c11")
+./graph.c:68:		c->status.mst = false;
+./meta.c:34:	meshlink_handle_t *mesh = c->mesh;
+./meta.c:41:	buffer_add(&c->outbuf, (const char *)buffer, length);
+./meta.c:42:	io_set(&mesh->loop, &c->io, IO_READ | IO_WRITE);
+./meta.c:53:	logger(mesh, MESHLINK_DEBUG, "Sending %d bytes of metadata to %s", length, c->name);
+./meta.c:55:	if(c->allow_request == ID) {
+./meta.c:56:		buffer_add(&c->outbuf, buffer, length);
+./meta.c:57:		io_set(&mesh->loop, &c->io, IO_READ | IO_WRITE);
+./meta.c:61:	return sptps_send_record(&c->sptps, 0, buffer, length);
+./meta.c:66:		if(c != from && c->status.active) {
+./meta.c:73:	meshlink_handle_t *mesh = c->mesh;
+./meta.c:82:		if(c->allow_request == ACK) {
+./meta.c:95:	if(c->tcplen) {
+./meta.c:114:	inlen = recv(c->socket, inbuf, sizeof(inbuf), 0);
+./meta.c:118:			logger(mesh, MESHLINK_INFO, "Connection closed by %s", c->name);
+./meta.c:122:			logger(mesh, MESHLINK_ERROR, "Metadata socket read error for %s: %s", c->name, sockstrerror(sockerrno));
+./meta.c:128:	if(c->allow_request == ID) {
+./meta.c:129:		buffer_add(&c->inbuf, inbuf, inlen);
+./meta.c:131:		char *request = buffer_readline(&c->inbuf);
+./meta.c:134:			if(!receive_request(mesh, c, request) || c->allow_request == ID) {
+./meta.c:138:			int left = c->inbuf.len - c->inbuf.offset;
+./meta.c:142:				return sptps_receive_data(&c->sptps, buffer_read(&c->inbuf, left), left);
+./meta.c:148:		if(c->inbuf.len >= sizeof(inbuf)) {
+./meta.c:149:			logger(mesh, MESHLINK_ERROR, "Input buffer full for %s", c->name);
+./meta.c:156:	return sptps_receive_data(&c->sptps, inbuf, inlen);
+./protocol_misc.c:41:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "STATUS", c->name);
+./protocol_misc.c:45:	logger(mesh, MESHLINK_INFO, "Status message from %s: %d: %s", c->name, statusno, statusstring);
+./protocol_misc.c:55:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ERROR", c->name);
+./protocol_misc.c:59:	logger(mesh, MESHLINK_INFO, "Error message from %s: %d: %s", c->name, err, errorstring);
+./protocol_misc.c:72:	c->status.pinged = true;
+./protocol_misc.c:73:	c->last_ping_time = mesh->loop.now.tv_sec;
+./protocol_misc.c:90:	c->status.pinged = false;
+./protocol_misc.c:94:	if(c->outgoing) {
+./protocol_misc.c:95:		c->outgoing->timeout = 0;
+./protocol_misc.c:96:		c->outgoing->cfg = NULL;
+./protocol_misc.c:98:		if(c->outgoing->ai) {
+./protocol_misc.c:99:			freeaddrinfo(c->outgoing->ai);
+./protocol_misc.c:102:		c->outgoing->ai = NULL;
+./protocol_misc.c:103:		c->outgoing->aip = NULL;
+./protocol_misc.c:115:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "PACKET", c->name);
+./Makefile.in:1101:install-exec: install-exec-am
+./Makefile.in:1106:	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
+./Makefile.in:1165:install-exec-am: install-libLTLIBRARIES
+./Makefile.in:1215:	install-exec-am install-html install-html-am install-info \
+./Makefile:90:build_triplet = x86_64-pc-linux-gnu
+./Makefile:91:host_triplet = x86_64-pc-linux-gnu
+./Makefile:330:build = x86_64-pc-linux-gnu
+./Makefile:341:host = x86_64-pc-linux-gnu
+./Makefile:1101:install-exec: install-exec-am
+./Makefile:1106:	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
+./Makefile:1165:install-exec-am: install-libLTLIBRARIES
+./Makefile:1215:	install-exec-am install-html install-html-am install-info \
+./ed25519/.deps/libmeshlink_la-verify.Plo:2: /usr/include/stdc-predef.h ed25519/ed25519.h \
+./ed25519/.deps/libmeshlink_la-verify.Plo:13:/usr/include/stdc-predef.h:
+./ed25519/.deps/libmeshlink_la-sign.Plo:1:ed25519/libmeshlink_la-sign.lo: ed25519/sign.c /usr/include/stdc-predef.h \
+./ed25519/.deps/libmeshlink_la-sign.Plo:12:/usr/include/stdc-predef.h:
+./ed25519/.deps/libmeshlink_la-key_exchange.Plo:2: /usr/include/stdc-predef.h ed25519/ed25519.h \
+./ed25519/.deps/libmeshlink_la-key_exchange.Plo:12:/usr/include/stdc-predef.h:
+./ed25519/.deps/libmeshlink_la-ecdsa.Plo:2: /usr/include/stdc-predef.h ed25519/../system.h ed25519/../../config.h \
+./ed25519/.deps/libmeshlink_la-ecdsa.Plo:105:/usr/include/stdc-predef.h:
+./ed25519/.deps/libmeshlink_la-ecdh.Plo:1:ed25519/libmeshlink_la-ecdh.lo: ed25519/ecdh.c /usr/include/stdc-predef.h \
+./ed25519/.deps/libmeshlink_la-ecdh.Plo:97:/usr/include/stdc-predef.h:
+./ed25519/.deps/libmeshlink_la-sha512.Plo:2: /usr/include/stdc-predef.h ed25519/fixedint.h \
+./ed25519/.deps/libmeshlink_la-sha512.Plo:11:/usr/include/stdc-predef.h:
+./ed25519/.deps/libmeshlink_la-ecdsagen.Plo:2: /usr/include/stdc-predef.h ed25519/../system.h ed25519/../../config.h \
+./ed25519/.deps/libmeshlink_la-ecdsagen.Plo:97:/usr/include/stdc-predef.h:
+./ed25519/.deps/libmeshlink_la-fe.Plo:1:ed25519/libmeshlink_la-fe.lo: ed25519/fe.c /usr/include/stdc-predef.h \
+./ed25519/.deps/libmeshlink_la-fe.Plo:10:/usr/include/stdc-predef.h:
+./ed25519/.deps/libmeshlink_la-keypair.Plo:2: /usr/include/stdc-predef.h ed25519/ed25519.h \
+./ed25519/.deps/libmeshlink_la-keypair.Plo:12:/usr/include/stdc-predef.h:
+./ed25519/.deps/libmeshlink_la-seed.Plo:1:ed25519/libmeshlink_la-seed.lo: ed25519/seed.c /usr/include/stdc-predef.h \
+./ed25519/.deps/libmeshlink_la-seed.Plo:17:/usr/include/stdc-predef.h:
+./ed25519/.deps/libmeshlink_la-sc.Plo:1:ed25519/libmeshlink_la-sc.lo: ed25519/sc.c /usr/include/stdc-predef.h \
+./ed25519/.deps/libmeshlink_la-sc.Plo:10:/usr/include/stdc-predef.h:
+./ed25519/.deps/libmeshlink_la-add_scalar.Plo:2: /usr/include/stdc-predef.h ed25519/ed25519.h \
+./ed25519/.deps/libmeshlink_la-add_scalar.Plo:12:/usr/include/stdc-predef.h:
+./ed25519/.deps/libmeshlink_la-ge.Plo:1:ed25519/libmeshlink_la-ge.lo: ed25519/ge.c /usr/include/stdc-predef.h \
+./ed25519/.deps/libmeshlink_la-ge.Plo:10:/usr/include/stdc-predef.h:
+./protocol_edge.c:68:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ADD_EDGE", c->name);
+./protocol_edge.c:75:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ADD_EDGE", c->name, "invalid name");
+./protocol_edge.c:82:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ADD_EDGE", c->name, "from devclass invalid");
+./protocol_edge.c:87:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ADD_EDGE", c->name, "to devclass invalid");
+./protocol_edge.c:132:				       "ADD_EDGE", c->name);
+./protocol_edge.c:137:				       "ADD_EDGE", c->name);
+./protocol_edge.c:146:		       "ADD_EDGE", c->name);
+./protocol_edge.c:187:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "DEL_EDGE", c->name);
+./protocol_edge.c:194:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "DEL_EDGE", c->name, "invalid name");
+./protocol_edge.c:209:		       "DEL_EDGE", c->name);
+./protocol_edge.c:215:		       "DEL_EDGE", c->name);
+./protocol_edge.c:225:		       "DEL_EDGE", c->name);
+./protocol_edge.c:231:		       "DEL_EDGE", c->name);
+Binary file ./.libs/libmeshlink.so.0.0.0 matches
+Binary file ./.libs/libmeshlink_la-net_packet.o matches
+Binary file ./.libs/libmeshlink.a matches
+Binary file ./libmeshlink_la-net_packet.o matches
+./connection.c:57:	sptps_stop(&c->sptps);
+./connection.c:58:	ecdsa_free(c->ecdsa);
+./connection.c:60:	buffer_clear(&c->inbuf);
+./connection.c:61:	buffer_clear(&c->outbuf);
+./connection.c:63:	if(c->io.cb) {
+./connection.c:67:	if(c->socket > 0) {
+./connection.c:68:		closesocket(c->socket);
+./connection.c:71:	free(c->name);
+./connection.c:73:	if(c->config_tree) {
+./connection.c:74:		exit_configuration(&c->config_tree);
+./connection.c:81:	c->mesh = mesh;
+./connection.c:86:	io_del(&mesh->loop, &c->io);
+./chacha-poly1305/.deps/libmeshlink_la-chacha-poly1305.Plo:2: chacha-poly1305/chacha-poly1305.c /usr/include/stdc-predef.h \
+./chacha-poly1305/.deps/libmeshlink_la-chacha-poly1305.Plo:99:/usr/include/stdc-predef.h:
+./chacha-poly1305/.deps/libmeshlink_la-poly1305.Plo:2: /usr/include/stdc-predef.h chacha-poly1305/../system.h \
+./chacha-poly1305/.deps/libmeshlink_la-poly1305.Plo:97:/usr/include/stdc-predef.h:
+./chacha-poly1305/.deps/libmeshlink_la-chacha.Plo:2: /usr/include/stdc-predef.h chacha-poly1305/../system.h \
+./chacha-poly1305/.deps/libmeshlink_la-chacha.Plo:97:/usr/include/stdc-predef.h:
+./protocol_key.c:50:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "KEY_CHANGED", c->name);
+./protocol_key.c:61:		logger(mesh, MESHLINK_ERROR, "Got %s from %s origin %s which does not exist", "KEY_CHANGED", c->name, name);
+./protocol_key.c:200:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "REQ_KEY", c->name);
+./protocol_key.c:205:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "REQ_KEY", c->name, "invalid name");
+./protocol_key.c:213:		       "REQ_KEY", c->name, from_name);
+./protocol_key.c:221:		       "REQ_KEY", c->name, to_name);
+./protocol_key.c:238:			       "REQ_KEY", c->name, to_name);
+./protocol_key.c:266:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ANS_KEY", c->name);
+./protocol_key.c:271:		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ANS_KEY", c->name, "invalid name");
+./protocol_key.c:279:		       "ANS_KEY", c->name, from_name);
+./protocol_key.c:287:		       "ANS_KEY", c->name, to_name);
+./protocol_key.c:296:			       "ANS_KEY", c->name, to_name);
+./meshlink.c:1194:			c->outgoing = NULL;
+./meshlink.c:2546:	return channel->c->flags;
+./net_setup.c:62:	if(ecdsa_active(c->ecdsa)) {
+./net_setup.c:68:	if(!c->config_tree) {
+./net_setup.c:69:		init_configuration(&c->config_tree);
+./net_setup.c:71:		if(!read_host_config(mesh, c->config_tree, c->name)) {
+./net_setup.c:78:	if(get_config_string(lookup_config(c->config_tree, "ECDSAPublicKey"), &p)) {
+./net_setup.c:79:		c->ecdsa = ecdsa_set_base64_public_key(p);
+./net_setup.c:81:		return c->ecdsa;
+./net_setup.c:485:			c->outgoing = NULL;
+./.deps/libmeshlink_la-hash.Plo:1:libmeshlink_la-hash.lo: hash.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-hash.Plo:94:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-route.Plo:1:libmeshlink_la-route.lo: route.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-route.Plo:100:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-devtools.Plo:1:libmeshlink_la-devtools.lo: devtools.c /usr/include/stdc-predef.h \
+./.deps/libmeshlink_la-devtools.Plo:101:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-netutl.Plo:1:libmeshlink_la-netutl.lo: netutl.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-netutl.Plo:100:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-protocol_misc.Plo:2: /usr/include/stdc-predef.h system.h ../config.h have.h \
+./.deps/libmeshlink_la-protocol_misc.Plo:101:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-logger.Plo:1:libmeshlink_la-logger.lo: logger.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-logger.Plo:99:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-prf.Plo:1:libmeshlink_la-prf.lo: prf.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-prf.Plo:94:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-net_packet.Plo:1:libmeshlink_la-net_packet.lo: net_packet.c /usr/include/stdc-predef.h \
+./.deps/libmeshlink_la-net_packet.Plo:100:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-protocol_auth.Plo:2: /usr/include/stdc-predef.h system.h ../config.h have.h \
+./.deps/libmeshlink_la-protocol_auth.Plo:102:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-conf.Plo:1:libmeshlink_la-conf.lo: conf.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-conf.Plo:101:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-connection.Plo:1:libmeshlink_la-connection.lo: connection.c /usr/include/stdc-predef.h \
+./.deps/libmeshlink_la-connection.Plo:100:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-net.Plo:1:libmeshlink_la-net.lo: net.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-net.Plo:102:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-splay_tree.Plo:1:libmeshlink_la-splay_tree.lo: splay_tree.c /usr/include/stdc-predef.h \
+./.deps/libmeshlink_la-splay_tree.Plo:94:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-list.Plo:1:libmeshlink_la-list.lo: list.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-list.Plo:94:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-net_socket.Plo:1:libmeshlink_la-net_socket.lo: net_socket.c /usr/include/stdc-predef.h \
+./.deps/libmeshlink_la-net_socket.Plo:100:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-node.Plo:1:libmeshlink_la-node.lo: node.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-node.Plo:100:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-buffer.Plo:1:libmeshlink_la-buffer.lo: buffer.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-buffer.Plo:94:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-protocol_edge.Plo:2: /usr/include/stdc-predef.h system.h ../config.h have.h \
+./.deps/libmeshlink_la-protocol_edge.Plo:101:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-event.Plo:1:libmeshlink_la-event.lo: event.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-event.Plo:100:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-discovery.Plo:1:libmeshlink_la-discovery.lo: discovery.c /usr/include/stdc-predef.h \
+./.deps/libmeshlink_la-discovery.Plo:109:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-protocol_key.Plo:1:libmeshlink_la-protocol_key.lo: protocol_key.c /usr/include/stdc-predef.h \
+./.deps/libmeshlink_la-protocol_key.Plo:100:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-sptps.Plo:1:libmeshlink_la-sptps.lo: sptps.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-sptps.Plo:99:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-protocol.Plo:1:libmeshlink_la-protocol.lo: protocol.c /usr/include/stdc-predef.h \
+./.deps/libmeshlink_la-protocol.Plo:100:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-utils.Plo:1:libmeshlink_la-utils.lo: utils.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-utils.Plo:101:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-fake-getnameinfo.Plo:2: /usr/include/stdc-predef.h system.h ../config.h have.h \
+./.deps/libmeshlink_la-fake-getnameinfo.Plo:94:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-edge.Plo:1:libmeshlink_la-edge.lo: edge.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-edge.Plo:101:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-meshlink.Plo:1:libmeshlink_la-meshlink.lo: meshlink.c /usr/include/stdc-predef.h \
+./.deps/libmeshlink_la-meshlink.Plo:102:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-dropin.Plo:1:libmeshlink_la-dropin.lo: dropin.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-dropin.Plo:94:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-fake-getaddrinfo.Plo:2: /usr/include/stdc-predef.h system.h ../config.h have.h \
+./.deps/libmeshlink_la-fake-getaddrinfo.Plo:95:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-graph.Plo:1:libmeshlink_la-graph.lo: graph.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-graph.Plo:100:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-meta.Plo:1:libmeshlink_la-meta.lo: meta.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-meta.Plo:100:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-crypto.Plo:1:libmeshlink_la-crypto.lo: crypto.c /usr/include/stdc-predef.h system.h \
+./.deps/libmeshlink_la-crypto.Plo:94:/usr/include/stdc-predef.h:
+./.deps/libmeshlink_la-net_setup.Plo:1:libmeshlink_la-net_setup.lo: net_setup.c /usr/include/stdc-predef.h \
+./.deps/libmeshlink_la-net_setup.Plo:100:/usr/include/stdc-predef.h:
+./protocol.c:82:		logger(mesh, MESHLINK_ERROR, "Output buffer overflow while sending request to %s", c->name);
+./protocol.c:86:	logger(mesh, MESHLINK_DEBUG, "Sending %s to %s: %s", request_name[atoi(request)], c->name, request);
+./protocol.c:110:	if(c->outgoing && mesh->proxytype == PROXY_HTTP && c->allow_request == ID) {
+./protocol.c:130:			logger(mesh, MESHLINK_DEBUG, "Unknown request from %s: %s", c->name, request);
+./protocol.c:133:			logger(mesh, MESHLINK_DEBUG, "Got %s from %s: %s", request_name[reqno], c->name, request);
+./protocol.c:136:		if((c->allow_request != ALL) && (c->allow_request != reqno)) {
+./protocol.c:137:			logger(mesh, MESHLINK_ERROR, "Unauthorized request from %s", c->name);
+./protocol.c:144:			logger(mesh, MESHLINK_ERROR, "Error while processing %s from %s", request_name[reqno], c->name);
+./protocol.c:148:		logger(mesh, MESHLINK_ERROR, "Bogus data received from %s", c->name);
+./net_packet.c:513:		if(c->status.active && c->status.mst && c != from->nexthop->connection) {
+./net_packet.c:514:			send_packet(mesh, c->node, packet);

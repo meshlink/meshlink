@@ -17,6 +17,11 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+#include <stdlib.h>
+#include <stdarg.h>
+#include <setjmp.h>
+#include <cmocka.h>
+#include <assert.h>
 #include "execute_tests.h"
 #include "test_cases.h"
 #include "pthread.h"
@@ -29,12 +34,97 @@
 #define PEER_ID  "1"
 #define NUT_ID   "2"
 
+static void test_case_meta_conn_01(void **state);
+static bool test_steps_meta_conn_01(void);
+static void test_case_meta_conn_02(void **state);
+static bool test_steps_meta_conn_02(void);
+static void test_case_meta_conn_03(void **state);
+static bool test_steps_meta_conn_03(void);
+static void test_case_meta_conn_04(void **state);
+static bool test_steps_meta_conn_04(void);
+static void test_case_meta_conn_05(void **state);
+static bool test_steps_meta_conn_05(void);
+
+/* State structure for Meta-connections Test Case #1 */
+static char *test_meta_conn_1_nodes[] = { "relay", "peer", "nut" };
+static black_box_state_t test_meta_conn_1_state = {
+    /* test_case_name = */ "test_case_meta_conn_01",
+    /* node_names = */ test_meta_conn_1_nodes,
+    /* num_nodes = */ 3,
+    /* test_result (defaulted to) = */ false
+};
+
+/* State structure for Meta-connections Test Case #2 */
+static char *test_meta_conn_2_nodes[] = { "relay", "peer", "nut" };
+static black_box_state_t test_meta_conn_2_state = {
+    /* test_case_name = */ "test_case_meta_conn_02",
+    /* node_names = */ test_meta_conn_2_nodes,
+    /* num_nodes = */ 3,
+    /* test_result (defaulted to) = */ false
+};
+
+/* State structure for Meta-connections Test Case #3 */
+static char *test_meta_conn_3_nodes[] = { "relay", "peer", "nut" };
+static black_box_state_t test_meta_conn_3_state = {
+    /* test_case_name = */ "test_case_meta_conn_03",
+    /* node_names = */ test_meta_conn_3_nodes,
+    /* num_nodes = */ 3,
+    /* test_result (defaulted to) = */ false
+};
+
+/* State structure for Meta-connections Test Case #4 */
+static char *test_meta_conn_4_nodes[] = { "peer", "nut" };
+static black_box_state_t test_meta_conn_4_state = {
+    /* test_case_name = */ "test_case_meta_conn_04",
+    /* node_names = */ test_meta_conn_4_nodes,
+    /* num_nodes = */ 2,
+    /* test_result (defaulted to) = */ false
+};
+
+/* State structure for Meta-connections Test Case #5 */
+static char *test_meta_conn_5_nodes[] = { "peer", "nut" };
+static black_box_state_t test_meta_conn_5_state = {
+    /* test_case_name = */ "test_case_meta_conn_05",
+    /* node_names = */ test_meta_conn_5_nodes,
+    /* num_nodes = */ 2,
+    /* test_result (defaulted to) = */ false
+};
+
+int black_box_group0_setup(void **state) {
+    char *nodes[] = { "peer", "relay", "nut"};
+    int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
+
+    printf("Creating Containers\n");
+    destroy_containers();
+    create_containers(nodes, num_nodes);
+
+    return 0;
+}
+
+int black_box_group0_teardown(void **state) {
+    printf("Destroying Containers\n");
+    destroy_containers();
+
+    return 0;
+}
+
+int black_box_all_nodes_setup(void **state) {
+    char *nodes[] = { "peer" };
+    int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
+
+    printf("Creating Containers\n");
+    destroy_containers();
+    create_containers(nodes, num_nodes);
+    printf("Created Containers\n");
+    return 0;
+}
+
 /* mutex for the common variable */
 static pthread_mutex_t lock;
 
 static bool meta_conn01_result;
 
-void meta_conn01_cb(mesh_event_payload_t payload) {
+static void meta_conn01_cb(mesh_event_payload_t payload) {
   char event_node_name[][10] = {"RELAY", "PEER", "NUT"};
   printf("%s : ", event_node_name[payload.client_id]);
 
@@ -60,7 +150,7 @@ void meta_conn01_cb(mesh_event_payload_t payload) {
 
 /* Execute Meta-connections Test Case # 1 - re-connection to peer after disconnection when
     connected via a third node */
-void test_case_meta_conn_01(void **state) {
+static void test_case_meta_conn_01(void **state) {
     execute_test(test_steps_meta_conn_01, state);
     return;
 }
@@ -76,7 +166,7 @@ void test_case_meta_conn_01(void **state) {
     Expected Result:
     NUT is re-connected to peer
 */
-bool test_steps_meta_conn_01(void) {
+static bool test_steps_meta_conn_01(void) {
     char *invite_peer, *invite_nut;
     bool result = false;
     int i;
@@ -124,7 +214,7 @@ bool test_steps_meta_conn_01(void) {
 
 static bool meta_conn02_result;
 
-void meta_conn02_cb(mesh_event_payload_t payload) {
+static void meta_conn02_cb(mesh_event_payload_t payload) {
   char event_node_name[][10] = {"RELAY", "PEER", "NUT"};
   printf("%s : ", event_node_name[payload.client_id]);
 
@@ -144,7 +234,7 @@ void meta_conn02_cb(mesh_event_payload_t payload) {
 }
 /* Execute Meta-connections Test Case # 2 - re-connection to peer via third node
     after changing IP of NUT and peer */
-void test_case_meta_conn_02(void **state) {
+static void test_case_meta_conn_02(void **state) {
     execute_test(test_steps_meta_conn_02, state);
     return;
 }
@@ -158,7 +248,7 @@ void test_case_meta_conn_02(void **state) {
     Expected Result:
     NUT is first disconnected from peer then automatically re-connected to peer
 */
-bool test_steps_meta_conn_02(void) {
+static bool test_steps_meta_conn_02(void) {
     char *invite_peer, *invite_nut;
     bool result = false;
     int i;
@@ -202,7 +292,7 @@ bool test_steps_meta_conn_02(void) {
 
 static bool meta_conn03_result;
 
-void meta_conn03_cb(mesh_event_payload_t payload) {
+static void meta_conn03_cb(mesh_event_payload_t payload) {
   char event_node_name[][10] = {"RELAY", "PEER", "NUT"};
   printf("%s : ", event_node_name[payload.client_id]);
 
@@ -227,7 +317,7 @@ void meta_conn03_cb(mesh_event_payload_t payload) {
 }
 /* Execute Meta-connections Test Case # 3 - re-connection to peer via third node
     after changing IP of peer */
-void test_case_meta_conn_03(void **state) {
+static void test_case_meta_conn_03(void **state) {
     execute_test(test_steps_meta_conn_03, state);
     return;
 }
@@ -241,7 +331,7 @@ void test_case_meta_conn_03(void **state) {
     Expected Result:
     NUT is first disconnected from peer then automatically re-connected to peer
 */
-bool test_steps_meta_conn_03(void) {
+static bool test_steps_meta_conn_03(void) {
     char *invite_peer, *invite_nut;
     bool result = false;
     int i;
@@ -282,7 +372,7 @@ bool test_steps_meta_conn_03(void) {
 static char *invite_peer = NULL;
 static bool meta_conn04 = false;
 
-void meta_conn04_cb(mesh_event_payload_t payload) {
+static void meta_conn04_cb(mesh_event_payload_t payload) {
   char event_node_name[][10] = {"PEER", "NUT"};
   printf("%s : ", event_node_name[payload.client_id]);
 
@@ -304,7 +394,7 @@ void meta_conn04_cb(mesh_event_payload_t payload) {
 
 /* Execute Meta-connections Test Case # 4 - re-connection to peer after changing IP of
     NUT and peer */
-void test_case_meta_conn_04(void **state) {
+static void test_case_meta_conn_04(void **state) {
     execute_test(test_steps_meta_conn_04, state);
     return;
 }
@@ -319,7 +409,7 @@ void test_case_meta_conn_04(void **state) {
     Expected Result:
     NUT is first disconnected from peer then automatically re-connected to peer
 */
-bool test_steps_meta_conn_04(void) {
+static bool test_steps_meta_conn_04(void) {
     bool result = false;
     char *import;
 
@@ -365,7 +455,7 @@ static char *invitation = NULL;
 
 static bool meta_conn05 = false;
 
-void meta_conn05_cb(mesh_event_payload_t payload) {
+static void meta_conn05_cb(mesh_event_payload_t payload) {
   char event_node_name[][10] = {"PEER", "NUT"};
   printf("%s : ", event_node_name[payload.client_id]);
 
@@ -386,7 +476,7 @@ void meta_conn05_cb(mesh_event_payload_t payload) {
 }
 
 /* Execute Meta-connections Test Case # 5 - re-connection to peer after changing IP of peer */
-void test_case_meta_conn_05(void **state) {
+static void test_case_meta_conn_05(void **state) {
     execute_test(test_steps_meta_conn_05, state);
     return;
 }
@@ -400,7 +490,7 @@ void test_case_meta_conn_05(void **state) {
     Expected Result:
     NUT is first disconnected from peer then automatically re-connected to peer
 */
-bool test_steps_meta_conn_05(void) {
+static bool test_steps_meta_conn_05(void) {
     bool result = false;
     char *import;
 
@@ -433,4 +523,22 @@ bool test_steps_meta_conn_05(void) {
     free(invitation);
     free(import);
     return result;
+}
+
+int test_meta_conn(void) {
+  const struct CMUnitTest blackbox_group0_tests[] = {
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_01, setup_test, teardown_test,
+            (void *)&test_meta_conn_1_state),
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_02, setup_test, teardown_test,
+            (void *)&test_meta_conn_2_state),
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_03, setup_test, teardown_test,
+            (void *)&test_meta_conn_3_state),
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_04, setup_test, teardown_test,
+            (void *)&test_meta_conn_4_state),
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_05, setup_test, teardown_test,
+            (void *)&test_meta_conn_5_state)
+  };
+  total_tests += sizeof(blackbox_group0_tests) / sizeof(blackbox_group0_tests[0]);
+
+  return cmocka_run_group_tests(blackbox_group0_tests, black_box_group0_setup, black_box_group0_teardown);
 }

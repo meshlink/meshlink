@@ -176,7 +176,7 @@ static void test_case_set_rec_cb_03(void **state) {
     execute_test(test_set_rec_cb_03, state);
     return;
 }
-/* Test Steps for meshlink_set_receive_cb Test Case # 1
+/* Test Steps for meshlink_set_receive_cb Test Case # 3
 
     Test Steps:
     1. Open NUT

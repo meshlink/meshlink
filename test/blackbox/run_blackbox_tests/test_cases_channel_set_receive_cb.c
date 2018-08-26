@@ -37,6 +37,9 @@
 /* Modify this to change the channel receive callback access buffer */
 #define TCP_TEST 8000
 
+static void test_case_set_channel_receive_cb_01(void **state);
+static bool test_steps_set_channel_receive_cb_01(void);
+static void test_case_set_channel_receive_cb_02(void **state);
 static bool test_steps_set_channel_receive_cb_02(void);
 static void test_case_set_channel_receive_cb_03(void **state);
 static bool test_steps_set_channel_receive_cb_03(void);
@@ -47,7 +50,8 @@ static void channel_poll(meshlink_handle_t *mesh, meshlink_channel_t *channel, s
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len);
 
 /* rec_stat gives us access to test whether the channel receive callback has been invoked or not */
-static bool rec_stat;
+static bool rec_stat = false;
+static bool accept_stat = false;
 
 /* mutex for the receive callback common resources */
 static pthread_mutex_t lock;
@@ -87,22 +91,20 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 
   return;
 }
-/* channel poll callback */
-static void channel_poll(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
-	fprintf(stderr, "Channel to '%s' connected\n", channel->node->name);
+static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	PRINT_TEST_CASE_MSG("accept_cb: (from %s on port %u) \n", channel->node->name, (unsigned int)port);
 
-	char *msg = "test\n";
-	fprintf(stderr, "Sending message to channel\n");
-  assert(meshlink_channel_send(mesh, channel, msg, strlen(msg) + 1));
-  fprintf(stderr, "meshlink_channel_send status: %s\n", meshlink_strerror(meshlink_errno));
-  meshlink_set_channel_poll_cb(mesh_handle, channel, NULL);
-  return;
-}
-/* channel accept callback */
-static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	fprintf(stderr, "Accepted incoming channel from '%s'\n", channel->node->name);
-	// Accept all channels
+	meshlink_set_channel_receive_cb(mesh, channel, channel_receive_cb);
 	return true;
+}
+
+static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+	(void)len;
+
+	meshlink_set_channel_poll_cb(mesh, channel, NULL);
+	if(meshlink_channel_send(mesh, channel, "Hello", 5) != 5) {
+		PRINT_TEST_CASE_MSG("Could not send whole message\n");
+	}
 }
 
 /* Execute meshlink_channel_set_receive_cb Test Case # 1 */
@@ -121,57 +123,54 @@ static void test_case_set_channel_receive_cb_01(void **state) {
 */
 static bool test_steps_set_channel_receive_cb_01(void) {
   meshlink_destroy("channelreceiveconf");
-  fprintf(stderr, "[ channel receive 01 ] Opening NUT\n");
-  /* Set up logging for Meshlink */
+  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
   /* Create meshlink instance */
   meshlink_handle_t *mesh_handle = meshlink_open("channelreceiveconf", "nut", "node_sim", 1);
   fprintf(stderr, "meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
   assert(mesh_handle != NULL);
-
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("setting channel_accept callback for NUT\n");
-  meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
-  sleep(1);
-
+  meshlink_set_channel_accept_cb(mesh_handle, accept_cb);
   PRINT_TEST_CASE_MSG("Starting NUT\n");
   assert(meshlink_start(mesh_handle));
+  sleep(1);
 
   meshlink_node_t *node = meshlink_get_self(mesh_handle);
   assert(node != NULL);
-  sleep(1);
-  PRINT_TEST_CASE_MSG("Opening channel for NUT(ourself)\n");
-  meshlink_channel_t *channel = meshlink_channel_open(mesh_handle, node, PORT, NULL, NULL, 0);
-  assert(channel != NULL);
 
-  /* Making the rec_stat false before opening channel */
-  pthread_mutex_lock(&lock);
   rec_stat = false;
-  pthread_mutex_unlock(&lock);
+  accept_stat = false;
+	meshlink_channel_t *channel = meshlink_channel_open(mesh_handle, node, 8000, NULL, NULL, 0);
+	//meshlink_set_channel_receive_cb(mesh_handle, channel, channel_receive_cb);
+	meshlink_set_channel_poll_cb(mesh_handle, channel, poll_cb);
+  for(int i = 0; i < 20; i++) {
+		sleep(1);
 
-  fprintf(stderr, "[ channel receive 01 ] Setting channel for NUT using meshlink_set_channel_receive_cb API\n");
-  meshlink_set_channel_receive_cb(mesh_handle, channel, channel_receive_cb);
+		if(accept_stat) {
+			break;
+		}
+	}
+	for(int i = 0; i < 20; i++) {
+		sleep(1);
 
-  meshlink_set_channel_poll_cb(mesh_handle, channel, channel_poll);
-  sleep(2);
+		if(rec_stat) {
+			break;
+		}
+	}
 
-  pthread_mutex_lock(&lock);
-  bool ret = rec_stat;
-  pthread_mutex_unlock(&lock);
+	meshlink_channel_close(mesh_handle, channel);
+	meshlink_stop(mesh_handle);
+	meshlink_close(mesh_handle);
+	meshlink_destroy("channelreceiveconf");
 
-  if(ret) {
-    PRINT_TEST_CASE_MSG("receive callback invoked correctly\n");
-  } else {
-    PRINT_TEST_CASE_MSG("receive callback didnt invoke after setting using meshlink_set_channel_receive_cb\n");
-  }
-  meshlink_channel_close(mesh_handle, channel);
-  meshlink_stop(mesh_handle);
-  meshlink_close(mesh_handle);
-  meshlink_destroy("channelreceiveconf");
-
-  return ret;
+	if(!rec_stat) {
+		fprintf(stderr, "NUT didn't respond to the channel message for itself\n");
+		return false;
+	}
+	else {
+		fprintf(stderr, "NUT responds to the channel message for itself\n");
+		return true;
+	}
 }
 
 /* Execute meshlink_channel_set_receive_cb Test Case # 2 */
@@ -203,7 +202,7 @@ static bool test_steps_set_channel_receive_cb_02(void) {
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   PRINT_TEST_CASE_MSG("disabling channel_accept callback for NUT\n");
-  meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
+  meshlink_set_channel_accept_cb(mesh_handle, accept_cb);
 
   PRINT_TEST_CASE_MSG("Starting NUT\n");
   assert(meshlink_start(mesh_handle));
@@ -214,10 +213,10 @@ static bool test_steps_set_channel_receive_cb_02(void) {
   PRINT_TEST_CASE_MSG("Opening channel for NUT(ourself) UDP semantic\n");
   meshlink_channel_t *channel = meshlink_channel_open_ex(mesh_handle, node, 8000, NULL, NULL, 0, MESHLINK_CHANNEL_UDP);
   assert(channel != NULL);
-  meshlink_set_channel_poll_cb(mesh_handle, channel, channel_poll);
+  meshlink_set_channel_poll_cb(mesh_handle, channel, poll_cb);
 
   PRINT_TEST_CASE_MSG("Setting channel for NUT using meshlink_set_channel_receive_cb API\n");
-  meshlink_set_channel_receive(NULL, channel, channel_receive_cb);
+  meshlink_set_channel_receive_cb(NULL, channel, channel_receive_cb);
 
   if(meshlink_errno == MESHLINK_EINVAL) {
     PRINT_TEST_CASE_MSG("receive callback reported error successfully when NULL is passed as mesh argument\n");
@@ -264,8 +263,8 @@ static bool test_steps_set_channel_receive_cb_03(void) {
   /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  fPRINT_TEST_CASE_MSG("disabling channel_accept callback for NUT\n");
-  meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
+  PRINT_TEST_CASE_MSG("disabling channel_accept callback for NUT\n");
+  meshlink_set_channel_accept_cb(mesh_handle, accept_cb);
 
   PRINT_TEST_CASE_MSG("Starting NUT\n");
   assert(meshlink_start(mesh_handle));

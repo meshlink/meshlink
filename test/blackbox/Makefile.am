@@ -6,8 +6,6 @@ SUBDIRS = \
 	test_case_meta_conn_03 \
 	test_case_meta_conn_04 \
 	test_case_meta_conn_05 \
-  test_case_discovery_01 \
-  test_case_discovery_02 \
 	test_case_set_status_cb_01 \
 	test_case_set_status_cb_02 \
 	test_case_set_log_cb_01 \

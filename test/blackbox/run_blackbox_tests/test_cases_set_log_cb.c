@@ -182,10 +182,10 @@ static bool test_set_log_cb_02(void) {
   meshlink_set_log_cb(NULL, 1000, NULL);
 
   if(meshlink_errno != MESHLINK_EINVAL) {
-    fprintf(stderr, "[ log_cb 01]No proper reporting for invalid level\n");
+    PRINT_TEST_CASE_MSG("No proper reporting for invalid level\n");
     return false;
   } else {
-    fprintf(stderr, "[ log_cb 01]No proper reporting for invalid level\n");
+    PRINT_TEST_CASE_MSG("No proper reporting for invalid level\n");
     return true;
   }
 }

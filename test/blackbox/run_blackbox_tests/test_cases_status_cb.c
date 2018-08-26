@@ -116,20 +116,15 @@ static void test_case_set_status_cb_01(void **state) {
 static bool test_set_status_cb_01(void) {
   meshlink_destroy("set_status_cb_conf");
 
-  fprintf(stderr, "[ status_cb 01] Running relay node\n");
+  PRINT_TEST_CASE_MSG("Running relay node\n");
   /* generate invite in relay container */
   char *invite_nut = invite_in_container("relay", "nut");
   node_sim_in_container("relay", "1", NULL);
 
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
-  /* Create meshlink instance */
   mesh_handle = meshlink_open("joinconf", "nut", "node_sim", 1);
   PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
   assert(mesh_handle);
-
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Set up callback for node status (reachable / unreachable) */
@@ -137,29 +132,25 @@ static bool test_set_status_cb_01(void) {
   status = false;
   pthread_mutex_unlock(&lock);
   meshlink_set_node_status_cb(mesh_handle, status_cb);
-
   sleep(2);
+
   /*Joining the NUT with relay*/
   assert(meshlink_join(mesh_handle, invite_nut));
-
   PRINT_TEST_CASE_MSG("meshlink_join status: %s\n", meshlink_strerror(meshlink_errno));
   assert(meshlink_start(mesh_handle));
-
   sleep(2);
-
-  free(invite_nut);
 
   pthread_mutex_lock(&lock);
   bool ret = status;
   pthread_mutex_unlock(&lock);
-
-  if (ret) {
-    fprintf(stderr, "[ status_cb 01] Status callback invoked when 'relay' is reachable or unreachable\n");
+  if(ret) {
+    PRINT_TEST_CASE_MSG("Status callback invoked when 'relay' is reachable or unreachable\n");
   }
   else {
-    fprintf(stderr, "[ status_cb 01] Status callback not invoked when 'relay' is reachable or unreachable\n");
+    PRINT_TEST_CASE_MSG("Status callback not invoked when 'relay' is reachable or unreachable\n");
   }
 
+  free(invite_nut);
   meshlink_stop(mesh_handle);
   meshlink_close(mesh_handle);
   meshlink_destroy("set_status_cb_conf");
@@ -188,14 +179,13 @@ static bool test_set_status_cb_02(void) {
   assert(mesh_handle);
 
   meshlink_errno_t meshlink_errno_buff = meshlink_errno;
-  fprintf(stderr, "[ status 02 ]Setting callback API with mesh handle as NULL\n");
+  PRINT_TEST_CASE_MSG("Setting callback API with mesh handle as NULL\n");
   meshlink_set_node_status_cb(NULL, status_cb);
-  if ( MESHLINK_EINVAL == meshlink_errno ) {
-    fprintf(stderr, "[ status 02 ]Setting callback API with mesh handle as NULL reported SUCCESSFULY\n");
+  if(MESHLINK_EINVAL == meshlink_errno ) {
+    PRINT_TEST_CASE_MSG("Setting callback API with mesh handle as NULL reported SUCCESSFULY\n");
     return true;
-  }
-  else {
-    fprintf(stderr, "[ status 02 ]API with mesh handle as NULL failured to report error\n");
+  } else {
+    PRINT_TEST_CASE_MSG("API with mesh handle as NULL failured to report error\n");
     return false;
   }
 }

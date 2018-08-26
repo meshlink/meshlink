@@ -1,7 +1,7 @@
 /*===================================================================================*/
 /*************************************************************************************/
 /**
- * @file      test_cases_start.c -- Execution of specific meshlink black box test cases
+ * @file      test_cases_channel_shutdown.h -- Execution of specific meshlink black box test cases
  * @see
  * @author    Sri Harsha K, sriharsha@elear.solutions
  * @copyright 2017  Guus Sliepen <guus@meshlink.io>
@@ -20,20 +20,17 @@
  */
 /*************************************************************************************/
 /*===================================================================================*/
-#ifndef TEST_CASES_START_H
-#define TEST_CASES_START_H
+#ifndef TEST_CASES_DEFAULT_BLACKLIST_H
+#define TEST_CASES_DEFAULT_BLACKLIST_H
 
 /*************************************************************************************
  *                          INCLUDES                                                 *
  *************************************************************************************/
 #include <stdbool.h>
-
 /*************************************************************************************
  *                          PUBLIC FUNCTIONS                                         *
  *************************************************************************************/
-extern int test_meshlink_start(void);
+extern int test_meshlink_default_blacklist(void);
 extern int total_tests;
-
-
 
 #endif
