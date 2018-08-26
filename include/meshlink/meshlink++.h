@@ -479,6 +479,14 @@ namespace meshlink {
             return meshlink_import(handle, data);
         }
 
+        uint32_t get_canonical_addresses(canonical_address **addresses, node *node) const {
+            return meshlink_get_canonical_addresses(addresses, handle, node);
+        }
+
+        static void free_canonical_addresses(canonical_address *addresses, uint32_t size) {
+            meshlink_free_canonical_addresses(addresses, size);
+        }
+
         /// Add connection addresses for the given node.
         /** This function adds network addresses for the given node, that will be used for connection establishment.
          *

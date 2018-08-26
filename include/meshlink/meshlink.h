@@ -456,6 +456,19 @@ extern bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len,
  */
 extern bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len, const void *signature, size_t siglen);
 
+/// Get the connection addresses for the given node.
+/** Returns an array of addresses for to given node, that will be used for connection establishment.
+ *  To free the allocated address array, call meshlink_free_canonical_addresses.
+ *
+ *  @param addresses    A pointer to the address array that's going to be allocated.
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A pointer to a meshlink_node_t describing the node.
+ *
+ *  @return             The size of the allocated address array.
+ */
+extern uint32_t meshlink_get_canonical_addresses(meshlink_canonical_address_t **addresses, meshlink_handle_t *mesh, meshlink_node_t *node);
+extern void meshlink_free_canonical_addresses(meshlink_canonical_address_t *addresses, uint32_t size);
+
 /// Add connection addresses for the given node.
 /** This function adds network addresses for the given node, that will be used for connection establishment.
  *
