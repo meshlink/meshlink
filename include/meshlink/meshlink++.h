@@ -307,7 +307,7 @@ namespace meshlink {
          *  @return             A pointer to a meshlink::node which represents the requested node,
          *                      or NULL if the requested node does not exist.
          */
-        node *get_node(const char *name) {
+        node *get_node(const char *name) const {
             return (node *)meshlink_get_node(handle, name);
         }
 
@@ -316,7 +316,7 @@ namespace meshlink {
          *
          *  @return             A pointer to a meshlink::node which represents the local node.
          */
-        node *get_self() {
+        node *get_self() const {
             return (node *)meshlink_get_self(handle);
         }
 
@@ -329,7 +329,7 @@ namespace meshlink {
          *  @return             The number of known nodes, or -1 in case of an error.
          *                      This can be larger than nmemb, in which case not all nodes were stored in the nodes array.
          */
-        node **get_all_nodes(node **nodes, size_t *nmemb) {
+        node **get_all_nodes(node **nodes, size_t *nmemb) const {
             return (node **)meshlink_get_all_nodes(handle, (meshlink_node_t **)nodes, nmemb);
         }
 
@@ -344,7 +344,7 @@ namespace meshlink {
          *
          *  @return             This function returns true if the signature is valid, false otherwise.
          */
-        bool sign(const void *data, size_t len, void *signature, size_t *siglen) {
+        bool sign(const void *data, size_t len, void *signature, size_t *siglen) const {
             return meshlink_sign(handle, data, len, signature, siglen);
         }
 
@@ -359,7 +359,7 @@ namespace meshlink {
          *
          *  @return             This function returns true if the signature is valid, false otherwise.
          */
-        bool verify(node *source, const void *data, size_t len, const void *signature, size_t siglen) {
+        bool verify(node *source, const void *data, size_t len, const void *signature, size_t siglen) const {
             return meshlink_verify(handle, source, data, len, signature, siglen);
         }
 
@@ -401,7 +401,7 @@ namespace meshlink {
          *
          *  @return              This function returns the port number, or -1 in case of an error.
          */
-        int get_port() {
+        int get_port() const {
             return meshlink_get_port(handle);
         }
 
@@ -460,7 +460,7 @@ namespace meshlink {
          *
          *  @return             This function returns a string that contains the exported key and addresses.
          */
-        std::string export_key() {
+        std::string export_key() const {
             char* key = meshlink_export(handle);
             std::string key_str = std::string( key );
             meshlink_free( key );
@@ -571,7 +571,7 @@ namespace meshlink {
          *  @return             True on success, false on error. On error, meshlink_errno is set and max parameter
          *                      is not set to a valid value.
          */
-        bool channel_get_cwnd_max(channel *channel, uint32_t *max) {
+        bool channel_get_cwnd_max(channel *channel, uint32_t *max) const {
             return meshlink_channel_get_cwnd_max(handle, channel, max);
         }
 
@@ -594,7 +594,7 @@ namespace meshlink {
          *
          *  @return             True on success, false on error. On error, meshlink_errno is set.
          */
-        bool channel_get_rtrx_tolerance(channel *channel, uint32_t *tolerance) {
+        bool channel_get_rtrx_tolerance(channel *channel, uint32_t *tolerance) const {
             return meshlink_channel_get_rtrx_tolerance(handle, channel, tolerance);
         }
 
