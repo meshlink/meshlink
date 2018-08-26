@@ -456,16 +456,15 @@ extern bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len,
  */
 extern bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len, const void *signature, size_t siglen);
 
-/// Add an Address for the given node.
-/** This function adds an Address for the given node, which will be used for invitation URLs.
+/// Add connection addresses for the given node.
+/** This function adds network addresses for the given node, that will be used for connection establishment.
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param node         A pointer to a meshlink_node_t describing the node.
  *  @param addresses    Array of hostnames at which this node should be available.
- *            The caller must free the array when this function returns.
- *  @param nmemb    Number of elements in the addresses array.
+ *  @param nmemb        Number of elements in the addresses array.
  *
- *  @return             This function returns true if the address was added, false otherwise.
+ *  @return             This function returns true if the address were added, false otherwise.
  */
 extern bool meshlink_add_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t *addresses, size_t nmemb);
 

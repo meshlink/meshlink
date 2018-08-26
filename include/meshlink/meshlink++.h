@@ -479,13 +479,12 @@ namespace meshlink {
             return meshlink_import(handle, data);
         }
 
-        /// Add an Address for the given node.
-        /** This function adds an Address for the given node, which will be used for invitation URLs.
+        /// Add connection addresses for the given node.
+        /** This function adds network addresses for the given node, that will be used for connection establishment.
          *
          *  @param mesh         A handle which represents an instance of MeshLink.
          *  @param node         A pointer to a meshlink_node_t describing the node.
          *  @param addresses    Array of hostnames at which this node should be available.
-         *                      The caller must free the array when this function returns.
          *  @param nmemb        Number of elements in the addresses array.
          *
          *  @return             This function returns true if the addresses were added, false otherwise.
