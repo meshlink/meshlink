@@ -1612,7 +1612,7 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
     return mesh->invitation_key;
 }
 
-bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t *addresses, size_t nmemb) {
+bool meshlink_add_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t *addresses, size_t nmemb) {
     if(!mesh || !node || !addresses) {
         meshlink_errno = MESHLINK_EINVAL;
         return false;
