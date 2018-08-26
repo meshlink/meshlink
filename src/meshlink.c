@@ -1612,7 +1612,7 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
     return mesh->invitation_key;
 }
 
-uint32_t meshlink_get_canonical_addresses(meshlink_canonical_address_t **addresses, meshlink_handle_t *mesh, meshlink_node_t *node) {
+uint32_t meshlink_get_canonical_addresses(meshlink_address_t **addresses, meshlink_handle_t *mesh, meshlink_node_t *node) {
     if(!mesh || !node || !addresses) {
         meshlink_errno = MESHLINK_EINVAL;
         return 0;
@@ -1639,10 +1639,10 @@ uint32_t meshlink_get_canonical_addresses(meshlink_canonical_address_t **address
 
     // allocate result and load address configurations now that the count is known
     if( count ) {
-        *addresses = (meshlink_canonical_address_t*) malloc( count * sizeof( meshlink_canonical_address_t ) );
+        *addresses = (meshlink_address_t*) malloc( count * sizeof( meshlink_address_t ) );
 
         // copy all addresses
-        meshlink_canonical_address_t* addr_ptr = *addresses;
+        meshlink_address_t* addr_ptr = *addresses;
         for list_each(config_t, cfg, cfg_list)
         {
             const char* first_space = strchr(cfg->value, ' ');
@@ -1661,9 +1661,9 @@ uint32_t meshlink_get_canonical_addresses(meshlink_canonical_address_t **address
     return count;
 }
 
-void meshlink_free_canonical_addresses(meshlink_canonical_address_t *addresses, uint32_t size) {
+void meshlink_free_canonical_addresses(meshlink_address_t *addresses, uint32_t size) {
     for(size_t i = 0; i < size; i++) {
-        meshlink_canonical_address_t* address = &addresses[i];
+        meshlink_address_t* address = &addresses[i];
         if( address->hostname ) {
             free( address->hostname );
         }
@@ -1671,7 +1671,7 @@ void meshlink_free_canonical_addresses(meshlink_canonical_address_t *addresses, 
     free( addresses );
 }
 
-bool meshlink_add_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t *addresses, size_t nmemb) {
+bool meshlink_add_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_address_t *addresses, size_t nmemb) {
     if(!mesh || !node || !addresses) {
         meshlink_errno = MESHLINK_EINVAL;
         return false;
@@ -1681,7 +1681,7 @@ bool meshlink_add_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *
     char *hostport = NULL;
 
     for(size_t i = 0; i < nmemb; i++) {
-        const meshlink_canonical_address_t* address = &addresses[i];
+        const meshlink_address_t* address = &addresses[i];
 
         if(!is_valid_hostname(address->hostname)) {
             logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s\n", address->hostname);
@@ -1705,7 +1705,7 @@ bool meshlink_add_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *
     return rval;
 }
 
-bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t *addresses, size_t nmemb) {
+bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_address_t *addresses, size_t nmemb) {
     if(!mesh || !node ) {
         meshlink_errno = MESHLINK_EINVAL;
         return false;
