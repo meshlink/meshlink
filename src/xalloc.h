@@ -57,6 +57,16 @@ static inline char *xstrdup(const char *s) {
 	return p;
 }
 
+static inline char *xstrndup(const char *s, size_t size) __attribute__ ((__malloc__));
+static inline char *xstrndup(const char *s, size_t size) {
+    size_t len = strnlen(s, size) + 1;
+    char *p = malloc( len );
+    if(!p)
+        abort();
+    memcpy( p, s, len );
+    return p;
+}
+
 static inline int xvasprintf(char **strp, const char *fmt, va_list ap) {
 #ifdef HAVE_MINGW
 	char buf[1024];
