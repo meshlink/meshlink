@@ -51,10 +51,12 @@ static inline void *xrealloc(void *p, size_t n) {
 
 static inline char *xstrdup(const char *s) __attribute__ ((__malloc__));
 static inline char *xstrdup(const char *s) {
-	char *p = strdup(s);
-	if(!p)
-		abort();
-	return p;
+    size_t len = strlen(s) + 1;
+    char *p = malloc( len );
+    if(!p)
+        abort();
+    memcpy( p, s, len );
+    return p;
 }
 
 static inline char *xstrndup(const char *s, size_t size) __attribute__ ((__malloc__));
