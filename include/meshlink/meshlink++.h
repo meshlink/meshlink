@@ -483,8 +483,8 @@ namespace meshlink {
             return meshlink_get_canonical_addresses(addresses, handle, node);
         }
 
-        static void free_canonical_addresses(address *addresses, uint32_t size) {
-            meshlink_free_canonical_addresses(addresses, size);
+        static void free_addresses(address *addresses, uint32_t size) {
+            meshlink_free_addresses(addresses, size);
         }
 
         /// Add connection addresses for the given node.

@@ -1661,7 +1661,7 @@ uint32_t meshlink_get_canonical_addresses(meshlink_address_t **addresses, meshli
     return count;
 }
 
-void meshlink_free_canonical_addresses(meshlink_address_t *addresses, uint32_t size) {
+void meshlink_free_addresses(meshlink_address_t *addresses, uint32_t size) {
     for(size_t i = 0; i < size; i++) {
         meshlink_address_t* address = &addresses[i];
         if( address->hostname ) {

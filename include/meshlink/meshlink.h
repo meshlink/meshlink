@@ -458,7 +458,7 @@ extern bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, co
 
 /// Get the connection addresses for the given node.
 /** Returns an array of addresses for to given node, that will be used for connection establishment.
- *  To free the allocated address array, call meshlink_free_canonical_addresses.
+ *  To free the allocated address array, call meshlink_free_addresses.
  *
  *  @param addresses    A pointer to the address array that's going to be allocated.
  *  @param mesh         A handle which represents an instance of MeshLink.
@@ -467,7 +467,7 @@ extern bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, co
  *  @return             The size of the allocated address array.
  */
 extern uint32_t meshlink_get_canonical_addresses(meshlink_address_t **addresses, meshlink_handle_t *mesh, meshlink_node_t *node);
-extern void meshlink_free_canonical_addresses(meshlink_address_t *addresses, uint32_t size);
+extern void meshlink_free_addresses(meshlink_address_t *addresses, uint32_t size);
 
 /// Add connection addresses for the given node.
 /** This function adds network addresses for the given node, that will be used for connection establishment.
