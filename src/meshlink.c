@@ -1612,7 +1612,7 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
     return mesh->invitation_key;
 }
 
-bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t **addresses, size_t nmemb) {
+bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t *addresses, size_t nmemb) {
     if(!mesh || !node || !addresses) {
         meshlink_errno = MESHLINK_EINVAL;
         return false;
@@ -1622,7 +1622,7 @@ bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *
     char *hostport = NULL;
 
     for(size_t i = 0; i < nmemb; i++) {
-        meshlink_canonical_address_t const *address = addresses[i];
+        const meshlink_canonical_address_t* address = &addresses[i];
 
         if(!is_valid_hostname(address->hostname)) {
             logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s\n", address->hostname);

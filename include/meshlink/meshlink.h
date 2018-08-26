@@ -467,7 +467,7 @@ extern bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, co
  *
  *  @return             This function returns true if the address was added, false otherwise.
  */
-extern bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t **addresses, size_t nmemb);
+extern bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t *addresses, size_t nmemb);
 
 /// Try to discover the external address for the local node.
 /** This function performs tries to discover the local node's external address

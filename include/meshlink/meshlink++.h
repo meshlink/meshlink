@@ -490,7 +490,7 @@ namespace meshlink {
          *
          *  @return             This function returns true if the addresses were added, false otherwise.
          */
-        bool set_canonical_addresses(node *node, const canonical_address **addresses, size_t nmemb) {
+        bool set_canonical_addresses(node *node, const canonical_address *addresses, size_t nmemb) {
             return meshlink_set_canonical_addresses(handle, node, addresses, nmemb);
         }
 
