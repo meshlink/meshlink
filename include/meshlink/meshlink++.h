@@ -493,6 +493,20 @@ namespace meshlink {
             return meshlink_add_canonical_addresses(handle, node, addresses, nmemb);
         }
 
+        /// Set the connection addresses for the given node.
+        /** This function replaces the configured network addresses of the given node, that will be used for connection establishment.
+         *
+         *  @param mesh         A handle which represents an instance of MeshLink.
+         *  @param node         A pointer to a meshlink_node_t describing the node.
+         *  @param addresses    Array of hostnames at which this node should be available.
+         *  @param nmemb        Number of elements in the addresses array.
+         *
+         *  @return             This function returns true if the addresses were set, false otherwise.
+         */
+        bool set_canonical_addresses(node *node, const canonical_address *addresses, size_t nmemb) {
+            return meshlink_set_canonical_addresses(handle, node, addresses, nmemb);
+        }
+
         /// Blacklist a node from the mesh.
         /** This function causes the local node to blacklist another node.
          *  The local node will drop any existing connections to that node,

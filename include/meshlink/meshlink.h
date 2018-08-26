@@ -468,6 +468,18 @@ extern bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, co
  */
 extern bool meshlink_add_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t *addresses, size_t nmemb);
 
+/// Set the connection addresses for the given node.
+/** This function replaces the configured network addresses of the given node, that will be used for connection establishment.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A pointer to a meshlink_node_t describing the node.
+ *  @param addresses    Array of hostnames at which this node should be available.
+ *  @param nmemb        Number of elements in the addresses array.
+ *
+ *  @return             This function returns true if the address were set, false otherwise.
+ */
+extern bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t *addresses, size_t nmemb);
+
 /// Try to discover the external address for the local node.
 /** This function performs tries to discover the local node's external address
  *  by contacting the meshlink.io server. If a reverse lookup of the address works,
