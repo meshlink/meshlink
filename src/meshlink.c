@@ -175,7 +175,7 @@ static void scan_for_hostname(const char *filename, char **hostname, char **port
 
         if(!*port && !strcasecmp(line, "Port")) {
             *port = xstrdup(q);
-        } else if(!*hostname && !strcasecmp(line, "Address")) {
+        } else if(!*hostname && !strcasecmp(line, "Address") || !strcasecmp(line, "CanonicalAddress")) {
             *hostname = xstrdup(q);
             if(*p) {
                 free(*port);
