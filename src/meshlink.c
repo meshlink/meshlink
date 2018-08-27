@@ -1726,6 +1726,21 @@ bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *
     return rval;
 }
 
+bool meshlink_clear_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, meshlink_addr_filter filter) {
+    if(!mesh || !node || !(filter & MESHLINK_ADDR_ALL)) {
+        meshlink_errno = MESHLINK_EINVAL;
+        return false;
+    }
+
+    bool rval = true;
+    if( filter & MESHLINK_ADDR_AUTODETECTED )
+        rval &= modify_config_file(mesh, node->name, "Address", NULL, true);
+    if( filter & MESHLINK_ADDR_CANONICAL )
+        rval &= modify_config_file(mesh, node->name, "CanonicalAddress", NULL, true);
+
+    return rval;
+}
+
 bool meshlink_add_external_address(meshlink_handle_t *mesh) {
     if(!mesh) {
         meshlink_errno = MESHLINK_EINVAL;

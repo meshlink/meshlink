@@ -518,6 +518,10 @@ namespace meshlink {
             return meshlink_set_canonical_addresses(handle, node, addresses, nmemb);
         }
 
+        bool clear_addresses(node *node, addr_filter filter = MESHLINK_ADDR_ALL) {
+            return meshlink_clear_addresses(handle, node, filter);
+        }
+
         /// Blacklist a node from the mesh.
         /** This function causes the local node to blacklist another node.
          *  The local node will drop any existing connections to that node,

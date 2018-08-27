@@ -502,6 +502,8 @@ extern bool meshlink_add_canonical_addresses(meshlink_handle_t *mesh, meshlink_n
  */
 extern bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_address_t *addresses, size_t nmemb);
 
+extern bool meshlink_clear_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, meshlink_addr_filter filter);
+
 /// Try to discover the external address for the local node.
 /** This function performs tries to discover the local node's external address
  *  by contacting the meshlink.io server. If a reverse lookup of the address works,
