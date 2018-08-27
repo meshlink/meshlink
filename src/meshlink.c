@@ -1612,6 +1612,32 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
     return mesh->invitation_key;
 }
 
+meshlink_address_t *meshlink_load_address_array(list_t *cfg_list) {
+    if(!cfg_list) {
+        meshlink_errno = MESHLINK_EINVAL;
+        return NULL;
+    }
+
+    meshlink_address_t* addresses = NULL;
+    if( cfg_list->count ) {
+        addresses = (meshlink_address_t*) malloc( cfg_list->count * sizeof( meshlink_address_t ) );
+
+        // copy all addresses
+        meshlink_address_t* addr_ptr = addresses;
+        for list_each(config_t, cfg, cfg_list)
+        {
+            const char* first_space = strchr(cfg->value, ' ');
+            if( first_space ) {
+                addr_ptr->hostname = xstrndup(cfg->value, first_space - cfg->value );
+                addr_ptr->port = atoi( first_space + 1 );
+            }
+            ++addr_ptr;
+        }
+    }
+
+    return addresses;
+}
+
 uint32_t meshlink_get_addresses(meshlink_address_t **addresses, meshlink_handle_t *mesh, meshlink_node_t *node, meshlink_addr_filter filter) {
     if(!mesh || !node || !addresses || !(filter & MESHLINK_ADDR_ALL)) {
         meshlink_errno = MESHLINK_EINVAL;
@@ -1632,21 +1658,8 @@ uint32_t meshlink_get_addresses(meshlink_address_t **addresses, meshlink_handle_
         count += collect_config(cfg_list, config_tree, "CanonicalAddress");
 
     // allocate result and load address configurations now that the count is known
-    if( count ) {
-        *addresses = (meshlink_address_t*) malloc( count * sizeof( meshlink_address_t ) );
-
-        // copy all addresses
-        meshlink_address_t* addr_ptr = *addresses;
-        for list_each(config_t, cfg, cfg_list)
-        {
-            const char* first_space = strchr(cfg->value, ' ');
-            if( first_space ) {
-                addr_ptr->hostname = xstrndup(cfg->value, first_space - cfg->value );
-                addr_ptr->port = atoi( first_space + 1 );
-            }
-            ++addr_ptr;
-        }
-    }
+    if( count )
+        *addresses = meshlink_load_address_array( cfg_list );
 
     // unload network configuration
     list_delete_list( cfg_list );
