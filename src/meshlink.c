@@ -1698,7 +1698,7 @@ bool meshlink_add_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *
         xasprintf(&hostport, "%s %d", address->hostname, address->port);
 
         MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-        rval = append_config_file(mesh, node->name, "Address", hostport);
+        rval = append_config_file(mesh, node->name, "CanonicalAddress", hostport);
         MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 
         free(hostport);
@@ -1718,7 +1718,7 @@ bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *
     }
 
     // remove old addresses
-    bool rval = modify_config_file(mesh, node->name, "Address", NULL, true);
+    bool rval = modify_config_file(mesh, node->name, "CanonicalAddress", NULL, true);
 
     if( addresses && rval )
         meshlink_add_canonical_addresses( mesh, node, addresses, nmemb );
