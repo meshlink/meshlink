@@ -1612,8 +1612,8 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
     return mesh->invitation_key;
 }
 
-uint32_t meshlink_get_canonical_addresses(meshlink_address_t **addresses, meshlink_handle_t *mesh, meshlink_node_t *node) {
-    if(!mesh || !node || !addresses) {
+uint32_t meshlink_get_addresses(meshlink_address_t **addresses, meshlink_handle_t *mesh, meshlink_node_t *node, meshlink_addr_filter filter) {
+    if(!mesh || !node || !addresses || !(filter & MESHLINK_ADDR_ALL)) {
         meshlink_errno = MESHLINK_EINVAL;
         return 0;
     }
@@ -1626,7 +1626,10 @@ uint32_t meshlink_get_canonical_addresses(meshlink_address_t **addresses, meshli
     // collect all address configurations
     list_t *cfg_list = list_alloc( NULL );
     uint32_t count = 0;
+    if( filter & MESHLINK_ADDR_AUTODETECTED )
         count += collect_config(cfg_list, config_tree, "Address");
+    if( filter & MESHLINK_ADDR_CANONICAL )
+        count += collect_config(cfg_list, config_tree, "CanonicalAddress");
 
     // allocate result and load address configurations now that the count is known
     if( count ) {

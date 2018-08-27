@@ -42,6 +42,9 @@ namespace meshlink {
     /// Code of most recent error encountered.
     typedef meshlink_errno_t errno_t;
 
+    /// Address type flags;
+    typedef meshlink_addr_filter addr_filter;
+
     /// A callback for receiving data from the mesh.
     /** @param mesh      A handle which represents an instance of MeshLink.
      *  @param source    A pointer to a meshlink::node describing the source of the data.
@@ -479,8 +482,8 @@ namespace meshlink {
             return meshlink_import(handle, data);
         }
 
-        uint32_t get_canonical_addresses(address **addresses, node *node) const {
-            return meshlink_get_canonical_addresses(addresses, handle, node);
+        uint32_t get_addresses(address **addresses, node *node, addr_filter filter = MESHLINK_ADDR_ALL) const {
+            return meshlink_get_addresses(addresses, handle, node, filter);
         }
 
         static void free_addresses(address *addresses, uint32_t size) {

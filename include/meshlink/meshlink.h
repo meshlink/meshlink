@@ -83,6 +83,14 @@ typedef enum {
     _DEV_CLASS_MAX = 3
 } dev_class_t;
 
+/// Address type flags
+typedef enum {
+    MESHLINK_ADDR_NONE = 0,
+    MESHLINK_ADDR_AUTODETECTED = 1,
+    MESHLINK_ADDR_CANONICAL = 2,
+    MESHLINK_ADDR_ALL = 3
+} meshlink_addr_filter;
+
 /// A variable holding the last encountered error from MeshLink.
 /** Is not thread-local on APPLE and Windows.
  *  On other platforms, this is a thread local variable that contains the error code of the most recent error
@@ -463,10 +471,11 @@ extern bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, co
  *  @param addresses    A pointer to the address array that's going to be allocated.
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param node         A pointer to a meshlink_node_t describing the node.
+ *  @param filter       Selection filter for what types of addresses to get.
  *
  *  @return             The size of the allocated address array.
  */
-extern uint32_t meshlink_get_canonical_addresses(meshlink_address_t **addresses, meshlink_handle_t *mesh, meshlink_node_t *node);
+extern uint32_t meshlink_get_addresses(meshlink_address_t **addresses, meshlink_handle_t *mesh, meshlink_node_t *node, meshlink_addr_filter filter);
 extern void meshlink_free_addresses(meshlink_address_t *addresses, uint32_t size);
 
 /// Add connection addresses for the given node.
