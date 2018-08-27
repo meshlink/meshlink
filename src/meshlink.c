@@ -1624,18 +1624,9 @@ uint32_t meshlink_get_canonical_addresses(meshlink_address_t **addresses, meshli
     read_host_config(mesh, config_tree, node->name);
 
     // collect all address configurations
-    list_t *cfg_list = NULL;
+    list_t *cfg_list = list_alloc( NULL );
     uint32_t count = 0;
-    struct config_t *cfg_tmp = lookup_config(config_tree, "Address");
-    if( cfg_tmp ) {
-        cfg_list = list_alloc( NULL );
-
-        while( cfg_tmp ) {
-            list_insert_tail( cfg_list, cfg_tmp );
-            cfg_tmp = lookup_config_next( config_tree, cfg_tmp );
-        }
-        count = cfg_list->count;
-    }
+        count += collect_config(cfg_list, config_tree, "Address");
 
     // allocate result and load address configurations now that the count is known
     if( count ) {
