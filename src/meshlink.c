@@ -1646,11 +1646,10 @@ uint32_t meshlink_get_addresses(meshlink_address_t **addresses, meshlink_handle_
             }
             ++addr_ptr;
         }
-
-        list_delete_list( cfg_list );
     }
 
     // unload network configuration
+    list_delete_list( cfg_list );
     exit_configuration(&config_tree);
     return count;
 }
