@@ -175,7 +175,7 @@ static void scan_for_hostname(const char *filename, char **hostname, char **port
 
         if(!*port && !strcasecmp(line, "Port")) {
             *port = xstrdup(q);
-        } else if(!*hostname && !strcasecmp(line, "Address")) {
+        } else if(!*hostname && !strcasecmp(line, "Address") || !strcasecmp(line, "CanonicalAddress")) {
             *hostname = xstrdup(q);
             if(*p) {
                 free(*port);
@@ -1612,7 +1612,72 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
     return mesh->invitation_key;
 }
 
-bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_canonical_address_t **addresses, size_t nmemb) {
+meshlink_address_t *meshlink_load_address_array(list_t *cfg_list) {
+    if(!cfg_list) {
+        meshlink_errno = MESHLINK_EINVAL;
+        return NULL;
+    }
+
+    meshlink_address_t* addresses = NULL;
+    if( cfg_list->count ) {
+        addresses = (meshlink_address_t*) malloc( cfg_list->count * sizeof( meshlink_address_t ) );
+
+        // copy all addresses
+        meshlink_address_t* addr_ptr = addresses;
+        for list_each(config_t, cfg, cfg_list)
+        {
+            const char* first_space = strchr(cfg->value, ' ');
+            if( first_space ) {
+                addr_ptr->hostname = xstrndup(cfg->value, first_space - cfg->value );
+                addr_ptr->port = atoi( first_space + 1 );
+            }
+            ++addr_ptr;
+        }
+    }
+
+    return addresses;
+}
+
+uint32_t meshlink_get_addresses(meshlink_address_t **addresses, meshlink_handle_t *mesh, meshlink_node_t *node, meshlink_addr_filter filter) {
+    if(!mesh || !node || !addresses || !(filter & MESHLINK_ADDR_ALL)) {
+        meshlink_errno = MESHLINK_EINVAL;
+        return 0;
+    }
+
+    // load the node's network configuration file
+    splay_tree_t *config_tree;
+    init_configuration(&config_tree);
+    read_host_config(mesh, config_tree, node->name);
+
+    // collect all address configurations
+    list_t *cfg_list = list_alloc( NULL );
+    uint32_t count = 0;
+    if( filter & MESHLINK_ADDR_AUTODETECTED )
+        count += collect_config(cfg_list, config_tree, "Address");
+    if( filter & MESHLINK_ADDR_CANONICAL )
+        count += collect_config(cfg_list, config_tree, "CanonicalAddress");
+
+    // allocate result and load address configurations now that the count is known
+    if( count )
+        *addresses = meshlink_load_address_array( cfg_list );
+
+    // unload network configuration
+    list_delete_list( cfg_list );
+    exit_configuration(&config_tree);
+    return count;
+}
+
+void meshlink_free_addresses(meshlink_address_t *addresses, uint32_t size) {
+    for(size_t i = 0; i < size; i++) {
+        meshlink_address_t* address = &addresses[i];
+        if( address->hostname ) {
+            free( address->hostname );
+        }
+    }
+    free( addresses );
+}
+
+bool meshlink_add_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_address_t *addresses, size_t nmemb) {
     if(!mesh || !node || !addresses) {
         meshlink_errno = MESHLINK_EINVAL;
         return false;
@@ -1622,7 +1687,7 @@ bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *
     char *hostport = NULL;
 
     for(size_t i = 0; i < nmemb; i++) {
-        meshlink_canonical_address_t const *address = addresses[i];
+        const meshlink_address_t* address = &addresses[i];
 
         if(!is_valid_hostname(address->hostname)) {
             logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s\n", address->hostname);
@@ -1633,7 +1698,7 @@ bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *
         xasprintf(&hostport, "%s %d", address->hostname, address->port);
 
         MESHLINK_MUTEX_LOCK(&(mesh->mesh_mutex));
-        rval = append_config_file(mesh, node->name, "Address", hostport);
+        rval = append_config_file(mesh, node->name, "CanonicalAddress", hostport);
         MESHLINK_MUTEX_UNLOCK(&(mesh->mesh_mutex));
 
         free(hostport);
@@ -1642,6 +1707,36 @@ bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *
         if(!rval)
             break;
     }
+
+    return rval;
+}
+
+bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, const meshlink_address_t *addresses, size_t nmemb) {
+    if(!mesh || !node ) {
+        meshlink_errno = MESHLINK_EINVAL;
+        return false;
+    }
+
+    // remove old addresses
+    bool rval = modify_config_file(mesh, node->name, "CanonicalAddress", NULL, true);
+
+    if( addresses && rval )
+        meshlink_add_canonical_addresses( mesh, node, addresses, nmemb );
+
+    return rval;
+}
+
+bool meshlink_clear_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, meshlink_addr_filter filter) {
+    if(!mesh || !node || !(filter & MESHLINK_ADDR_ALL)) {
+        meshlink_errno = MESHLINK_EINVAL;
+        return false;
+    }
+
+    bool rval = true;
+    if( filter & MESHLINK_ADDR_AUTODETECTED )
+        rval &= modify_config_file(mesh, node->name, "Address", NULL, true);
+    if( filter & MESHLINK_ADDR_CANONICAL )
+        rval &= modify_config_file(mesh, node->name, "CanonicalAddress", NULL, true);
 
     return rval;
 }

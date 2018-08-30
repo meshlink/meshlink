@@ -399,6 +399,23 @@ static void free_known_addresses(struct addrinfo *ai) {
 	}
 }
 
+config_t *lookup_outgoing(splay_tree_t *config_tree) {
+	// start with first canonical address
+	config_t *cfg = lookup_config(config_tree, "CanonicalAddress");
+	// but if unset, default to first autodetected address
+	if(!cfg)
+		cfg = lookup_config(config_tree, "Address");
+
+	return cfg;
+}
+
+config_t *lookup_outgoing_next(splay_tree_t *config_tree, const config_t *cfg) {
+	config_t *cfg_next = lookup_config_next(config_tree, cfg);
+	if(!cfg_next && !strcasecmp(cfg->variable, "CanonicalAddress"))
+		cfg_next = lookup_config(config_tree, "Address");
+	return cfg_next;
+}
+
 bool do_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	char *address, *port, *space;
 	struct addrinfo *proxyai = NULL;
@@ -432,7 +449,7 @@ begin:
 		free(port);
 
 		outgoing->aip = outgoing->ai;
-		outgoing->cfg = lookup_config_next(outgoing->config_tree, outgoing->cfg);
+		outgoing->cfg = lookup_outgoing_next(outgoing->config_tree, outgoing->cfg);
 	}
 
 	if(!outgoing->aip) {
@@ -536,13 +553,15 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 		return;
 	}
 
-	exit_configuration(&outgoing->config_tree); // discard old configuration if present
+	// reload configuration discarding the old one if present
+	exit_configuration(&outgoing->config_tree);
 	init_configuration(&outgoing->config_tree);
 	read_host_config(mesh, outgoing->config_tree, outgoing->name);
-	outgoing->cfg = lookup_config(outgoing->config_tree, "Address");
 
 	get_config_bool(lookup_config(outgoing->config_tree, "blacklisted"), &blacklisted);
 	if (blacklisted) return;
+
+	outgoing->cfg = lookup_outgoing(outgoing->config_tree);
 
 	if(!outgoing->cfg) {
 		if(n)

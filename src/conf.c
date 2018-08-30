@@ -78,7 +78,7 @@ void config_add(splay_tree_t *config_tree, config_t *cfg) {
 	splay_insert(config_tree, cfg);
 }
 
-config_t *lookup_config(splay_tree_t *config_tree, char *variable) {
+config_t *lookup_config(splay_tree_t *config_tree, const char *variable) {
 	config_t cfg, *found;
 
 	cfg.variable = variable;
@@ -112,6 +112,24 @@ config_t *lookup_config_next(splay_tree_t *config_tree, const config_t *cfg) {
 	}
 
 	return NULL;
+}
+
+uint32_t collect_config(list_t *entry_list, splay_tree_t *config_tree, const char *key) {
+    if(!entry_list) {
+        meshlink_errno = MESHLINK_EINVAL;
+        return 0;
+    }
+
+    uint32_t count = 0;
+    struct config_t *cfg = lookup_config(config_tree, key);
+    if( cfg ) {
+        do {
+    		++count;
+            list_insert_tail( entry_list, cfg );
+            cfg = lookup_config_next( config_tree, cfg );
+        } while( cfg );
+    }
+    return count;
 }
 
 bool get_config_bool(const config_t *cfg, bool *result) {
