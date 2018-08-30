@@ -51,21 +51,23 @@ static inline void *xrealloc(void *p, size_t n) {
 
 static inline char *xstrdup(const char *s) __attribute__ ((__malloc__));
 static inline char *xstrdup(const char *s) {
-    size_t len = strlen(s) + 1;
-    char *p = malloc( len );
+    size_t len = strlen(s);
+    char *p = malloc( len + 1 );
     if(!p)
         abort();
     memcpy( p, s, len );
+    p[len] = '\0'; // make sure the last character is a terminating null character
     return p;
 }
 
 static inline char *xstrndup(const char *s, size_t size) __attribute__ ((__malloc__));
 static inline char *xstrndup(const char *s, size_t size) {
-    size_t len = strnlen(s, size) + 1;
-    char *p = malloc( len );
+    size_t len = strnlen(s, size);
+    char *p = malloc( len + 1 );
     if(!p)
         abort();
     memcpy( p, s, len );
+    p[len] = '\0'; // make sure the last character is a terminating null character
     return p;
 }
 
