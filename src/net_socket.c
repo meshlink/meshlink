@@ -545,7 +545,7 @@ begin:
 	}
 
 	if(c->socket == -1) {
-		logger(mesh, MESHLINK_ERROR, "Creating socket for %s at %s failed: %s", c->name, c->hostname, sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Creating socket for %s at %s failed: %s", c->name, hostname, sockstrerror(sockerrno));
 		free_connection(c);
 		free(hostname);
 		goto begin;
@@ -725,7 +725,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	c->last_ping_time = mesh->loop.now.tv_sec;
 
 	char *hostname = sockaddr2hostname(&sa);
-	logger(mesh, MESHLINK_INFO, "Connection from %s", c->hostname);
+	logger(mesh, MESHLINK_INFO, "Connection from %s", hostname);
 	free(hostname);
 
 	io_add(&mesh->loop, &c->io, handle_meta_io, c, c->socket, IO_READ);
