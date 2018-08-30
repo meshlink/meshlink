@@ -78,7 +78,7 @@ void config_add(splay_tree_t *config_tree, config_t *cfg) {
 	splay_insert(config_tree, cfg);
 }
 
-config_t *lookup_config(splay_tree_t *config_tree, char *variable) {
+config_t *lookup_config(splay_tree_t *config_tree, const char *variable) {
 	config_t cfg, *found;
 
 	cfg.variable = variable;

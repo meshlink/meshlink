@@ -36,7 +36,7 @@ extern void exit_configuration(struct splay_tree_t **);
 extern config_t *new_config(void) __attribute__ ((__malloc__));
 extern void free_config(config_t *);
 extern void config_add(struct splay_tree_t *, config_t *);
-extern config_t *lookup_config(struct splay_tree_t *, char *);
+extern config_t *lookup_config(struct splay_tree_t *, const char *);
 extern config_t *lookup_config_next(struct splay_tree_t *, const config_t *);
 extern uint32_t collect_config(list_t *entry_list, splay_tree_t *config_tree, const char *key);
 extern bool get_config_bool(const config_t *, bool *);
