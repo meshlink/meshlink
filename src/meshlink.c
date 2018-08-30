@@ -347,63 +347,62 @@ char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int fami
 	return hostname;
 }
 
+// String comparison which handles NULL arguments
+static bool safe_streq(const char *a, const char *b) {
+	if (!a || !b)
+		return a == b;
+	else
+		return !strcmp(a, b);
+}
+
 // This gets the hostname part for use in invitation URLs
 static char *get_my_hostname(meshlink_handle_t *mesh) {
-	char *hostname[2] = {NULL};
-	char *port = NULL;
+	char *hostname[3] = {NULL};
+	char *port[3] = {NULL};
 	char *hostport = NULL;
-	char *name = mesh->self->name;
+
+	// Use the best Address statement in our own host config file
 	char filename[PATH_MAX] = "";
+	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
+	scan_for_hostname(filename, &hostname[0], &port[0]);
 
-	// Use first Address statement in own host config file
-	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
-	scan_for_hostname(filename, &hostname[0], &port);
+	hostname[1] = meshlink_get_external_address_for_family(mesh, AF_INET);
+	hostname[2] = meshlink_get_external_address_for_family(mesh, AF_INET6);
 
-	if(hostname[0]) {
-		goto done;
-	}
+	// Concatenate all unique address to the hostport string
+	for (int i = 0; i < 3; i++) {
+		if (!hostname[i])
+			continue;
 
-	hostname[0] = meshlink_get_external_address_for_family(mesh, AF_INET);
-	hostname[1] = meshlink_get_external_address_for_family(mesh, AF_INET6);
+		// Ignore duplicate hostnames
+		bool found = false;
 
-	if(!hostname[0] && !hostname[1]) {
-		return NULL;
-	}
-
-	if(hostname[0] && hostname[1] && !strcmp(hostname[0], hostname[1])) {
-		free(hostname[1]);
-		hostname[1] = NULL;
-	}
-
-	port = xstrdup(mesh->myport);
-
-	for(int i = 0; i < 2; i++) {
-		if(hostname[i]) {
-			char *tmphostport;
-			xasprintf(&tmphostport, "%s %s", hostname[i], port);
-			append_config_file(mesh, mesh->self->name, "Address", tmphostport);
-			free(tmphostport);
+		for (int j = 0; i < j; j++) {
+			if (safe_streq(hostname[i], hostname[j]) && safe_streq(port[i], port[j])) {
+				found = true;
+				break;
+			}
 		}
-	}
 
-done:
-
-	for(int i = 0; i < 2; i++) {
-		if(!hostname[i]) {
+		if (found) {
+			free(hostname[i]);
+			free(port[i]);
+			hostname[i] = NULL;
+			port[i] = NULL;
 			continue;
 		}
 
-		char *newhostport;
-		xasprintf(&newhostport, (strchr(hostname[i], ':') ? "%s%s[%s]" : "%s%s%s"), hostport ? hostport : "", hostport ? "," : "", hostname[i]);
-		free(hostname[i]);
-		free(hostport);
-		hostport = newhostport;
-	}
+		// Ensure we have the same addresses in our own host config file.
+		char *tmphostport;
+		xasprintf(&tmphostport, "%s %s", hostname[i], port[i] ? port[i] : mesh->myport);
+		append_config_file(mesh, mesh->self->name, "Address", tmphostport);
+		free(tmphostport);
 
-	if(port) {
+		// Append the address to the hostport string
 		char *newhostport;
-		xasprintf(&newhostport, "%s:%s", hostport, port);
-		free(port);
+		xasprintf(&newhostport, (strchr(hostname[i], ':') ? "%s%s[%s]:%s" : "%s%s%s:%s"), hostport ? hostport : "", hostport ? "," : "", hostname[i], port[i] ? port[i] : mesh->myport);
+		free(hostname[i]);
+		free(port[i]);
 		free(hostport);
 		hostport = newhostport;
 	}
@@ -2034,7 +2033,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	char copy[strlen(invitation) + 1];
 	strcpy(copy, invitation);
 
-	// Split the invitation URL into hostname, port, key hash and cookie.
+	// Split the invitation URL into a list of hostname/port tuples, a key hash and a cookie.
 
 	char *slash = strchr(copy, '/');
 
@@ -2049,13 +2048,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	}
 
 	char *address = copy;
-	char *port = strrchr(address, ':');
-
-	if(!port) {
-		goto invalid;
-	}
-
-	*port++ = 0;
+	char *port = NULL;
 
 	if(!b64decode(slash, mesh->hash, 18) || !b64decode(slash + 24, mesh->cookie, 18)) {
 		goto invalid;
@@ -2082,6 +2075,15 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 			*comma++ = 0;
 		}
 
+		// Split of the port
+		port = strrchr(address, ':');
+
+		if(!port) {
+			goto invalid;
+		}
+
+		*port++ = 0;
+
 		// IPv6 address are enclosed in brackets, per RFC 3986
 		if(*address == '[') {
 			address++;
@@ -2093,7 +2095,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 
 			*bracket++ = 0;
 
-			if(comma && bracket != comma) {
+			if(*bracket) {
 				goto invalid;
 			}
 		}
