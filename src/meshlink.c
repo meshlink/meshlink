@@ -1734,9 +1734,9 @@ bool meshlink_clear_addresses(meshlink_handle_t *mesh, meshlink_node_t *node, me
 
     bool rval = true;
     if( filter & MESHLINK_ADDR_AUTODETECTED )
-        rval &= modify_config_file(mesh, node->name, "Address", NULL, true);
-    if( filter & MESHLINK_ADDR_CANONICAL )
-        rval &= modify_config_file(mesh, node->name, "CanonicalAddress", NULL, true);
+        rval = modify_config_file(mesh, node->name, "Address", NULL, true);
+    if( rval && filter & MESHLINK_ADDR_CANONICAL )
+        rval = modify_config_file(mesh, node->name, "CanonicalAddress", NULL, true);
 
     return rval;
 }
