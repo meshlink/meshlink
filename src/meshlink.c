@@ -1721,7 +1721,7 @@ bool meshlink_set_canonical_addresses(meshlink_handle_t *mesh, meshlink_node_t *
     bool rval = modify_config_file(mesh, node->name, "CanonicalAddress", NULL, true);
 
     if( addresses && rval )
-        meshlink_add_canonical_addresses( mesh, node, addresses, nmemb );
+        rval = meshlink_add_canonical_addresses( mesh, node, addresses, nmemb );
 
     return rval;
 }
