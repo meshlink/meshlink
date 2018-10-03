@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
   failed_tests += test_meshlink_set_status_cb();
   failed_tests += test_meshlink_join();
   failed_tests += test_meshlink_set_channel_poll_cb();
-//  failed_tests += test_meshlink_channel_open_ex();
+  failed_tests += test_meshlink_channel_open_ex();
   failed_tests += test_meshlink_channel_get_flags();
   failed_tests += test_meshlink_set_channel_accept_cb();
   failed_tests += test_meshlink_destroy();
