@@ -36,8 +36,8 @@
 #define SERVER_LISTEN_PORT "9000" /* Port number that is binded with mesh event server socket */
 
 // TODO: Implement mesh event handling with reentrant functions(if required).
-static struct sockaddr_in server_addr; 
-static int client_fd; 
+static struct sockaddr_in server_addr;
+static int client_fd;
 static int server_fd;
 
 /* check for endianness, if little endian return true else false*/
@@ -95,16 +95,16 @@ char *mesh_event_sock_create(const char *if_name ) {
   if(if_name == NULL) {
     return NULL;
   }
-  
+
   server_fd = socket(AF_INET, SOCK_DGRAM, 0);
   if(server_fd < 0) {
     perror("socket");
   }
   assert(server_fd >= 0);
-  
+
   int reuse = 1;
   assert(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) != -1);
-  
+
   memset(&req_if, 0, sizeof(req_if));
   req_if.ifr_addr.sa_family = AF_INET;
   strncpy(req_if.ifr_name, if_name, IFNAMSIZ - 1);
@@ -116,7 +116,7 @@ char *mesh_event_sock_create(const char *if_name ) {
   server.sin_addr   = resp_if_addr->sin_addr;
   server.sin_port   = htons(atoi(SERVER_LISTEN_PORT));
   assert(bind(server_fd, (struct sockaddr*) &server, sizeof(struct sockaddr)) != -1);
-  
+
   assert(ip = malloc(30));
   strncpy(ip, inet_ntoa(resp_if_addr->sin_addr), 20);
   strcat(ip, ":");
@@ -171,7 +171,7 @@ bool mesh_event_sock_send( int client_id, mesh_event_t event, void *payload, siz
     fprintf(stderr, "Sending mesh event to test-driver(with payload)\n");
   }
   mesh_event_packet_endianness(&mesh_event_send_packet);
-   
+
   send_ret = sendto(client_fd, &mesh_event_send_packet, sizeof(mesh_event_send_packet), 0, (const struct sockaddr *) &server_addr, sizeof(server_addr));
   if(send_ret < 0) {
     perror("sendto status");
@@ -199,11 +199,10 @@ bool wait_for_event(mesh_event_callback_t callback, int t) {
     assert(activity != -1);
 
     if(activity == 0) {
-      // If no activity happened for the timeout given 
-      fprintf(stderr, "wait_for_event timeout\n");
+      // If no activity happened for the timeout given
       return false;
     } else if (FD_ISSET(server_fd, &read_fds)) {
-      // Unpacking the mesh event 
+      // Unpacking the mesh event
       fprintf(stderr, "Found read activity at Server File descriptor\n");
       ssize_t recv_ret = recvfrom(server_fd, &mesh_event_rec_packet, sizeof(mesh_event_rec_packet), 0, &client, &soc_len);
 
@@ -213,4 +212,46 @@ bool wait_for_event(mesh_event_callback_t callback, int t) {
     }
   }// while
 }
+/*
+bool wait_for_event_only(mesh_event_callback_t callback, int t, mesh_event_t event) {
+  struct timeval timeout;
+  struct sockaddr client;
+  socklen_t soc_len;
+  fd_set read_fds;
+  int activity;
+  mesh_event_payload_t mesh_event_rec_packet;
 
+  timeout.tv_sec  = t;
+  timeout.tv_usec = 0;
+  FD_ZERO(&read_fds);
+  FD_SET(server_fd, &read_fds);
+
+  while(1) {
+    activity = select(server_fd + 1, &read_fds, NULL, NULL, &timeout);
+    assert(activity != -1);
+
+    if(activity == 0) {
+      // If no activity happened for the timeout given
+      fprintf(stderr, "wait_for_event timeout\n");
+      return false;
+    } else if (FD_ISSET(server_fd, &read_fds)) {
+      // Unpacking the mesh event
+      fprintf(stderr, "Found read activity at Server File descriptor\n");
+      do {
+      ssize_t recv_ret = recvfrom(server_fd, &mesh_event_rec_packet, sizeof(mesh_event_rec_packet), 0, &client, &soc_len);
+      mesh_event_packet_endianness(&mesh_event_rec_packet);
+
+      if(mesh_event_rec_packet.mesh_event == event) {
+        callback(mesh_event_rec_packet);
+        break;
+      } else {
+        fprintf(stderr, "Got event %d, and it's dropped\n", mesh_event_rec_packet.mesh_event);
+      }
+      }while(recv_ret > 0);
+
+
+			return true;
+    }
+  }// while
+}
+*/

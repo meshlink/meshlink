@@ -42,5 +42,25 @@ void node_sim_in_container_event(char *node, char *device_class,
                            char *invite_url, char *clientId, char *import);
 void node_step_in_container(char *node, char *sig);
 void change_ip(int node);
+char *get_container_ip(int node);
+
+int create_bridge(char* bridgeName);
+void add_interface(char* bridgeName, char* interfaceName);
+void add_veth_pair(char* vethName1, char* vethName2);
+void bring_if_up(char* bridgeName);
+void replaceAll(char *str, const char *oldWord, const char *newWord);
+void switch_bridge(char* containerName, char* currentBridge, char* newBridge);
+void bring_if_down(char* bridgeName);
+void del_interface(char* bridgeName, char* interfaceName);
+int delete_bridge(char* bridgeName);
+int create_container_on_bridge(char* containerName, char* bridgeName, char* ifName);
+void config_dnsmasq(char* containerName, char* ifName, char* listenAddress, char* dhcpRange);
+void config_nat(char* containerName, char* listenAddress);
+int create_nat_layer(char* containerName, char* bridgeName, char* ifName, char* listenAddress, char* dhcpRange);
+void destroy_nat_layer(char* containerName, char* bridgeName);
+void incoming_firewall_ipv4(char* packetType, int portNumber);
+void incoming_firewall_ipv6(char* packetType, int portNumber);
+void outgoing_firewall_ipv4(char* packetType, int portNumber);
+void outgoing_firewall_ipv6(char* packetType, int portNumber);
 
 #endif // CONTAINERS_H

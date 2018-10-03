@@ -460,3 +460,11 @@ void change_ip(int node) {
         container_ips[node]);
     return;
 }
+
+char *get_container_ip(int node) {
+  char *ip;
+  ip = malloc(20);
+  assert(ip);
+  strcpy(ip, container_ips[node]);
+  return ip;
+}

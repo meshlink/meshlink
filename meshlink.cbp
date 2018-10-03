@@ -501,6 +501,352 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="test/basicpp.cpp" />
+		<Unit filename="test/blackbox/common/common_handlers.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/common/common_handlers.h" />
+		<Unit filename="test/blackbox/common/common_types.h" />
+		<Unit filename="test/blackbox/common/containers.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/common/containers.h" />
+		<Unit filename="test/blackbox/common/mesh_event_handler.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/common/mesh_event_handler.h" />
+		<Unit filename="test/blackbox/common/test_step.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/common/test_step.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/execute_tests.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/execute_tests.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/run_blackbox_tests.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_add_addr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_add_addr.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_add_ex_addr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_add_ex_addr.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_blacklist.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_blacklist.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_close.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_close.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_ex.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_ex.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_get_flags.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_get_flags.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_open.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_open.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_send.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_send.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_set_accept_cb.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_set_accept_cb.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_set_poll_cb.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_set_poll_cb.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_set_receive_cb.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_set_receive_cb.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_shutdown.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_channel_shutdown.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_default_blacklist.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_default_blacklist.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_destroy.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_destroy.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_export.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_export.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_get_all_nodes.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_get_all_nodes.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_get_ex_addr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_get_ex_addr.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_get_fingerprint.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_get_fingerprint.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_get_node.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_get_node.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_get_port.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_get_port.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_get_self.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_get_self.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_hint_address.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_hint_address.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_import.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_import.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_invite.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_invite.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_join.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_join.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_open.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_open.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_pmtu.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_pmtu.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_rec_cb.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_rec_cb.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_send.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_send.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_set_log_cb.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_set_log_cb.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_set_port.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_set_port.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_sign.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_sign.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_start.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_start.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_status_cb.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_status_cb.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_stop_close.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_stop_close.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_verify.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_verify.h" />
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_whitelist.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_blackbox_tests/test_cases_whitelist.h" />
+		<Unit filename="test/blackbox/run_sleepy_tests/execute_tests.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_sleepy_tests/execute_tests.h" />
+		<Unit filename="test/blackbox/run_sleepy_tests/run_sleepy_tests.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_sleepy_tests/sleepy_connect.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/run_sleepy_tests/sleepy_connect.h" />
+		<Unit filename="test/blackbox/test_case_join_01/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_join_01/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_join_02/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_join_02/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_01/node_sim_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_01/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_01/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_02/node_sim_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_02/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_02/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_03/node_sim_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_03/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_03/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_04/node_sim_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_04/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_04/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_05/node_sim_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_05/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_meta_conn_05/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_set_log_cb_01/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_set_log_cb_01/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_set_log_cb_02/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_set_log_cb_02/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_set_status_cb_01/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_set_status_cb_01/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_set_status_cb_02/node_sim_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_case_set_status_cb_02/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_01/node_sim_gateway.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_01/node_sim_sleepy.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_02/node_sim_portable.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_02/node_sim_portable1.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_02/node_sim_portable2.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_02/node_sim_portable3.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_02/node_sim_portable4.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_02/node_sim_portable5.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_02/node_sim_sleepy.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_03/node_sim_gateway.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_03/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_03/node_sim_sleepy.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_04/node_sim_gateway.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_04/node_sim_sleepy_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_04/node_sim_sleepy_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_05/node_sim_gateway.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_05/node_sim_portable.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_05/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_05/node_sim_sleepy_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_05/node_sim_sleepy_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_06/node_sim_gateway.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_06/node_sim_portable.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_06/node_sim_relay.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_06/node_sim_sleepy_nut.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/test_sleepy_conn_06/node_sim_sleepy_peer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test/blackbox/util/gen_invite.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="test/channels-cornercases.c">
 			<Option compilerVar="CC" />
 		</Unit>

@@ -16,8 +16,5 @@
 .dirstamp
 Makefile.in
 .libs
-*join*
-*set_log*
-*status_cb*
 util
 *discovery*

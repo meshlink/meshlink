@@ -43,20 +43,29 @@
 /// mesh events
 // TODO: Add more mesh event if required.
 typedef enum {
+  NO_PREFERENCE = 0,
   META_CONN_SUCCESSFUL,
+  META_CONN,
+  META_DISCONN,
   NODE_INVITATION,
   CHANGED_IP_ADDRESS,
   NODE_UNREACHABLE,
+  NODE_REACHABLE,
   META_RECONN_SUCCESSFUL,
   META_RECONN_FAILURE,
   MESH_DATA_RECEIVED,
   NODE_STARTED,
+  NODE_JOINED,
+  PORT_NO,
   MESH_DATA_VERIFED,
   CHANNEL_OPENED,
   CHANNEL_REQ_RECIEVED,
   CHANNEL_CONNECTED,
   CHANNEL_DATA_RECIEVED,
-  MESH_NODE_DISCOVERED
+  MESH_NODE_DISCOVERED,
+  INCOMING_META_CONN,
+  OUTGOING_META_CONN,
+  AUTO_DISCONN
 } mesh_event_t;
 
 /// mesh event UDP packet
@@ -80,8 +89,8 @@ typedef void (*mesh_event_callback_t)(mesh_event_payload_t mesh_event_packet);
  *
  *  @param ifname       Name of the network interface to which the socket has to be created.
  *
- *  @return             This function returns a NULL terminated string which has IP address and 
- *  										port number of the server socket. The application should call free() after 
+ *  @return             This function returns a NULL terminated string which has IP address and
+ *  										port number of the server socket. The application should call free() after
  *											it has finished using the exported string.
  */
 extern char *mesh_event_sock_create(const char *ifname );
@@ -99,13 +108,13 @@ extern bool wait_for_event(mesh_event_callback_t callback, int timeout);
 
 /// Sends the mesh event to server.
 /** This function sends the mesh event to the server. At the server end it's expected to wait_for_event()
- *  otherwise the packet will be dropped. 
+ *  otherwise the packet will be dropped.
  *
  *  @param client_id        Client id by which server can identify the client/node.
  *  @param event            An enum describing the mesh event.
- *  @param payload          Payload can also be attached along with the mesh event if any, else NULL can 
+ *  @param payload          Payload can also be attached along with the mesh event if any, else NULL can
  *                          can be specified.
- *  @param payload_length   Length of the payload if specified else 0 can be specified. 
+ *  @param payload_length   Length of the payload if specified else 0 can be specified.
  *													the maximum payload size can be upto PAYLOAD_MAX_SIZE and if the
  *                          PAYLOAD_MAX_SIZE macro is changed it should not exceed the UDP datagram size.
  *
@@ -123,4 +132,6 @@ extern bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payloa
  *  @return                  This function returns true on success else returns false.
  */
 extern bool mesh_event_sock_connect(const char *server_address );
+
+bool wait_for_event_only(mesh_event_callback_t callback, int t, mesh_event_t event);
 #endif // _MESH_EVENT_HANDLER_H_

@@ -40,4 +40,8 @@ ar-lib
 /examples/meshlink.conf
 ar-lib
 meshlink.layout
+/test/blackbox/test_sleepy*
+/test/blackbox/run_sleepy_tests
+/test/run_sleepy_test*
+/test/.chat/ecdsa_key.priv
 >>>>>>> Stashed changes
