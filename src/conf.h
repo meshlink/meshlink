@@ -27,7 +27,6 @@
 typedef struct config_t {
 	char *variable;
 	char *value;
-	char *file;
 	int line;
 } config_t;
 
@@ -44,10 +43,6 @@ extern bool set_config_int(config_t *, int);
 extern bool get_config_string(const config_t *, char **);
 extern bool set_config_string(config_t *, const char *);
 extern bool get_config_address(const config_t *, struct addrinfo **);
-
-extern config_t *parse_config_line(char *, const char *, int);
-extern bool read_config_file(struct splay_tree_t *, const char *);
-extern bool write_config_file(const struct splay_tree_t *, const char *);
 
 extern bool read_server_config(struct meshlink_handle *mesh);
 extern bool read_host_config(struct meshlink_handle *mesh, struct splay_tree_t *, const char *);

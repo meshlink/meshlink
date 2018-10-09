@@ -782,8 +782,8 @@ void try_outgoing_connections(meshlink_handle_t *mesh) {
 
 		if(!check_id(name)) {
 			logger(mesh, MESHLINK_ERROR,
-			       "Invalid name for outgoing connection in %s line %d",
-			       cfg->file, cfg->line);
+			       "Invalid name for outgoing connection in line %d",
+			       cfg->line);
 			free(name);
 			continue;
 		}

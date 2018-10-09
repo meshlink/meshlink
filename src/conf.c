@@ -40,13 +40,7 @@ static int config_compare(const config_t *a, const config_t *b) {
 		return result;
 	}
 
-	result = a->line - b->line;
-
-	if(result) {
-		return result;
-	} else {
-		return a->file ? strcmp(a->file, b->file) : 0;
-	}
+	return result = a->line - b->line;
 }
 
 void init_configuration(splay_tree_t **config_tree) {
@@ -66,18 +60,8 @@ config_t *new_config(void) {
 }
 
 void free_config(config_t *cfg) {
-	if(cfg->variable) {
-		free(cfg->variable);
-	}
-
-	if(cfg->value) {
-		free(cfg->value);
-	}
-
-	if(cfg->file) {
-		free(cfg->file);
-	}
-
+	free(cfg->variable);
+	free(cfg->value);
 	free(cfg);
 }
 
@@ -89,7 +73,6 @@ config_t *lookup_config(splay_tree_t *config_tree, char *variable) {
 	config_t cfg, *found;
 
 	cfg.variable = variable;
-	cfg.file = NULL;
 	cfg.line = 0;
 
 	found = splay_search_closest_greater(config_tree, &cfg);
@@ -137,8 +120,8 @@ bool get_config_bool(const config_t *cfg, bool *result) {
 		return true;
 	}
 
-	logger(NULL, MESHLINK_ERROR, "\"yes\" or \"no\" expected for configuration variable %s in %s line %d",
-	       cfg->variable, cfg->file, cfg->line);
+	logger(NULL, MESHLINK_ERROR, "\"yes\" or \"no\" expected for configuration variable %s in line %d",
+	       cfg->variable, cfg->line);
 
 	return false;
 }
@@ -152,8 +135,8 @@ bool get_config_int(const config_t *cfg, int *result) {
 		return true;
 	}
 
-	logger(NULL, MESHLINK_ERROR, "Integer expected for configuration variable %s in %s line %d",
-	       cfg->variable, cfg->file, cfg->line);
+	logger(NULL, MESHLINK_ERROR, "Integer expected for configuration variable %s in line %d",
+	       cfg->variable, cfg->line);
 
 	return false;
 }
@@ -213,8 +196,8 @@ bool get_config_address(const config_t *cfg, struct addrinfo **result) {
 		return true;
 	}
 
-	logger(NULL, MESHLINK_ERROR, "Hostname or IP address expected for configuration variable %s in %s line %d",
-	       cfg->variable, cfg->file, cfg->line);
+	logger(NULL, MESHLINK_ERROR, "Hostname or IP address expected for configuration variable %s in line %d",
+	       cfg->variable, cfg->line);
 
 	return false;
 }
@@ -285,7 +268,6 @@ config_t *parse_config_line(char *line, const char *fname, int lineno) {
 	cfg = new_config();
 	cfg->variable = xstrdup(variable);
 	cfg->value = xstrdup(value);
-	cfg->file = xstrdup(fname);
 	cfg->line = lineno;
 
 	return cfg;

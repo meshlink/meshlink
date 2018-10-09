@@ -869,6 +869,8 @@ static const char *errstr[] = {
 	[MESHLINK_ESTORAGE] = "Storage error",
 	[MESHLINK_ENETWORK] = "Network error",
 	[MESHLINK_EPEER] = "Error communicating with peer",
+	[MESHLINK_ENOTSUP] = "Operation not supported",
+	[MESHLINK_EBUSY] = "MeshLink instance already in use",
 };
 
 const char *meshlink_strerror(meshlink_errno_t err) {
@@ -1116,6 +1118,32 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 		}
 	}
 
+	// Open the configuration file and lock it
+
+	mesh->conffile = fopen(filename, "r");
+
+	if(!mesh->conffile) {
+		logger(NULL, MESHLINK_ERROR, "Cannot not open %s: %s\n", filename, strerror(errno));
+		meshlink_close(mesh);
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return NULL;
+	}
+
+#ifdef FD_CLOEXEC
+	fcntl(fileno(mesh->conffile), F_SETFD, FD_CLOEXEC);
+#endif
+
+#ifdef HAVE_MINGW
+	// TODO: use _locking()?
+#else
+	if(flock(fileno(mesh->conffile), LOCK_EX | LOCK_NB) != 0) {
+		logger(NULL, MESHLINK_ERROR, "Cannot lock %s: %s\n", filename, strerror(errno));
+		meshlink_close(mesh);
+		meshlink_errno = MESHLINK_EBUSY;
+		return NULL;
+	}
+#endif
+
 	// Read the configuration
 
 	init_configuration(&mesh->config);
@@ -1324,6 +1352,10 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	free(mesh->appname);
 	free(mesh->confbase);
 	pthread_mutex_destroy(&(mesh->mesh_mutex));
+
+	if(mesh->conffile) {
+		fclose(mesh->conffile);
+        }
 
 	memset(mesh, 0, sizeof(*mesh));
 

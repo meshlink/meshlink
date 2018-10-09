@@ -66,6 +66,7 @@ struct meshlink_handle {
 	dev_class_t devclass;
 
 	char *confbase;
+	FILE *conffile;
 
 	meshlink_receive_cb_t receive_cb;
 	meshlink_node_status_cb_t node_status_cb;
