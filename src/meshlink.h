@@ -76,6 +76,13 @@ typedef enum {
 	_DEV_CLASS_MAX = 3
 } dev_class_t;
 
+/// Invitation flags
+static const uint32_t MESHLINK_INVITE_LOCAL = 1;    // Only use local addresses in the URL
+static const uint32_t MESHLINK_INVITE_PUBLIC = 2;   // Only use public or canonical addresses in the URL
+static const uint32_t MESHLINK_INVITE_IPV4 = 4;     // Only use IPv4 addresses in the URL
+static const uint32_t MESHLINK_INVITE_IPV6 = 8;     // Only use IPv6 addresses in the URL
+static const uint32_t MESHLINK_INVITE_NUMERIC = 16; // Don't look up hostnames
+
 /// Channel flags
 static const uint32_t MESHLINK_CHANNEL_RELIABLE = 1;   // Data is retransmitted when packets are lost.
 static const uint32_t MESHLINK_CHANNEL_ORDERED = 2;    // Data is delivered in-order to the application.
@@ -498,9 +505,31 @@ extern char *meshlink_get_external_address(meshlink_handle_t *mesh);
  *
  *  @return             This function returns a pointer to a C string containing the discovered external address,
  *                      or NULL if there was an error looking up the address.
- *                      After meshlink_get_external_address() returns, the application is free to overwrite or free this string.
+ *                      After meshlink_get_external_address_for_family() returns, the application is free to overwrite or free this string.
  */
 extern char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int address_family);
+
+/// Try to discover the local address for the local node.
+/** This function performs tries to discover the address of the local interface used for outgoing connection.
+ *
+ *  Please note that this is function only returns a single address,
+ *  even if the interface might have more than one address.
+ *  In that case, there is no control over which address will be selected.
+ *  Also note that if you have a dynamic IP address,
+ *  there is no guarantee that the local address will be valid for an extended period of time.
+ *
+ *  This function will fail if it couldn't find a local address for the given address family.
+ *  If hostname resolving is requested, this function may block for a few seconds.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param family       The address family to check, for example AF_INET or AF_INET6. If AF_UNSPEC is given,
+ *                      this might return the local address for any working address family.
+ *
+ *  @return             This function returns a pointer to a C string containing the discovered local address,
+ *                      or NULL if there was an error looking up the address.
+ *                      After meshlink_get_local_address_for_family() returns, the application is free to overwrite or free this string.
+ */
+extern char *meshlink_get_local_address_for_family(meshlink_handle_t *mesh, int address_family);
 
 /// Try to discover the external address for the local node, and add it to its list of addresses.
 /** This function is equivalent to:
@@ -557,6 +586,24 @@ extern void meshlink_set_invitation_timeout(meshlink_handle_t *mesh, int timeout
  *  The generated invitation is a string containing a URL.
  *  This URL should be passed by the application to the invitee in a way that no eavesdroppers can see the URL.
  *  The URL can only be used once, after the user has joined the mesh the URL is no longer valid.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param name         A nul-terminated C string containing the name that the invitee will be allowed to use in the mesh.
+ *                      After this function returns, the application is free to overwrite or free @a name @a.
+ *  @param flags        A bitwise-or'd combination of flags that controls how the URL is generated.
+ *
+ *  @return             This function returns a nul-terminated C string that contains the invitation URL, or NULL in case of an error.
+ *                      The application should call free() after it has finished using the URL.
+ */
+extern char *meshlink_invite_ex(meshlink_handle_t *mesh, const char *name, uint32_t flags);
+
+/// Invite another node into the mesh.
+/** This function generates an invitation that can be used by another node to join the same mesh as the local node.
+ *  The generated invitation is a string containing a URL.
+ *  This URL should be passed by the application to the invitee in a way that no eavesdroppers can see the URL.
+ *  The URL can only be used once, after the user has joined the mesh the URL is no longer valid.
+ *
+ *  Calling this function is equal to callen meshlink_invite_ex() with flags set to 0.
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param name         A nul-terminated C string containing the name that the invitee will be allowed to use in the mesh.
@@ -773,6 +820,9 @@ extern meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, mes
  *  This function returns a pointer to a struct meshlink_channel that will be allocated by MeshLink.
  *  When the application does no longer need to use this channel, it must call meshlink_close()
  *  to free its resources.
+ *
+ *  Calling this function is equivalent to calling meshlink_channel_open_ex()
+ *  with the flags set to MESHLINK_CHANNEL_TCP.
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param node         The node to which this channel is being initiated.

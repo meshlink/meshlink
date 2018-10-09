@@ -95,9 +95,8 @@ static int rstrip(char *value) {
 	return len;
 }
 
-static void scan_for_hostname(const char *filename, char **hostname, char **port) {
+static void scan_for_canonical_address(const char *filename, char **hostname, char **port) {
 	char line[4096];
-	bool canonical = false;
 
 	if(!filename || (*hostname && *port)) {
 		return;
@@ -141,21 +140,8 @@ static void scan_for_hostname(const char *filename, char **hostname, char **port
 
 		if(!*port && !strcasecmp(line, "Port")) {
 			*port = xstrdup(q);
-		} else if(!canonical && !*hostname && !strcasecmp(line, "Address")) {
-			// Check that the hostname is a symbolic name (it's not a numeric IPv4 or IPv6 address)
-			if(!q[strspn(q, "0123456789.")] || strchr(q, ':')) {
-				continue;
-			}
-
-			*hostname = xstrdup(q);
-
-			if(*p) {
-				free(*port);
-				*port = xstrdup(p);
-			}
 		} else if(!strcasecmp(line, "CanonicalAddress")) {
 			*hostname = xstrdup(q);
-			canonical = true;
 
 			if(*p) {
 				free(*port);
@@ -163,7 +149,7 @@ static void scan_for_hostname(const char *filename, char **hostname, char **port
 			}
 		}
 
-		if(canonical && *hostname && *port) {
+		if(*hostname && *port) {
 			break;
 		}
 	}
@@ -324,22 +310,6 @@ char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int fami
 		hostname = NULL;
 	}
 
-	// If there is no hostname, determine the address used for an outgoing connection.
-	if(!hostname) {
-		char localaddr[NI_MAXHOST];
-		bool success = false;
-
-		if(family == AF_INET) {
-			success = getlocaladdrname("93.184.216.34", localaddr, sizeof(localaddr));
-		} else if(family == AF_INET6) {
-			success = getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", localaddr, sizeof(localaddr));
-		}
-
-		if(success) {
-			hostname = xstrdup(localaddr);
-		}
-	}
-
 	if(!hostname) {
 		meshlink_errno = MESHLINK_ERESOLV;
 	}
@@ -347,66 +317,194 @@ char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int fami
 	return hostname;
 }
 
-// String comparison which handles NULL arguments
-static bool safe_streq(const char *a, const char *b) {
-	if(!a || !b) {
-		return a == b;
-	} else {
-		return !strcmp(a, b);
+char *meshlink_get_local_address_for_family(meshlink_handle_t *mesh, int family) {
+	(void)mesh;
+
+	// Determine address of the local interface used for outgoing connections.
+	char localaddr[NI_MAXHOST];
+	bool success = false;
+
+	if(family == AF_INET) {
+		success = getlocaladdrname("93.184.216.34", localaddr, sizeof(localaddr));
+	} else if(family == AF_INET6) {
+		success = getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", localaddr, sizeof(localaddr));
 	}
+
+	if(!success) {
+		meshlink_errno = MESHLINK_ENETWORK;
+		return NULL;
+	}
+
+	return xstrdup(localaddr);
 }
 
-// This gets the hostname part for use in invitation URLs
-static char *get_my_hostname(meshlink_handle_t *mesh) {
-	char *hostname[3] = {NULL};
-	char *port[3] = {NULL};
-	char *hostport = NULL;
-
-	// Use the best Address statement in our own host config file
-	char filename[PATH_MAX] = "";
-	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
-	scan_for_hostname(filename, &hostname[0], &port[0]);
-
-	hostname[1] = meshlink_get_external_address_for_family(mesh, AF_INET);
-	hostname[2] = meshlink_get_external_address_for_family(mesh, AF_INET6);
-
-	// Concatenate all unique address to the hostport string
-	for(int i = 0; i < 3; i++) {
-		if(!hostname[i]) {
+void remove_duplicate_hostnames(char *host[], char *port[], int n) {
+	for(int i = 0; i < n; i++) {
+		if(!host[i]) {
 			continue;
 		}
 
 		// Ignore duplicate hostnames
 		bool found = false;
 
-		for(int j = 0; i < j; j++) {
-			if(safe_streq(hostname[i], hostname[j]) && safe_streq(port[i], port[j])) {
-				found = true;
-				break;
+		for(int j = 0; j < i; j++) {
+			if(!host[j]) {
+				continue;
 			}
+
+			if(strcmp(host[i], host[j])) {
+				continue;
+			}
+
+			if(strcmp(port[i], port[j])) {
+				continue;
+			}
+
+			found = true;
+			break;
 		}
 
 		if(found) {
-			free(hostname[i]);
+			free(host[i]);
 			free(port[i]);
-			hostname[i] = NULL;
+			host[i] = NULL;
 			port[i] = NULL;
+			continue;
+		}
+	}
+}
+
+// This gets the hostname part for use in invitation URLs
+static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
+	char *hostname[4] = {NULL};
+	char *port[4] = {NULL};
+	char *hostport = NULL;
+
+	if(!(flags & (MESHLINK_INVITE_LOCAL | MESHLINK_INVITE_PUBLIC))) {
+		flags |= MESHLINK_INVITE_LOCAL | MESHLINK_INVITE_PUBLIC;
+	}
+
+	if(!(flags & (MESHLINK_INVITE_IPV4 | MESHLINK_INVITE_IPV6))) {
+		flags |= MESHLINK_INVITE_IPV4 | MESHLINK_INVITE_IPV6;
+	}
+
+	fprintf(stderr, "flags = %u\n", flags);
+
+	// Add local addresses if requested
+	if(flags & MESHLINK_INVITE_LOCAL) {
+		if(flags & MESHLINK_INVITE_IPV4) {
+			hostname[0] = meshlink_get_local_address_for_family(mesh, AF_INET);
+		}
+
+		if(flags & MESHLINK_INVITE_IPV6) {
+			hostname[1] = meshlink_get_local_address_for_family(mesh, AF_INET6);
+		}
+	}
+
+	// Add public/canonical addresses if requested
+	if(flags & MESHLINK_INVITE_PUBLIC) {
+		// Try the CanonicalAddress first
+		char filename[PATH_MAX] = "";
+		snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, mesh->self->name);
+		scan_for_canonical_address(filename, &hostname[2], &port[2]);
+
+		if(!hostname[2]) {
+			if(flags & MESHLINK_INVITE_IPV4) {
+				hostname[2] = meshlink_get_external_address_for_family(mesh, AF_INET);
+			}
+
+			if(flags & MESHLINK_INVITE_IPV6) {
+				hostname[3] = meshlink_get_external_address_for_family(mesh, AF_INET6);
+			}
+		}
+	}
+
+	for(int i = 0; i < 4; i++) {
+		// Ensure we always have a port number
+		if(hostname[i] && !port[i]) {
+			port[i] = xstrdup(mesh->myport);
+		}
+	}
+
+	remove_duplicate_hostnames(hostname, port, 4);
+
+	if(!(flags & MESHLINK_INVITE_NUMERIC)) {
+		for(int i = 0; i < 4; i++) {
+			if(!hostname[i]) {
+				continue;
+			}
+
+			// Convert what we have to a sockaddr
+			struct addrinfo *ai_in, *ai_out;
+			struct addrinfo hint = {
+				.ai_family = AF_UNSPEC,
+				.ai_flags = AI_NUMERICSERV,
+				.ai_socktype = SOCK_STREAM,
+			};
+			int err = getaddrinfo(hostname[i], port[i], &hint, &ai_in);
+
+			if(err || !ai_in) {
+				continue;
+			}
+
+			// Convert it to a hostname
+			char resolved_host[NI_MAXHOST];
+			char resolved_port[NI_MAXSERV];
+			err = getnameinfo(ai_in->ai_addr, ai_in->ai_addrlen, resolved_host, sizeof resolved_host, resolved_port, sizeof resolved_port, NI_NUMERICSERV);
+
+			if(err) {
+				freeaddrinfo(ai_in);
+				continue;
+			}
+
+			// Convert the hostname back to a sockaddr
+			hint.ai_family = ai_in->ai_family;
+			err = getaddrinfo(resolved_host, resolved_port, &hint, &ai_out);
+
+			if(err || !ai_out) {
+				freeaddrinfo(ai_in);
+				continue;
+			}
+
+			// Check if it's still the same sockaddr
+			if(ai_in->ai_addrlen != ai_out->ai_addrlen || memcmp(ai_in->ai_addr, ai_out->ai_addr, ai_in->ai_addrlen)) {
+				freeaddrinfo(ai_in);
+				freeaddrinfo(ai_out);
+				continue;
+			}
+
+			// Yes: replace the hostname with the resolved one
+			free(hostname[i]);
+			hostname[i] = xstrdup(resolved_host);
+
+			freeaddrinfo(ai_in);
+			freeaddrinfo(ai_out);
+		}
+	}
+
+	// Remove duplicates again, since IPv4 and IPv6 addresses might map to the same hostname
+	remove_duplicate_hostnames(hostname, port, 4);
+
+	// Concatenate all unique address to the hostport string
+	for(int i = 0; i < 4; i++) {
+		if(!hostname[i]) {
 			continue;
 		}
 
 		// Ensure we have the same addresses in our own host config file.
 		char *tmphostport;
-		xasprintf(&tmphostport, "%s %s", hostname[i], port[i] ? port[i] : mesh->myport);
+		xasprintf(&tmphostport, "%s %s", hostname[i], port[i]);
 		append_config_file(mesh, mesh->self->name, "Address", tmphostport);
 		free(tmphostport);
 
 		// Append the address to the hostport string
 		char *newhostport;
-		xasprintf(&newhostport, (strchr(hostname[i], ':') ? "%s%s[%s]:%s" : "%s%s%s:%s"), hostport ? hostport : "", hostport ? "," : "", hostname[i], port[i] ? port[i] : mesh->myport);
-		free(hostname[i]);
-		free(port[i]);
+		xasprintf(&newhostport, (strchr(hostname[i], ':') ? "%s%s[%s]:%s" : "%s%s%s:%s"), hostport ? hostport : "", hostport ? "," : "", hostname[i], port[i]);
 		free(hostport);
 		hostport = newhostport;
+
+		free(hostname[i]);
+		free(port[i]);
 	}
 
 	return hostport;
@@ -1911,7 +2009,7 @@ void meshlink_set_invitation_timeout(meshlink_handle_t *mesh, int timeout) {
 	mesh->invitation_timeout = timeout;
 }
 
-char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
+char *meshlink_invite_ex(meshlink_handle_t *mesh, const char *name, uint32_t flags) {
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
@@ -1947,7 +2045,7 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 	}
 
 	// Get the local address
-	char *address = get_my_hostname(mesh);
+	char *address = get_my_hostname(mesh, flags);
 
 	if(!address) {
 		logger(mesh, MESHLINK_DEBUG, "No Address known for ourselves!\n");
@@ -2047,6 +2145,10 @@ char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return url;
+}
+
+char *meshlink_invite(meshlink_handle_t *mesh, const char *name) {
+	return meshlink_invite_ex(mesh, name, 0);
 }
 
 bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {

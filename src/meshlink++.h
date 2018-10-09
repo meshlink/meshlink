@@ -446,6 +446,28 @@ public:
 		return meshlink_get_external_address_for_family(handle, family);
 	}
 
+	/** This function performs tries to discover the address of the local interface used for outgoing connection.
+	 *
+	 *  Please note that this is function only returns a single address,
+	 *  even if the local node might have more than one external address.
+	 *  In that case, there is no control over which address will be selected.
+	 *  Also note that if you have a dynamic IP address, or are behind carrier-grade NAT,
+	 *  there is no guarantee that the external address will be valid for an extended period of time.
+	 *
+	 *  This function will fail if it couldn't find a local address for the given address family.
+	 *  If hostname resolving is requested, this function may block for a few seconds.
+	 *
+	 *  @param family       The address family to check, for example AF_INET or AF_INET6. If AF_UNSPEC is given,
+	 *                      this might return the external address for any working address family.
+	 *
+	 *  @return             This function returns a pointer to a C string containing the discovered external address,
+	 *                      or NULL if there was an error looking up the address.
+	 *                      After get_external_address() returns, the application is free to overwrite or free this string.
+	 */
+	bool get_local_address(int family = AF_UNSPEC) {
+		return meshlink_get_local_address_for_family(handle, family);
+	}
+
 	/// Try to discover the external address for the local node, and add it to its list of addresses.
 	/** This function is equivalent to:
 	 *
@@ -505,12 +527,13 @@ public:
 	 *  The URL can only be used once, after the user has joined the mesh the URL is no longer valid.
 	 *
 	 *  @param name         The name that the invitee will use in the mesh.
+	 *  @param flags        A bitwise-or'd combination of flags that controls how the URL is generated.
 	 *
 	 *  @return             This function returns a string that contains the invitation URL.
 	 *                      The application should call free() after it has finished using the URL.
 	 */
-	char *invite(const char *name) {
-		return meshlink_invite(handle, name);
+	char *invite(const char *name, uint32_t flags = 0) {
+		return meshlink_invite_ex(handle, name, flags);
 	}
 
 	/// Use an invitation to join a mesh.
