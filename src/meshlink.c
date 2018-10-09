@@ -349,10 +349,11 @@ char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int fami
 
 // String comparison which handles NULL arguments
 static bool safe_streq(const char *a, const char *b) {
-	if (!a || !b)
+	if(!a || !b) {
 		return a == b;
-	else
+	} else {
 		return !strcmp(a, b);
+	}
 }
 
 // This gets the hostname part for use in invitation URLs
@@ -370,21 +371,22 @@ static char *get_my_hostname(meshlink_handle_t *mesh) {
 	hostname[2] = meshlink_get_external_address_for_family(mesh, AF_INET6);
 
 	// Concatenate all unique address to the hostport string
-	for (int i = 0; i < 3; i++) {
-		if (!hostname[i])
+	for(int i = 0; i < 3; i++) {
+		if(!hostname[i]) {
 			continue;
+		}
 
 		// Ignore duplicate hostnames
 		bool found = false;
 
-		for (int j = 0; i < j; j++) {
-			if (safe_streq(hostname[i], hostname[j]) && safe_streq(port[i], port[j])) {
+		for(int j = 0; i < j; j++) {
+			if(safe_streq(hostname[i], hostname[j]) && safe_streq(port[i], port[j])) {
 				found = true;
 				break;
 			}
 		}
 
-		if (found) {
+		if(found) {
 			free(hostname[i]);
 			free(port[i]);
 			hostname[i] = NULL;
@@ -1136,12 +1138,14 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 #ifdef HAVE_MINGW
 	// TODO: use _locking()?
 #else
+
 	if(flock(fileno(mesh->conffile), LOCK_EX | LOCK_NB) != 0) {
 		logger(NULL, MESHLINK_ERROR, "Cannot lock %s: %s\n", filename, strerror(errno));
 		meshlink_close(mesh);
 		meshlink_errno = MESHLINK_EBUSY;
 		return NULL;
 	}
+
 #endif
 
 	// Read the configuration
