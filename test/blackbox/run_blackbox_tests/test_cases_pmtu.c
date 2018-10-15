@@ -1,25 +1,22 @@
-/*===================================================================================*/
-/*************************************************************************************/
-/**
- * @file      test_cases_pmtu.c -- Execution of specific meshlink black box test cases
- * @see
- * @author    Sri Harsha K, sriharsha@elear.solutions
- * @copyright 2017  Guus Sliepen <guus@meshlink.io>
- *                  Manav Kumar Mehta <manavkumarm@yahoo.com>
- * @license   To any person (the "Recipient") obtaining a copy of this software and
- *            associated documentation files (the "Software"):\n
- *            All information contained in or disclosed by this software is
- *            confidential and proprietary information of Elear Solutions Tech
- *            Private Limited and all rights therein are expressly reserved.
- *            By accepting this material the recipient agrees that this material and
- *            the information contained therein is held in confidence and in trust
- *            and will NOT be used, copied, modified, merged, published, distributed,
- *            sublicensed, reproduced in whole or in part, nor its contents revealed
- *            in any manner to others without the express written permission of
- *            Elear Solutions Tech Private Limited.
- */
-/*************************************************************************************/
-/*===================================================================================*/
+/*
+    test_cases_pmtu.c -- Execution of specific meshlink black box test cases
+    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "execute_tests.h"
 #include "test_cases_pmtu.h"
 #include "../common/containers.h"
@@ -32,13 +29,6 @@
 #include <assert.h>
 #include <string.h>
 
-/*************************************************************************************
- *                          LOCAL MACROS                                             *
- *************************************************************************************/
-
-/*************************************************************************************
- *                          LOCAL PROTOTYPES                                         *
- *************************************************************************************/
 static void test_case_mesh_pmtu_01(void **state);
 static bool test_steps_mesh_pmtu_01(void);
 static void test_case_mesh_pmtu_02(void **state);
@@ -46,81 +36,61 @@ static bool test_steps_mesh_pmtu_02(void);
 static void test_case_mesh_pmtu_03(void **state);
 static bool test_steps_mesh_pmtu_03(void);
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 /* State structure for meshlink_get_pmtu Test Case #1 */
 static black_box_state_t test_mesh_pmtu_01_state = {
-    /* test_case_name = */ "test_case_mesh_pmtu_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_pmtu_01",
 };
 
 /* State structure for meshlink_get_pmtu Test Case #2 */
 static black_box_state_t test_mesh_pmtu_02_state = {
-    /* test_case_name = */ "test_case_mesh_pmtu_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_pmtu_02",
 };
 
 /* State structure for meshlink_get_pmtu Test Case #3 */
 static black_box_state_t test_mesh_pmtu_03_state = {
-    /* test_case_name = */ "test_case_mesh_pmtu_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_pmtu_03",
 };
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 /* Execute meshlink_get_pmtu Test Case # 1 */
 static void test_case_mesh_pmtu_01(void **state) {
-    execute_test(test_steps_mesh_pmtu_01, state);
-    return;
+  execute_test(test_steps_mesh_pmtu_01, state);
+  return;
 }
 
-/* Test Steps for meshlink_get_pmtu Test Case # 1*/
+/* Test Steps for meshlink_get_pmtu Test Case # 1
+
+    Test Steps:
+    1. Create node instance & get self handle
+    2. Obtain MTU size
+
+    Expected Result:
+    meshlink_get_pmtu should return valid MTU size of a node
+*/
 static bool test_steps_mesh_pmtu_01(void) {
-	bool result = false;
-  meshlink_handle_t *mesh = NULL;
-	meshlink_node_t *dest_node = NULL;
-	int pmtu;
-	mesh = meshlink_open("pmtu_conf.1", "foo", "chat", DEV_CLASS_STATIONARY);
+	meshlink_handle_t *mesh = meshlink_open("pmtu_conf", "foo", "test", DEV_CLASS_STATIONARY);
 	assert(mesh != NULL);
-	if(!mesh) {
-		fprintf(stderr, "meshlink_open status1: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	if (!meshlink_start(mesh)) {
-		fprintf(stderr, "meshlink_start status: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	dest_node = meshlink_get_self(mesh);
-	assert(dest_node != NULL);
-	if(!dest_node) {
-		fprintf(stderr, "meshlink_get_self status1: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	pmtu = meshlink_get_pmtu(mesh, dest_node);
-	assert(pmtu != -1	);
-	if(!pmtu) {
-		fprintf(stderr, "meshlink_get_pmtu status: %s\n", meshlink_strerror(meshlink_errno));
-		return false;	
-	} else {
-		fprintf(stderr, "pmtu size is: %d\n", pmtu);
-		result = true;
-	}
 
-	meshlink_stop(mesh);
+  assert(meshlink_start(mesh));
+	meshlink_node_t *dest_node = meshlink_get_self(mesh);
+	assert(dest_node != NULL);
+
+	ssize_t pmtu = meshlink_get_pmtu(mesh, dest_node);
+	assert_int_not_equal(pmtu, -1);
+
 	meshlink_close(mesh);
-	meshlink_destroy("pmtu_conf.1");
-  return result;
+	meshlink_destroy("pmtu_conf");
+  return true;
 }
 
-/* Execute meshlink_get_pmtu Test Case # 2 */
+/* Execute meshlink_get_pmtu Test Case # 2
+
+    Test Steps:
+    1. Create node instance & get self handle
+    2. Try to obtain MTU size by passing NULL as mesh handle to API
+
+    Expected Result:
+    meshlink_get_pmtu should return -1 reporting the error
+*/
 static void test_case_mesh_pmtu_02(void **state) {
     execute_test(test_steps_mesh_pmtu_02, state);
     return;
@@ -128,39 +98,19 @@ static void test_case_mesh_pmtu_02(void **state) {
 
 /* Test Steps for meshlink_get_pmtu Test Case # 2*/
 static bool test_steps_mesh_pmtu_02(void) {
-	bool result = false;
-  meshlink_handle_t *mesh = NULL;
-	meshlink_node_t *dest_node = NULL;
-	int pmtu;
-	mesh = meshlink_open("pmtu_conf.2", "foo", "chat", DEV_CLASS_STATIONARY);
+	meshlink_handle_t *mesh = meshlink_open("pmtu_conf", "foo", "test", DEV_CLASS_STATIONARY);
 	assert(mesh != NULL);
-	if(!mesh) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	if (!meshlink_start(mesh)) {
-		fprintf(stderr, "meshlink_start status: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	dest_node = meshlink_get_self(mesh);
-	assert(dest_node != NULL);
-	if(!dest_node) {
-		fprintf(stderr, "meshlink_get_self status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	pmtu = meshlink_get_pmtu(NULL, dest_node);
-	assert(pmtu == -1);
-	if(!pmtu) {
-		fprintf(stderr, "meshlink_get_pmtu status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;	
-	} else {
-		result = true;
-	}
 
-	meshlink_stop(mesh);
+  assert(meshlink_start(mesh));
+	meshlink_node_t *dest_node = meshlink_get_self(mesh);
+	assert(dest_node != NULL);
+
+	ssize_t pmtu = meshlink_get_pmtu(NULL, dest_node);
+	assert_int_equal(pmtu, -1);
+
 	meshlink_close(mesh);
-	meshlink_destroy("pmtu_conf.2");
-  return result;
+	meshlink_destroy("pmtu_conf");
+  return true;
 }
 
 /* Execute meshlink_get_pmtu Test Case # 3 */
@@ -169,46 +119,29 @@ static void test_case_mesh_pmtu_03(void **state) {
     return;
 }
 
-/* Test Steps for meshlink_get_pmtu Test Case # 3*/
-static bool test_steps_mesh_pmtu_03(void) {
-	bool result = false;
-  meshlink_handle_t *mesh = NULL;
-	meshlink_node_t *dest_node = NULL;
-	int pmtu;
-	mesh = meshlink_open("pmtu_conf.3", "foo", "chat", DEV_CLASS_STATIONARY);
-	assert(mesh != NULL);
-	if(!mesh) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	if(!meshlink_start(mesh)) {
-		fprintf(stderr, "meshlink_start status: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	dest_node = meshlink_get_self(mesh);
-	assert(dest_node != NULL);
-	if(!dest_node) {
-		fprintf(stderr, "meshlink_get_self status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	pmtu = meshlink_get_pmtu(mesh, NULL);
-	assert(pmtu == -1);
-	if(!pmtu) {
-		fprintf(stderr, "meshlink_get_pmtu status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;	
-	} else {
-		result = true;
-	}
+/* Test Steps for meshlink_get_pmtu Test Case # 3
 
-	meshlink_stop(mesh);
+    Test Steps:
+    1. Create node instance & get self handle
+    2. Try to obtain MTU size by passing NULL as node handle to API
+
+    Expected Result:
+    meshlink_get_pmtu should return -1 reporting the error
+*/
+static bool test_steps_mesh_pmtu_03(void) {
+	meshlink_handle_t *mesh = meshlink_open("pmtu_conf", "foo", "test", DEV_CLASS_STATIONARY);
+	assert(mesh != NULL);
+
+  assert(meshlink_start(mesh));
+
+	ssize_t pmtu = meshlink_get_pmtu(mesh, NULL);
+	assert_int_equal(pmtu, -1);
+
 	meshlink_close(mesh);
-	meshlink_destroy("pmtu_conf.3");
-  return result;
+	meshlink_destroy("pmtu_conf");
+  return true;
 }
 
-/*************************************************************************************
- *                          PUBLIC FUNCTIONS                                         *
- *************************************************************************************/
 int test_meshlink_pmtu(void) {
 		const struct CMUnitTest blackbox_pmtu_tests[] = {
 				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_pmtu_01, NULL, NULL,

@@ -2,7 +2,6 @@
     run_blackbox_tests.c -- Implementation of Black Box Test Execution for meshlink
 
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -89,7 +88,7 @@ int main(int argc, char *argv[]) {
   int failed_tests = 0;
 
   failed_tests += test_meta_conn();
-
+/*
   failed_tests += test_meshlink_set_status_cb();
   failed_tests += test_meshlink_join();
   failed_tests += test_meshlink_set_channel_poll_cb();
@@ -104,8 +103,8 @@ int main(int argc, char *argv[]) {
   failed_tests += test_meshlink_sign();
   failed_tests += test_meshlink_verify();
   failed_tests += test_meshlink_import();
-  failed_tests += test_meshlink_invite();
-  failed_tests += test_meshlink_set_receive_cb();
+  failed_tests += test_meshlink_invite();*
+  failed_tests += test_meshlink_set_receive_cb();/
   failed_tests += test_meshlink_set_log_cb();
   failed_tests += test_meshlink_set_channel_receive_cb();
   failed_tests += test_meshlink_hint_address();
@@ -127,7 +126,7 @@ int main(int argc, char *argv[]) {
 	failed_tests += test_meshlink_whitelist();
 	failed_tests += test_meshlink_default_blacklist();
 	failed_tests += test_meshlink_channel_open();
-	failed_tests += test_meshlink_channel_close();
+	failed_tests += test_meshlink_channel_close();*/
 
   printf("[ PASSED ] %d test(s).\n", total_tests - failed_tests);
   printf("[ FAILED ] %d test(s).\n", failed_tests);

@@ -1,7 +1,6 @@
 /*
     test_cases_rec_cb.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -44,41 +43,36 @@ static bool test_set_rec_cb_03(void);
 static void test_case_set_rec_cb_04(void **state);
 static bool test_set_rec_cb_04(void);
 
- /* State structure for Meta-connections Test Case #1 */
+ /* Test Steps for meshlink_set_receive_cb Test Case #1 */
 static black_box_state_t test_case_set_rec_cb_01_state = {
-    /* test_case_name = */ "test_case_set_rec_cb_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_set_rec_cb_01",
 };
-/* State structure for Meta-connections Test Case #1 */
+
+/* Test Steps for meshlink_set_receive_cb Test Case #2 */
 static black_box_state_t test_case_set_rec_cb_02_state = {
-    /* test_case_name = */ "test_case_set_rec_cb_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_set_rec_cb_02",
 };
-/* State structure for Meta-connections Test Case #1 */
+
+/* Test Steps for meshlink_set_receive_cb Test Case #3 */
 static black_box_state_t test_case_set_rec_cb_03_state = {
-    /* test_case_name = */ "test_case_set_rec_cb_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_set_rec_cb_03",
 };
-/* call variable gives access to deduce whether receive callback has invoked or not */
-static bool call;
+
+static bool received;
+
 /* mutex for the common variable */
 pthread_mutex_t lock;
 
 /* receive callback function */
 static void rec_cb(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
-   fprintf(stderr, "In receive callback\n");
-   fprintf(stderr, "Received message : %s\n", (char *)data);
+  assert(len);
 
-   pthread_mutex_lock(&lock);
-   call = true;
-   pthread_mutex_unlock(&lock);
-   return;
+  pthread_mutex_lock(&lock);
+  if(len == 5 && !memcmp(data, "test", 5)) {
+    received = true;
+	}
+  pthread_mutex_unlock(&lock);
+  return;
 }
 
 /* Execute meshlink_set_receive_cb Test Case # 1 - Valid case */
@@ -97,38 +91,29 @@ static void test_case_set_rec_cb_01(void **state) {
     Receive callback should be invoked when NUT echoes or sends data for itself.
 */
 static bool test_set_rec_cb_01(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  meshlink_handle_t *mesh_handle = meshlink_open("set_receive_cb_conf", "nut", "node_sim", 1);
+  meshlink_handle_t *mesh_handle = meshlink_open("set_receive_cb_conf", "nut", "test", 1);
   assert(mesh_handle);
-  /* Setting  receive callback */
-  PRINT_TEST_CASE_MSG("Setting Valid receive callback\n");
   meshlink_set_receive_cb(mesh_handle, rec_cb);
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Starting mesh\n");
+
   assert(meshlink_start(mesh_handle));
   sleep(1);
 
-  PRINT_TEST_CASE_MSG("Sending Message\n");
-  char *data = "Test message";
-  /* making 'call' variable default false if receive callback not invoked */
   pthread_mutex_lock(&lock);
-  call = false;
+  received = false;
   pthread_mutex_unlock(&lock);
-
   meshlink_node_t *node_handle = meshlink_get_self(mesh_handle);
   assert(node_handle);
-  assert(meshlink_send(mesh_handle, node_handle, data, strlen(data) + 1));
+  assert(meshlink_send(mesh_handle, node_handle, "test", 5));
   sleep(1);
 
   pthread_mutex_lock(&lock);
-  bool ret = call;
+  bool ret = received;
   pthread_mutex_unlock(&lock);
-  meshlink_stop(mesh_handle);
+
   meshlink_close(mesh_handle);
   meshlink_destroy("set_receive_cb_conf");
 
@@ -156,18 +141,13 @@ static void test_case_set_rec_cb_02(void **state) {
     meshlink_set_receive_cb API reports proper error accordingly.
 */
 static bool test_set_rec_cb_02(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  PRINT_TEST_CASE_MSG("Setting receive callback with NULL as mesh handle\n");
+  // Setting receive callback with NULL as mesh handle
   meshlink_set_receive_cb(NULL, rec_cb);
-  if(meshlink_errno == MESHLINK_EINVAL ) {
-    PRINT_TEST_CASE_MSG("meshlink_set_receive_cb API reports Invalid argument error successfully\n");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("meshlink_set_receive_cb API failed to report Invalid argument error\n");
-    return false;
-  }
+  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+
+  return true;
 }
 
 /* Execute meshlink_set_receive_cb Test Case # 3 - Functionality Test, Trying to set receive call back after
@@ -188,44 +168,37 @@ static void test_case_set_rec_cb_03(void **state) {
     Receive callback can be invoked when NUT echoes or sends data for itself
 */
 static bool test_set_rec_cb_03(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+
   /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  meshlink_handle_t *mesh_handle = meshlink_open("set_receive_cb_conf", "nut", "node_sim", 1);
+  meshlink_handle_t *mesh_handle = meshlink_open("set_receive_cb_conf", "nut", "test", 1);
   assert(mesh_handle);
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Starting mesh\n");
+
   assert(meshlink_start(mesh_handle));
-  /* Setting  receive callback */
-  PRINT_TEST_CASE_MSG("Setting Valid receive callback\n");
-  meshlink_set_receive_cb(mesh_handle, rec_cb);
   sleep(1);
+  meshlink_set_receive_cb(mesh_handle, rec_cb);
 
-  PRINT_TEST_CASE_MSG("Sending Message\n");
-  char *data = "Test message";
-  /* making 'call' variable default false if receive callback not invoked */
   pthread_mutex_lock(&lock);
-  call = false;
+  received = false;
   pthread_mutex_unlock(&lock);
-
   meshlink_node_t *node_handle = meshlink_get_self(mesh_handle);
   assert(node_handle);
-  assert(meshlink_send(mesh_handle, node_handle, data, strlen(data) + 1));
+  assert(meshlink_send(mesh_handle, node_handle, "test", 5));
   sleep(1);
 
   pthread_mutex_lock(&lock);
-  bool ret = call;
+  bool ret = received;
   pthread_mutex_unlock(&lock);
-  meshlink_stop(mesh_handle);
+
   meshlink_close(mesh_handle);
   meshlink_destroy("set_receive_cb_conf");
+
   if(ret) {
-    PRINT_TEST_CASE_MSG("Invoked callback when receive callback has been set even after starting mesh\n");
+    PRINT_TEST_CASE_MSG("Invoked callback\n");
     return true;
   } else {
-    PRINT_TEST_CASE_MSG("No callback invoked when receive callback has been set after starting mesh\n");
+    PRINT_TEST_CASE_MSG("No callback invoked\n");
     return false;
   }
 }

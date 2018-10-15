@@ -25,7 +25,7 @@
 /* Splay operation */
 
 static splay_node_t *splay_top_down(splay_tree_t *tree, const void *data, int *result) {
-	splay_node_t left = SPLAY_NODE_T_INIT, right = SPLAY_NODE_T_INIT;
+	splay_node_t left = {}, right = {};
 	splay_node_t *leftbottom = &left, *rightbottom = &right, *child, *grandchild;
 	splay_node_t *root = tree->root;
 	int c;

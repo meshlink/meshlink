@@ -1,25 +1,22 @@
-/*===================================================================================*/
-/*************************************************************************************/
-/**
- * @file      test_cases_whitelist.c -- Execution of specific meshlink black box test cases
- * @see
- * @author    Sri Harsha K, sriharsha@elear.solutions
- * @copyright 2017  Guus Sliepen <guus@meshlink.io>
- *                  Manav Kumar Mehta <manavkumarm@yahoo.com>
- * @license   To any person (the "Recipient") obtaining a copy of this software and
- *            associated documentation files (the "Software"):\n
- *            All information contained in or disclosed by this software is
- *            confidential and proprietary information of Elear Solutions Tech
- *            Private Limited and all rights therein are expressly reserved.
- *            By accepting this material the recipient agrees that this material and
- *            the information contained therein is held in confidence and in trust
- *            and will NOT be used, copied, modified, merged, published, distributed,
- *            sublicensed, reproduced in whole or in part, nor its contents revealed
- *            in any manner to others without the express written permission of
- *            Elear Solutions Tech Private Limited.
- */
-/*************************************************************************************/
-/*===================================================================================*/
+/*
+    test_cases_whitelist.c -- Execution of specific meshlink black box test cases
+    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "execute_tests.h"
 #include "test_cases_whitelist.h"
 #include "../common/containers.h"
@@ -32,13 +29,8 @@
 #include <assert.h>
 #include <string.h>
 
-/*************************************************************************************
- *                          LOCAL MACROS                                             *
- *************************************************************************************/
+#include "../../utils.h"
 
-/*************************************************************************************
- *                          LOCAL PROTOTYPES                                         *
- *************************************************************************************/
 static void test_case_mesh_whitelist_01(void **state);
 static bool test_steps_mesh_whitelist_01(void);
 static void test_case_mesh_whitelist_02(void **state);
@@ -46,192 +38,125 @@ static bool test_steps_mesh_whitelist_02(void);
 static void test_case_mesh_whitelist_03(void **state);
 static bool test_steps_mesh_whitelist_03(void);
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 /* State structure for meshlink_whitelist Test Case #1 */
 static black_box_state_t test_mesh_whitelist_01_state = {
-    /* test_case_name = */ "test_case_mesh_whitelist_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+  .test_case_name = "test_case_mesh_whitelist_01",
 };
 
 /* State structure for meshlink_whitelist Test Case #2 */
 static black_box_state_t test_mesh_whitelist_02_state = {
-    /* test_case_name = */ "test_case_mesh_whitelist_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+  .test_case_name = "test_case_mesh_whitelist_02",
 };
 
 /* State structure for meshlink_whitelist Test Case #3 */
 static black_box_state_t test_mesh_whitelist_03_state = {
-    /* test_case_name = */ "test_case_mesh_whitelist_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+  .test_case_name = "test_case_mesh_whitelist_03",
 };
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 /* Execute meshlink_whitelist Test Case # 1*/
 static void test_case_mesh_whitelist_01(void **state) {
-	 execute_test(test_steps_mesh_whitelist_01, state);
-   return;
+  execute_test(test_steps_mesh_whitelist_01, state);
+  return;
 }
+
+static bool receive_data = false;
 
 static void receive(meshlink_handle_t *mesh, meshlink_node_t *src, const void *data, size_t len) {
 	const char *msg = data;
+	assert(len);
 
-	if(!len) {
-		fprintf(stderr, "Received invalid data from %s\n", src->name);
-		return;
-	}
+	receive_data = true;
 
 	fprintf(stderr, "%s says: %s\n", src->name, msg);
 }
 
-static volatile bool node_reachable = false;
+static bool node_reachable = false;
 
-static void status_cb4(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 	if(!strcmp(node->name, "bar"))
 		node_reachable = reachable;
 }
 
 
-/* Test Steps for meshlink_whitelist Test Case # 1*/
+/* Test Steps for meshlink_whitelist Test Case # 1
+
+    Test Steps:
+    1. Run 2 node instances
+    2. Blacklist one node and again whitelist the blacklisted node
+
+    Expected Result:
+    meshlink_whitelist API whitelists the blacklisted node
+*/
 static bool test_steps_mesh_whitelist_01(void) {
 	bool result = false;
-	char *msg = NULL;
-	char buf[] = "bar";
-	msg = buf;
-	char *mes = NULL;
-	char buffer[] = "foo";
-	mes = buffer;	
-	size_t len = sizeof(buf);
-	size_t leng = sizeof(buffer);
+
 	// Open two new meshlink instance.
+
 	meshlink_destroy("whitelist_conf.1");
 	meshlink_destroy("whitelist_conf.2");
-	meshlink_handle_t *mesh1 = meshlink_open("whitelist_conf.1", "foo", "blacklist", DEV_CLASS_BACKBONE);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
-
-	meshlink_handle_t *mesh2 = meshlink_open("whitelist_conf.2", "bar", "blacklist", DEV_CLASS_BACKBONE);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
-
+	meshlink_handle_t *mesh1 = meshlink_open("whitelist_conf.1", "foo", "test", DEV_CLASS_BACKBONE);
+	assert(mesh1);
+	meshlink_handle_t *mesh2 = meshlink_open("whitelist_conf.2", "bar", "test", DEV_CLASS_BACKBONE);
+	assert(mesh2);
 	meshlink_set_receive_cb(mesh2, receive);
-	meshlink_set_receive_cb(mesh1, receive);	
+	meshlink_set_receive_cb(mesh1, receive);
 
-	// Disable local discovery
-
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
-
-	// Import and export both side's data
-
-	meshlink_add_address(mesh1, "localhost");
-	meshlink_add_address(mesh2, "localhost");
+	// Export & Import to join the mesh
 
 	char *data = meshlink_export(mesh1);
-	if(!data) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh2, data)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
-
+	assert(data);
+	assert(meshlink_import(mesh2, data));
 	free(data);
-
 	data = meshlink_export(mesh2);
-	if(!data) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-
-	if(!meshlink_import(mesh1, data)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
+	assert(data);
+	assert(meshlink_import(mesh1, data));
 	free(data);
 
 	// Start both instances
 
-	meshlink_set_node_status_cb(mesh1, status_cb4);
+	node_reachable = false;
+	meshlink_set_node_status_cb(mesh1, status_cb);
+	assert(meshlink_start(mesh1));
+	assert(meshlink_start(mesh2));
 
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
+	// Nodes should know each other
+  assert_after(node_reachable, 5);
 
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-
-	// Wait for the two to connect.
-
-
-	sleep(2);
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-	if(!bar) {
-		fprintf(stderr, "Bar did not know about node bar\n");
-		return false;
-	}
+	assert(bar);
 	meshlink_node_t *foo = meshlink_get_node(mesh2, "foo");
-	if(!foo) {
-		fprintf(stderr, "Bar did not know about node bar\n");
-		return false;
-	}
+	assert(foo);
 
-	result = meshlink_send(mesh1, bar, msg, len);
-	assert(result != false);
-	if(!result) {
-		fprintf(stderr, "meshlink_send status6: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	} else {
-		fprintf(stderr, "data %s sent to %s node\n", msg, bar->name);
-		result = true;
-	}
-	
+	receive_data = false;
+	assert(meshlink_send(mesh1, bar, "test", 5));
+  assert_after(receive_data, 3);
+
+
 	meshlink_blacklist(mesh1, foo);
 	meshlink_whitelist(mesh1, foo);
-	
-	sleep(2);
-	result = meshlink_send(mesh2, foo, mes, leng);
-	assert(result != false);
-	if(!result) {
-		fprintf(stderr, "meshlink_send status6: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	} else {
-		fprintf(stderr, "data %s sent to %s node\n", mes, foo->name);
-		result = true;
-	}
-	
+
+	receive_data = false;
+	result = meshlink_send(mesh2, foo, "test", 5);
+  assert_after(receive_data, 5);
+
 	// Clean up.
 
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
 	meshlink_close(mesh2);
 	meshlink_close(mesh1);
 	meshlink_destroy("whitelist_conf.1");
 	meshlink_destroy("whitelist_conf.2");
+
 	return result;
 }
 
-/* Execute meshlink_whitelist Test Case # 2*/
+/* Test Steps for meshlink_whitelist Test Case # 2
+
+    Test Steps:
+    1. Calling meshlink_whitelist with NULL as mesh handle argument.
+
+    Expected Result:
+    meshlink_whitelist API handles the invalid parameter when called by giving proper error number.
+*/
 static void test_case_mesh_whitelist_02(void **state) {
 	 execute_test(test_steps_mesh_whitelist_02, state);
    return;
@@ -240,137 +165,59 @@ static void test_case_mesh_whitelist_02(void **state) {
 /* Test Steps for meshlink_whitelist Test Case # 2*/
 static bool test_steps_mesh_whitelist_02(void) {
 	bool result = false;
-	char *msg = NULL;
-	char buf[] = "bar";
-	msg = buf;
-	char *mes = NULL;
-	char buffer[] = "foo";
-	mes = buffer;	
-	size_t len = sizeof(buf);
-	size_t leng = sizeof(buffer);
+
 	// Open two new meshlink instance.
+
 	meshlink_destroy("whitelist_conf.3");
 	meshlink_destroy("whitelist_conf.4");
-	meshlink_handle_t *mesh1 = meshlink_open("whitelist_conf.3", "foo", "blacklist", DEV_CLASS_BACKBONE);
-	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
-
-	meshlink_handle_t *mesh2 = meshlink_open("whitelist_conf.4", "bar", "blacklist", DEV_CLASS_BACKBONE);
-	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
-
+	meshlink_handle_t *mesh1 = meshlink_open("whitelist_conf.3", "foo", "test", DEV_CLASS_BACKBONE);
+	assert(mesh1);
+	meshlink_handle_t *mesh2 = meshlink_open("whitelist_conf.4", "bar", "test", DEV_CLASS_BACKBONE);
+	assert(mesh2);
 	meshlink_set_receive_cb(mesh2, receive);
-	meshlink_set_receive_cb(mesh1, receive);	
-
-	// Disable local discovery
-
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
-
-	// Import and export both side's data
-
-	meshlink_add_address(mesh1, "localhost");
-	meshlink_add_address(mesh2, "localhost");
+	meshlink_set_receive_cb(mesh1, receive);
 
 	char *data = meshlink_export(mesh1);
-	assert(data != NULL);
-	if(!data) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh2, data)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
-
+	assert(data);
+	assert(meshlink_import(mesh2, data));
 	free(data);
-
 	data = meshlink_export(mesh2);
-	assert(data != NULL);
-	if(!data) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-
-	if(!meshlink_import(mesh1, data)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
+	assert(data);
+	assert(meshlink_import(mesh1, data));
 	free(data);
 
 	// Start both instances
 
-	meshlink_set_node_status_cb(mesh1, status_cb4);
+	node_reachable = false;
+	meshlink_set_node_status_cb(mesh1, status_cb);
+	assert(meshlink_start(mesh1));
+	assert(meshlink_start(mesh2));
 
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
+	// Nodes should know each other
+  assert_after(node_reachable, 5);
 
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-
-	// Wait for the two to connect.
-
-
-	sleep(2);
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-	assert(bar != NULL);
-	if(!bar) {
-		fprintf(stderr, "Bar did not know about node bar\n");
-		return false;
-	}
+	assert(bar);
 	meshlink_node_t *foo = meshlink_get_node(mesh2, "foo");
-	assert(foo != NULL);
-	if(!foo) {
-		fprintf(stderr, "Bar did not know about node bar\n");
-		return false;
-	}
+	assert(foo);
 
-	result = meshlink_send(mesh1, bar, msg, len);
-	assert(result != false);
-	if(!result) {
-		fprintf(stderr, "meshlink_send status6: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	} else {
-		fprintf(stderr, "data %s sent to %s node\n", msg, bar->name);
-		result = true;
-	}
-	
+	assert(meshlink_send(mesh1, bar, "test", 5));
+
 	meshlink_blacklist(mesh1, foo);
+
+	// Passing NULL as mesh handle but with valid node handle 'foo'
+
 	meshlink_whitelist(NULL, foo);
-	
-	sleep(2);
-	result = meshlink_send(mesh2, foo, mes, leng);
-	assert(result != false);
-	if(!result) {
-		fprintf(stderr, "meshlink_send status6: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	} else {
-		fprintf(stderr, "data %s sent to %s node\n", mes, foo->name);
-		result = true;
-	}
-	
+  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+
 	// Clean up.
 
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
 	meshlink_close(mesh2);
 	meshlink_close(mesh1);
 	meshlink_destroy("whitelist_conf.3");
 	meshlink_destroy("whitelist_conf.4");
-	return result;
+
+	return true;
 }
 
 /* Execute meshlink_whitelist Test Case # 3*/
@@ -379,154 +226,43 @@ static void test_case_mesh_whitelist_03(void **state) {
    return;
 }
 
-/* Test Steps for meshlink_whitelist Test Case # 3*/
+/* Test Steps for meshlink_whitelist Test Case # 3
+
+    Test Steps:
+    1. Calling meshlink_whitelist with NULL as node handle argument.
+
+    Expected Result:
+    meshlink_whitelist API handles the invalid parameter when called by giving proper error number.
+*/
 static bool test_steps_mesh_whitelist_03(void) {
-	bool result = false;
-	char *msg = NULL;
-	char buf[] = "bar";
-	msg = buf;
-	char *mes = NULL;
-	char buffer[] = "foo";
-	mes = buffer;	
-	size_t len = sizeof(buf);
-	size_t leng = sizeof(buffer);
-	// Open two new meshlink instance.
-	meshlink_destroy("whitelist_conf.5");
-	meshlink_destroy("whitelist_conf.6");
-	meshlink_handle_t *mesh1 = meshlink_open("whitelist_conf.5", "foo", "blacklist", DEV_CLASS_BACKBONE);
-	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
+	// Open meshlink instance.
 
-	meshlink_handle_t *mesh2 = meshlink_open("whitelist_conf.6", "bar", "blacklist", DEV_CLASS_BACKBONE);
-	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
+	meshlink_destroy("whitelist_conf");
+	meshlink_handle_t *mesh = meshlink_open("whitelist_conf", "foo", "test", DEV_CLASS_BACKBONE);
+	assert(mesh);
 
-	meshlink_set_receive_cb(mesh2, receive);
-	meshlink_set_receive_cb(mesh1, receive);	
+	// Start instance
+	assert(meshlink_start(mesh));
 
-	// Disable local discovery
+	meshlink_whitelist(mesh, NULL);
+  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
-
-	// Import and export both side's data
-
-	meshlink_add_address(mesh1, "localhost");
-	meshlink_add_address(mesh2, "localhost");
-
-	char *data = meshlink_export(mesh1);
-	assert(data != NULL);
-	if(!data) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh2, data)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
-
-	free(data);
-
-	data = meshlink_export(mesh2);
-	assert(data != NULL);
-	if(!data) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-
-	if(!meshlink_import(mesh1, data)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
-	free(data);
-
-	// Start both instances
-
-	meshlink_set_node_status_cb(mesh1, status_cb4);
-
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
-
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-
-	// Wait for the two to connect.
-
-
-	sleep(2);
-	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-	assert(bar != NULL);
-	if(!bar) {
-		fprintf(stderr, "Bar did not know about node bar\n");
-		return false;
-	}
-	meshlink_node_t *foo = meshlink_get_node(mesh2, "foo");
-	assert(foo != NULL);
-	if(!foo) {
-		fprintf(stderr, "Bar did not know about node bar\n");
-		return false;
-	}
-
-	result = meshlink_send(mesh1, bar, msg, len);
-	assert(result != false);
-	if(!result) {
-		fprintf(stderr, "meshlink_send status6: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	} else {
-		fprintf(stderr, "data %s sent to %s node\n", msg, bar->name);
-		result = true;
-	}
-	
-	meshlink_blacklist(mesh1, foo);
-	meshlink_whitelist(mesh1, NULL);
-	
-	sleep(2);
-	result = meshlink_send(mesh2, foo, mes, leng);
-	assert(result != false);
-	if(!result) {
-		fprintf(stderr, "meshlink_send status6: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	} else {
-		fprintf(stderr, "data %s sent to %s node\n", mes, foo->name);
-		result = true;
-	}
-	
 	// Clean up.
 
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
-	meshlink_close(mesh2);
-	meshlink_close(mesh1);
-	meshlink_destroy("whitelist_conf.5");
-	meshlink_destroy("whitelist_conf.6");
-	return result;
+	meshlink_close(mesh);
+	meshlink_destroy("whitelist_conf");
+	return true;
 }
 
-/*************************************************************************************
- *                          PUBLIC FUNCTIONS                                         *
- *************************************************************************************/
 int test_meshlink_whitelist(void) {
-		const struct CMUnitTest blackbox_whitelist_tests[] = {
+  const struct CMUnitTest blackbox_whitelist_tests[] = {
 				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_whitelist_01, NULL, NULL,
             (void *)&test_mesh_whitelist_01_state),
 				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_whitelist_02, NULL, NULL,
             (void *)&test_mesh_whitelist_02_state),
 				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_whitelist_03, NULL, NULL,
             (void *)&test_mesh_whitelist_03_state)
-		};
+  };
 
   total_tests += sizeof(blackbox_whitelist_tests) / sizeof(blackbox_whitelist_tests[0]);
 

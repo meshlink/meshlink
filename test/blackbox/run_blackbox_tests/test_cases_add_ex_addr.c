@@ -1,104 +1,96 @@
-/*===================================================================================*/
-/*************************************************************************************/
-/**
- * @file      test_cases_add_ex_addr.c -- Execution of specific meshlink black box test cases
- * @see
- * @author    Sri Harsha K, sriharsha@elear.solutions
- * @copyright 2017  Guus Sliepen <guus@meshlink.io>
- *                  Manav Kumar Mehta <manavkumarm@yahoo.com>
- * @license   To any person (the "Recipient") obtaining a copy of this software and
- *            associated documentation files (the "Software"):\n
- *            All information contained in or disclosed by this software is
- *            confidential and proprietary information of Elear Solutions Tech
- *            Private Limited and all rights therein are expressly reserved.
- *            By accepting this material the recipient agrees that this material and
- *            the information contained therein is held in confidence and in trust
- *            and will NOT be used, copied, modified, merged, published, distributed,
- *            sublicensed, reproduced in whole or in part, nor its contents revealed
- *            in any manner to others without the express written permission of
- *            Elear Solutions Tech Private Limited.
- */
-/*************************************************************************************/
-/*===================================================================================*/
+/*
+    test_cases_add_ex_addr.c -- Execution of specific meshlink black box test cases
+    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "execute_tests.h"
 #include "test_cases_add_ex_addr.h"
 #include "../common/containers.h"
 #include "../common/test_step.h"
 #include "../common/common_handlers.h"
 #include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
 #include <setjmp.h>
 #include <cmocka.h>
 #include <assert.h>
 
-/*************************************************************************************
- *                          LOCAL MACROS                                             *
- *************************************************************************************/
-
-/*************************************************************************************
- *                          LOCAL PROTOTYPES                                         *
- *************************************************************************************/
 static void test_case_mesh_add_ex_address_01(void **state);
 static bool test_steps_mesh_add_ex_address_01(void);
 static void test_case_mesh_add_ex_address_02(void **state);
 static bool test_steps_mesh_add_ex_address_02(void);
 
-/*************************************************************************************
- *                          LOCAL VARIABLES                                          *
- *************************************************************************************/
 /* State structure for meshlink_add_external_address Test Case #1 */
 static black_box_state_t test_mesh_add_ex_address_01_state = {
-    /* test_case_name = */ "test_case_mesh_add_ex_address_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_add_ex_address_01",
 };
 
 /* State structure for meshlink_add_external_address Test Case #2 */
 static black_box_state_t test_mesh_add_ex_address_02_state = {
-    /* test_case_name = */ "test_case_mesh_add_ex_address_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_add_ex_address_01",
 };
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 /* Execute meshlink_add_external_address Test Case # 1 */
 void test_case_mesh_add_ex_address_01(void **state) {
     execute_test(test_steps_mesh_add_ex_address_01, state);
     return;
 }
 
-/* Test Steps for meshlink_add_external_address Test Case # 1*/
+/* Test Steps for meshlink_add_external_address Test Case # 1
+
+    Test Steps:
+    1. Create node instance
+    2. Get mesh's external address
+    3. Add external address using meshlink_add_external_address API
+    4. Open nodes confbase and read the external address from the list if addresses
+
+    Expected Result:
+    meshlink_add_external_address API adds the new address given to it's confbase
+*/
 bool test_steps_mesh_add_ex_address_01(void) {
-	bool result = false;
+  meshlink_destroy("addex_conf.1");
 
-  meshlink_handle_t *mesh = meshlink_open("addex_conf.1", "foo", "chat", DEV_CLASS_STATIONARY);
+  // Create node instance
+  meshlink_handle_t *mesh = meshlink_open("addex_conf.1", "foo", "test", DEV_CLASS_STATIONARY);
 	assert(mesh != NULL);
-	if(!mesh) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	if(!meshlink_start(mesh)) {
-		fprintf(stderr, "meshlink_start status: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	
-	result = meshlink_add_external_address(mesh);
-	assert(result != false);
-	if(!result) {
-		fprintf(stderr, "meshlink_add_external_address status: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	} else {
-		result = true;	
-	}
 
-	meshlink_stop(mesh);
+	char *external_address = meshlink_get_external_address(mesh);
+	assert(external_address);
+
+	bool ret = meshlink_add_external_address(mesh);
+	assert_int_equal(ret, true);
+
+	// Open the foo host file from confbase to verify address being added
+	bool found = false;
+	FILE *fp = fopen("./addex_conf.1/hosts/foo", "r");
+  assert(fp);
+  char line[100];
+  while(fgets(line, 100, fp) != NULL) {
+    if(strcasestr(line, "Address") && strcasestr(line, external_address)) {
+      found = true;
+    }
+  }
+  assert(!fclose(fp));
+
+  assert_int_equal(found, true);
+
 	meshlink_close(mesh);
 	meshlink_destroy("addex_conf.1");
-  return result;
+  return true;
 }
 
 /* Execute meshlink_add_external_address Test Case # 2 */
@@ -107,39 +99,22 @@ void test_case_mesh_add_ex_address_02(void **state) {
     return;
 }
 
-/* Test Steps for meshlink_add_external_address Test Case # 2*/
+/* Test Steps for meshlink_add_external_address Test Case # 2
+
+    Test Steps:
+    1. Create node instance
+    2. Call meshlink_add_external_address API using NULL as mesh handle argument
+
+    Expected Result:
+    meshlink_add_external_address API returns false by reporting error successfully.
+*/
 bool test_steps_mesh_add_ex_address_02(void) {
-	bool result = false;
+	bool result = meshlink_add_external_address(NULL);
+	assert_int_equal(result, false);
 
-  meshlink_handle_t *mesh = meshlink_open("addex_conf.2", "foo", "chat", DEV_CLASS_STATIONARY);
-	assert(mesh != NULL);
-	if(!mesh) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	if(!meshlink_start(mesh)) {
-		fprintf(stderr, "meshlink_start status: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	
-	result = meshlink_add_external_address(NULL);
-	assert(result == false);
-	if(!result) {
-		fprintf(stderr, "meshlink_add_external_address status: %s\n", meshlink_strerror(meshlink_errno));
-		result = true;
-	} else {
-		result = false;
-	}
-
-	meshlink_stop(mesh);
-	meshlink_close(mesh);
-	meshlink_destroy("addex_conf.2");
-  return result;
+  return true;
 }
 
-/*************************************************************************************
- *                          PUBLIC FUNCTIONS                                         *
- *************************************************************************************/
 int test_meshlink_add_external_address(void) {
 	const struct CMUnitTest blackbox_add_ex_addr_tests[] = {
 				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_add_ex_address_01, NULL, NULL,

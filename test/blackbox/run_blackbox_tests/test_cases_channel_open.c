@@ -1,25 +1,22 @@
-/*===================================================================================*/
-/*************************************************************************************/
-/**
- * @file      test_cases_channel_open.c -- Execution of specific meshlink black box test cases
- * @see
- * @author    Sri Harsha K, sriharsha@elear.solutions
- * @copyright 2017  Guus Sliepen <guus@meshlink.io>
- *                  Manav Kumar Mehta <manavkumarm@yahoo.com>
- * @license   To any person (the "Recipient") obtaining a copy of this software and
- *            associated documentation files (the "Software"):\n
- *            All information contained in or disclosed by this software is
- *            confidential and proprietary information of Elear Solutions Tech
- *            Private Limited and all rights therein are expressly reserved.
- *            By accepting this material the recipient agrees that this material and
- *            the information contained therein is held in confidence and in trust
- *            and will NOT be used, copied, modified, merged, published, distributed,
- *            sublicensed, reproduced in whole or in part, nor its contents revealed
- *            in any manner to others without the express written permission of
- *            Elear Solutions Tech Private Limited.
- */
-/*************************************************************************************/
-/*===================================================================================*/
+/*
+    test_cases_channel_open.c -- Execution of specific meshlink black box test cases
+    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "execute_tests.h"
 #include "test_cases_channel_open.h"
 #include "../common/containers.h"
@@ -32,13 +29,6 @@
 #include <assert.h>
 #include <string.h>
 
-/*************************************************************************************
- *                          LOCAL MACROS                                             *
- *************************************************************************************/
-
-/*************************************************************************************
- *                          LOCAL PROTOTYPES                                         *
- *************************************************************************************/
 static void test_case_mesh_channel_open_01(void **state);
 static bool test_steps_mesh_channel_open_01(void);
 static void test_case_mesh_channel_open_02(void **state);
@@ -48,159 +38,79 @@ static bool test_steps_mesh_channel_open_03(void);
 static void test_case_mesh_channel_open_04(void **state);
 static bool test_steps_mesh_channel_open_04(void);
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 /* State structure for meshlink_channel_open Test Case #1 */
 static black_box_state_t test_mesh_channel_open_01_state = {
-    /* test_case_name = */ "test_case_mesh_channel_open_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_channel_open_01",
 };
 
 /* State structure for meshlink_channel_open Test Case #2 */
 static black_box_state_t test_mesh_channel_open_02_state = {
-    /* test_case_name = */ "test_case_mesh_channel_open_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_channel_open_02",
 };
 
 /* State structure for meshlink_channel_open Test Case #3 */
 static black_box_state_t test_mesh_channel_open_03_state = {
-    /* test_case_name = */ "test_case_mesh_channel_open_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_channel_open_03",
 };
 
 /* State structure for meshlink_channel_open Test Case #4 */
 static black_box_state_t test_mesh_channel_open_04_state = {
-    /* test_case_name = */ "test_case_mesh_channel_open_04",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_channel_open_04",
 };
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 /* Execute meshlink_channel_open Test Case # 1*/
 static void test_case_mesh_channel_open_01(void **state) {
 	 execute_test(test_steps_mesh_channel_open_01, state);
    return;
 }
 
-static volatile bool bar_responded = false;
-
-static void foo_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	(void)mesh;
 	(void)channel;
-
-	printf("foo_receive_cb %zu: ", len);
-	fwrite(data, 1, len, stdout);
-	printf("\n");
-
-	if(len == 5 && !memcmp(data, "Hello", 5)) {
-		bar_responded = true;
-	}
 }
 
-/* Test Steps for meshlink_channel_open Test Case # 1*/
+/* Test Steps for meshlink_channel_open Test Case # 1
+
+    Test Steps:
+    1. Open both the node instances
+    2. Join bar node with foo
+    3. Open channel between the nodes
+
+    Expected Result:
+    meshlink_channel_open should open a channel by returning a channel handler
+*/
 static bool test_steps_mesh_channel_open_01(void) {
-	bool result = false;
-	char *msg = NULL;
-	char buf[] = "bar";
-	msg = buf;
-	size_t len = sizeof(buf);
 	meshlink_destroy("channels_conf.1");
 	meshlink_destroy("channels_conf.2");
-	// Open two new meshlink instance.
 
+	// Open two new meshlink instance.
 	meshlink_handle_t *mesh1 = meshlink_open("channels_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
 	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
-
 	meshlink_handle_t *mesh2 = meshlink_open("channels_conf.2", "bar", "channels", DEV_CLASS_BACKBONE);
 	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
-
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
 
 	// Import and export both side's data
-
-	meshlink_add_address(mesh1, "localhost");
-
 	char *exp = meshlink_export(mesh1);
 	assert(exp != NULL);
-	if(!exp) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh2, exp)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
-
+	assert(meshlink_import(mesh2, exp));
 	free(exp);
-
 	exp = meshlink_export(mesh2);
 	assert(exp != NULL);
-	if(!exp) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh1, exp)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
+	assert(meshlink_import(mesh1, exp));
 	free(exp);
 
 	// Start both instances
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
-
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-	sleep(2);
+	assert(meshlink_start(mesh1));
+	assert(meshlink_start(mesh2));
+  sleep(2);
 
 	// Open a channel from foo to bar.
-
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
   assert(bar != NULL);
-	if(!bar) {
-		fprintf(stderr, "Foo could not find bar\n");
-		return false;
-	}
-	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, foo_receive_cb, NULL, 0);
-	assert(channel != NULL);
-	if(!channel) {
-		fprintf(stderr, "can't open channel error: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	sleep(2);
-
-	meshlink_channel_close(mesh1, channel);
+	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7000, receive_cb, NULL, 0);
+	assert_int_not_equal(channel, NULL);
 
 	// Clean up.
-
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
 	meshlink_close(mesh2);
 	meshlink_close(mesh1);
 	meshlink_destroy("channels_conf.1");
@@ -208,7 +118,16 @@ static bool test_steps_mesh_channel_open_01(void) {
 	return true;
 }
 
-/* Execute meshlink_channel_open Test Case # 2*/
+/* Execute meshlink_channel_open Test Case # 2
+
+    Test Steps:
+    1. Open both the node instances
+    2. Join bar node with foo
+    3. Open channel between the nodes with NULL as receive callback argument
+
+    Expected Result:
+    meshlink_channel_open should open a channel by returning a channel handler
+*/
 static void test_case_mesh_channel_open_02(void **state) {
 	 execute_test(test_steps_mesh_channel_open_02, state);
    return;
@@ -216,15 +135,10 @@ static void test_case_mesh_channel_open_02(void **state) {
 
 /* Test Steps for meshlink_channel_open Test Case # 2*/
 static bool test_steps_mesh_channel_open_02(void) {
-	bool result = false;
-	char *msg = NULL;
-	char buf[] = "bar";
-	msg = buf;
-	size_t len = sizeof(buf);
 	meshlink_destroy("channels_conf.3");
 	meshlink_destroy("channels_conf.4");
-	// Open two new meshlink instance.
 
+	// Open two new meshlink instance.
 	meshlink_handle_t *mesh1 = meshlink_open("channels_conf.3", "foo", "channels", DEV_CLASS_BACKBONE);
 	assert(mesh1 != NULL);
 	if(!mesh1) {
@@ -239,75 +153,29 @@ static bool test_steps_mesh_channel_open_02(void) {
 		return false;
 	}
 
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
-
-	// Import and export both side's data
-
-	meshlink_add_address(mesh1, "localhost");
-
 	char *exp = meshlink_export(mesh1);
 	assert(exp != NULL);
-	if(!exp) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh2, exp)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
-
+	assert(meshlink_import(mesh2, exp));
 	free(exp);
-
 	exp = meshlink_export(mesh2);
 	assert(exp != NULL);
-	if(!exp) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh1, exp)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
+	assert(meshlink_import(mesh1, exp));
 	free(exp);
 
 	// Start both instances
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
-
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-	sleep(2);
+	assert(meshlink_start(mesh1));
+	assert(meshlink_start(mesh2));
+  sleep(1);
 
 	// Open a channel from foo to bar.
 
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
   assert(bar != NULL);
-	if(!bar) {
-		fprintf(stderr, "Foo could not find bar\n");
-		return false;
-	}
-	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, NULL, NULL, 0);
-	assert(channel != NULL);
-	if(!channel) {
-		fprintf(stderr, "can't open channel error: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	sleep(2);
 
-	meshlink_channel_close(mesh1, channel);
+	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7000, NULL, NULL, 0);
+	assert_int_not_equal(channel, NULL);
 
 	// Clean up.
-
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
 	meshlink_close(mesh2);
 	meshlink_close(mesh1);
 	meshlink_destroy("channels_conf.3");
@@ -315,111 +183,40 @@ static bool test_steps_mesh_channel_open_02(void) {
 	return true;
 }
 
-/* Execute meshlink_channel_open Test Case # 3*/
+/* Execute meshlink_channel_open Test Case # 3 */
 static void test_case_mesh_channel_open_03(void **state) {
 	 execute_test(test_steps_mesh_channel_open_03, state);
    return;
 }
 
-/* Test Steps for meshlink_channel_open Test Case # 3*/
+/* Test Steps for meshlink_channel_open Test Case # 3
+
+    Test Steps:
+    1. Create the node instance & obtain node handle
+    2. Open a channel with NULL as mesh handle argument
+        and rest other arguments being valid.
+
+    Expected Result:
+    meshlink_channel_open API handles the invalid parameter
+    when called by giving proper error number.
+*/
 static bool test_steps_mesh_channel_open_03(void) {
-	bool result = false;
-	char *msg = NULL;
-	char buf[] = "bar";
-	msg = buf;
-	size_t len = sizeof(buf);
 	meshlink_destroy("channels_conf.5");
-	meshlink_destroy("channels_conf.6");
+
 	// Open two new meshlink instance.
+	meshlink_handle_t *mesh = meshlink_open("channels_conf.5", "foo", "channels", DEV_CLASS_BACKBONE);
+	assert(mesh != NULL);
 
-	meshlink_handle_t *mesh1 = meshlink_open("channels_conf.5", "foo", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
+	meshlink_node_t *node = meshlink_get_self(mesh);
+	assert(node);
 
-	meshlink_handle_t *mesh2 = meshlink_open("channels_conf.6", "bar", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
-
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
-
-	// Import and export both side's data
-
-	meshlink_add_address(mesh1, "localhost");
-
-	char *exp = meshlink_export(mesh1);
-	assert(exp != NULL);
-	if(!exp) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh2, exp)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
-
-	free(exp);
-
-	exp = meshlink_export(mesh2);
-	assert(exp != NULL);
-	if(!exp) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh1, exp)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
-	free(exp);
-
-	// Start both instances
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
-
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-	sleep(2);
-
-	// Open a channel from foo to bar.
-
-	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-  assert(bar != NULL);
-	if(!bar) {
-		fprintf(stderr, "Foo could not find bar\n");
-		return false;
-	}
-	meshlink_channel_t *channel = meshlink_channel_open(NULL, bar, 7, foo_receive_cb, NULL, 0);
-	assert(channel == NULL);
-	if(!channel) {
-		fprintf(stderr, "can't open channel error: %s\n", meshlink_strerror(meshlink_errno));
-		result = true;
-	}
-	sleep(2);
-
-	meshlink_channel_close(mesh1, channel);
+	meshlink_channel_t *channel = meshlink_channel_open(NULL, node, 7000, NULL, NULL, 0);
+	assert_int_equal(channel, NULL);
 
 	// Clean up.
-
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
-	meshlink_close(mesh2);
-	meshlink_close(mesh1);
+	meshlink_close(mesh);
 	meshlink_destroy("channels_conf.5");
-	meshlink_destroy("channels_conf.6");
-	return result;
+	return true;
 }
 
 /* Execute meshlink_channel_open Test Case # 4*/
@@ -428,122 +225,48 @@ static void test_case_mesh_channel_open_04(void **state) {
    return;
 }
 
-/* Test Steps for meshlink_channel_open Test Case # 4*/
+/* Test Steps for meshlink_channel_open Test Case # 4
+
+    Test Steps:
+    1. Create the node instance & obtain node handle
+    2. Open a channel with NULL as node handle argument
+        and rest other arguments being valid.
+
+    Expected Result:
+    meshlink_channel_open API handles the invalid parameter
+    when called by giving proper error number.
+*/
 static bool test_steps_mesh_channel_open_04(void) {
-	bool result = false;
-	char *msg = NULL;
-	char buf[] = "bar";
-	msg = buf;
-	size_t len = sizeof(buf);
 	meshlink_destroy("channels_conf.7");
-	meshlink_destroy("channels_conf.8");
+
 	// Open two new meshlink instance.
-
-	meshlink_handle_t *mesh1 = meshlink_open("channels_conf.7", "foo", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
-
-	meshlink_handle_t *mesh2 = meshlink_open("channels_conf.8", "bar", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
-
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
-
-	// Import and export both side's data
-
-	meshlink_add_address(mesh1, "localhost");
-
-	char *exp = meshlink_export(mesh1);
-	assert(exp != NULL);
-	if(!exp) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh2, exp)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
-
-	free(exp);
-
-	exp = meshlink_export(mesh2);
-	assert(exp != NULL);
-	if(!exp) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh1, exp)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
-	free(exp);
+	meshlink_handle_t *mesh = meshlink_open("channels_conf.7", "foo", "channels", DEV_CLASS_BACKBONE);
+	assert(mesh != NULL);
 
 	// Start both instances
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
+	assert(meshlink_start(mesh));
 
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-	sleep(2);
-
-	// Open a channel from foo to bar.
-
-	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-  assert(bar != NULL);
-	if(!bar) {
-		fprintf(stderr, "Foo could not find bar\n");
-		return false;
-	}
-	meshlink_channel_t *channel = meshlink_channel_open(mesh1, NULL, 7, foo_receive_cb, NULL, 0);
-	assert(channel == NULL);
-	if(!channel) {
-		fprintf(stderr, "can't open channel error: %s\n", meshlink_strerror(meshlink_errno));
-		result = true;
-	}
-	sleep(2);
-
-	meshlink_channel_close(mesh1, channel);
+	meshlink_channel_t *channel = meshlink_channel_open(mesh, NULL, 7000, NULL, NULL, 0);
+	assert_int_equal(channel, NULL);
 
 	// Clean up.
-
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
-	meshlink_close(mesh2);
-	meshlink_close(mesh1);
+	meshlink_close(mesh);
 	meshlink_destroy("channels_conf.7");
-	meshlink_destroy("channels_conf.8");
-	return result;
+	return true;
 }
 
-/*************************************************************************************
- *                          PUBLIC FUNCTIONS                                         *
- *************************************************************************************/
 int test_meshlink_channel_open(void) {
-		const struct CMUnitTest blackbox_channel_open_tests[] = {
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_01, NULL, NULL,
-            (void *)&test_mesh_channel_open_01_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_02, NULL, NULL,
-            (void *)&test_mesh_channel_open_02_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_03, NULL, NULL,
-            (void *)&test_mesh_channel_open_03_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_04, NULL, NULL,
-            (void *)&test_mesh_channel_open_04_state)
-		};
-		
+  const struct CMUnitTest blackbox_channel_open_tests[] = {
+      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_01, NULL, NULL,
+          (void *)&test_mesh_channel_open_01_state),
+      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_02, NULL, NULL,
+          (void *)&test_mesh_channel_open_02_state),
+      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_03, NULL, NULL,
+          (void *)&test_mesh_channel_open_03_state),
+      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_04, NULL, NULL,
+          (void *)&test_mesh_channel_open_04_state)
+  };
+
   total_tests += sizeof(blackbox_channel_open_tests) / sizeof(blackbox_channel_open_tests[0]);
 
   return cmocka_run_group_tests(blackbox_channel_open_tests, NULL, NULL);

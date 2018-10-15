@@ -2,7 +2,6 @@
     common_handlers.c -- Implementation of common callback handling and signal handling
                             functions for black box tests
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -27,8 +26,13 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <arpa/inet.h>
+#include <ctype.h>
 #include "test_step.h"
 #include "common_handlers.h"
+
+#define IFCONFIG "/sbin/ifconfig"
+#define GET_IPV4 "inet addr"
+#define GET_NETMASK "Mask"
 
 char *lxc_bridge = NULL;
 black_box_state_t *state_ptr = NULL;
@@ -36,8 +40,10 @@ black_box_state_t *state_ptr = NULL;
 bool meta_conn_status[10];
 bool node_reachable_status[10];
 
+bool test_running;
+
 void mesh_close_signal_handler(int a) {
-    execute_close();
+    test_running = false;
 
     exit(EXIT_SUCCESS);
 }
@@ -50,6 +56,7 @@ void mesh_stop_start_signal_handler(int a) {
 }
 
 void setup_signals(void) {
+    test_running = true;
     signal(SIGTERM, mesh_close_signal_handler);
     signal(SIGINT, mesh_stop_start_signal_handler);
 
@@ -59,137 +66,97 @@ void setup_signals(void) {
 /* Return the IP Address of the Interface 'if_name'
     The caller is responsible for freeing the dynamically allocated string that is returned */
 char *get_ip(const char *if_name) {
-    int get_ip_fd;
-    struct ifreq req_if;
-    struct sockaddr_in *resp_if_addr;
-    char *ip;
+  FILE *get_fp;
+  char *if_ip = NULL;
+  char get_ip_cmd[100];
+  char buffer[100];
+  char *line;
+  assert(snprintf(get_ip_cmd, sizeof(get_ip_cmd), IFCONFIG " %s", if_name) >= 0);
+  assert(get_fp = popen(get_ip_cmd, "r"));
 
-    /* Get IP Address of LXC Bridge Interface - this will be set up as the Gateway Address
-        of the Static IP assigned to the Container */
-    memset(&req_if, 0, sizeof(req_if));
-    req_if.ifr_addr.sa_family = AF_INET;
-    strncpy(req_if.ifr_name, if_name, IFNAMSIZ - 1);
+  while((line = fgets(buffer, sizeof(buffer), get_fp)) != NULL) {
+    if(strstr(buffer, GET_IPV4) != NULL) {
+      char *ip = strchr(buffer, ':');
+      assert(ip);
+      ip = ip + 1;
+      char *ip_end = strchr(ip, ' ');
+      assert(ip_end);
+      *ip_end = '\0';
 
-    assert((get_ip_fd = socket(AF_INET, SOCK_DGRAM, 0)) != -1);
-    ioctl(get_ip_fd, SIOCGIFADDR, &req_if);
+      size_t ip_len = strlen(ip);
+      assert(if_ip = malloc(ip_len + 1));
+      strcpy(if_ip, ip);
 
-    resp_if_addr = (struct sockaddr_in *) &(req_if.ifr_addr);
-    assert(ip = malloc(20));
-    strncpy(ip, inet_ntoa(resp_if_addr->sin_addr), 20);
+      break;
+    }
+  }
+  assert(pclose(get_fp) != -1);
 
-    assert(close(get_ip_fd) != -1);
-
-    return ip;
+  return if_ip;
 }
 
 /* Return the IP Address of the Interface 'if_name'
     The caller is responsible for freeing the dynamically allocated string that is returned */
 char *get_netmask(const char *if_name) {
-    int get_nm_fd;
-    struct ifreq req_if;
-    struct sockaddr_in *resp_if_netmask;
-    char *netmask;
+  FILE *get_fp;
+  char *if_ip = NULL;
+  char get_ip_cmd[100];
+  char buffer[100];
+  char *line;
+  assert(snprintf(get_ip_cmd, sizeof(get_ip_cmd), IFCONFIG " %s", if_name) >= 0);
+  assert(get_fp = popen(get_ip_cmd, "r"));
 
-    /* Get IP Address of LXC Bridge Interface - this will be set up as the Gateway Address
-        of the Static IP assigned to the Container */
-    memset(&req_if, 0, sizeof(req_if));
-    req_if.ifr_addr.sa_family = AF_INET;
-    strncpy(req_if.ifr_name, if_name, IFNAMSIZ - 1);
+  while((line = fgets(buffer, sizeof(buffer), get_fp)) != NULL) {
+    if(strstr(buffer, GET_NETMASK) != NULL) {
+      char *ip = strchr(buffer, ':');
+      assert(ip);
+      ip = ip + 1;
+      char *ip_end = strchr(ip, ' ');
+      assert(ip_end);
+      *ip_end = '\0';
 
-    assert((get_nm_fd = socket(AF_INET, SOCK_DGRAM, 0)) != -1);
-    assert(ioctl(get_nm_fd, SIOCGIFNETMASK, &req_if) != -1);
+      size_t ip_len = strlen(ip);
+      assert(if_ip = malloc(ip_len + 1));
+      strcpy(if_ip, ip);
 
-    resp_if_netmask = (struct sockaddr_in *) &(req_if.ifr_addr);
-    assert(netmask = malloc(20));
-    strncpy(netmask, inet_ntoa(resp_if_netmask->sin_addr), 20);
+      break;
+    }
+  }
+  assert(pclose(get_fp) != -1);
 
-    assert(close(get_nm_fd) != -1);
-
-    return netmask;
+  return if_ip;
 }
 
 /* Change the IP Address of an interface */
 void set_ip(const char *if_name, const char *new_ip) {
-    int set_ip_fd;
-    struct ifreq req_if;
-    struct sockaddr_in new_if_addr;
-
-    /* Get IP Address of LXC Bridge Interface - this will be set up as the Gateway Address
-        of the Static IP assigned to the Container */
-    memset(&new_if_addr, 0, sizeof(new_if_addr));
-    new_if_addr.sin_family = AF_INET;
-    assert(inet_aton(new_ip, &new_if_addr.sin_addr) != 0);
-
-    memset(&req_if, 0, sizeof(req_if));
-    strncpy(req_if.ifr_name, if_name, IFNAMSIZ - 1);
-    memcpy(&req_if.ifr_addr, &new_if_addr, sizeof(req_if.ifr_addr));
-
-    assert((set_ip_fd = socket(AF_INET, SOCK_STREAM, 0)) != -1);
-    ioctl(set_ip_fd, SIOCSIFADDR, &req_if);
-    assert(close(set_ip_fd) != -1);
-    /* TO DO: Get the original netmask and set it again, in case the IP change affects the
-        netmask */
-
+    char set_ip_cmd[100];
+    assert(snprintf(set_ip_cmd, sizeof(set_ip_cmd), "ifconfig %s %s", if_name, new_ip) >= 0);
+    assert(system(set_ip_cmd) == 0);
     return;
 }
 
 /* Change the Netmask of an interface */
 void set_netmask(const char *if_name, const char *new_netmask) {
-    int set_nm_fd;
-    struct ifreq req_if;
-    struct sockaddr_in new_if_netmask;
-
-    /* Get IP Address of LXC Bridge Interface - this will be set up as the Gateway Address
-        of the Static IP assigned to the Container */
-    memset(&new_if_netmask, 0, sizeof(new_if_netmask));
-    new_if_netmask.sin_family = AF_INET;
-    assert(inet_aton(new_netmask, &new_if_netmask.sin_addr) != 0);
-
-    memset(&req_if, 0, sizeof(req_if));
-    strncpy(req_if.ifr_name, if_name, IFNAMSIZ - 1);
-    memcpy(&req_if.ifr_netmask, &new_if_netmask, sizeof(req_if.ifr_netmask));
-
-    assert((set_nm_fd = socket(AF_INET, SOCK_STREAM, 0)) != -1);
-    ioctl(set_nm_fd, SIOCSIFNETMASK, &req_if);
-    assert(close(set_nm_fd) != -1);
-    /* TO DO: Get the original netmask and set it again, in case the IP change affects the
-        netmask */
-
+    char set_mask_cmd[100];
+    assert(snprintf(set_mask_cmd, sizeof(set_mask_cmd), "ifconfig %s netmask %s", if_name, new_netmask) >= 0);
+    assert(system(set_mask_cmd) == 0);
     return;
 }
 
 /* Bring a network interface down (before making changes such as the IP Address) */
 void stop_nw_intf(const char *if_name) {
-    int set_flags_fd;
-    struct ifreq req_if_set_flags;
-
-    /* Set the flags on the Interface to bring it down */
-    memset(&req_if_set_flags, 0, sizeof(req_if_set_flags));
-    strncpy(req_if_set_flags.ifr_name, if_name, IFNAMSIZ - 1);
-    req_if_set_flags.ifr_flags &= (~IFF_UP);
-
-    assert((set_flags_fd = socket(AF_INET, SOCK_STREAM, 0)) != -1);
-    assert(ioctl(set_flags_fd, SIOCSIFFLAGS, &req_if_set_flags) != -1);
-    assert(close(set_flags_fd) != -1);
-
+    char nw_down_cmd[100];
+    assert(snprintf(nw_down_cmd, sizeof(nw_down_cmd), "ifconfig %s down", if_name) >= 0);
+    assert(system(nw_down_cmd) == 0);
     return;
 }
 
 /* Bring a network interface up (after bringing it down and making changes such as
     the IP Address) */
 void start_nw_intf(const char *if_name) {
-    int set_flags_fd;
-    struct ifreq req_if_set_flags;
-
-    /* Set the flags on the Interface to bring it up */
-    memset(&req_if_set_flags, 0, sizeof(req_if_set_flags));
-    strncpy(req_if_set_flags.ifr_name, if_name, IFNAMSIZ - 1);
-    req_if_set_flags.ifr_flags |= IFF_UP;
-
-    assert((set_flags_fd = socket(AF_INET, SOCK_STREAM, 0)) != -1);
-    assert(ioctl(set_flags_fd, SIOCSIFFLAGS, &req_if_set_flags) != -1);
-    assert(close(set_flags_fd) != -1);
-
+    char nw_up_cmd[100];
+    assert(snprintf(nw_up_cmd, sizeof(nw_up_cmd), "ifconfig %s up", if_name) >= 0);
+    assert(system(nw_up_cmd) == 0);
     return;
 }
 

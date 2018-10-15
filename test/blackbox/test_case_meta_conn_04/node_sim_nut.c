@@ -86,8 +86,6 @@ int main(int argc, char *argv[]) {
       mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
     }
 
-    setup_signals();
-
     execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
     meshlink_set_log_cb(mesh_handle, MESHLINK_INFO, callback_logger);
 
@@ -116,4 +114,6 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "Trying to resend mesh event\n");
       sleep(1);
     }
+
+    execute_close();
 }

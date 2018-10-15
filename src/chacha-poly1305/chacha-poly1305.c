@@ -24,7 +24,7 @@ void chacha_poly1305_exit(chacha_poly1305_ctx_t *ctx)
 bool chacha_poly1305_set_key(chacha_poly1305_ctx_t *ctx, const void *key)
 {
 	chacha_keysetup(&ctx->main_ctx, key, 256);
-	chacha_keysetup(&ctx->header_ctx, (uint8_t *)key + 32, 256);
+	chacha_keysetup(&ctx->header_ctx, key + 32, 256);
 	return true;
 }
 
@@ -60,7 +60,7 @@ bool chacha_poly1305_encrypt(chacha_poly1305_ctx_t *ctx, uint64_t seqnr, const v
 	chacha_ivsetup(&ctx->main_ctx, seqbuf, one);
 
 	chacha_encrypt_bytes(&ctx->main_ctx, indata, outdata, inlen);
-	poly1305_auth((uint8_t *)outdata + inlen, outdata, inlen, poly_key);
+	poly1305_auth(outdata + inlen, outdata, inlen, poly_key);
 
 	if (outlen)
 		*outlen = inlen + POLY1305_TAGLEN;
@@ -87,7 +87,7 @@ bool chacha_poly1305_decrypt(chacha_poly1305_ctx_t *ctx, uint64_t seqnr, const v
 
 	/* Check tag before anything else */
 	inlen -= POLY1305_TAGLEN;
-	const uint8_t *tag = (const uint8_t *)indata + inlen;
+	const uint8_t *tag = indata + inlen;
 
 	poly1305_auth(expected_tag, indata, inlen, poly_key);
 	if (memcmp(expected_tag, tag, POLY1305_TAGLEN))

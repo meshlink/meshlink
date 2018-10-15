@@ -45,10 +45,8 @@ void crypto_exit(void) {
 }
 
 void randomize(void *out, size_t outlen) {
-	char *ptr = out;
-
 	while(outlen) {
-		size_t len = read(random_fd, ptr, outlen);
+		size_t len = read(random_fd, out, outlen);
 
 		if(len <= 0) {
 			if(errno == EAGAIN || errno == EINTR) {
@@ -59,7 +57,7 @@ void randomize(void *out, size_t outlen) {
 			abort();
 		}
 
-		ptr += len;
+		out += len;
 		outlen -= len;
 	}
 }

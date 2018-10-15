@@ -32,13 +32,11 @@ bool hostnames = false;
   Return NULL on failure.
 */
 struct addrinfo *str2addrinfo(const char *address, const char *service, int socktype) {
-	struct addrinfo *ai;
+	struct addrinfo *ai, hint = {};
 	int err;
 
-	struct addrinfo hint = {
-		.ai_family = addressfamily,
-		.ai_socktype = socktype,
-	};
+	hint.ai_family = addressfamily;
+	hint.ai_socktype = socktype;
 
 	err = getaddrinfo(address, service, &hint, &ai);
 
@@ -51,15 +49,13 @@ struct addrinfo *str2addrinfo(const char *address, const char *service, int sock
 }
 
 sockaddr_t str2sockaddr(const char *address, const char *port) {
-	struct addrinfo *ai;
-	sockaddr_t result;
+	struct addrinfo *ai, hint = {};
+	sockaddr_t result = {};
 	int err;
 
-	struct addrinfo hint = {
-		.ai_family = AF_UNSPEC,
-		.ai_flags = AI_NUMERICHOST,
-		.ai_socktype = SOCK_STREAM,
-	};
+	hint.ai_family = AF_UNSPEC;
+	hint.ai_flags = AI_NUMERICHOST;
+	hint.ai_socktype = SOCK_STREAM;
 
 	err = getaddrinfo(address, port, &hint, &ai);
 

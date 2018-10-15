@@ -188,7 +188,9 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 }
 
 bool seen_request(meshlink_handle_t *mesh, const char *request) {
-	past_request_t *new, p = {.request = request};
+	past_request_t *new, p = {};
+
+	p.request = request;
 
 	if(splay_search(mesh->past_request_tree, &p)) {
 		logger(mesh, MESHLINK_DEBUG, "Already seen request");

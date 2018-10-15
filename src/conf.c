@@ -431,15 +431,8 @@ bool modify_config_file(struct meshlink_handle *mesh, const char *name, const ch
 	char tmpname[PATH_MAX];
 	bool error = false;
 
-	if (snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name) >= PATH_MAX) {
-		logger(mesh, MESHLINK_ERROR, "Filename too long: %s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
-		return false;
-	}
-
-	if (snprintf(tmpname, sizeof(tmpname), "%s.tmp", filename) >= PATH_MAX) {
-		logger(mesh, MESHLINK_ERROR, "Filename too long: %s.tmp", filename);
-		return false;
-	}
+	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, name);
+	snprintf(tmpname, sizeof(tmpname), "%s.tmp", filename);
 
 	FILE *fr = fopen(filename, "r");
 

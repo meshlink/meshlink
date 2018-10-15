@@ -1,7 +1,6 @@
 /*
     test_cases_export.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,17 +39,11 @@ static bool test_export_02(void);
 
  /* State structure for export API Test Case #1 */
 static black_box_state_t test_case_export_01_state = {
-    /* test_case_name = */ "test_case_export_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_export_01",
 };
 /* State structure for export API Test Case #2 */
 static black_box_state_t test_case_export_02_state = {
-    /* test_case_name = */ "test_case_export_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_export_02",
 };
 
 
@@ -69,30 +62,20 @@ static void test_case_export_01(void **state) {
 */
 static bool test_export_01(void) {
   meshlink_destroy("exportconf");
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
   meshlink_handle_t *mesh_handle = meshlink_open("exportconf", "nut", "node_sim", 1);
-  fprintf(stderr, "meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
   assert(mesh_handle);
-
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  PRINT_TEST_CASE_MSG("Calling export API\n");
   char *expo = meshlink_export(mesh_handle);
-  meshlink_stop(mesh_handle);
+  assert_int_not_equal(expo, NULL);
+
   meshlink_close(mesh_handle);
   meshlink_destroy("exportconf");
-  if(NULL == expo) {
-    PRINT_TEST_CASE_MSG("failed to export meshlink data\n");
-    return false;
-  } else {
-    PRINT_TEST_CASE_MSG("Exported meshlink data\n");
-    return true;
-  }
+
+  return true;
 }
 
 /* Execute export Test Case # 2 - Invalid case*/
@@ -109,15 +92,11 @@ static void test_case_export_02(void **state) {
     API returns NULL reporting error when NULL being passed as mesh handle.
 */
 static bool test_export_02(void) {
-  PRINT_TEST_CASE_MSG("Calling export API with NULL as mesh handle\n");
+  // Calling export API with NULL as mesh handle
   char *expo = meshlink_export(NULL);
-  if(NULL == expo) {
-    PRINT_TEST_CASE_MSG("Export API successfully reported error when NULL passed as mesh handle arg\n");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("Export API failed to report meshlink handle arg is NULL\n");
-    return false;
-  }
+  assert_int_equal(expo, NULL);
+
+  return true;
 }
 
 

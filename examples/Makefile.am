@@ -1,7 +1,6 @@
 noinst_PROGRAMS = meshlinkapp chat chatpp manynodes channels
 
-AM_CPPFLAGS = $(PTHREAD_CFLAGS) -I${top_srcdir}/src -iquote. -Wall
-AM_LDFLAGS = $(PTHREAD_LIBS)
+AM_CPPFLAGS = -I${top_srcdir}/src -iquote. -Wall
 
 meshlinkapp_SOURCES = meshlinkapp.c
 meshlinkapp_LDADD = ${top_builddir}/src/libmeshlink.la ${top_builddir}/catta/src/libcatta.la

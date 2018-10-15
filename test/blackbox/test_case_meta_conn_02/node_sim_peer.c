@@ -57,6 +57,8 @@ int main(int argc, char *argv[]) {
     }
 
     /* All test steps executed - wait for signals to stop/start or close the mesh */
-    while(1)
+    while(test_running)
         select(1, NULL, NULL, NULL, &main_loop_wait);
+
+    execute_close();
 }

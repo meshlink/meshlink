@@ -1,7 +1,6 @@
 /*
     test_cases_verify.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +16,7 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+
 #include "execute_tests.h"
 #include "test_cases_verify.h"
 #include "../common/containers.h"
@@ -51,50 +51,32 @@ static bool test_verify_08(void);
 
 /* State structure for verify API Test Case #1 */
 static black_box_state_t test_case_verify_01_state = {
-    /* test_case_name = */ "test_case_verify_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_verify_01",
 };
 
 /* State structure for verify API Test Case #2 */
 static black_box_state_t test_case_verify_02_state = {
-    /* test_case_name = */ "test_case_verify_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_verify_02",
 };
 
 /* State structure for verify API Test Case #3 */
 static black_box_state_t test_case_verify_03_state = {
-    /* test_case_name = */ "test_case_verify_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_verify_03",
 };
 
 /* State structure for verify API Test Case #4 */
 static black_box_state_t test_case_verify_04_state = {
-    /* test_case_name = */ "test_case_verify_04",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_verify_04",
 };
 
 /* State structure for verify API Test Case #5 */
 static black_box_state_t test_case_verify_05_state = {
-    /* test_case_name = */ "test_case_verify_05",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_verify_05",
 };
 
 /* State structure for verify API Test Case #6 */
 static black_box_state_t test_case_verify_06_state = {
-    /* test_case_name = */ "test_case_verify_06",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_verify_06",
 };
 
 
@@ -117,28 +99,20 @@ void test_case_verify_01(void **state) {
 */
 bool test_verify_01(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", 1);
+  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
   assert(mesh_handle);
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Starting NUT\n");
   assert(meshlink_start(mesh_handle));
 
   char *data = "Test";
   char sig[MESHLINK_SIGLEN];
   size_t ssize = MESHLINK_SIGLEN;
-  PRINT_TEST_CASE_MSG("Calling meshlink_sign to sign data\n");
   bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
   assert(ret);
-  PRINT_TEST_CASE_MSG("meshlink_sign Successfuly signed data\n");
 
-  PRINT_TEST_CASE_MSG("get nut node_handle\n");
   meshlink_node_t *source = meshlink_get_node(mesh_handle, "nut");
-  assert(source != NULL);
-
-  PRINT_TEST_CASE_MSG("Verifying with the signature using meshlink_verify\n");
+  assert(source);
   ret = meshlink_verify(mesh_handle, source, data, strlen(data) + 1, sig, ssize);
-  meshlink_stop(mesh_handle);
   meshlink_close(mesh_handle);
   meshlink_destroy("verifyconf");
 
@@ -170,28 +144,20 @@ void test_case_verify_02(void **state) {
 */
 bool test_verify_02(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", 1);
+  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
   assert(mesh_handle);
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG(" Starting NUT\n");
   assert(meshlink_start(mesh_handle));
 
   char *data = "Test";
   char sig[MESHLINK_SIGLEN];
   size_t ssize = MESHLINK_SIGLEN;
-  PRINT_TEST_CASE_MSG("Calling meshlink_sign to sign data\n");
   bool sret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
   assert(sret);
-  PRINT_TEST_CASE_MSG("meshlink_sign Successfuly signed data\n");
 
-  PRINT_TEST_CASE_MSG("get nut node_handle\n");
   meshlink_node_t *source = meshlink_get_node(mesh_handle, "nut");
   assert(source != NULL);
-
-  PRINT_TEST_CASE_MSG("Calling meshlink_verify API passing NULL as mesh handle argument\n");
   bool ret = meshlink_verify(NULL, source, data, strlen(data) + 1, sig, ssize);
-  meshlink_stop(mesh_handle);
   meshlink_close(mesh_handle);
   meshlink_destroy("verifyconf");
   if(!ret) {
@@ -222,24 +188,17 @@ void test_case_verify_03(void **state) {
 */
 bool test_verify_03(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", 1);
+  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
   assert(mesh_handle);
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG(" Starting NUT\n");
   assert(meshlink_start(mesh_handle));
 
   char *data = "Test";
   char sig[MESHLINK_SIGLEN];
   size_t ssize = MESHLINK_SIGLEN;
-  PRINT_TEST_CASE_MSG("Calling meshlink_sign to sign data\n");
   bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
   assert(ret);
-  PRINT_TEST_CASE_MSG("meshlink_sign Successfuly signed data\n");
-
-  PRINT_TEST_CASE_MSG("Calling meshlink_verify API passing NULL as source node handle argument\n");
   ret = meshlink_verify(mesh_handle, NULL, data, strlen(data) + 1, sig, ssize);
-  meshlink_stop(mesh_handle);
   meshlink_close(mesh_handle);
   meshlink_destroy("verifyconf");
 
@@ -271,26 +230,18 @@ void test_case_verify_04(void **state) {
 bool test_verify_04(void) {
   meshlink_destroy("verifyconf");
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", 1);
+  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
   assert(mesh_handle);
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Starting NUT\n");
   assert(meshlink_start(mesh_handle));
 
   char *data = "Test";
   char sig[MESHLINK_SIGLEN];
   size_t ssize = MESHLINK_SIGLEN;
-  PRINT_TEST_CASE_MSG("Calling meshlink_sign to sign data\n");
   bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
   assert(ret);
-  PRINT_TEST_CASE_MSG("meshlink_sign Successfuly signed data\n");
-
-  PRINT_TEST_CASE_MSG("get nut node_handle\n");
   meshlink_node_t *source = meshlink_get_node(mesh_handle, "nut");
   assert(source != NULL);
-
-  PRINT_TEST_CASE_MSG("Calling meshlink_verify API passing NULL as signed data argument\n");
   ret = meshlink_verify(mesh_handle, source, NULL, strlen(data) + 1, sig, ssize);
   meshlink_stop(mesh_handle);
   meshlink_close(mesh_handle);
@@ -324,27 +275,19 @@ void test_case_verify_05(void **state) {
 */
 bool test_verify_05(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", 1);
   assert(mesh_handle);
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Starting NUT\n");
   assert(meshlink_start(mesh_handle));
 
   char *data = "Test";
   char sig[MESHLINK_SIGLEN];
   size_t ssize = MESHLINK_SIGLEN;
-  PRINT_TEST_CASE_MSG("Calling meshlink_sign to sign data\n");
   bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
   assert(ret);
-  PRINT_TEST_CASE_MSG("meshlink_sign Successfuly signed data\n");
-
-  PRINT_TEST_CASE_MSG("get nut node_handle\n");
   meshlink_node_t *source = meshlink_get_node(mesh_handle, "nut");
   assert(source != NULL);
 
-  PRINT_TEST_CASE_MSG("Calling meshlink_verify API passing NULL as sign buffer argument\n");
   ret = meshlink_verify(mesh_handle, source, data, strlen(data) + 1, NULL, ssize);
   meshlink_stop(mesh_handle);
   meshlink_close(mesh_handle);
@@ -382,52 +325,30 @@ bool test_verify_06(void) {
   meshlink_destroy("verifyconf2");
   /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
-  /* Create meshlink instance for NUT */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh1 = meshlink_open("verifyconf1", "nut", "chat", DEV_CLASS_STATIONARY);
-  if(!mesh1) {
-    fprintf(stderr, "meshlink_open status for NUT: %s\n", meshlink_strerror(meshlink_errno));
-  }
-  assert(mesh1 != NULL);
-  /* Create meshlink instance for bar */
-  PRINT_TEST_CASE_MSG("Opening bar\n");
+  assert(mesh1);
   meshlink_handle_t *mesh2 = meshlink_open("verifyconf2", "bar", "chat", DEV_CLASS_STATIONARY);
-  if(!mesh2) {
-    fprintf(stderr, "meshlink_open status for bar: %s\n", meshlink_strerror(meshlink_errno));
-  }
-  assert(mesh2 != NULL);
+  assert(mesh2);
 
-  /* importing and exporting mesh meta data */
   char *exp1 = meshlink_export(mesh1);
   assert(exp1 != NULL);
   char *exp2 = meshlink_export(mesh2);
   assert(exp2 != NULL);
   assert(meshlink_import(mesh1, exp2));
   assert(meshlink_import(mesh2, exp1));
-  PRINT_TEST_CASE_MSG("NUT and bar connected successfully\n");
 
   /* signing done by peer node  */
   char *data = "Test";
   char sig[MESHLINK_SIGLEN];
   size_t ssize = MESHLINK_SIGLEN;
-  PRINT_TEST_CASE_MSG("Calling meshlink_sign to sign data\n");
   bool ret = meshlink_sign(mesh2, data, strlen(data) + 1, sig, &ssize);
-  if (!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_verify FAILED to sign data\n");
-    return false;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_sign Successfuly signed data by 'peer' node\n");
+  assert(ret);
 
-  /* NUT tries to verify with source name NUT rather than peer */
   meshlink_node_t *source_nut = meshlink_get_self(mesh1);
-  assert(source_nut != NULL);
-  PRINT_TEST_CASE_MSG("NUT tries to verify the signed data with source name NUT rather than 'peer'\n");
+  assert(source_nut);
   ret = meshlink_verify(mesh_handle, source_nut, data, strlen(data) + 1, sig, ssize);
-  meshlink_stop(mesh1);
-  meshlink_stop(mesh2);
   meshlink_close(mesh1);
-  meshlink_close(mesh1);
+  meshlink_close(mesh2);
   meshlink_destroy("verifyconf1");
   meshlink_destroy("verifyconf2");
 

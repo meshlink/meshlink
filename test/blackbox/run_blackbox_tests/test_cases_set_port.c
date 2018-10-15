@@ -1,7 +1,6 @@
 /*
     test_cases_set_port.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +16,7 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+
 #include "execute_tests.h"
 #include "test_cases_destroy.h"
 #include "../common/containers.h"
@@ -43,24 +43,15 @@ static bool test_set_port_03(void);
 
  /* State structure for set port API Test Case #1 */
 static black_box_state_t test_case_set_port_01_state = {
-    /* test_case_name = */ "test_case_set_port_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_set_port_01",
 };
 /* State structure for set port API Test Case #2 */
 static black_box_state_t test_case_set_port_02_state = {
-    /* test_case_name = */ "test_case_set_port_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_set_port_02",
 };
 /* State structure for set port API Test Case #3 */
 static black_box_state_t test_case_set_port_03_state = {
-    /* test_case_name = */ "test_case_set_port_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_set_port_03",
 };
 
 
@@ -79,28 +70,25 @@ static void test_case_set_port_01(void **state) {
     Set the new port to the NUT.
 */
 static bool test_set_port_01(void) {
-  fprintf(stderr, "[ set_port 01 ] Opening NUT\n");
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  mesh_handle = meshlink_open("setportconf", "nut", "node_sim", 1);
-  PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
+  // Create meshlink instance
+
+  mesh_handle = meshlink_open("setportconf", "nut", "test", 1);
   assert(mesh_handle);
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+
+  // Get old port and set a new port number
 
   int port;
   port = meshlink_get_port(mesh_handle);
   assert(port > 0);
-  PRINT_TEST_CASE_MSG("port of NUT before setting new port : %d \n", port);
-  PRINT_TEST_CASE_MSG("seting port 8000 using meshlink_set_port API \n");
   bool ret = meshlink_set_port(mesh_handle, 8000);
-
   port = meshlink_get_port(mesh_handle);
   assert(port > 0);
-  PRINT_TEST_CASE_MSG("port of NUT after setting new port(8000) : %d \n", port);
-  meshlink_stop(mesh_handle);
+
+  // Clean up
+
   meshlink_close(mesh_handle);
   meshlink_destroy("setportconf");
 
@@ -108,7 +96,6 @@ static bool test_set_port_01(void) {
     PRINT_TEST_CASE_MSG("Port set successfully\n");
     return true;
   } else {
-    fprintf(stderr, "[ set_port 01 ] failed to set port\n");
     return false;
   }
 
@@ -129,10 +116,11 @@ static void test_case_set_port_02(void **state) {
     Report false indicating error.
 */
 static bool test_set_port_02(void) {
-  PRINT_TEST_CASE_MSG("Setting NULL as mesh handle\n");
+  // meshlink_set_port called using NULL as mesh handle
+
   bool ret = meshlink_set_port(NULL, 8000);
 
-  if((false == ret) && (MESHLINK_EINVAL == meshlink_errno))  {
+  if(false == ret)  {
     PRINT_TEST_CASE_MSG("NULL argument reported SUCCESSFULY\n");
     return true;
   }
@@ -156,28 +144,20 @@ static void test_case_set_port_03(void **state) {
     New port number cannot be set while mesh is running.
 */
 static bool test_set_port_03(void) {
-  PRINT_TEST_CASE_MSG(" Opening NUT\n");
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  mesh_handle = meshlink_open("getportconf", "nut", "node_sim", 1);
-  PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
+  // Create meshlink instance
+
+  mesh_handle = meshlink_open("getportconf", "nut", "test", 1);
   assert(mesh_handle);
-
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
-  PRINT_TEST_CASE_MSG(" Starting NUT\n");
   assert(meshlink_start(mesh_handle));
 
-  PRINT_TEST_CASE_MSG("Setting port after starting NUT\n");
+  // Setting port after starting NUT
   bool ret = meshlink_set_port(mesh_handle, 50000);
-  if(!ret) {
-    fprintf(stderr, "meshlink_set_port status : %s\n", meshlink_strerror(meshlink_errno));
-  }
 
-  meshlink_stop(mesh_handle);
+  // Clean up
+
   meshlink_close(mesh_handle);
   meshlink_destroy("getportconf");
 

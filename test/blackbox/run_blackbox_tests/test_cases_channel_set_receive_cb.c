@@ -1,7 +1,6 @@
 /*
     test_cases_channel_set_receive_cb.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,8 +31,10 @@
 
 /* Modify this to change the logging level of Meshlink */
 #define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
+
 /* Modify this to change the port number */
 #define PORT 8000
+
 /* Modify this to change the channel receive callback access buffer */
 #define TCP_TEST 8000
 
@@ -49,7 +50,6 @@ static bool test_steps_set_channel_receive_cb_04(void);
 static void channel_poll(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len);
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len);
 
-/* rec_stat gives us access to test whether the channel receive callback has been invoked or not */
 static bool rec_stat = false;
 static bool accept_stat = false;
 
@@ -57,28 +57,16 @@ static bool accept_stat = false;
 static pthread_mutex_t lock;
 
 static black_box_state_t test_case_channel_set_receive_cb_01_state = {
-    /* test_case_name = */ "test_case_channel_set_receive_cb_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+  .test_case_name = "test_case_channel_set_receive_cb_01",
 };
 static black_box_state_t test_case_channel_set_receive_cb_02_state = {
-    /* test_case_name = */ "test_case_channel_set_receive_cb_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+  .test_case_name = "test_case_channel_set_receive_cb_02",
 };
 static black_box_state_t test_case_channel_set_receive_cb_03_state = {
-    /* test_case_name = */ "test_case_channel_set_receive_cb_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+  .test_case_name = "test_case_channel_set_receive_cb_03",
 };
 static black_box_state_t test_case_channel_set_receive_cb_04_state = {
-    /* test_case_name = */ "test_case_channel_set_receive_cb_04",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+  .test_case_name = "test_case_channel_set_receive_cb_04",
 };
 
 
@@ -92,8 +80,6 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
   return;
 }
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	PRINT_TEST_CASE_MSG("accept_cb: (from %s on port %u) \n", channel->node->name, (unsigned int)port);
-
 	meshlink_set_channel_receive_cb(mesh, channel, channel_receive_cb);
 	return true;
 }
@@ -102,9 +88,7 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 	(void)len;
 
 	meshlink_set_channel_poll_cb(mesh, channel, NULL);
-	if(meshlink_channel_send(mesh, channel, "Hello", 5) != 5) {
-		PRINT_TEST_CASE_MSG("Could not send whole message\n");
-	}
+	assert(meshlink_channel_send(mesh, channel, "Hello", 5) != 5);
 }
 
 /* Execute meshlink_channel_set_receive_cb Test Case # 1 */
@@ -123,15 +107,14 @@ static void test_case_set_channel_receive_cb_01(void **state) {
 */
 static bool test_steps_set_channel_receive_cb_01(void) {
   meshlink_destroy("channelreceiveconf");
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+
   /* Create meshlink instance */
   meshlink_handle_t *mesh_handle = meshlink_open("channelreceiveconf", "nut", "node_sim", 1);
-  fprintf(stderr, "meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
   assert(mesh_handle != NULL);
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
   meshlink_set_channel_accept_cb(mesh_handle, accept_cb);
-  PRINT_TEST_CASE_MSG("Starting NUT\n");
+
   assert(meshlink_start(mesh_handle));
   sleep(1);
 
@@ -141,7 +124,7 @@ static bool test_steps_set_channel_receive_cb_01(void) {
   rec_stat = false;
   accept_stat = false;
 	meshlink_channel_t *channel = meshlink_channel_open(mesh_handle, node, 8000, NULL, NULL, 0);
-	//meshlink_set_channel_receive_cb(mesh_handle, channel, channel_receive_cb);
+
 	meshlink_set_channel_poll_cb(mesh_handle, channel, poll_cb);
   for(int i = 0; i < 20; i++) {
 		sleep(1);
@@ -157,9 +140,6 @@ static bool test_steps_set_channel_receive_cb_01(void) {
 			break;
 		}
 	}
-
-	meshlink_channel_close(mesh_handle, channel);
-	meshlink_stop(mesh_handle);
 	meshlink_close(mesh_handle);
 	meshlink_destroy("channelreceiveconf");
 

@@ -1,7 +1,6 @@
 /*
     test_cases.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -48,53 +47,48 @@ static bool test_steps_meta_conn_05(void);
 /* State structure for Meta-connections Test Case #1 */
 static char *test_meta_conn_1_nodes[] = { "relay", "peer", "nut" };
 static black_box_state_t test_meta_conn_1_state = {
-    /* test_case_name = */ "test_case_meta_conn_01",
-    /* node_names = */ test_meta_conn_1_nodes,
-    /* num_nodes = */ 3,
-    /* test_result (defaulted to) = */ false
+    .test_case_name =  "test_case_meta_conn_01",
+    .node_names =  test_meta_conn_1_nodes,
+    .num_nodes =  3,
 };
 
 /* State structure for Meta-connections Test Case #2 */
 static char *test_meta_conn_2_nodes[] = { "relay", "peer", "nut" };
 static black_box_state_t test_meta_conn_2_state = {
-    /* test_case_name = */ "test_case_meta_conn_02",
-    /* node_names = */ test_meta_conn_2_nodes,
-    /* num_nodes = */ 3,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_meta_conn_02",
+    .node_names = test_meta_conn_2_nodes,
+    .num_nodes = 3,
 };
 
 /* State structure for Meta-connections Test Case #3 */
 static char *test_meta_conn_3_nodes[] = { "relay", "peer", "nut" };
 static black_box_state_t test_meta_conn_3_state = {
-    /* test_case_name = */ "test_case_meta_conn_03",
-    /* node_names = */ test_meta_conn_3_nodes,
-    /* num_nodes = */ 3,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_meta_conn_03",
+    .node_names = test_meta_conn_3_nodes,
+    .num_nodes = 3,
 };
 
 /* State structure for Meta-connections Test Case #4 */
 static char *test_meta_conn_4_nodes[] = { "peer", "nut" };
 static black_box_state_t test_meta_conn_4_state = {
-    /* test_case_name = */ "test_case_meta_conn_04",
-    /* node_names = */ test_meta_conn_4_nodes,
-    /* num_nodes = */ 2,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_meta_conn_04",
+    .node_names = test_meta_conn_4_nodes,
+    .num_nodes = 2,
 };
 
 /* State structure for Meta-connections Test Case #5 */
 static char *test_meta_conn_5_nodes[] = { "peer", "nut" };
 static black_box_state_t test_meta_conn_5_state = {
-    /* test_case_name = */ "test_case_meta_conn_05",
-    /* node_names = */ test_meta_conn_5_nodes,
-    /* num_nodes = */ 2,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_meta_conn_05",
+    .node_names = test_meta_conn_5_nodes,
+    .num_nodes = 2,
 };
 
 int black_box_group0_setup(void **state) {
-    char *nodes[] = { "peer", "relay", "nut"};
+    const char *nodes[] = { "peer", "relay", "nut"};
     int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
 
-    printf("Creating Containers\n");
+    PRINT_TEST_CASE_MSG("Creating Containers\n");
     destroy_containers();
     create_containers(nodes, num_nodes);
 
@@ -102,20 +96,20 @@ int black_box_group0_setup(void **state) {
 }
 
 int black_box_group0_teardown(void **state) {
-    printf("Destroying Containers\n");
+    PRINT_TEST_CASE_MSG("Destroying Containers\n");
     destroy_containers();
 
     return 0;
 }
 
 int black_box_all_nodes_setup(void **state) {
-    char *nodes[] = { "peer" };
+    const char *nodes[] = { "peer" };
     int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
 
-    printf("Creating Containers\n");
+    PRINT_TEST_CASE_MSG("Creating Containers\n");
     destroy_containers();
     create_containers(nodes, num_nodes);
-    printf("Created Containers\n");
+    PRINT_TEST_CASE_MSG("Created Containers\n");
     return 0;
 }
 
@@ -431,8 +425,7 @@ static bool test_steps_meta_conn_04(void) {
     }
     PRINT_TEST_CASE_MSG("Changing IP address of NUT container\n");
     change_ip(1);
-    /* TODO: rather using invitation argument NULL and non-NULL just for
-            variating execute_invite code at node_sim_nut implement other method */
+
     node_sim_in_container_event("nut", "1", "restart", "1", import);
     wait_for_event(meta_conn04_cb, 5);
     PRINT_TEST_CASE_MSG("Changing IP address of PEER container\n");
@@ -526,19 +519,19 @@ static bool test_steps_meta_conn_05(void) {
 }
 
 int test_meta_conn(void) {
-  const struct CMUnitTest blackbox_group0_tests[] = {
+  const struct CMUnitTest blackbox_group0_tests[] = {/*
         cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_01, setup_test, teardown_test,
             (void *)&test_meta_conn_1_state),
         cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_02, setup_test, teardown_test,
-            (void *)&test_meta_conn_2_state),
-        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_03, setup_test, teardown_test,
-            (void *)&test_meta_conn_3_state),
+            (void *)&test_meta_conn_2_state),*/
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_03, setup_test, NULL,
+            (void *)&test_meta_conn_3_state),/*
         cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_04, setup_test, teardown_test,
-            (void *)&test_meta_conn_4_state),
-        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_05, setup_test, teardown_test,
+            (void *)&test_meta_conn_4_state),*/
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_05, setup_test, NULL,
             (void *)&test_meta_conn_5_state)
   };
   total_tests += sizeof(blackbox_group0_tests) / sizeof(blackbox_group0_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_group0_tests, black_box_group0_setup, black_box_group0_teardown);
+  return cmocka_run_group_tests(blackbox_group0_tests, black_box_group0_setup, NULL);
 }

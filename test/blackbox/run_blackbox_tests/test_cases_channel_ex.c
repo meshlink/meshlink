@@ -1,7 +1,6 @@
 /*
     test_cases_channel_ex.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -59,46 +58,25 @@ static bool channel_acc;
 pthread_mutex_t lock;
 
 static black_box_state_t test_case_channel_ex_01_state = {
-    /* test_case_name = */ "test_case_channel_ex_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_ex_01",
 };
 static black_box_state_t test_case_channel_ex_02_state = {
-    /* test_case_name = */ "test_case_channel_ex_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_ex_02",
 };
 static black_box_state_t test_case_channel_ex_03_state = {
-    /* test_case_name = */ "test_case_channel_ex_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_ex_03",
 };
 static black_box_state_t test_case_channel_ex_04_state = {
-    /* test_case_name = */ "test_case_channel_ex_04",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_ex_04",
 };
 static black_box_state_t test_case_channel_ex_05_state = {
-    /* test_case_name = */ "test_case_channel_ex_05",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_ex_05",
 };
 static black_box_state_t test_case_channel_ex_06_state = {
-    /* test_case_name = */ "test_case_channel_ex_06",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_ex_06",
 };
 static black_box_state_t test_case_channel_ex_07_state = {
-    /* test_case_name = */ "test_case_channel_ex_07",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_ex_07",
 };
 
 
@@ -110,6 +88,7 @@ static void cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void 
     PRINT_TEST_CASE_MSG("Received message is : %s\n", data);
   }
 }
+
 /* channel accept callback */
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len) {
 	(void)dat;
@@ -126,13 +105,13 @@ static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel,
 	return true;
 }
 
-
 /* Execute meshlink_channel_open_ex Test Case # 1 - testing meshlink_channel_open_ex API's
     valid case by passing all valid arguments */
 static void test_case_channel_ex_01(void **state) {
   execute_test(test_steps_channel_ex_01, state);
   return;
 }
+
 /* Test Steps for meshlink_channel_open_ex Test Case # 1 - Valid case
 
     Test Steps:
@@ -149,15 +128,12 @@ static bool test_steps_channel_ex_01(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh_handle = meshlink_open("channelexconf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
   meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
 	meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
 
-  PRINT_TEST_CASE_MSG("starting mesh\n");
   assert(meshlink_start(mesh_handle));
 
   /* Getting node handle for itself */
@@ -166,41 +142,28 @@ static bool test_steps_channel_ex_01(void) {
   sleep(1);
 
   char string[100] = "Test the 1st case";
-  /* Making the channel_acc false before opening channel */
   pthread_mutex_lock(&lock);
   channel_acc = false;
   pthread_mutex_unlock(&lock);
 
-  PRINT_TEST_CASE_MSG("Opening UDP channel ex\n");
   /* Passing all valid arguments for meshlink_channel_open_ex */
   meshlink_channel_t *channel = NULL;
   channel = meshlink_channel_open_ex(mesh_handle, node, PORT, cb, string, strlen(string) + 1, MESHLINK_CHANNEL_UDP);
-  if(channel == NULL) {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex status : %s\n", meshlink_strerror(meshlink_errno));
-  }
+  assert_int_not_equal(channel, NULL);
+
   // Delay for establishing a channel
   sleep(1);
+
   pthread_mutex_lock(&lock);
   bool ret = channel_acc;
   pthread_mutex_unlock(&lock);
 
-  if(ret) {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex opened a channel and invoked accept callback\n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG(" meshlink_channel_open_ex failed to invoke accept callback\n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return false;
-  }
+  assert_int_equal(ret, true);
+
+  meshlink_close(mesh_handle);
+  meshlink_destroy("channelexconf");
+
+  return true;
 }
 
 /* Execute meshlink_channel_open_ex Test Case # 2 - testing API's valid case by passing NULL and
@@ -218,61 +181,42 @@ static void test_case_channel_ex_02(void **state) {
     Expected Result:
     Opens a TCP channel successfully by setting channel_acc true*/
 static bool test_steps_channel_ex_02(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh_handle = meshlink_open("channelexconf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
   meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
 	meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
 
-  PRINT_TEST_CASE_MSG("starting mesh\n");
   assert(meshlink_start(mesh_handle));
-  /* Getting node handle for itself */
+
   meshlink_node_t *node = meshlink_get_self(mesh_handle);
   assert(node != NULL);
 
-  /* Making the channel_acc false before opening channel */
   pthread_mutex_lock(&lock);
   channel_acc = false;
   pthread_mutex_unlock(&lock);
   sleep(1);
 
-  PRINT_TEST_CASE_MSG("Opening TCP channel ex\n");
+  PRINT_TEST_CASE_MSG("Opening TCP alike channel ex\n");
   /* Passing all valid arguments for meshlink_channel_open_ex */
   meshlink_channel_t *channel;
   channel = meshlink_channel_open_ex(mesh_handle, node, PORT, cb, NULL, 0, MESHLINK_CHANNEL_TCP);
-  if(channel == NULL) {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex status : %s\n", meshlink_strerror(meshlink_errno));
-  }
-  assert(channel!= NULL);
+  assert_int_not_equal(channel, NULL);
+
   // Delay for establishing a channel
   sleep(1);
   pthread_mutex_lock(&lock);
   bool ret = channel_acc;
   pthread_mutex_unlock(&lock);
 
-  if(ret) {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex opened a channel and invoked accept callback\n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex failed to invoke accept callback\n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return false;
-  }
+  assert_int_equal(ret, true);
+
+  meshlink_close(mesh_handle);
+  meshlink_destroy("channelexconf");
+  return true;
 }
 
 /* Execute meshlink_channel_open_ex Test Case # 3 - Open a UDP channel */
@@ -289,38 +233,31 @@ static void test_case_channel_ex_03(void **state) {
     Expected Result:
     Opens a UDP channel successfully by setting channel_acc true */
 static bool test_steps_channel_ex_03(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh_handle = meshlink_open("channelexconf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
   meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
 	meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
 
-  PRINT_TEST_CASE_MSG(" starting mesh\n");
   assert(meshlink_start(mesh_handle));
+
   /* Getting node handle for itself */
   meshlink_node_t *node = meshlink_get_self(mesh_handle);
   assert(node != NULL);
 
-  /* Making the channel_acc false before opening channel */
   pthread_mutex_lock(&lock);
   channel_acc = false;
   pthread_mutex_unlock(&lock);
   sleep(1);
 
-  PRINT_TEST_CASE_MSG("Opening TCP channel ex\n");
   /* Passing all valid arguments for meshlink_channel_open_ex */
   meshlink_channel_t *channel;
   channel = meshlink_channel_open_ex(mesh_handle, node, PORT, cb, NULL, 0, MESHLINK_CHANNEL_UDP);
-  if(channel == NULL) {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex status : %s\n", meshlink_strerror(meshlink_errno));
-  }
-  assert(channel!= NULL);
+  assert_int_not_equal(channel, NULL);
+
   // Delay for establishing a channel
   sleep(1);
 
@@ -328,23 +265,11 @@ static bool test_steps_channel_ex_03(void) {
   bool ret = channel_acc;
   pthread_mutex_unlock(&lock);
 
-  if(ret) {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex opened a channel and invoked accept callback\n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex failed to invoke accept callback\n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return false;
-  }
+  assert_int_equal(ret, true);
+
+  meshlink_close(mesh_handle);
+  meshlink_destroy("channelexconf");
+  return true;
 }
 
 /* Execute meshlink_channel_open_ex Test Case # 4 - Open a TCP channel with no receive callback
@@ -364,37 +289,29 @@ static void test_case_channel_ex_04(void **state) {
 */
 
 static bool test_steps_channel_ex_04(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh_handle = meshlink_open("channelexconf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
   meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
 	meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
 
-  PRINT_TEST_CASE_MSG("starting mesh\n");
   assert(meshlink_start(mesh_handle));
+
   /* Getting node handle for itself */
   meshlink_node_t *node = meshlink_get_self(mesh_handle);
   assert(node != NULL);
 
-  /* Making the channel_acc false before opening channel */
   pthread_mutex_lock(&lock);
   channel_acc = false;
   pthread_mutex_unlock(&lock);
   sleep(1);
 
-  PRINT_TEST_CASE_MSG("Opening TCP channel ex with no receive callback \n");
   /* Passing all valid arguments for meshlink_channel_open_ex i.e disabling receive callback and send queue */
   meshlink_channel_t *channel;
   channel = meshlink_channel_open_ex(mesh_handle, node, PORT, NULL, NULL, 0, MESHLINK_CHANNEL_UDP);
-  if(channel == NULL) {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex status : %s\n", meshlink_strerror(meshlink_errno));
-  }
   assert(channel!= NULL);
   // Delay for establishing a channel
   sleep(1);
@@ -403,23 +320,11 @@ static bool test_steps_channel_ex_04(void) {
   bool ret = channel_acc;
   pthread_mutex_unlock(&lock);
 
-  if(ret) {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex opened a channel and invoked accept callback\n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex failed to invoke accept callback\n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return false;
-  }
+  assert_int_equal(ret, true);
+
+  meshlink_close(mesh_handle);
+  meshlink_destroy("channelexconf");
+  return true;
 }
 
 /* Execute meshlink_channel_open_ex Test Case # 5 - Opening channel using NULL as mesh handle argument
@@ -545,57 +450,6 @@ static void test_case_channel_ex_07(void **state) {
     execute_test(test_steps_channel_ex_07, state);
     return;
 }
-/* Test Steps for meshlink_channel_open_ex Test Case # 7 Invalid case (invalid value for channel flag argument)
-
-    Test Steps:
-    1. Run NUT(Node Under Test)
-    2. Open channel by passing invalid value other channel flag as argument to the API
-
-    Expected Result:
-    meshlink_channel_open_ex returns NULL as channel handle reporting error accordingly
-*/
-/* TODO: Can an error reporting be done for an invalid flag or should be left as it is */
-static bool test_steps_channel_ex_07(void) {
-  /* Set up logging for Meshlink */
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-
-  /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  meshlink_handle_t *mesh_handle = meshlink_open("channelexconf", "nut", "node_sim", 1);
-  assert(mesh_handle);
-
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
-	meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
-
-  PRINT_TEST_CASE_MSG("starting mesh\n");
-  assert(meshlink_start(mesh_handle));
-  /* Getting node handle for itself */
-  meshlink_node_t *node = meshlink_get_self(mesh_handle);
-  assert(node != NULL);
-  sleep(1);
-
-  PRINT_TEST_CASE_MSG("Trying to open channel using invalid flag argument \n");
-  meshlink_channel_t *channel = meshlink_channel_open_ex(mesh_handle, node, PORT, cb, NULL, 0, 1000);
-
-  if(channel == NULL) {
-    PRINT_TEST_CASE_MSG("Error reported correctly \n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return true;
-  } else {
-    fprintf(stderr, "[ channel open ex 07 ] Failed to report error \n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return false;
-  }
-}
 
 int test_meshlink_channel_open_ex(void) {
   const struct CMUnitTest blackbox_channel_ex_tests[] = {
@@ -610,9 +464,7 @@ int test_meshlink_channel_open_ex(void) {
     cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_05, NULL, NULL,
             (void *)&test_case_channel_ex_05_state),
     cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_06, NULL, NULL,
-            (void *)&test_case_channel_ex_06_state),
- //   cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_07, NULL, NULL,
- //           (void *)&test_case_channel_ex_07_state)
+            (void *)&test_case_channel_ex_06_state)
   };
 
   total_tests += sizeof(blackbox_channel_ex_tests) / sizeof(blackbox_channel_ex_tests[0]);

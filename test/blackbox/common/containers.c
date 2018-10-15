@@ -1,7 +1,6 @@
 /*
     containers.h -- Container Management API
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -31,7 +30,7 @@ char *choose_arch;
 static char container_ips[10][100];
 
 /* Return the handle to an existing container after finding it by container name */
-struct lxc_container *find_container(char *name) {
+struct lxc_container *find_container(const char *name) {
     struct lxc_container **test_containers;
     char **container_names;
     int num_containers, i;
@@ -48,7 +47,7 @@ struct lxc_container *find_container(char *name) {
 }
 
 /* Rename a Container */
-void rename_container(char *old_name, char *new_name) {
+void rename_container(const char *old_name, const char *new_name) {
     char rename_command[200];
     int rename_status;
     struct lxc_container *old_container;
@@ -77,7 +76,7 @@ void rename_container(char *old_name, char *new_name) {
     'cmd' is run as a daemon if 'daemonize' is true - this mode is useful for running node
     simulations in Containers
     The caller is responsible for freeing the returned string */
-char *run_in_container(char *cmd, char *node, bool daemonize) {
+char *run_in_container(const char *cmd, const char *node, bool daemonize) {
     char attach_command[400];
     char *attach_argv[4];
     char container_find_name[100];
@@ -174,7 +173,7 @@ void container_wait_ip(int node) {
 }
 
 /* Create all required test containers */
-void create_containers(char *node_names[], int num_nodes) {
+void create_containers(const char *node_names[], int num_nodes) {
     int i;
     char container_name[100];
     int create_status, snapshot_status, snap_restore_status;
@@ -265,14 +264,6 @@ void setup_containers(void **state) {
         container_wait_ip(i);
     }
 
-    /* Delete any existing NUT confbase folder - every test case starts on a clean state
-    confbase_del_status = system("rm -rf testconf");
-    PRINT_TEST_CASE_MSG("Confbase Folder Delete Status: %d\n", confbase_del_status);
-    assert(confbase_del_status == 0);
-
-    assert(nut_ip = get_ip(eth_if_name));
-    PRINT_TEST_CASE_MSG("Node '%s' has IP Address %s\n", NUT_NODE_NAME, nut_ip);*/
-
     free(nut_ip);
 
     return;
@@ -331,7 +322,7 @@ void restart_all_containers(void) {
 
 /* Run the gen_invite command inside the 'inviter' container to generate an invite
     for 'invitee', and return the generated invite which is output on the terminal */
-char *invite_in_container(char *inviter, char *invitee) {
+char *invite_in_container(const char *inviter, const char *invitee) {
     char invite_command[200];
     char *invite_url;
 
@@ -346,7 +337,7 @@ char *invite_in_container(char *inviter, char *invitee) {
 }
 
 /* Run the node_sim_<nodename> program inside the 'node''s container */
-void node_sim_in_container(char *node, char *device_class, char *invite_url) {
+void node_sim_in_container(const char *node, const char *device_class, const char *invite_url) {
     char node_sim_command[200];
 
     assert(snprintf(node_sim_command, sizeof(node_sim_command),
@@ -360,8 +351,8 @@ void node_sim_in_container(char *node, char *device_class, char *invite_url) {
 }
 
 /* Run the node_sim_<nodename> program inside the 'node''s container with event handling capable*/
-void node_sim_in_container_event(char *node, char *device_class,
-                           char *invite_url, char *clientId, char *import) {
+void node_sim_in_container_event(const char *node, const char *device_class,
+                           const char *invite_url, const char *clientId, const char *import) {
      char node_sim_command[200];
 
     assert(snprintf(node_sim_command, sizeof(node_sim_command),
@@ -379,7 +370,7 @@ void node_sim_in_container_event(char *node, char *device_class,
 
 /* Run the node_step.sh script inside the 'node''s container to send the 'sig' signal to the
     node_sim program in the container */
-void node_step_in_container(char *node, char *sig) {
+void node_step_in_container(const char *node, const char *sig) {
     char node_step_command[200];
 
     assert(snprintf(node_step_command, sizeof(node_step_command),
@@ -410,6 +401,9 @@ void change_ip(int node) {
     assert(gateway_addr = get_ip(lxc_bridge));
     /* Get Netmask of LXC Brdige Interface */
     assert(netmask = get_netmask(lxc_bridge));
+
+printf("getway address : %s\n", gateway_addr);
+printf("netmask : %s\n", netmask);
 
     /* Replace last byte of Container's IP with 254 to form the new Container IP */
     assert(container_ips[node]);
@@ -459,4 +453,401 @@ void change_ip(int node) {
     PRINT_TEST_CASE_MSG("Node '%s' IP Address changed to %s\n", state_ptr->node_names[node],
         container_ips[node]);
     return;
+}
+
+/*Takes bridgeName as input parameter and creates a bridge */
+int create_bridge(const char* bridgeName) {
+  char command[100] = "brctl addbr ";
+  strcat(command, bridgeName);
+  system(command);
+  PRINT_TEST_CASE_MSG("%s bridge created\n", bridgeName);
+  return 0;
+}
+
+/* Add interface for the bridge created */
+void add_interface(const char* bridgeName, const char* interfaceName) {
+  char flush[100] = "ip addr flush ";
+  strcat(flush, interfaceName);
+  //system(flush);
+  char command[100] = "brctl addif ";
+  char cmd[100] = "dhclient ";
+  strcat(command, bridgeName);
+  strcat(command, " ");
+  strcat(command, interfaceName);
+  system(command);
+  strcat(cmd, bridgeName);
+  system(cmd);
+  PRINT_TEST_CASE_MSG("Added interface for %s\n", bridgeName);
+  return;
+}
+
+/* Create a veth pair and bring them up */
+void add_veth_pair(const char* vethName1, const char* vethName2) {
+  char command[100] = "ip link add ";
+  char upCommand1[100] = "ip link set ";
+  char upCommand2[100] = "ip link set ";
+  strcat(command, vethName1);
+  strcat(command, " type veth peer name ");
+  strcat(command, vethName2);
+  system(command);
+  strcat(upCommand1, vethName1);
+  strcat(upCommand1, " up");
+  system(upCommand1);
+  strcat(upCommand2, vethName2);
+  strcat(upCommand2, " up");
+  system(upCommand2);
+  PRINT_TEST_CASE_MSG("Added veth pairs %s and %s\n", vethName1, vethName2);
+  return;
+}
+
+/* Bring the interface up for the bridge created */
+void bring_if_up(const char* bridgeName) {
+  char command[300] = "ifconfig ";
+  char dhcommand[300] = "dhclient ";
+  strcat(command, bridgeName);
+  strcat(command, " up");
+  system(command);
+  sleep(2);
+  PRINT_TEST_CASE_MSG("Interface brought up for %s created\n", bridgeName);
+  return;
+}
+
+/**
+ * Replace all occurrences of a given a word in string.
+ */
+void replaceAll(char *str, const char *oldWord, const char *newWord) {
+  char *pos, temp[BUFSIZ];
+  int index = 0;
+  int owlen;
+  owlen = strlen(oldWord);
+  while((pos = strstr(str, oldWord)) != NULL) {
+    strcpy(temp, str);
+    index = pos - str;
+    str[index] = '\0';
+    strcat(str, newWord);
+    strcat(str, temp + index + owlen);
+  }
+}
+
+/* Switches the bridge for a given container */
+void switch_bridge(const char *containerName, const char * currentBridge, const char *newBridge) {
+  char command[100] = "lxc-stop -n ";
+  char command_start[100] = "lxc-start -n ";
+  PRINT_TEST_CASE_MSG("Switching %s container to %s\n",containerName, newBridge);
+  strcat(command,containerName);
+  strcat(command_start,containerName);
+  system(command);
+  sleep(2);
+  FILE * fPtr;
+  FILE * fTemp;
+  char path[300] = "/var/lib/lxc/";
+  strcat(path,containerName);
+  strcat(path,"/config");
+
+  char buffer[BUFSIZ];
+  /*  Open all required files */
+  fPtr  = fopen(path, "r");
+  fTemp = fopen("replace.tmp", "w");
+  if(fPtr == NULL || fTemp == NULL) {
+    PRINT_TEST_CASE_MSG("\nUnable to open file.\n");
+    PRINT_TEST_CASE_MSG("Please check whether file exists and you have read/write privilege.\n");
+    exit(EXIT_SUCCESS);
+  }
+
+  while((fgets(buffer, BUFSIZ, fPtr)) != NULL) {
+    replaceAll(buffer, currentBridge, newBridge);
+    fputs(buffer, fTemp);
+  }
+  fclose(fPtr);
+  fclose(fTemp);
+  remove(path);
+  rename("replace.tmp", path);
+  PRINT_TEST_CASE_MSG("Switching procedure done successfully\n");
+  system(command_start);
+  sleep(2);
+}
+
+/* Bring the interface down for the bridge created */
+void bring_if_down(const char* bridgeName) {
+  char command[300] = "ip link set dev ";
+  strcat(command, bridgeName);
+  strcat(command, " down");
+  system(command);
+  PRINT_TEST_CASE_MSG("Interface brought down for %s created\n", bridgeName);
+  return;
+}
+
+/* Add interface for the bridge created */
+void del_interface(const char* bridgeName, const char* interfaceName) {
+  char command[300] = "brctl delif ";
+  strcat(command, bridgeName);
+  strcat(command, interfaceName);
+  system(command);
+  PRINT_TEST_CASE_MSG("Deleted interface for %s\n", bridgeName);
+  return;
+}
+
+/*Takes bridgeName as input parameter and deletes a bridge */
+int delete_bridge(const char* bridgeName) {
+  bring_if_down(bridgeName);
+  char command[300] = "brctl delbr ";
+  strcat(command, bridgeName);
+  system(command);
+  PRINT_TEST_CASE_MSG("%s bridge deleted\n", bridgeName);
+  sleep(2);
+  return 0;
+}
+
+/*Creates container on a specified bridge with added interface*/
+int create_container_on_bridge(const char* containerName, const char* bridgeName, const char* ifName) {
+  char command[100] = "lxc-create -t download -n ";
+  char cmd[100] = " -- -d ubuntu -r trusty -a ";
+  char start[100] = "lxc-start -n ";
+  FILE * fPtr;
+  char path[300] = "/var/lib/lxc/";
+  strcat(path,containerName);
+  strcat(path,"/config");
+  strcat(command, containerName);
+  strcat(command, cmd);
+  strcat(command, choose_arch);
+  system(command);
+  sleep(3);
+  assert(fPtr = fopen(path, "a+"));
+  fprintf(fPtr, "lxc.net.0.name = eth0\n");
+  fprintf(fPtr, "\n");
+  fprintf(fPtr, "lxc.net.1.type = veth\n");
+  fprintf(fPtr, "lxc.net.1.flags = up\n");
+  fprintf(fPtr, "lxc.net.1.link = %s\n", bridgeName);
+  fprintf(fPtr, "lxc.net.1.name = %s\n", ifName);
+  fprintf(fPtr, "lxc.net.1.hwaddr = 00:16:3e:ab:xx:xx\n");
+  fclose(fPtr);
+  strcat(start, containerName);
+  system(start);
+  sleep(3);
+  PRINT_TEST_CASE_MSG("Created %s on %s with interface name %s\n", containerName, bridgeName, ifName);
+  return 0;
+}
+
+/*Configures dnsmasq and iptables for the specified container with inputs of listen address and dhcp range*/
+void config_dnsmasq(const char* containerName, const char* ifName, const char* listenAddress, const char* dhcpRange) {
+  char command[500] = "echo \"apt-get install dnsmasq iptables -y\" | lxc-attach -n ";
+  strcat(command, containerName);
+  strcat(command, " --");
+  system(command);
+  sleep(5);
+  char com1[300] = "echo \"echo \"interface=eth1\" >> /etc/dnsmasq.conf\" | lxc-attach -n ";
+  strcat(com1, containerName);
+  strcat(com1, " --");
+  system(com1);
+  sleep(5);
+  char com2[300] = "echo \"echo \"bind-interfaces\" >> /etc/dnsmasq.conf\" | lxc-attach -n ";
+  strcat(com2, containerName);
+  strcat(com2, " --");
+  system(com2);
+  sleep(5);
+  char com3[300] = "echo \"echo \"listen-address=";
+  strcat(com3, listenAddress);
+  strcat(com3, "\" >> /etc/dnsmasq.conf\" | lxc-attach -n ");
+  strcat(com3, containerName);
+  strcat(com3, " --");
+  system(com3);
+  sleep(5);
+  char com4[300] = "echo \"echo \"dhcp-range=";
+  strcat(com4, dhcpRange);
+  strcat(com4, "\" >> /etc/dnsmasq.conf\" | lxc-attach -n ");
+  strcat(com4, containerName);
+  strcat(com4, " --");
+  system(com4);
+  sleep(5);
+  char cmd[300] = "echo \"ifconfig ";
+  strcat(cmd, ifName);
+  strcat(cmd, " ");
+  strcat(cmd, listenAddress);
+  strcat(cmd, " netmask 255.255.255.0 up\" | lxc-attach -n ");
+  strcat(cmd, containerName);
+  strcat(cmd, " --");
+  system(cmd);
+  sleep(2	);
+  char com[500] = "echo \"service dnsmasq restart >> /dev/null\" | lxc-attach -n ";
+  strcat(com, containerName);
+  strcat(com, " --");
+  system(com);
+  sleep(2);
+  PRINT_TEST_CASE_MSG("Configured dnsmasq in %s with interface name %s, listen-address = %s, dhcp-range = %s\n", containerName, ifName, listenAddress, dhcpRange);
+  return;
+}
+
+/*configure the NAT rules inside the container*/
+void config_nat(const char* containerName, const char* listenAddress) {
+  char* last_dot_in_ip;
+  int last_ip_byte = 0;
+  char new_ip[300];
+  strncpy(new_ip, listenAddress, sizeof(new_ip));
+  assert(last_dot_in_ip = strrchr(new_ip, '.'));
+  assert(snprintf(last_dot_in_ip + 1, 4, "%d", last_ip_byte) >= 0);
+  char comd[300] = "echo \"iptables -t nat -A POSTROUTING -s ";
+  strcat(comd, new_ip);
+  strcat(comd, "/24 ! -d ");
+  strcat(comd, new_ip);
+  strcat(comd, "/24 -j MASQUERADE\" | lxc-attach -n ");
+  strcat(comd, containerName);
+  strcat(comd, " --");
+  system(comd);
+  sleep(2);
+  PRINT_TEST_CASE_MSG("Configured NAT on %s\n", containerName);
+  return;
+}
+
+/*Creates a NAT layer on a specified bridge with certain dhcp range to allocate ips for nodes*/
+int create_nat_layer(const char* containerName, const char* bridgeName, const char* ifName, const char* listenAddress, char* dhcpRange) {
+  create_bridge(bridgeName);
+  bring_if_up(bridgeName);
+  create_container_on_bridge(containerName, bridgeName, ifName);
+  config_dnsmasq(containerName, ifName, listenAddress, dhcpRange);
+  config_nat(containerName, listenAddress);
+  PRINT_TEST_CASE_MSG("NAT layer created with %s\n", containerName);
+  return 0;
+}
+
+/*Destroys the NAT layer created*/
+void destroy_nat_layer(const char* containerName, const char* bridgeName) {
+  bring_if_down(bridgeName);
+  delete_bridge(bridgeName);
+  char command[100] = "lxc-stop -n ";
+  strcat(command, containerName);
+  system(command);
+  char destroy[100] = "lxc-destroy -n ";
+  strcat(destroy, containerName);
+  strcat(destroy, " -s");
+  system(destroy);
+  PRINT_TEST_CASE_MSG("NAT layer destroyed with %s\n", containerName);
+  return;
+}
+
+/*Add incoming firewall rules for ipv4 addresses with packet type and port number*/
+void incoming_firewall_ipv4(const char* packetType, int portNumber) {
+  char buf[5];
+  snprintf(buf, sizeof(buf), "%d", portNumber);
+  if(!system("iptables -F")) {
+    return;
+  }
+  if(!system("iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT")) {
+    return;
+  }
+  if(!system("iptables -A INPUT -s 127.0.0.1 -d 127.0.0.1 -j ACCEPT")) {
+    return;
+  }
+  char command[100] = "iptables -A INPUT -p ";
+  strcat(command, packetType);
+  strcat(command, " --dport ");
+  strcat(command, buf);
+  strcat(command, " -j ACCEPT");
+  if(!system(command)) {
+    return;
+  }
+  sleep(2);
+  if(!system("iptables -A INPUT -j DROP")) {
+    return;
+  }
+  PRINT_TEST_CASE_MSG("Firewall for incoming requests added on IPv4");
+  if(!system("iptables -L")) {
+    return;
+  }
+  return;
+}
+
+/*Add incoming firewall rules for ipv6 addresses with packet type and port number*/
+void incoming_firewall_ipv6(const char* packetType, int portNumber) {
+  char buf[5];
+  snprintf(buf, sizeof(buf), "%d", portNumber);
+  if(!system("ip6tables -F")) {
+    return;
+  }
+  if(!system("ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT")) {
+    return;
+  }
+  if(!system("ip6tables -A INPUT -s ::1 -d ::1 -j ACCEPT")) {
+    return;
+  }
+  char command[100] = "ip6tables -A INPUT -p ";
+  strcat(command, packetType);
+  strcat(command, " --dport ");
+  strcat(command, buf);
+  strcat(command, " -j ACCEPT");
+  if(!system(command)) {
+    return;
+  }
+  sleep(2);
+  if(!system("ip6tables -A INPUT -j DROP")) {
+    return;
+  }
+  PRINT_TEST_CASE_MSG("Firewall for incoming requests added on IPv6");
+  if(!system("ip6tables -L")) {
+    return;
+  }
+  return;
+}
+
+/*Add outgoing firewall rules for ipv4 addresses with packet type and port number*/
+void outgoing_firewall_ipv4(const char* packetType, int portNumber) {
+  char buf[5];
+  snprintf(buf, sizeof(buf), "%d", portNumber);
+  if(!system("iptables -F")) {
+    return;
+  }
+  if(!system("iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT")) {
+    return;
+  }
+  if(!system("iptables -A OUTPUT -s 127.0.0.1 -d 127.0.0.1 -j ACCEPT")) {
+    return;
+  }
+  char command[100] = "iptables -A OUTPUT -p ";
+  strcat(command, packetType);
+  strcat(command, " --dport ");
+  strcat(command, buf);
+  strcat(command, " -j ACCEPT");
+  if(!system(command)) {
+    return;
+  }
+  sleep(2);
+  if(!system("iptables -A OUTPUT -j DROP")) {
+    return;
+  }
+  PRINT_TEST_CASE_MSG("Firewall for outgoing requests added on IPv4");
+  if(!system("iptables -L")) {
+    return;
+  }
+  return;
+}
+
+/*Add outgoing firewall rules for ipv6 addresses with packet type and port number*/
+void outgoing_firewall_ipv6(const char* packetType, int portNumber) {
+  char buf[5];
+  snprintf(buf, sizeof(buf), "%d", portNumber);
+  if(!system("ip6tables -F")) {
+    return;
+  }
+  if(!system("ip6tables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT")) {
+    return;
+  }
+  if(!system("ip6tables -A OUTPUT -s ::1 -d ::1 -j ACCEPT")) {
+    return;
+  }
+  char command[100] = "ip6tables -A OUTPUT -p ";
+  strcat(command, packetType);
+  strcat(command, " --dport ");
+  strcat(command, buf);
+  strcat(command, " -j ACCEPT");
+  if(!system(command)) {
+    return;
+  }
+  sleep(2);
+  if(!system("ip6tables -A OUTPUT -j DROP")) {
+    return;
+  }
+  PRINT_TEST_CASE_MSG("Firewall for outgoing requests added on IPv6");
+  if(!system("ip6tables -L")) {
+    return;
+  }
+  return;
 }

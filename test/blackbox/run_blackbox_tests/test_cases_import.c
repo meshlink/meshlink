@@ -1,7 +1,6 @@
 /*
     test_cases_import.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +16,7 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+
 #include "execute_tests.h"
 #include "test_cases_import.h"
 #include "../common/containers.h"
@@ -28,7 +28,6 @@
 #include <stdarg.h>
 #include <setjmp.h>
 #include <cmocka.h>
-
 
 /* Modify this to change the logging level of Meshlink */
 #define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
@@ -48,45 +47,27 @@ static bool test_import_06(void);
 
 /* State structure for import API Test Case #1 */
 static black_box_state_t test_case_import_01_state = {
-    /* test_case_name = */ "test_case_import_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_import_01",
 };
 /* State structure for import API Test Case #2 */
 static black_box_state_t test_case_import_02_state = {
-    /* test_case_name = */ "test_case_import_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_import_02",
 };
 /* State structure for import API Test Case #3 */
 static black_box_state_t test_case_import_03_state = {
-    /* test_case_name = */ "test_case_import_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_import_03",
 };
 /* State structure for import API Test Case #4 */
 static black_box_state_t test_case_import_04_state = {
-    /* test_case_name = */ "test_case_import_04",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_import_04",
 };
 /* State structure for import API Test Case #5 */
 static black_box_state_t test_case_import_05_state = {
-    /* test_case_name = */ "test_case_import_05",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_import_05",
 };
 /* State structure for import API Test Case #6 */
 static black_box_state_t test_case_import_06_state = {
-    /* test_case_name = */ "test_case_import_06",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_import_06",
 };
 
 
@@ -109,31 +90,19 @@ static bool test_import_01(void) {
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
 
-  /* Opening NUT and bar nodes */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
+  // Opening NUT and bar nodes
+  meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "test", DEV_CLASS_STATIONARY);
 	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
   meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Opening bar\n");
-  meshlink_handle_t *mesh2 = meshlink_open("importconf2", "bar", "chat", DEV_CLASS_STATIONARY);
+  meshlink_handle_t *mesh2 = meshlink_open("importconf2", "bar", "test", DEV_CLASS_STATIONARY);
 	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
   meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /** Exporting and Importing mutually **/
-  PRINT_TEST_CASE_MSG("Exporting NUT & bar\n");
+  // Exporting and Importing mutually
 	char *exp1 = meshlink_export(mesh1);
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-	PRINT_TEST_CASE_MSG("Importing NUT & bar mutually \n");
 	bool imp1 = meshlink_import(mesh1, exp2);
 	bool imp2 = meshlink_import(mesh2, exp1);
 	if(imp1 && imp2) {
@@ -167,31 +136,21 @@ static bool test_import_02(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
-  /* Opening NUT and bar nodes */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
+
+  // Opening NUT and bar nodes
+  meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "test", DEV_CLASS_STATIONARY);
 	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
   meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Opening bar\n");
-  meshlink_handle_t *mesh2 = meshlink_open("importconf2", "bar", "chat", DEV_CLASS_STATIONARY);
+  meshlink_handle_t *mesh2 = meshlink_open("importconf2", "bar", "test", DEV_CLASS_STATIONARY);
 	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
   meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Exporting & Importing nodes */
-  PRINT_TEST_CASE_MSG("Exporting NUT & bar\n");
+  // Exporting & Importing nodes
 	char *exp1 = meshlink_export(mesh1);
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-	PRINT_TEST_CASE_MSG("Importing NUT with NULL as mesh handle \n");
+
 	bool imp1 = meshlink_import(NULL, exp2);
 	bool imp2 = meshlink_import(mesh2, exp1);
 	if((!imp1) && imp2 ) {
@@ -227,31 +186,21 @@ static bool test_import_03(void) {
 
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
+
   /* Opening NUT and bar nodes */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
   meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Opening bar\n");
   meshlink_handle_t *mesh2 = meshlink_open("importconf2", "bar", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
   meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Exporting & Importing nodes */
-  PRINT_TEST_CASE_MSG("Exporting NUT & bar\n");
 	char *exp1 = meshlink_export(mesh1);
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-	PRINT_TEST_CASE_MSG("Importing NUT with NULL as exported data argument \n");
+
 	bool imp1 = meshlink_import(mesh1, NULL);
 	bool imp2 = meshlink_import(mesh2, exp1);
 	if( (!imp1) && imp2 ) {
@@ -287,31 +236,22 @@ static bool test_import_04(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
-  /* Opening NUT and bar nodes */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
+
+  // Opening NUT and bar nodes
   meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
   meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Opening bar\n");
   meshlink_handle_t *mesh2 = meshlink_open("importconf2", "bar", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
   meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Exporting & Importing nodes */
-  PRINT_TEST_CASE_MSG("Exporting NUT & bar\n");
+  // Exporting & Importing nodes
 	char *exp1 = meshlink_export(mesh1);
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-	PRINT_TEST_CASE_MSG("Importing NUT with garbage string as exported data argument \n");
+
+	// Importing NUT with garbage string as exported data argument
 	bool imp1 = meshlink_import(mesh1, "1/2/3");
 	bool imp2 = meshlink_import(mesh2, exp1);
 	if((!imp1) && imp2 ) {
@@ -346,22 +286,13 @@ static bool test_import_05(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
+
   /* Opening NUT and bar nodes */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
   meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Opening bar\n");
   meshlink_handle_t *mesh2 = meshlink_open("importconf2", "bar", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
   meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Exporting  & Importing nodes */
@@ -391,7 +322,6 @@ static bool test_import_05(void) {
 	meshlink_destroy("importconf2");
   return !imp3;
 }
-
 
 int test_meshlink_import(void) {
   const struct CMUnitTest blackbox_import_tests[] = {

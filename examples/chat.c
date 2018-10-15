@@ -5,22 +5,17 @@
 #include "../src/meshlink.h"
 
 static void log_message(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
-	(void)mesh;
-
-	static const char *levelstr[] = {
+	const char *levelstr[] = {
 		[MESHLINK_DEBUG] = "\x1b[34mDEBUG",
 		[MESHLINK_INFO] = "\x1b[32mINFO",
 		[MESHLINK_WARNING] = "\x1b[33mWARNING",
 		[MESHLINK_ERROR] = "\x1b[31mERROR",
 		[MESHLINK_CRITICAL] = "\x1b[31mCRITICAL",
 	};
-
 	fprintf(stderr, "%s:\x1b[0m %s\n", levelstr[level], text);
 }
 
 static void receive(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
-	(void)mesh;
-
 	const char *msg = data;
 
 	if(!len || msg[len - 1]) {
@@ -32,8 +27,6 @@ static void receive(meshlink_handle_t *mesh, meshlink_node_t *source, const void
 }
 
 static void node_status(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
-	(void)mesh;
-
 	if(reachable) {
 		printf("%s joined.\n", node->name);
 	} else {
@@ -111,7 +104,7 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			} else {
 				printf("%zu known nodes:", nnodes);
 
-				for(size_t i = 0; i < nnodes; i++) {
+				for(int i = 0; i < nnodes; i++) {
 					printf(" %s", nodes[i]->name);
 				}
 
@@ -173,8 +166,7 @@ static void parse_input(meshlink_handle_t *mesh, char *buf) {
 	// Commands start with '/'
 
 	if(*buf == '/') {
-		parse_command(mesh, buf + 1);
-		return;
+		return parse_command(mesh, buf + 1);
 	}
 
 	// Lines in the form "name: message..." set the destination node.
@@ -235,7 +227,7 @@ int main(int argc, char *argv[]) {
 
 	meshlink_set_receive_cb(mesh, receive);
 	meshlink_set_node_status_cb(mesh, node_status);
-	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, log_message);
+	meshlink_set_log_cb(mesh, MESHLINK_INFO, log_message);
 
 	if(!meshlink_start(mesh)) {
 		fprintf(stderr, "Could not start MeshLink: %s\n", meshlink_strerror(meshlink_errno));

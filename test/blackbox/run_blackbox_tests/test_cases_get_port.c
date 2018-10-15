@@ -1,25 +1,22 @@
-/*===================================================================================*/
-/*************************************************************************************/
-/**
- * @file      test_cases_get_port.c -- Execution of specific meshlink black box test cases
- * @see
- * @author    Sri Harsha K, sriharsha@elear.solutions
- * @copyright 2017  Guus Sliepen <guus@meshlink.io>
- *                  Manav Kumar Mehta <manavkumarm@yahoo.com>
- * @license   To any person (the "Recipient") obtaining a copy of this software and
- *            associated documentation files (the "Software"):\n
- *            All information contained in or disclosed by this software is
- *            confidential and proprietary information of Elear Solutions Tech
- *            Private Limited and all rights therein are expressly reserved.
- *            By accepting this material the recipient agrees that this material and
- *            the information contained therein is held in confidence and in trust
- *            and will NOT be used, copied, modified, merged, published, distributed,
- *            sublicensed, reproduced in whole or in part, nor its contents revealed
- *            in any manner to others without the express written permission of
- *            Elear Solutions Tech Private Limited.
- */
-/*************************************************************************************/
-/*===================================================================================*/
+/*
+    test_cases_get_port.c -- Execution of specific meshlink black box test cases
+    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "execute_tests.h"
 #include "test_cases_get_port.h"
 #include "../common/containers.h"
@@ -32,40 +29,20 @@
 #include <assert.h>
 #include <string.h>
 
-/*************************************************************************************
- *                          LOCAL MACROS                                             *
- *************************************************************************************/
-
-/*************************************************************************************
- *                          LOCAL PROTOTYPES                                         *
- *************************************************************************************/
 static void test_case_mesh_get_port_01(void **state);
 static bool test_steps_mesh_get_port_01(void);
 static void test_case_mesh_get_port_02(void **state);
 static bool test_steps_mesh_get_port_02(void);
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 /* State structure for meshlink_get_port Test Case #1 */
 static black_box_state_t test_mesh_get_port_01_state = {
-    /* test_case_name = */ "test_case_mesh_get_port_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_get_port_01",
 };
 
 /* State structure for meshlink_get_port Test Case #2 */
 static black_box_state_t test_mesh_get_port_02_state = {
-    /* test_case_name = */ "test_case_mesh_get_port_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_get_port_02",
 };
-
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 
 /* Execute meshlink_get_port Test Case # 1 */
 static void test_case_mesh_get_port_01(void **state) {
@@ -73,36 +50,27 @@ static void test_case_mesh_get_port_01(void **state) {
     return;
 }
 
-/* Test Steps for meshlink_get_port Test Case # 1*/
+/* Test Steps for meshlink_get_port Test Case # 1
+
+    Test Steps:
+    1. Open node instance
+    2. Run the node instance
+    3. Obtain port of that mesh using meshlink_get_port API
+
+    Expected Result:
+    API returns valid port number.
+*/
 static bool test_steps_mesh_get_port_01(void) {
-	bool result = false;
-	int port = 0;
+  meshlink_handle_t *mesh = meshlink_open("port_conf", "foo", "chat", DEV_CLASS_STATIONARY);
+	assert(mesh);
+	assert(meshlink_start(mesh));
 
-  meshlink_handle_t *mesh = meshlink_open("port_conf.1", "foo", "chat", DEV_CLASS_STATIONARY);
-	assert(mesh != NULL);
-	if(!mesh) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	if(!meshlink_start(mesh)) {
-		fprintf(stderr, "meshlink_start status: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	
-	port = meshlink_get_port(mesh);
-	assert(port != -1);
-	if(port == -1) {
-		fprintf(stderr, "meshlink_add_external_address status: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	} else {
-		fprintf(stderr, "Port number used by mesh is %d\n", port);
-		result = true;
-	}
+	int port = meshlink_get_port(mesh);
+	assert_int_not_equal(port, -1);
 
-	meshlink_stop(mesh);
 	meshlink_close(mesh);
-	meshlink_destroy("port_conf.1");
-  return result;
+	meshlink_destroy("port_conf");
+  return true;
 }
 
 /* Execute meshlink_get_port Test Case # 2 */
@@ -111,40 +79,21 @@ static void test_case_mesh_get_port_02(void **state) {
     return;
 }
 
-/* Test Steps for meshlink_get_port Test Case # 2*/
+/* Test Steps for meshlink_get_port Test Case # 2 - Invalid case
+
+    Test Steps:
+    1. Pass NULL as mesh handle argument to meshlink_get_port API
+
+    Expected Result:
+    Reports error successfully by returning -1
+*/
 static bool test_steps_mesh_get_port_02(void) {
-	bool result = false;
-	int port = 0;
+	int port = meshlink_get_port(NULL);
+	assert_int_equal(port, -1);
 
-  meshlink_handle_t *mesh = meshlink_open("port_conf.2", "foo", "chat", DEV_CLASS_STATIONARY);
-	assert(mesh != NULL);
-	if(!mesh) {
-		fprintf(stderr, "meshlink_open status2: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	if(!meshlink_start(mesh)) {
-		fprintf(stderr, "meshlink_start status: %s\n", meshlink_strerror(meshlink_errno));
-		return false;
-	}
-	
-	port = meshlink_get_port(NULL);
-	assert(port == -1);
-	if(port == -1) {
-		fprintf(stderr, "meshlink_add_external_address status: %s\n", meshlink_strerror(meshlink_errno));
-		result = true;
-	} else {
-		result = false;
-	}
-
-	meshlink_stop(mesh);
-	meshlink_close(mesh);
-	meshlink_destroy("port_conf.2");
-  return result;
+  return true;
 }
 
-/*************************************************************************************
- *                          PUBLIC FUNCTIONS                                         *
- *************************************************************************************/
 int test_meshlink_get_port(void) {
 		const struct CMUnitTest blackbox_get_port_tests[] = {
 				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_port_01, NULL, NULL,

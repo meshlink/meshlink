@@ -1,7 +1,0 @@
-[submodule "catta"]
-	path = catta
-	url = https://github.com/elear-solutions/catta.git
-	branch = Sprint18
-[submodule "src/utcp"]
-	path = src/utcp
-	url = https://github.com/elear-solutions/utcp.git

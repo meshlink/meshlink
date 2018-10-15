@@ -1,5 +1,2 @@
-*.cbp
-*.depend
-*.layout
-bin
-obj
+
+*.o

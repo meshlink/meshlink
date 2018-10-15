@@ -1,7 +1,6 @@
 /*
     test_cases_channel_get_flags.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +16,7 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+
 #include "execute_tests.h"
 #include "test_cases_channel_get_flags.h"
 #include "../common/containers.h"
@@ -41,28 +41,16 @@ static void test_case_channel_get_flags_03(void **state);
 static bool test_steps_channel_get_flags_03(void);
 
 static black_box_state_t test_case_channel_get_flags_01_state = {
-    /* test_case_name = */ "test_case_channel_get_flags_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_get_flags_01",
 };
 static black_box_state_t test_case_channel_get_flags_02_state = {
-    /* test_case_name = */ "test_case_channel_get_flags_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_get_flags_02",
 };
 static black_box_state_t test_case_channel_get_flags_03_state = {
-    /* test_case_name = */ "test_case_channel_get_flags_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_get_flags_03",
 };
 static black_box_state_t test_case_channel_get_flags_04_state = {
-    /* test_case_name = */ "test_case_channel_get_flags_04",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_get_flags_04",
 };
 
 
@@ -82,53 +70,34 @@ static void test_case_channel_get_flags_01(void **state) {
     API returning exact flag that has been assigned while opening (here TCP)
 */
 static bool test_steps_channel_get_flags_01(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh_handle = meshlink_open("getflagsconf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
   meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
 	meshlink_set_channel_accept_cb(mesh_handle, NULL);
 
-  PRINT_TEST_CASE_MSG("starting mesh\n");
   assert(meshlink_start(mesh_handle));
-  /* Getting node handle for itself */
+
   meshlink_node_t *node = meshlink_get_self(mesh_handle);
   assert(node != NULL);
   sleep(1);
 
-  PRINT_TEST_CASE_MSG("Opening TCP channel ex\n");
   /* Passing all valid arguments for meshlink_channel_open_ex */
   meshlink_channel_t *channel;
   channel = meshlink_channel_open_ex(mesh_handle, node, PORT, NULL, NULL, 0, MESHLINK_CHANNEL_TCP);
-  if(channel == NULL) {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex status : %s\n", meshlink_strerror(meshlink_errno));
-  }
   assert(channel!= NULL);
 
-  PRINT_TEST_CASE_MSG("Obtaining channel flags using meshlink_channel_get_flags\n");
+  // Obtaining channel flags using meshlink_channel_get_flags
   uint32_t flags = meshlink_channel_get_flags(mesh_handle, channel);
-  if (flags == MESHLINK_CHANNEL_TCP) {
-    PRINT_TEST_CASE_MSG("meshlink_channel_get_flags obtained flags correctly\n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("getflagsconf");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("meshlink_channel_get_flags failed obtain flags \n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("getflagsconf");
-    return false;
-  }
+  assert_int_equal(flags, MESHLINK_CHANNEL_TCP);
+
+  meshlink_close(mesh_handle);
+  meshlink_destroy("getflagsconf");
+
+  return true;
 }
 
 /* Execute meshlink_channel_get_flags Test Case # 2 - Invalid case*/
@@ -147,11 +116,9 @@ static void test_case_channel_get_flags_02(void **state) {
     API reporting error accordingly.
 */
 static bool test_steps_channel_get_flags_02(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh_handle = meshlink_open("getflagsconf", "nut", "node_sim", 1);
   assert(mesh_handle);
 
@@ -159,7 +126,6 @@ static bool test_steps_channel_get_flags_02(void) {
   meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
 	meshlink_set_channel_accept_cb(mesh_handle, NULL);
 
-  PRINT_TEST_CASE_MSG("starting mesh\n");
   assert(meshlink_start(mesh_handle));
 
   /* Getting node handle for itself */
@@ -167,34 +133,20 @@ static bool test_steps_channel_get_flags_02(void) {
   assert(node != NULL);
   sleep(1);
 
-  PRINT_TEST_CASE_MSG("Opening TCP channel ex\n");
   /* Passing all valid arguments for meshlink_channel_open_ex */
   meshlink_channel_t *channel;
   channel = meshlink_channel_open_ex(mesh_handle, node, PORT, NULL, NULL, 0, MESHLINK_CHANNEL_TCP);
-  if (channel == NULL) {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex status : %s\n", meshlink_strerror(meshlink_errno));
-  }
   assert(channel!= NULL);
 
-
-  PRINT_TEST_CASE_MSG("passing NULL as mesh handle argument for meshlink_channel_get_flags\n");
+  // passing NULL as mesh handle argument for meshlink_channel_get_flags
   uint32_t flags = meshlink_channel_get_flags(NULL, channel);
 
-  if(((int32_t)flags == -1) && (meshlink_errno == MESHLINK_EINVAL)) {
-    PRINT_TEST_CASE_MSG("Reported error correctly when NULL is passed as argument\n");
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("getflagsconf");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("failed to report error when NULL is passed as argument\n");
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("getflagsconf");
-    return false;
-  }
+  assert_int_equal((int32_t)flags, -1);
+  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+
+  meshlink_close(mesh_handle);
+  meshlink_destroy("getflagsconf");
+  return true;
 }
 
 /* Execute meshlink_channel_get flags Test Case # 3 - Invalid case*/
@@ -206,59 +158,32 @@ static void test_case_channel_get_flags_03(void **state) {
 
     Test Steps:
     1. Run NUT(Node Under Test)
-    2. Open channel to ourself (with TCP semantic here)
     3. Call meshlink_channel_get_flags by passing NULL as channel handle argument
 
     Expected Result:
     API reporting error accordingly.
 */
 static bool test_steps_channel_get_flags_03(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh_handle = meshlink_open("getflagsconf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
   meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
 	meshlink_set_channel_accept_cb(mesh_handle, NULL);
 
-  PRINT_TEST_CASE_MSG("starting mesh\n");
   assert(meshlink_start(mesh_handle));
-  /* Getting node handle for itself */
-  meshlink_node_t *node = meshlink_get_self(mesh_handle);
-  assert(node != NULL);
-  sleep(1);
 
-  PRINT_TEST_CASE_MSG("Opening TCP channel ex\n");
-  /* Passing all valid arguments for meshlink_channel_open_ex */
-  meshlink_channel_t *channel;
-  channel = meshlink_channel_open_ex(mesh_handle, node, PORT, NULL, NULL, 0, MESHLINK_CHANNEL_TCP);
-  if(channel == NULL) {
-    PRINT_TEST_CASE_MSG("meshlink_channel_open_ex status : %s\n", meshlink_strerror(meshlink_errno));
-  }
-  assert(channel!= NULL);
-
-  PRINT_TEST_CASE_MSG("passing NULL as channel handle argument for meshlink_channel_get_flags\n");
+  // passing NULL as channel handle argument for meshlink_channel_get_flags
   uint32_t flags = meshlink_channel_get_flags(mesh_handle, NULL);
 
-  if(((int32_t)flags == -1) && (meshlink_errno == MESHLINK_EINVAL)) {
-    PRINT_TEST_CASE_MSG("Reported error correctly when NULL is passed as argument\n");
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("getflagsconf");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("failed to report error when NULL is passed as argument\n");
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("getflagsconf");
-    return false;
-  }
+  assert_int_equal((int32_t)flags, -1);
+  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+
+  meshlink_close(mesh_handle);
+  meshlink_destroy("getflagsconf");
+  return true;
 }
 
 

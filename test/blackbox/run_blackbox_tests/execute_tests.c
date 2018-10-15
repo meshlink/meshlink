@@ -1,7 +1,6 @@
 /*
     execute_tests.c -- Utility functions for black box test execution
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -31,7 +30,7 @@
 int setup_test(void **state) {
     int i;
 
-    printf("Setting up Containers\n");
+    fprintf(stderr, "Setting up Containers\n");
     state_ptr = (black_box_state_t *)(*state);
     for(i = 0; i < state_ptr->num_nodes; i++) {
         meta_conn_status[i] = false;
@@ -46,7 +45,7 @@ int setup_test(void **state) {
 void execute_test(test_step_func_t step_func, void **state) {
     black_box_state_t *test_state = (black_box_state_t *) (*state);
 
-    printf("Running Test\n");
+    fprintf(stderr, "\n\x1b[32mRunning Test\x1b[0m : \x1b[34m%s\x1b[0m\n", test_state->test_case_name);
     test_state->test_result = step_func();
 
     if(!test_state->test_result)
@@ -76,8 +75,6 @@ int teardown_test(void **state) {
         }
     }
 
-//    PRINT_TEST_CASE_MSG("Terminating NUT.\n");
-//    execute_close();
     state_ptr = NULL;
 
     return EXIT_SUCCESS;

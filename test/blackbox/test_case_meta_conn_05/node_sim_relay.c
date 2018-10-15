@@ -50,8 +50,10 @@ int main(int argc, char *argv[]) {
     if (clientid != -1) {
       mesh_event_sock_send(clientid, NODE_STARTED, NULL, 0);
     }
+
     /* All test steps executed - wait for signals to stop/start or close the mesh */
-    while(1)
+    while(test_running)
         select(1, NULL, NULL, NULL, &main_loop_wait);
 
+    execute_close();
 }

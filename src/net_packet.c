@@ -370,7 +370,7 @@ static void send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *ori
 		return;
 	}
 
-	send_sptps_packet(mesh, n, origpkt);
+	return send_sptps_packet(mesh, n, origpkt);
 }
 
 bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
@@ -403,22 +403,22 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	} else {
 		choose_udp_address(mesh, to, &sa, &sock);
 	}
-  if(sa->sa.sa_family == AF_INET) {
-    if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
-      if(sockmsgsize(sockerrno)) {
-        if(to->maxmtu >= len) {
-          to->maxmtu = len - 1;
-        }
 
-        if(to->mtu >= len) {
-          to->mtu = len - 1;
-        }
-      } else {
-        logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s: %s", to->name, sockstrerror(sockerrno));
-        return false;
-      }
-    }
-  }
+	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
+		if(sockmsgsize(sockerrno)) {
+			if(to->maxmtu >= len) {
+				to->maxmtu = len - 1;
+			}
+
+			if(to->mtu >= len) {
+				to->mtu = len - 1;
+			}
+		} else {
+			logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s: %s", to->name, sockstrerror(sockerrno));
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -555,7 +555,7 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 	listen_socket_t *ls = data;
 	vpn_packet_t pkt;
 	char *hostname;
-	sockaddr_t from;
+	sockaddr_t from = {};
 	socklen_t fromlen = sizeof(from);
 	node_t *n;
 	int len;

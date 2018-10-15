@@ -1,7 +1,6 @@
 /*
     test_cases_sign.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +16,7 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+
 #include "execute_tests.h"
 #include "test_cases_sign.h"
 #include "../common/containers.h"
@@ -49,58 +49,37 @@ static bool test_sign_07(void);
 
  /* State structure for sign API Test Case #1 */
 static black_box_state_t test_case_sign_01_state = {
-    /* test_case_name = */ "test_case_sign_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_sign_01",
 };
 
 /* State structure for sign API Test Case #2 */
 static black_box_state_t test_case_sign_02_state = {
-    /* test_case_name = */ "test_case_sign_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_sign_02",
 };
 
 /* State structure for sign API Test Case #3 */
 static black_box_state_t test_case_sign_03_state = {
-    /* test_case_name = */ "test_case_sign_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_sign_03",
 };
 
 /* State structure for sign API Test Case #4 */
 static black_box_state_t test_case_sign_04_state = {
-    /* test_case_name = */ "test_case_sign_04",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_sign_04",
 };
 
 /* State structure for sign API Test Case #5 */
 static black_box_state_t test_case_sign_05_state = {
-    /* test_case_name = */ "test_case_sign_05",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_sign_05",
 };
 
 /* State structure for sign API Test Case #6 */
 static black_box_state_t test_case_sign_06_state = {
-    /* test_case_name = */ "test_case_sign_06",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_sign_06",
 };
 
 /* State structure for sign API Test Case #7 */
 static black_box_state_t test_case_sign_07_state = {
-    /* test_case_name = */ "test_case_sign_07",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_sign_07",
 };
 
 
@@ -120,34 +99,26 @@ static void test_case_sign_01(void **state) {
     Signs data successfully
 */
 static bool test_sign_01(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
+  // Create meshlink instance
   meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG(" Starting NUT\n");
   assert(meshlink_start(mesh_handle));
+
+  // Signing data
 
   char *data = "Test";
   char sig[MESHLINK_SIGLEN];
   size_t ssize = MESHLINK_SIGLEN;
-
-  PRINT_TEST_CASE_MSG("Calling meshlink_sign API\n");
   bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
-  meshlink_stop(mesh_handle);
+
+  // Clean up
   meshlink_close(mesh_handle);
   meshlink_destroy("signconf");
-  if(!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_sign FAILED to sign data\n");
-    return false;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_sign Successfuly signed data\n");
-  return true;
+
+  return ret;
 }
 
 /* Execute sign_data Test Case # 2 - Invalid case - meshlink_sign passing NULL as mesh handle argument*/
@@ -196,28 +167,25 @@ static void test_case_sign_03(void **state) {
     API returns false hinting the error.
 */
 static bool test_sign_03(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
+  // Create meshlink instance
   meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Starting NUT\n");
   assert(meshlink_start(mesh_handle));
 
+  // Signing Data
   char *data = "Test";
   char sig[MESHLINK_SIGLEN];
   size_t ssize = MESHLINK_SIGLEN;
-
-  PRINT_TEST_CASE_MSG("Calling meshlink_sign API\n");
   bool ret = meshlink_sign(mesh_handle, NULL, strlen(data) + 1, sig, &ssize);
-  meshlink_stop(mesh_handle);
+
+  // Clean up
+
   meshlink_close(mesh_handle);
   meshlink_destroy("signconf");
+
   if(!ret) {
     PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as data arg\n");
     return true;
@@ -244,28 +212,27 @@ static void test_case_sign_04(void **state) {
     API returns false hinting the error.
 */
 static bool test_sign_04(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
+  // Create meshlink instance
+
   meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Starting NUT\n");
   assert(meshlink_start(mesh_handle));
+
+  // Signing data
 
   char *data = "Test";
   char sig[MESHLINK_SIGLEN];
   size_t ssize = MESHLINK_SIGLEN;
-
-  PRINT_TEST_CASE_MSG("Calling meshlink_sign API\n");
   bool ret = meshlink_sign(mesh_handle, data, 0, sig, &ssize);
-  meshlink_stop(mesh_handle);
+
+  // Clean up
+
   meshlink_close(mesh_handle);
   meshlink_destroy("signconf");
+
   if(!ret) {
     PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing 0 as size of data arg\n");
     return true;
@@ -291,28 +258,27 @@ static void test_case_sign_05(void **state) {
     API returns false hinting the error.
 */
 static bool test_sign_05(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
+  // Create meshlink instance
+
   meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Starting NUT\n");
   assert(meshlink_start(mesh_handle));
+
+  // Signing data
 
   char *data = "Test";
   char sig[MESHLINK_SIGLEN];
   size_t ssize = MESHLINK_SIGLEN;
-
-  fprintf(stderr, "[ sign 05 ]Calling meshlink_sign API\n");
   bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, NULL, &ssize);
-  meshlink_stop(mesh_handle);
+
+  // Clean up
+
   meshlink_close(mesh_handle);
   meshlink_destroy("signconf");
+
   if(!ret) {
     PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as sign arg\n");
     return true;
@@ -338,28 +304,26 @@ static void test_case_sign_06(void **state) {
     API returns false hinting the error.
 */
 static bool test_sign_06(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
+  // Create meshlink instance
   meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Starting NUT\n");
   assert(meshlink_start(mesh_handle));
+
+  // Signing data
 
   char *data = "Test";
   char sig[MESHLINK_SIGLEN];
   size_t ssize = MESHLINK_SIGLEN;
-
-  PRINT_TEST_CASE_MSG("Calling meshlink_sign API\n");
   bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, NULL);
-  meshlink_stop(mesh_handle);
+
+  // Clean up
+
   meshlink_close(mesh_handle);
   meshlink_destroy("signconf");
+
   if(!ret) {
     PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as signsize arg\n");
     return true;
@@ -384,28 +348,28 @@ static void test_case_sign_07(void **state) {
     API returns false hinting the error.
 */
 static bool test_sign_07(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
+  // Create meshlink instance
+
   meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
   assert(mesh_handle);
-
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  PRINT_TEST_CASE_MSG("Starting NUT\n");
   assert(meshlink_start(mesh_handle));
+
+  // Signing data
 
   char *data = "Test";
   char sig[MESHLINK_SIGLEN];
   size_t ssize = 5;  //5 < MESHLINK_SIGLEN
-
-  PRINT_TEST_CASE_MSG("Calling meshlink_sign API\n");
   bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
+
+  // Cleanup
+
   meshlink_stop(mesh_handle);
   meshlink_close(mesh_handle);
   meshlink_destroy("signconf");
+
   if(!ret) {
     PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing signsize < MESHLINK_SIGLEN arg\n");
     return true;

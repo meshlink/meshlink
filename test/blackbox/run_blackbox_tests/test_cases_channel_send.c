@@ -1,25 +1,22 @@
-/*===================================================================================*/
-/*************************************************************************************/
-/**
- * @file      test_cases_channel_send.c -- Execution of specific meshlink black box test cases
- * @see
- * @author    Sri Harsha K, sriharsha@elear.solutions
- * @copyright 2017  Guus Sliepen <guus@meshlink.io>
- *                  Manav Kumar Mehta <manavkumarm@yahoo.com>
- * @license   To any person (the "Recipient") obtaining a copy of this software and
- *            associated documentation files (the "Software"):\n
- *            All information contained in or disclosed by this software is
- *            confidential and proprietary information of Elear Solutions Tech
- *            Private Limited and all rights therein are expressly reserved.
- *            By accepting this material the recipient agrees that this material and
- *            the information contained therein is held in confidence and in trust
- *            and will NOT be used, copied, modified, merged, published, distributed,
- *            sublicensed, reproduced in whole or in part, nor its contents revealed
- *            in any manner to others without the express written permission of
- *            Elear Solutions Tech Private Limited.
- */
-/*************************************************************************************/
-/*===================================================================================*/
+/*
+    test_cases_channel_send.c -- Execution of specific meshlink black box test cases
+    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "execute_tests.h"
 #include "test_cases_channel_send.h"
 #include "../common/containers.h"
@@ -32,13 +29,6 @@
 #include <assert.h>
 #include <string.h>
 
-/*************************************************************************************
- *                          LOCAL MACROS                                             *
- *************************************************************************************/
-
-/*************************************************************************************
- *                          LOCAL PROTOTYPES                                         *
- *************************************************************************************/
 static void test_case_mesh_channel_send_01(void **state);
 static bool test_steps_mesh_channel_send_01(void);
 static void test_case_mesh_channel_send_02(void **state);
@@ -52,61 +42,36 @@ static bool test_steps_mesh_channel_send_05(void);
 static void test_case_mesh_channel_send_06(void **state);
 static bool test_steps_mesh_channel_send_06(void);
 
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 /* State structure for meshlink_channel_send Test Case #1 */
 static black_box_state_t test_mesh_channel_send_01_state = {
-    /* test_case_name = */ "test_case_mesh_channel_send_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_channel_send_01",
 };
 
 /* State structure for meshlink_channel_send Test Case #2 */
 static black_box_state_t test_mesh_channel_send_02_state = {
-    /* test_case_name = */ "test_case_mesh_channel_send_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_channel_send_02",
 };
 
 /* State structure for meshlink_channel_send Test Case #3 */
 static black_box_state_t test_mesh_channel_send_03_state = {
-    /* test_case_name = */ "test_case_mesh_channel_send_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_channel_send_03",
 };
 
 /* State structure for meshlink_channel_send Test Case #4 */
 static black_box_state_t test_mesh_channel_send_04_state = {
-    /* test_case_name = */ "test_case_mesh_channel_send_04",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_channel_send_04",
 };
 
 /* State structure for meshlink_channel_send Test Case #5 */
 static black_box_state_t test_mesh_channel_send_05_state = {
-    /* test_case_name = */ "test_case_mesh_channel_send_05",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_channel_send_05",
 };
 
 /* State structure for meshlink_channel_send Test Case #6 */
 static black_box_state_t test_mesh_channel_send_06_state = {
-    /* test_case_name = */ "test_case_mesh_channel_send_06",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_mesh_channel_send_06",
 };
 
-
-/*************************************************************************************
- *                          PRIVATE FUNCTIONS                                        *
- *************************************************************************************/
 /* Execute meshlink_channel_send Test Case # 1*/
 static void test_case_mesh_channel_send_01(void **state) {
 	 execute_test(test_steps_mesh_channel_send_01, state);
@@ -191,11 +156,10 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 
 /* Test Steps for meshlink_channel_send Test Case # 1*/
 static bool test_steps_mesh_channel_send_01(void) {
-	bool result = false;
 	meshlink_destroy("chan_send_conf.1");
 	meshlink_destroy("chan_send_conf.2");
-	// Open two new meshlink instance.
 
+	// Open two new meshlink instance.
 	meshlink_handle_t *mesh1 = meshlink_open("chan_send_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
 	assert(mesh1 != NULL);
 	if(!mesh1) {
@@ -214,7 +178,6 @@ static bool test_steps_mesh_channel_send_01(void) {
 	meshlink_enable_discovery(mesh2, false);
 
 	// Import and export both side's data
-
 	meshlink_add_address(mesh1, "localhost");
 
 	char *data = meshlink_export(mesh1);
@@ -1053,9 +1016,6 @@ static bool test_steps_mesh_channel_send_06(void) {
 	return true;
 }
 
-/*************************************************************************************
- *                          PUBLIC FUNCTIONS                                         *
- *************************************************************************************/
 int test_meshlink_channel_send(void) {
 		const struct CMUnitTest blackbox_channel_send_tests[] = {
 				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_01, NULL, NULL,

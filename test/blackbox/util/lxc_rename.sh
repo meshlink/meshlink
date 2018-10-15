@@ -26,4 +26,5 @@ newname=$3
 mv ${lxcpath}/${oldname} ${lxcpath}/${newname}
 sed {s/${oldname}/${newname}/} ${lxcpath}/${newname}/config > ${lxcpath}/${newname}/config1
 mv ${lxcpath}/${newname}/config1 ${lxcpath}/${newname}/config
+#lxc-copy -n ${oldname} -P lxcpath -N ${newname} -p lxcpath -R
 exit $?

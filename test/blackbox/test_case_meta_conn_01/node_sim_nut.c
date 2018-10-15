@@ -60,8 +60,6 @@ int main(int argc, char *argv[]) {
       mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
     }
 
-    setup_signals();
-
     execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
     meshlink_set_node_status_cb(mesh_handle, node_status_callback);
     if(argv[CMD_LINE_ARG_INVITEURL]) {
@@ -104,6 +102,8 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "Failed to reconnect with Peer\n");
       mesh_event_sock_send(clientId, META_RECONN_FAILURE, "Peer", 30);
     }
+
+    execute_close();
 
     return 0;
 }

@@ -1389,4 +1389,3 @@ static ge_precomp base[32][8] = {
         },
     },
 };
-

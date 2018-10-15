@@ -1,7 +1,6 @@
 /*
     test_cases_channel_set_poll_cb.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -107,13 +106,14 @@ static void test_case_channel_set_poll_cb_01(void **state) {
 */
 static bool test_steps_channel_set_poll_cb_01(void) {
   poll_stat = false;
+  meshlink_destroy("channelpollconf");
   PRINT_TEST_CASE_MSG("Opening NUT\n");
   /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
   meshlink_handle_t *mesh_handle = meshlink_open("channelpollconf", "nut", "node_sim", 1);
-  PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
+  fprintf(stderr, "meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
   assert(mesh_handle);
 
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);

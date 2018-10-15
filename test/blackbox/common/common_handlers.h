@@ -35,6 +35,7 @@
 
 extern bool meta_conn_status[];
 extern bool node_reachable_status[];
+extern bool test_running;
 
 char *get_ip(const char *if_name);
 char *get_netmask(const char *if_name);

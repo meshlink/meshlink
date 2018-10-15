@@ -30,7 +30,6 @@
 #include "protocol.h"
 #include "utils.h"
 #include "xalloc.h"
-#include <sys/socket.h>
 
 /* Needed on Mac OS/X */
 #ifndef SOL_TCP
@@ -164,6 +163,7 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	int option;
 
 	nfd = socket(sa->sa.sa_family, SOCK_DGRAM, IPPROTO_UDP);
+
 	if(nfd < 0) {
 		logger(mesh, MESHLINK_ERROR, "Creating UDP socket failed: %s", sockstrerror(sockerrno));
 		return -1;
