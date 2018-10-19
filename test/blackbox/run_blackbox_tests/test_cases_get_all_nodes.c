@@ -1,7 +1,6 @@
 /*
     test_cases_get_all_nodes.c -- Execution of specific meshlink black box test cases
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +16,7 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+
 #include "execute_tests.h"
 #include "test_cases.h"
 #include "../common/containers.h"

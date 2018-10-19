@@ -3,7 +3,6 @@
                     for meta connection test case 01 - re-connection of
                     two nodes when relay node goes down
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -86,7 +85,7 @@ int main(int argc, char *argv[]) {
     }
 
     execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
-    meshlink_set_log_cb(mesh_handle, MESHLINK_INFO, callback_logger);
+    meshlink_set_log_cb(mesh_handle, MESHLINK_DEBUG, callback_logger);
     if(argv[CMD_LINE_ARG_INVITEURL]) {
         execute_join(argv[CMD_LINE_ARG_INVITEURL]);
     }
@@ -97,6 +96,7 @@ int main(int argc, char *argv[]) {
     while(!conn_status) {
       sleep(1);
     }
+    sleep(1);
     fprintf(stderr, "Connected with Peer\n");
     mesh_event_sock_send(client_id, META_CONN_SUCCESSFUL, "Connected with Peer", 30);
 

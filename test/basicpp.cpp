@@ -7,7 +7,7 @@
 
 using namespace std;
 
-int main() {
+int main(int argc, char *argv[]) {
 	// Open a new meshlink instance.
 
 	meshlink::mesh mesh;

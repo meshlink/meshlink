@@ -1,7 +1,6 @@
 /*
     mesh_event_handler.h
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -47,6 +46,7 @@ typedef enum {
   META_CONN_SUCCESSFUL,
   META_CONN,
   META_DISCONN,
+  META_CONN_CLOSED,
   NODE_INVITATION,
   CHANGED_IP_ADDRESS,
   NODE_UNREACHABLE,
@@ -55,8 +55,10 @@ typedef enum {
   META_RECONN_FAILURE,
   MESH_DATA_RECEIVED,
   NODE_STARTED,
+  NODE_RESTARTED,
   NODE_JOINED,
   PORT_NO,
+  ERR_NETWORK,
   MESH_DATA_VERIFED,
   CHANNEL_OPENED,
   CHANNEL_REQ_RECIEVED,
@@ -65,7 +67,9 @@ typedef enum {
   MESH_NODE_DISCOVERED,
   INCOMING_META_CONN,
   OUTGOING_META_CONN,
-  AUTO_DISCONN
+  AUTO_DISCONN,
+
+  MAX_EVENT           // Maximum event enum
 } mesh_event_t;
 
 /// mesh event UDP packet

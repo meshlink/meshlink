@@ -1,11 +1,8 @@
-*.cbp
-*.depend
-*.layout
-bin
-obj
-test
-node_sim*
-.deps
-.libs
 Makefile
 Makefile.in
+*.o
+test
+node_sim_relay
+node_sim_peer 
+node_sim_nut
+testconf

@@ -26,13 +26,14 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <ifaddrs.h>
 #include <ctype.h>
 #include "test_step.h"
 #include "common_handlers.h"
 
-#define IFCONFIG "/sbin/ifconfig"
-#define GET_IPV4 "inet addr"
-#define GET_NETMASK "Mask"
+#define GET_IP_FAMILY AF_INET
 
 char *lxc_bridge = NULL;
 black_box_state_t *state_ptr = NULL;
@@ -43,88 +44,70 @@ bool node_reachable_status[10];
 bool test_running;
 
 void mesh_close_signal_handler(int a) {
-    test_running = false;
+  test_running = false;
 
-    exit(EXIT_SUCCESS);
+  exit(EXIT_SUCCESS);
 }
 
 void mesh_stop_start_signal_handler(int a) {
-    /* Stop the Mesh if it is running, otherwise start it again */
-    (mesh_started) ? execute_stop() : execute_start();
+  /* Stop the Mesh if it is running, otherwise start it again */
+  (mesh_started) ? execute_stop() : execute_start();
 
-    return;
+  return;
 }
 
 void setup_signals(void) {
-    test_running = true;
-    signal(SIGTERM, mesh_close_signal_handler);
-    signal(SIGINT, mesh_stop_start_signal_handler);
+  test_running = true;
+  signal(SIGTERM, mesh_close_signal_handler);
+  signal(SIGINT, mesh_stop_start_signal_handler);
 
-    return;
+  return;
 }
 
 /* Return the IP Address of the Interface 'if_name'
     The caller is responsible for freeing the dynamically allocated string that is returned */
 char *get_ip(const char *if_name) {
-  FILE *get_fp;
-  char *if_ip = NULL;
-  char get_ip_cmd[100];
-  char buffer[100];
-  char *line;
-  assert(snprintf(get_ip_cmd, sizeof(get_ip_cmd), IFCONFIG " %s", if_name) >= 0);
-  assert(get_fp = popen(get_ip_cmd, "r"));
+  struct ifaddrs *ifaddr, *ifa;
+  char *ip;
+  int family;
 
-  while((line = fgets(buffer, sizeof(buffer), get_fp)) != NULL) {
-    if(strstr(buffer, GET_IPV4) != NULL) {
-      char *ip = strchr(buffer, ':');
-      assert(ip);
-      ip = ip + 1;
-      char *ip_end = strchr(ip, ' ');
-      assert(ip_end);
-      *ip_end = '\0';
-
-      size_t ip_len = strlen(ip);
-      assert(if_ip = malloc(ip_len + 1));
-      strcpy(if_ip, ip);
-
+  ip = malloc(NI_MAXHOST);
+  assert(ip);
+  assert(getifaddrs(&ifaddr) != -1);
+  for(ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+    if(ifa->ifa_addr == NULL)
+      continue;
+    family = ifa->ifa_addr->sa_family;
+    if(family == GET_IP_FAMILY && !strcmp(ifa->ifa_name , if_name)) {
+      assert(!getnameinfo(ifa->ifa_addr, (family == GET_IP_FAMILY) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6), ip, NI_MAXHOST, NULL, 0, NI_NUMERICHOST));
       break;
     }
   }
-  assert(pclose(get_fp) != -1);
 
-  return if_ip;
+  return ip;
 }
 
 /* Return the IP Address of the Interface 'if_name'
     The caller is responsible for freeing the dynamically allocated string that is returned */
 char *get_netmask(const char *if_name) {
-  FILE *get_fp;
-  char *if_ip = NULL;
-  char get_ip_cmd[100];
-  char buffer[100];
-  char *line;
-  assert(snprintf(get_ip_cmd, sizeof(get_ip_cmd), IFCONFIG " %s", if_name) >= 0);
-  assert(get_fp = popen(get_ip_cmd, "r"));
+  struct ifaddrs *ifaddr, *ifa;
+  char *ip;
+  int family;
 
-  while((line = fgets(buffer, sizeof(buffer), get_fp)) != NULL) {
-    if(strstr(buffer, GET_NETMASK) != NULL) {
-      char *ip = strchr(buffer, ':');
-      assert(ip);
-      ip = ip + 1;
-      char *ip_end = strchr(ip, ' ');
-      assert(ip_end);
-      *ip_end = '\0';
-
-      size_t ip_len = strlen(ip);
-      assert(if_ip = malloc(ip_len + 1));
-      strcpy(if_ip, ip);
-
+  ip = malloc(NI_MAXHOST);
+  assert(ip);
+  assert(getifaddrs(&ifaddr) != -1);
+  for(ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+    if(ifa->ifa_addr == NULL)
+      continue;
+    family = ifa->ifa_addr->sa_family;
+    if(family == GET_IP_FAMILY && !strcmp(ifa->ifa_name , if_name)) {
+      assert(!getnameinfo(ifa->ifa_netmask, (family == GET_IP_FAMILY) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6), ip, NI_MAXHOST, NULL, 0, NI_NUMERICHOST));
       break;
     }
   }
-  assert(pclose(get_fp) != -1);
 
-  return if_ip;
+  return ip;
 }
 
 /* Change the IP Address of an interface */

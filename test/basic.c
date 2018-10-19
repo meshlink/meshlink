@@ -5,7 +5,7 @@
 
 #include "meshlink.h"
 
-int main() {
+int main(int argc, char *argv[]) {
 	// Open a new meshlink instance.
 
 	meshlink_handle_t *mesh = meshlink_open("basic_conf", "foo", "basic", DEV_CLASS_BACKBONE);

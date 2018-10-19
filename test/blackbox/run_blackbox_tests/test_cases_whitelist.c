@@ -22,12 +22,14 @@
 #include "../common/containers.h"
 #include "../common/test_step.h"
 #include "../common/common_handlers.h"
+#include <assert.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <setjmp.h>
 #include <cmocka.h>
-#include <assert.h>
-#include <string.h>
+#include <pthread.h>
+#include <errno.h>
 
 #include "../../utils.h"
 
@@ -53,28 +55,39 @@ static black_box_state_t test_mesh_whitelist_03_state = {
   .test_case_name = "test_case_mesh_whitelist_03",
 };
 
+static bool rec_stat;
+static bool reachable;
+static pthread_mutex_t lock_receive = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t receive_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t reachable_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t reachable_cond = PTHREAD_COND_INITIALIZER;
+
+
 /* Execute meshlink_whitelist Test Case # 1*/
 static void test_case_mesh_whitelist_01(void **state) {
   execute_test(test_steps_mesh_whitelist_01, state);
   return;
 }
 
-static bool receive_data = false;
 
 static void receive(meshlink_handle_t *mesh, meshlink_node_t *src, const void *data, size_t len) {
 	const char *msg = data;
 	assert(len);
 
-	receive_data = true;
+  pthread_mutex_lock(& lock_receive);
+  rec_stat = true;
+  assert(!pthread_cond_broadcast(&receive_cond));
+  pthread_mutex_unlock(& lock_receive);
 
-	fprintf(stderr, "%s says: %s\n", src->name, msg);
 }
 
-static bool node_reachable = false;
-
-static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
-	if(!strcmp(node->name, "bar"))
-		node_reachable = reachable;
+static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reach) {
+	if(!strcmp(node->name, "bar")) {
+    pthread_mutex_lock(&reachable_lock);
+    reachable = reach;
+    assert(!pthread_cond_broadcast(&reachable_cond));
+    pthread_mutex_unlock(&reachable_lock);
+	}
 }
 
 
@@ -88,7 +101,7 @@ static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reach
     meshlink_whitelist API whitelists the blacklisted node
 */
 static bool test_steps_mesh_whitelist_01(void) {
-	bool result = false;
+  struct timespec timeout = {0};
 
 	// Open two new meshlink instance.
 
@@ -103,6 +116,7 @@ static bool test_steps_mesh_whitelist_01(void) {
 
 	// Export & Import to join the mesh
 
+	reachable = false;
 	char *data = meshlink_export(mesh1);
 	assert(data);
 	assert(meshlink_import(mesh2, data));
@@ -114,30 +128,55 @@ static bool test_steps_mesh_whitelist_01(void) {
 
 	// Start both instances
 
-	node_reachable = false;
 	meshlink_set_node_status_cb(mesh1, status_cb);
 	assert(meshlink_start(mesh1));
 	assert(meshlink_start(mesh2));
 
 	// Nodes should know each other
-  assert_after(node_reachable, 5);
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(&reachable_lock);
+  while(reachable == false) {
+    assert(!pthread_cond_timedwait(&reachable_cond, &reachable_lock, &timeout));
+  }
+  pthread_mutex_unlock(&reachable_lock);
+  sleep(1);
 
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
 	assert(bar);
 	meshlink_node_t *foo = meshlink_get_node(mesh2, "foo");
 	assert(foo);
 
-	receive_data = false;
+	rec_stat = false;
 	assert(meshlink_send(mesh1, bar, "test", 5));
-  assert_after(receive_data, 3);
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(& lock_receive);
+  if(rec_stat == false) {
+    assert(pthread_cond_timedwait(&receive_cond, &lock_receive, &timeout) == 0);
+  }
+  pthread_mutex_unlock(& lock_receive);
 
 
 	meshlink_blacklist(mesh1, foo);
+
+	rec_stat = false;
+	assert(meshlink_send(mesh1, bar, "test", 5));
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(& lock_receive);
+  if(rec_stat == false) {
+    int err = pthread_cond_timedwait(&receive_cond, &lock_receive, &timeout);
+    assert(err == ETIMEDOUT);
+  }
+  pthread_mutex_unlock(& lock_receive);
 	meshlink_whitelist(mesh1, foo);
 
-	receive_data = false;
-	result = meshlink_send(mesh2, foo, "test", 5);
-  assert_after(receive_data, 5);
+	rec_stat = false;
+	bool result = meshlink_send(mesh2, foo, "test", 5);
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(& lock_receive);
+  if(rec_stat == false) {
+    assert(pthread_cond_timedwait(&receive_cond, &lock_receive, &timeout) == 0);
+  }
+  pthread_mutex_unlock(& lock_receive);
 
 	// Clean up.
 
@@ -164,7 +203,7 @@ static void test_case_mesh_whitelist_02(void **state) {
 
 /* Test Steps for meshlink_whitelist Test Case # 2*/
 static bool test_steps_mesh_whitelist_02(void) {
-	bool result = false;
+  struct timespec timeout = {0};
 
 	// Open two new meshlink instance.
 
@@ -188,13 +227,18 @@ static bool test_steps_mesh_whitelist_02(void) {
 
 	// Start both instances
 
-	node_reachable = false;
+	reachable = false;
 	meshlink_set_node_status_cb(mesh1, status_cb);
 	assert(meshlink_start(mesh1));
 	assert(meshlink_start(mesh2));
 
 	// Nodes should know each other
-  assert_after(node_reachable, 5);
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(&reachable_lock);
+  while(reachable == false) {
+    assert(!pthread_cond_timedwait(&reachable_cond, &reachable_lock, &timeout));
+  }
+  pthread_mutex_unlock(&reachable_lock);
 
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
 	assert(bar);

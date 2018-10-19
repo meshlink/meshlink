@@ -79,29 +79,33 @@ static black_box_state_t test_case_channel_ex_07_state = {
     .test_case_name = "test_case_channel_ex_07",
 };
 
+/* mutex for the common variable */
+static pthread_mutex_t accept_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t accept_cond = PTHREAD_COND_INITIALIZER;
+
+static bool channel_acc;
 
 /* channel receive callback */
 static void cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
-  char *data = (char *) dat;
-  PRINT_TEST_CASE_MSG("Invoked channel Receive callback\n");
-  if(dat != NULL) {
-    PRINT_TEST_CASE_MSG("Received message is : %s\n", data);
-  }
+  (void)mesh;
+  (void)channel;
+  (void)dat;
+  (void)len;
+
+  return;
 }
 
-/* channel accept callback */
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len) {
 	(void)dat;
 	(void)len;
   char *data = (char *) dat;
+  assert_int_equal(port, PORT);
 
-  pthread_mutex_lock(&lock);
+  pthread_mutex_lock(&accept_lock);
 	channel_acc = true;
-	pthread_mutex_unlock(&lock);
+  assert(!pthread_cond_broadcast(&accept_cond));
+	pthread_mutex_unlock(&accept_lock);
 
-	PRINT_TEST_CASE_MSG("Accepted incoming channel from '%s'\n", channel->node->name);
-	PRINT_TEST_CASE_MSG("received data is : %s \n", data);
-	// Accept this channel by default
 	return true;
 }
 
@@ -139,7 +143,6 @@ static bool test_steps_channel_ex_01(void) {
   /* Getting node handle for itself */
   meshlink_node_t *node = meshlink_get_self(mesh_handle);
   assert(node != NULL);
-  sleep(1);
 
   char string[100] = "Test the 1st case";
   pthread_mutex_lock(&lock);
@@ -307,14 +310,12 @@ static bool test_steps_channel_ex_04(void) {
   pthread_mutex_lock(&lock);
   channel_acc = false;
   pthread_mutex_unlock(&lock);
-  sleep(1);
 
   /* Passing all valid arguments for meshlink_channel_open_ex i.e disabling receive callback and send queue */
   meshlink_channel_t *channel;
   channel = meshlink_channel_open_ex(mesh_handle, node, PORT, NULL, NULL, 0, MESHLINK_CHANNEL_UDP);
   assert(channel!= NULL);
   // Delay for establishing a channel
-  sleep(1);
 
   pthread_mutex_lock(&lock);
   bool ret = channel_acc;
@@ -347,7 +348,6 @@ static bool test_steps_channel_ex_05(void) {
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh_handle = meshlink_open("channelexconf", "nut", "node_sim", 1);
   assert(mesh_handle);
 
@@ -355,34 +355,18 @@ static bool test_steps_channel_ex_05(void) {
   meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
 	meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
 
-  PRINT_TEST_CASE_MSG("starting mesh\n");
   assert(meshlink_start(mesh_handle));
   /* Getting node handle for itself */
   meshlink_node_t *node = meshlink_get_self(mesh_handle);
   assert(node != NULL);
-  sleep(1);
 
-  PRINT_TEST_CASE_MSG("Trying to open channel using mesh handle as NULL argument \n");
+  /* Trying to open channel using mesh handle as NULL argument */
   meshlink_channel_t *channel = meshlink_channel_open_ex(NULL, node, PORT, cb, NULL, 0, MESHLINK_CHANNEL_TCP);
   assert(channel == NULL);
 
-  if(channel == NULL) {
-    PRINT_TEST_CASE_MSG("Error reported correctly \n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("Failed to report error \n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return false;
-  }
+  meshlink_close(mesh_handle);
+  meshlink_destroy("channelexconf");
+  return true;
 }
 
 /* Execute meshlink_channel_open_ex Test Case # 6 - Opening channel using NULL as node handle argument
@@ -402,11 +386,9 @@ static void test_case_channel_ex_06(void **state) {
     meshlink_channel_open_ex returns NULL as channel handle reporting error accordingly
 */
 static bool test_steps_channel_ex_06(void) {
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
   meshlink_handle_t *mesh_handle = meshlink_open("channelexconf", "nut", "node_sim", 1);
   assert(mesh_handle);
 
@@ -414,34 +396,16 @@ static bool test_steps_channel_ex_06(void) {
   meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
 	meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
 
-  PRINT_TEST_CASE_MSG("starting mesh\n");
   assert(meshlink_start(mesh_handle));
-  /* Getting node handle for itself */
-  meshlink_node_t *node = meshlink_get_self(mesh_handle);
-  assert(node != NULL);
-  sleep(1);
 
-  PRINT_TEST_CASE_MSG("Trying to open channel using node handle as NULL argument \n");
+  /* Trying to open channel using node handle as NULL argument */
   meshlink_channel_t *channel = meshlink_channel_open_ex(mesh_handle, NULL, PORT, cb, NULL, 0, MESHLINK_CHANNEL_TCP);
-  assert(channel == NULL);
 
-  if(channel == NULL) {
-    PRINT_TEST_CASE_MSG("Error reported correctly \n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("Failed to report error \n");
-    /* Closing mesh and destroying it's confbase */
-    meshlink_channel_close(mesh_handle, channel);
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelexconf");
-    return false;
-  }
+  assert_int_equal(channel, NULL);
+
+  meshlink_close(mesh_handle);
+  meshlink_destroy("channelexconf");
+  return true;
 }
 
 /* Execute meshlink_channel_open_ex Test Case # 7 Opening channel using invalid argument as

@@ -141,17 +141,8 @@ static bool test_steps_mesh_channel_open_02(void) {
 	// Open two new meshlink instance.
 	meshlink_handle_t *mesh1 = meshlink_open("channels_conf.3", "foo", "channels", DEV_CLASS_BACKBONE);
 	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
-
 	meshlink_handle_t *mesh2 = meshlink_open("channels_conf.4", "bar", "channels", DEV_CLASS_BACKBONE);
 	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
 
 	char *exp = meshlink_export(mesh1);
 	assert(exp != NULL);

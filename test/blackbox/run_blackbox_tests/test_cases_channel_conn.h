@@ -1,8 +1,8 @@
-#ifndef TEST_CASES_CHANNELS_EX_H
-#define TEST_CASES_CHANNELS_EX_H
+#ifndef TEST_CASES_CHANNEL_CONN_H
+#define TEST_CASES_CHANNEL_CONN_H
 
 /*
-    test_cases_channel_ex.h -- Declarations for Individual Test Case implementation functions
+    test_cases_channel_conn.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
@@ -20,9 +20,10 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+
 #include <stdbool.h>
 
 extern int total_tests;
-extern int test_meshlink_channel_open_ex(void);
+extern int test_case_channel_conn(void);
 
-#endif
+#endif // TEST_CASES_CHANNEL_CONN_H

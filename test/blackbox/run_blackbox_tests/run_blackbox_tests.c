@@ -24,7 +24,6 @@
 #include <assert.h>
 #include "execute_tests.h"
 #include "test_cases.h"
-
 #include "test_cases_open.h"
 #include "test_cases_start.h"
 #include "test_cases_stop_close.h"
@@ -88,7 +87,6 @@ int main(int argc, char *argv[]) {
   int failed_tests = 0;
 
   failed_tests += test_meta_conn();
-/*
   failed_tests += test_meshlink_set_status_cb();
   failed_tests += test_meshlink_join();
   failed_tests += test_meshlink_set_channel_poll_cb();
@@ -103,8 +101,8 @@ int main(int argc, char *argv[]) {
   failed_tests += test_meshlink_sign();
   failed_tests += test_meshlink_verify();
   failed_tests += test_meshlink_import();
-  failed_tests += test_meshlink_invite();*
-  failed_tests += test_meshlink_set_receive_cb();/
+  failed_tests += test_meshlink_invite();
+  failed_tests += test_meshlink_set_receive_cb();
   failed_tests += test_meshlink_set_log_cb();
   failed_tests += test_meshlink_set_channel_receive_cb();
   failed_tests += test_meshlink_hint_address();
@@ -126,7 +124,7 @@ int main(int argc, char *argv[]) {
 	failed_tests += test_meshlink_whitelist();
 	failed_tests += test_meshlink_default_blacklist();
 	failed_tests += test_meshlink_channel_open();
-	failed_tests += test_meshlink_channel_close();*/
+	failed_tests += test_meshlink_channel_close();
 
   printf("[ PASSED ] %d test(s).\n", total_tests - failed_tests);
   printf("[ FAILED ] %d test(s).\n", failed_tests);

@@ -1,7 +1,9 @@
+#ifndef TEST_CASES_H
+#define TEST_CASES_H
+
 /*
     test_cases.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,8 +20,6 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef TEST_CASES_H
-#define TEST_CASES_H
 
 #include <stdbool.h>
 

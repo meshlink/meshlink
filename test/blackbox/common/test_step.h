@@ -1,7 +1,6 @@
 /*
     test_step.h -- Handlers for executing test steps during node simulation
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

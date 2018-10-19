@@ -1,0 +1,8 @@
+[submodule "catta"]
+	path = catta
+	url = git@github.com:catta-x/catta.git
+	branch = develop
+[submodule "src/utcp"]
+	path = src/utcp
+	url = git@github.com:meshlink/utcp.git
+	branch = master

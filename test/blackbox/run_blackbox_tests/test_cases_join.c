@@ -221,7 +221,7 @@ int test_meshlink_join(void) {
   };
   total_tests += sizeof(blackbox_join_tests) / sizeof(blackbox_join_tests[0]);
 
-  int failed = cmocka_run_group_tests(blackbox_join_tests ,NULL , NULL);
+  int failed = cmocka_run_group_tests(blackbox_join_tests ,black_box_group_join_setup , black_box_group_join_teardown);
 
   return failed;
 }

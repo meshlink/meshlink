@@ -8,14 +8,12 @@
 volatile bool baz_reachable = false;
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
-	(void)mesh;
-
 	if(!strcmp(node->name, "baz")) {
 		baz_reachable = reachable;
 	}
 }
 
-int main() {
+int main(int argc, char *argv[]) {
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("invite_join_conf.1", "foo", "invite-join", DEV_CLASS_BACKBONE);

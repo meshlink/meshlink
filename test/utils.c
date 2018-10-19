@@ -8,9 +8,9 @@
 
 #include "utils.h"
 
-void set_sync_flag(struct sync_flag *s, bool value) {
+void set_sync_flag(struct sync_flag *s) {
 	pthread_mutex_lock(&s->mutex);
-	s->flag = value;
+	s->flag = true;
 	pthread_cond_broadcast(&s->cond);
 	pthread_mutex_unlock(&s->mutex);
 }
@@ -70,13 +70,11 @@ void open_meshlink_pair(meshlink_handle_t **pa, meshlink_handle_t **pb, const ch
 
 // Don't poll in the application thread, use a condition variable to signal when the peer is online.
 static void pair_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
-	(void)node;
-
-	set_sync_flag(mesh->priv, reachable);
+	set_sync_flag(mesh->priv);
 }
 
 void start_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b) {
-	struct sync_flag pair_status = {.flag = false};
+	struct sync_flag pair_status = {};
 
 	a->priv = &pair_status;
 	meshlink_set_node_status_cb(a, pair_status_cb);

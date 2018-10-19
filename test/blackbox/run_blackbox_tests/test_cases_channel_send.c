@@ -28,6 +28,7 @@
 #include <cmocka.h>
 #include <assert.h>
 #include <string.h>
+#include <pthread.h>
 
 static void test_case_mesh_channel_send_01(void **state);
 static bool test_steps_mesh_channel_send_01(void);
@@ -37,10 +38,10 @@ static void test_case_mesh_channel_send_03(void **state);
 static bool test_steps_mesh_channel_send_03(void);
 static void test_case_mesh_channel_send_04(void **state);
 static bool test_steps_mesh_channel_send_04(void);
-static void test_case_mesh_channel_send_05(void **state);
-static bool test_steps_mesh_channel_send_05(void);
-static void test_case_mesh_channel_send_06(void **state);
-static bool test_steps_mesh_channel_send_06(void);
+
+static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len);
+static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable);
+static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len);
 
 /* State structure for meshlink_channel_send Test Case #1 */
 static black_box_state_t test_mesh_channel_send_01_state = {
@@ -62,53 +63,33 @@ static black_box_state_t test_mesh_channel_send_04_state = {
     .test_case_name = "test_case_mesh_channel_send_04",
 };
 
-/* State structure for meshlink_channel_send Test Case #5 */
-static black_box_state_t test_mesh_channel_send_05_state = {
-    .test_case_name = "test_case_mesh_channel_send_05",
-};
-
-/* State structure for meshlink_channel_send Test Case #6 */
-static black_box_state_t test_mesh_channel_send_06_state = {
-    .test_case_name = "test_case_mesh_channel_send_06",
-};
-
 /* Execute meshlink_channel_send Test Case # 1*/
 static void test_case_mesh_channel_send_01(void **state) {
 	 execute_test(test_steps_mesh_channel_send_01, state);
    return;
 }
 
-static volatile bool bar_reachable = false;
-static volatile bool bar_responded = false;
+static pthread_mutex_t poll_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t bar_reach_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t bar_responded_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static pthread_cond_t poll_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t status_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t send_cond = PTHREAD_COND_INITIALIZER;
+
+static bool polled;
+static bool bar_reachable;
+static bool bar_responded;
 
 static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 	(void)mesh;
 
-	fprintf(stderr, "status_cb: %s %sreachable\n", node->name, reachable ? "" : "un");
-
 	if(!strcmp(node->name, "bar")) {
-		bar_reachable = reachable;
+    pthread_mutex_lock(& bar_reach_lock);
+    bar_reachable = reachable;
+    assert(!pthread_cond_broadcast(&status_cond));
+    pthread_mutex_unlock(& bar_reach_lock);
 	}
-}
-
-static void foo_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	(void)mesh;
-	(void)channel;
-
-	printf("foo_receive_cb %zu: ", len);
-	fwrite(data, 1, len, stdout);
-	printf("\n");
-	if(len == 5 && !memcmp(data, "Hello", 5)) {
-		bar_responded = true;
-	}
-}
-
-static void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	printf("bar_receive_cb %zu: ", len);
-	fwrite(data, 1, len, stdout);
-	printf("\n");
-	// Echo the data back.
-	meshlink_channel_send(mesh, channel, data, len);
 }
 
 static bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
@@ -117,95 +98,62 @@ static bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 	(void)port;
 	(void)data;
 	(void)len;
-	printf("reject_cb: (from %s on port %u) ", channel->node->name, (unsigned int)port);
 	return false;
 }
 
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	printf("accept_cb: (from %s on port %u) ", channel->node->name, (unsigned int)port);
+	assert(port == 7);
+  assert(!len);
 
-	if(data) {
-		fwrite(data, 1, len, stdout);
-	}
-
-	printf("\n");
-
-	if(port != 7) {
-		return false;
-	}
-
-	meshlink_set_channel_receive_cb(mesh, channel, bar_receive_cb);
-
-	if(data) {
-		bar_receive_cb(mesh, channel, data, len);
-	}
+  meshlink_set_channel_receive_cb(mesh, channel, receive_cb);
 
 	return true;
+}
+
+/* channel receive callback */
+static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
+  if(len == 5 && !memcmp(dat, "Hello", 5)) {
+    pthread_mutex_lock(& bar_responded_lock);
+    bar_responded = true;
+    assert(!pthread_cond_broadcast(&send_cond));
+    pthread_mutex_unlock(& bar_responded_lock);
+  }
+
+  return;
 }
 
 static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
 	(void)len;
 
-	meshlink_set_channel_poll_cb(mesh, channel, NULL);
-
-	if(meshlink_channel_send(mesh, channel, "Hello", 5) != 5) {
-		fprintf(stderr, "Could not send whole message\n");
-	}
+  meshlink_set_channel_poll_cb(mesh, channel, NULL);
+  pthread_mutex_lock(&poll_lock);
+	polled = true;
+  assert(!pthread_cond_broadcast(&poll_cond));
+	pthread_mutex_unlock(&poll_lock);
 }
 
 
 /* Test Steps for meshlink_channel_send Test Case # 1*/
 static bool test_steps_mesh_channel_send_01(void) {
+  struct timespec timeout = {0};
 	meshlink_destroy("chan_send_conf.1");
 	meshlink_destroy("chan_send_conf.2");
 
 	// Open two new meshlink instance.
 	meshlink_handle_t *mesh1 = meshlink_open("chan_send_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
 	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
-
 	meshlink_handle_t *mesh2 = meshlink_open("chan_send_conf.2", "bar", "channels", DEV_CLASS_BACKBONE);
 	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
-
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
-
-	// Import and export both side's data
-	meshlink_add_address(mesh1, "localhost");
+	meshlink_set_log_cb(mesh1, MESHLINK_DEBUG, meshlink_callback_logger);
+	meshlink_set_log_cb(mesh2, MESHLINK_DEBUG, meshlink_callback_logger);
 
 	char *data = meshlink_export(mesh1);
-
-	if(!data) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh2, data)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
-
+  assert(data);
+	assert(meshlink_import(mesh2, data));
 	free(data);
-
 	data = meshlink_export(mesh2);
-
-	if(!data) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh1, data)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
+  assert(data);
+	assert(meshlink_import(mesh1, data));
 	free(data);
 
 	// Set the callbacks.
@@ -216,63 +164,44 @@ static bool test_steps_mesh_channel_send_01(void) {
 	meshlink_set_node_status_cb(mesh1, status_cb);
 
 	// Start both instances
+	bar_reachable = false;
+	assert(meshlink_start(mesh1));
+	assert(meshlink_start(mesh2));
 
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
-
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-
-	// Wait for the two to connect.
-
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
-
-		if(bar_reachable) {
-			break;
-		}
-	}
-
-	if(!bar_reachable) {
-		fprintf(stderr, "Bar not reachable for foo after 20 seconds\n");
-		return false;
-	}
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(&bar_reach_lock);
+  while(bar_reachable == false) {
+    assert(!pthread_cond_timedwait(&status_cond, &bar_reach_lock, &timeout));
+  }
+  pthread_mutex_unlock(&bar_reach_lock);
 
 	// Open a channel from foo to bar.
 
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
+  assert(bar);
 
-	if(!bar) {
-		fprintf(stderr, "Foo could not find bar\n");
-		return false;
-	}
-
-	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, foo_receive_cb, NULL, 0);
+	bar_responded = false;
+	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, NULL, NULL, 0);
 	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb);
 
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(&poll_lock);
+  while(polled == false) {
+    assert(!pthread_cond_timedwait(&poll_cond, &poll_lock, &timeout));
+  }
+  pthread_mutex_unlock(&poll_lock);
 
-		if(bar_responded) {
-			break;
-		}
-	}
+	assert(meshlink_channel_send(mesh1, channel, "Hello", 5) >= 0);
 
-	if(!bar_responded) {
-		fprintf(stderr, "Bar did not respond to foo's channel message\n");
-		return false;
-	}
-
-	meshlink_channel_close(mesh1, channel);
+  timeout.tv_sec = time(NULL) + 20;
+  pthread_mutex_lock(&bar_responded_lock);
+  if(bar_responded == false) {
+    assert(!pthread_cond_timedwait(&send_cond, &bar_responded_lock, &timeout));
+  }
+  pthread_mutex_unlock(&bar_responded_lock);
 
 	// Clean up.
 
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
 	meshlink_close(mesh2);
 	meshlink_close(mesh1);
 	meshlink_destroy("chan_send_conf.1");
@@ -287,155 +216,43 @@ static void test_case_mesh_channel_send_02(void **state) {
    return;
 }
 
-static void foo_receive_cb1(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	(void)mesh;
-	(void)channel;
-
-	printf("foo_receive_cb %zu: ", len);
-	fwrite(data, 1, len, stdout);
-	printf("\n");
-	if(len == 0) {
-		bar_responded = true;
-	}
-}
-
-static void poll_cb1(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
-	(void)len;
-	ssize_t s;
-
-	meshlink_set_channel_poll_cb(mesh, channel, NULL);
-
-	if(s=(meshlink_channel_send(mesh, channel, NULL, 0)) != 0) {
-		fprintf(stderr, "Could not send whole message\n");
-	}
-	printf("s=%li\n",s);
-}
-
 /* Test Steps for meshlink_channel_send Test Case # 2*/
 static bool test_steps_mesh_channel_send_02(void) {
-	bool result = false;
-	meshlink_destroy("chan_send_conf.3");
-	meshlink_destroy("chan_send_conf.4");
-	// Open two new meshlink instance.
+  struct timespec timeout = {0};
+	meshlink_destroy("chan_send_conf.5");
 
-	meshlink_handle_t *mesh1 = meshlink_open("chan_send_conf.3", "foo", "channels", DEV_CLASS_BACKBONE);
+	// Open new meshlink instance.
+
+	meshlink_handle_t *mesh1 = meshlink_open("chan_send_conf.5", "foo", "channels", DEV_CLASS_BACKBONE);
 	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
 
-	meshlink_handle_t *mesh2 = meshlink_open("chan_send_conf.4", "bar", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
+	meshlink_set_channel_accept_cb(mesh1, accept_cb);
 
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
+	// Start node instance
 
-	// Import and export both side's data
+	assert(meshlink_start(mesh1));
 
-	meshlink_add_address(mesh1, "localhost");
+	meshlink_node_t *node = meshlink_get_self(mesh1);
+  assert(node);
 
-	char *data = meshlink_export(mesh1);
+	meshlink_channel_t *channel = meshlink_channel_open(mesh1, node, 7, receive_cb, NULL, 0);
+	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb);
 
-	if(!data) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(&poll_lock);
+  while(polled == false) {
+    assert(!pthread_cond_timedwait(&poll_cond, &poll_lock, &timeout));
+  }
+  pthread_mutex_unlock(&poll_lock);
 
-	if(!meshlink_import(mesh2, data)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
+	ssize_t send_return = meshlink_channel_send(NULL, channel, "Hello", 5);
 
-	free(data);
-
-	data = meshlink_export(mesh2);
-
-	if(!data) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh1, data)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
-	free(data);
-
-	// Set the callbacks.
-
-	meshlink_set_channel_accept_cb(mesh1, reject_cb);
-	meshlink_set_channel_accept_cb(mesh2, accept_cb);
-
-	meshlink_set_node_status_cb(mesh1, status_cb);
-
-	// Start both instances
-
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
-
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-
-	// Wait for the two to connect.
-
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
-
-		if(bar_reachable) {
-			break;
-		}
-	}
-
-	if(!bar_reachable) {
-		fprintf(stderr, "Bar not reachable for foo after 20 seconds\n");
-		return false;
-	}
-
-	// Open a channel from foo to bar.
-
-	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-
-	if(!bar) {
-		fprintf(stderr, "Foo could not find bar\n");
-		return false;
-	}
-
-	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, foo_receive_cb1, NULL, 0);
-	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb1);
-
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
-
-		if(bar_responded) {
-			break;
-		}
-	}
-
-	if(!bar_responded) {
-		fprintf(stderr, "Bar did not respond to foo's channel message\n");
-		return false;
-	}
-
-	meshlink_channel_close(mesh1, channel);
+	assert_int_equal(send_return, -1);
 
 	// Clean up.
 
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
-	meshlink_close(mesh2);
 	meshlink_close(mesh1);
-	meshlink_destroy("chan_send_conf.3");
-	meshlink_destroy("chan_send_conf.4");
+	meshlink_destroy("chan_send_conf.5");
 
 	return true;
 }
@@ -445,141 +262,29 @@ static void test_case_mesh_channel_send_03(void **state) {
 	 execute_test(test_steps_mesh_channel_send_03, state);
    return;
 }
-static void poll_cb2(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
-	(void)len;
-
-	meshlink_set_channel_poll_cb(mesh, channel, NULL);
-
-	if(meshlink_channel_send(NULL, channel, "hello", 5) != 5) {
-		fprintf(stderr, "Could not send whole message\n");
-	}
-}
 
 /* Test Steps for meshlink_channel_send Test Case # 3*/
 static bool test_steps_mesh_channel_send_03(void) {
-	bool result = false;
-	meshlink_destroy("chan_send_conf.5");
-	meshlink_destroy("chan_send_conf.6");
-	// Open two new meshlink instance.
+  struct timespec timeout = {0};
+	meshlink_destroy("chan_send_conf.7");
+	// Open new meshlink instance.
 
-	meshlink_handle_t *mesh1 = meshlink_open("chan_send_conf.5", "foo", "channels", DEV_CLASS_BACKBONE);
+	meshlink_handle_t *mesh1 = meshlink_open("chan_send_conf.7", "foo", "channels", DEV_CLASS_BACKBONE);
 	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
+	meshlink_set_channel_accept_cb(mesh1, accept_cb);
 
-	meshlink_handle_t *mesh2 = meshlink_open("chan_send_conf.6", "bar", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
+	// Start node instance
 
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
+	assert(meshlink_start(mesh1));
 
-	// Import and export both side's data
+	ssize_t send_return = meshlink_channel_send(mesh1, NULL, "Hello", 5);
 
-	meshlink_add_address(mesh1, "localhost");
-
-	char *data = meshlink_export(mesh1);
-
-	if(!data) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh2, data)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
-
-	free(data);
-
-	data = meshlink_export(mesh2);
-
-	if(!data) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh1, data)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
-	free(data);
-
-	// Set the callbacks.
-
-	meshlink_set_channel_accept_cb(mesh1, reject_cb);
-	meshlink_set_channel_accept_cb(mesh2, accept_cb);
-
-	meshlink_set_node_status_cb(mesh1, status_cb);
-
-	// Start both instances
-
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
-
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-
-	// Wait for the two to connect.
-
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
-
-		if(bar_reachable) {
-			break;
-		}
-	}
-
-	if(!bar_reachable) {
-		fprintf(stderr, "Bar not reachable for foo after 20 seconds\n");
-		return false;
-	}
-
-	// Open a channel from foo to bar.
-
-	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-
-	if(!bar) {
-		fprintf(stderr, "Foo could not find bar\n");
-		return false;
-	}
-
-	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, foo_receive_cb, NULL, 0);
-	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb2);
-
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
-
-		if(bar_responded) {
-			break;
-		}
-	}
-
-	if(!bar_responded) {
-		fprintf(stderr, "Bar did not respond to foo's channel message\n");
-		return false;
-	}
-
-	meshlink_channel_close(mesh1, channel);
+	assert_int_equal(send_return, -1);
 
 	// Clean up.
 
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
-	meshlink_close(mesh2);
 	meshlink_close(mesh1);
-	meshlink_destroy("chan_send_conf.5");
-	meshlink_destroy("chan_send_conf.6");
+	meshlink_destroy("chan_send_conf.7");
 
 	return true;
 }
@@ -589,429 +294,43 @@ static void test_case_mesh_channel_send_04(void **state) {
 	 execute_test(test_steps_mesh_channel_send_04, state);
    return;
 }
-static void poll_cb3(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
-	(void)len;
-
-	meshlink_set_channel_poll_cb(mesh, channel, NULL);
-
-	if(meshlink_channel_send(mesh, NULL, "hello", 5) != 0) {
-		fprintf(stderr, "Could not send whole message\n");
-	}
-}
 
 /* Test Steps for meshlink_channel_send Test Case # 4*/
 static bool test_steps_mesh_channel_send_04(void) {
-	bool result = false;
-	meshlink_destroy("chan_send_conf.7");
-	meshlink_destroy("chan_send_conf.8");
-	// Open two new meshlink instance.
-
-	meshlink_handle_t *mesh1 = meshlink_open("chan_send_conf.7", "foo", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
-
-	meshlink_handle_t *mesh2 = meshlink_open("chan_send_conf.8", "bar", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
-
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
-
-	// Import and export both side's data
-
-	meshlink_add_address(mesh1, "localhost");
-
-	char *data = meshlink_export(mesh1);
-
-	if(!data) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh2, data)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
-
-	free(data);
-
-	data = meshlink_export(mesh2);
-
-	if(!data) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh1, data)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
-	free(data);
-
-	// Set the callbacks.
-
-	meshlink_set_channel_accept_cb(mesh1, reject_cb);
-	meshlink_set_channel_accept_cb(mesh2, accept_cb);
-
-	meshlink_set_node_status_cb(mesh1, status_cb);
-
-	// Start both instances
-
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
-
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-
-	// Wait for the two to connect.
-
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
-
-		if(bar_reachable) {
-			break;
-		}
-	}
-
-	if(!bar_reachable) {
-		fprintf(stderr, "Bar not reachable for foo after 20 seconds\n");
-		return false;
-	}
-
-	// Open a channel from foo to bar.
-
-	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-
-	if(!bar) {
-		fprintf(stderr, "Foo could not find bar\n");
-		return false;
-	}
-
-	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, foo_receive_cb, NULL, 0);
-	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb3);
-
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
-
-		if(bar_responded) {
-			break;
-		}
-	}
-
-	if(!bar_responded) {
-		fprintf(stderr, "Bar did not respond to foo's channel message\n");
-		return false;
-	}
-
-	meshlink_channel_close(mesh1, channel);
-
-	// Clean up.
-
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
-	meshlink_close(mesh2);
-	meshlink_close(mesh1);
-	meshlink_destroy("chan_send_conf.7");
-	meshlink_destroy("chan_send_conf.8");
-
-	return true;
-}
-
-/* Execute meshlink_channel_send Test Case # 5*/
-static void test_case_mesh_channel_send_05(void **state) {
-	 execute_test(test_steps_mesh_channel_send_05, state);
-   return;
-}
-static void poll_cb4(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
-	(void)len;
-
-	meshlink_set_channel_poll_cb(mesh, channel, NULL);
-
-	if(meshlink_channel_send(mesh, channel, NULL, 5) != 5) {
-		fprintf(stderr, "Could not send whole message\n");
-	}
-}
-
-/* Test Steps for meshlink_channel_send Test Case # 5*/
-static bool test_steps_mesh_channel_send_05(void) {
-	bool result = false;
+  struct timespec timeout = {0};
 	meshlink_destroy("chan_send_conf.9");
-	meshlink_destroy("chan_send_conf.10");
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("chan_send_conf.9", "foo", "channels", DEV_CLASS_BACKBONE);
 	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
 
-	meshlink_handle_t *mesh2 = meshlink_open("chan_send_conf.10", "bar", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
+	meshlink_set_channel_accept_cb(mesh1, accept_cb);
 
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
+	// Start node instance
 
-	// Import and export both side's data
+	assert(meshlink_start(mesh1));
 
-	meshlink_add_address(mesh1, "localhost");
+	meshlink_node_t *node = meshlink_get_self(mesh1);
+  assert(node);
 
-	char *data = meshlink_export(mesh1);
+	meshlink_channel_t *channel = meshlink_channel_open(mesh1, node, 7, receive_cb, NULL, 0);
+	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb);
 
-	if(!data) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(&poll_lock);
+  while(polled == false) {
+    assert(!pthread_cond_timedwait(&poll_cond, &poll_lock, &timeout));
+  }
+  pthread_mutex_unlock(&poll_lock);
 
-	if(!meshlink_import(mesh2, data)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
+	ssize_t send_return = meshlink_channel_send(mesh1, channel, NULL, 5);
 
-	free(data);
-
-	data = meshlink_export(mesh2);
-
-	if(!data) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh1, data)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
-	free(data);
-
-	// Set the callbacks.
-
-	meshlink_set_channel_accept_cb(mesh1, reject_cb);
-	meshlink_set_channel_accept_cb(mesh2, accept_cb);
-
-	meshlink_set_node_status_cb(mesh1, status_cb);
-
-	// Start both instances
-
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
-
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-
-	// Wait for the two to connect.
-
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
-
-		if(bar_reachable) {
-			break;
-		}
-	}
-
-	if(!bar_reachable) {
-		fprintf(stderr, "Bar not reachable for foo after 20 seconds\n");
-		return false;
-	}
-
-	// Open a channel from foo to bar.
-
-	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-
-	if(!bar) {
-		fprintf(stderr, "Foo could not find bar\n");
-		return false;
-	}
-
-	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, foo_receive_cb, NULL, 0);
-	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb4);
-
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
-
-		if(bar_responded) {
-			break;
-		}
-	}
-
-	if(!bar_responded) {
-		fprintf(stderr, "Bar did not respond to foo's channel message\n");
-		return false;
-	}
-
-	meshlink_channel_close(mesh1, channel);
+	assert_int_equal(send_return, -1);
 
 	// Clean up.
 
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
-	meshlink_close(mesh2);
 	meshlink_close(mesh1);
 	meshlink_destroy("chan_send_conf.9");
-	meshlink_destroy("chan_send_conf.10");
-
-	return true;
-}
-
-/* Execute meshlink_channel_send Test Case # 6*/
-static void test_case_mesh_channel_send_06(void **state) {
-	 execute_test(test_steps_mesh_channel_send_06, state);
-   return;
-}
-static void poll_cb5(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
-	(void)len;
-
-	meshlink_set_channel_poll_cb(mesh, channel, NULL);
-
-	if(meshlink_channel_send(mesh, channel, "hello", 0) != 0) {
-		fprintf(stderr, "Could not send whole message\n");
-	}
-}
-
-/* Test Steps for meshlink_channel_send Test Case # 6*/
-static bool test_steps_mesh_channel_send_06(void) {
-	bool result = false;
-	meshlink_destroy("chan_send_conf.11");
-	meshlink_destroy("chan_send_conf.12");
-	// Open two new meshlink instance.
-
-	meshlink_handle_t *mesh1 = meshlink_open("chan_send_conf.11", "foo", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh1 != NULL);
-	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return false;
-	}
-
-	meshlink_handle_t *mesh2 = meshlink_open("chan_send_conf.12", "bar", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh2 != NULL);
-	if(!mesh2) {
-		fprintf(stderr, "Could not initialize configuration for bar\n");
-		return false;
-	}
-
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
-
-	// Import and export both side's data
-
-	meshlink_add_address(mesh1, "localhost");
-
-	char *data = meshlink_export(mesh1);
-
-	if(!data) {
-		fprintf(stderr, "Foo could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh2, data)) {
-		fprintf(stderr, "Bar could not import foo's configuration\n");
-		return false;
-	}
-
-	free(data);
-
-	data = meshlink_export(mesh2);
-
-	if(!data) {
-		fprintf(stderr, "Bar could not export its configuration\n");
-		return false;
-	}
-
-	if(!meshlink_import(mesh1, data)) {
-		fprintf(stderr, "Foo could not import bar's configuration\n");
-		return false;
-	}
-
-	free(data);
-
-	// Set the callbacks.
-
-	meshlink_set_channel_accept_cb(mesh1, reject_cb);
-	meshlink_set_channel_accept_cb(mesh2, accept_cb);
-
-	meshlink_set_node_status_cb(mesh1, status_cb);
-
-	// Start both instances
-
-	if(!meshlink_start(mesh1)) {
-		fprintf(stderr, "Foo could not start\n");
-		return false;
-	}
-
-	if(!meshlink_start(mesh2)) {
-		fprintf(stderr, "Bar could not start\n");
-		return false;
-	}
-
-	// Wait for the two to connect.
-
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
-
-		if(bar_reachable) {
-			break;
-		}
-	}
-
-	if(!bar_reachable) {
-		fprintf(stderr, "Bar not reachable for foo after 20 seconds\n");
-		return false;
-	}
-
-	// Open a channel from foo to bar.
-
-	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-
-	if(!bar) {
-		fprintf(stderr, "Foo could not find bar\n");
-		return false;
-	}
-
-	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, foo_receive_cb, NULL, 0);
-	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb5);
-
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
-
-		if(bar_responded) {
-			break;
-		}
-	}
-
-	if(!bar_responded) {
-		fprintf(stderr, "Bar did not respond to foo's channel message\n");
-		return false;
-	}
-
-	meshlink_channel_close(mesh1, channel);
-
-	// Clean up.
-
-	meshlink_stop(mesh2);
-	meshlink_stop(mesh1);
-	meshlink_close(mesh2);
-	meshlink_close(mesh1);
-	meshlink_destroy("chan_send_conf.11");
-	meshlink_destroy("chan_send_conf.12");
 
 	return true;
 }
@@ -1025,11 +344,7 @@ int test_meshlink_channel_send(void) {
 				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_03, NULL, NULL,
             (void *)&test_mesh_channel_send_03_state),
 				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_04, NULL, NULL,
-            (void *)&test_mesh_channel_send_04_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_05, NULL, NULL,
-            (void *)&test_mesh_channel_send_05_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_06, NULL, NULL,
-            (void *)&test_mesh_channel_send_06_state)
+            (void *)&test_mesh_channel_send_04_state)
 		};
 
   total_tests += sizeof(blackbox_channel_send_tests) / sizeof(blackbox_channel_send_tests[0]);

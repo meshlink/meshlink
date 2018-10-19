@@ -29,8 +29,6 @@ void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *tex
 }
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
-	(void)mesh;
-
 	printf("status_cb: %s %sreachable\n", node->name, reachable ? "" : "un");
 
 	if(!strcmp(node->name, "bar")) {
@@ -39,9 +37,6 @@ void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 }
 
 void foo_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	(void)mesh;
-	(void)channel;
-
 	printf("foo_receive_cb %zu: ", len);
 	fwrite(data, 1, len, stdout);
 	printf("\n");
@@ -60,12 +55,6 @@ void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const 
 }
 
 bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	(void)mesh;
-	(void)channel;
-	(void)port;
-	(void)data;
-	(void)len;
-
 	return false;
 }
 
@@ -92,8 +81,6 @@ bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 }
 
 void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
-	(void)len;
-
 	meshlink_set_channel_poll_cb(mesh, channel, NULL);
 
 	if(meshlink_channel_send(mesh, channel, "Hello", 5) != 5) {
@@ -101,7 +88,7 @@ void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
 	}
 }
 
-int main() {
+int main(int argc, char *argv[]) {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	// Open two new meshlink instance.

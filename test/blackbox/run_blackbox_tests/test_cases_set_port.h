@@ -1,7 +1,9 @@
+#ifndef TEST_CASES_SET_PORT_H
+#define TEST_CASES_SET_PORT_H
+
 /*
     test_cases_set_port.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,9 +19,6 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
-#ifndef TEST_CASES_SET_PORT_H
-#define TEST_CASES_SET_PORT_H
 
 #include <stdbool.h>
 

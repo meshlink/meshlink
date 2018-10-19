@@ -3,7 +3,6 @@
                     for meta connection test case 01 - re-connection of
                     two nodes when relay node goes down
     Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
-                        Manav Kumar Mehta <manavkumarm@yahoo.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

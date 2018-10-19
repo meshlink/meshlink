@@ -27,6 +27,7 @@
 #include <stdarg.h>
 #include <setjmp.h>
 #include <cmocka.h>
+#include <pthread.h>
 
 /* Modify this to change the logging level of Meshlink */
 #define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
@@ -39,53 +40,52 @@ static void test_case_channel_set_poll_cb_02(void **state);
 static bool test_steps_channel_set_poll_cb_02(void);
 static void test_case_channel_set_poll_cb_03(void **state);
 static bool test_steps_channel_set_poll_cb_03(void);
+static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len);
 
 static black_box_state_t test_case_channel_set_poll_cb_01_state = {
-    /* test_case_name = */ "test_case_channel_set_poll_cb_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_set_poll_cb_01",
 };
 static black_box_state_t test_case_channel_set_poll_cb_02_state = {
-    /* test_case_name = */ "test_case_channel_set_poll_cb_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_set_poll_cb_02",
 };
 static black_box_state_t test_case_channel_set_poll_cb_03_state = {
-    /* test_case_name = */ "test_case_channel_set_poll_cb_03",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_set_poll_cb_03",
 };
-/* poll_stat gives access when poll callback call is invoked */
-static bool poll_stat;
 
+static bool polled;
+static bool reachable;
 
-/* channel receive callback function */
-static void cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
-  char *data = (char *) dat;
-  fprintf(stderr, "Invoked channel Receive callback\n");
-  fprintf(stderr, "Received message is : %s\n", data);
-}
-/* channel accept callback function */
-static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+static pthread_mutex_t poll_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t poll_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t reachable_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t reachable_cond = PTHREAD_COND_INITIALIZER;
+
+/* channel accept callback */
+static bool channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	(void)mesh;
+	(void)channel;
+	(void)port;
 	(void)data;
 	(void)len;
-
-	fprintf(stderr, "Accepted incoming channel from '%s'\n", channel->node->name);
-	// Remember the channel
-	channel->node->priv = channel;
-	// Set the receive callback
-	meshlink_set_channel_receive_cb(mesh, channel, cb);
-	// Accept this channel
-	return true;
+	return false;
 }
-/* channel poll callback function */
-static void channel_poll(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
-	fprintf(stderr, "Channel to '%s' connected\n", channel->node->name);
-	meshlink_set_channel_poll_cb(mesh, channel, NULL);
-	poll_stat = true;
+
+static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+	(void)len;
+  meshlink_set_channel_poll_cb(mesh, channel, NULL);
+  pthread_mutex_lock(&poll_lock);
+	polled = true;
+  assert(!pthread_cond_broadcast(&poll_cond));
+	pthread_mutex_unlock(&poll_lock);
+	return;
+}
+
+static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *source, bool reach) {
+  pthread_mutex_lock(&reachable_lock);
+	reachable = true;
+  assert(!pthread_cond_broadcast(&reachable_cond));
+	pthread_mutex_unlock(&reachable_lock);
+
 	return;
 }
 
@@ -99,56 +99,69 @@ static void test_case_channel_set_poll_cb_01(void **state) {
     Test Steps:
     1. Run NUT
     2. Open channel of the NUT itself
-    3. Send data to NUT
 
     Expected Result:
     Opens a channel and also invokes poll callback.
 */
 static bool test_steps_channel_set_poll_cb_01(void) {
-  poll_stat = false;
-  meshlink_destroy("channelpollconf");
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  /* Set up logging for Meshlink */
+  /* deleting the confbase if already exists */
+  struct timespec timeout = {0};
+  meshlink_destroy("pollconf1");
+  meshlink_destroy("pollconf2");
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  meshlink_handle_t *mesh_handle = meshlink_open("channelpollconf", "nut", "node_sim", 1);
-  fprintf(stderr, "meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
-  assert(mesh_handle);
+  /* Create meshlink instances */
+  meshlink_handle_t *mesh1 = meshlink_open("pollconf1", "nut", "chat", DEV_CLASS_STATIONARY);
+  assert(mesh1 != NULL);
+  meshlink_handle_t *mesh2 = meshlink_open("pollconf2", "bar", "chat", DEV_CLASS_STATIONARY);
+  assert(mesh2 != NULL);
+	meshlink_set_log_cb(mesh1, MESHLINK_INFO, meshlink_callback_logger);
+	meshlink_set_log_cb(mesh2, MESHLINK_INFO, meshlink_callback_logger);
+	meshlink_set_node_status_cb(mesh1, node_status_cb);
+	meshlink_set_channel_accept_cb(mesh1, channel_accept_cb);
 
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
-	meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
+  /* Export and Import on both sides */
+  reachable = false;
+  char *exp1 = meshlink_export(mesh1);
+  assert(exp1 != NULL);
+  char *exp2 = meshlink_export(mesh2);
+  assert(exp2 != NULL);
+  assert(meshlink_import(mesh1, exp2));
+  assert(meshlink_import(mesh2, exp1));
 
-  PRINT_TEST_CASE_MSG("starting mesh\n");
-  assert(meshlink_start(mesh_handle));
-  sleep(1);
+  assert(meshlink_start(mesh1));
+  assert(meshlink_start(mesh2));
 
-  meshlink_node_t *node = meshlink_get_self(mesh_handle);
-  assert(node != NULL);
-  PRINT_TEST_CASE_MSG("Opening TCP channel ex\n");
-  meshlink_channel_t *channel = node->priv;
-  channel = meshlink_channel_open_ex(mesh_handle, node, 9000, cb, NULL, 0, MESHLINK_CHANNEL_TCP);
-  fprintf(stderr, "meshlink_channel_open status: %s\n", meshlink_strerror(meshlink_errno));
-  assert(channel != NULL);
-
-  PRINT_TEST_CASE_MSG("Setting poll cb\n");
-  meshlink_set_channel_poll_cb(mesh_handle, channel, channel_poll);
-  sleep(1);
-
-  bool ret = poll_stat;
-
-  meshlink_stop(mesh_handle);
-  meshlink_close(mesh_handle);
-  meshlink_destroy("channelpollconf");
-
-  if(ret) {
-    PRINT_TEST_CASE_MSG("Poll callback invoked\n");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("Poll callback not invoked\n");
-    return false;
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(&reachable_lock);
+  while(reachable == false) {
+    assert(!pthread_cond_timedwait(&reachable_cond, &reachable_lock, &timeout));
   }
+  pthread_mutex_unlock(&reachable_lock);
+
+  meshlink_node_t *destination = meshlink_get_node(mesh2, "nut");
+  assert(destination != NULL);
+
+/* Open channel for nut node from bar node which should be accepted */
+  polled = false;
+  meshlink_channel_t *channel = meshlink_channel_open(mesh2, destination, PORT, NULL, NULL, 0);
+  assert(channel);
+  meshlink_set_channel_poll_cb(mesh2, channel, poll_cb);
+
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(&poll_lock);
+  while(polled == false) {
+    assert(!pthread_cond_timedwait(&poll_cond, &poll_lock, &timeout));
+  }
+  pthread_mutex_unlock(&poll_lock);
+
+  /* closing channel, meshes and destroying confbase */
+  meshlink_close(mesh1);
+  meshlink_close(mesh2);
+  meshlink_destroy("pollconf1");
+  meshlink_destroy("pollconf2");
+
+  return true;
 }
 
 /* Execute meshlink_channel_set_poll_cb Test Case # 2 */
@@ -167,48 +180,29 @@ static void test_case_channel_set_poll_cb_02(void **state) {
     Reports error accordingly by returning NULL
 */
 static bool test_steps_channel_set_poll_cb_02(void) {
-  fprintf(stderr, "[ channel poll 02 ] Opening NUT\n");
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  mesh_handle = meshlink_open("channelpollconf", "nut", "node_sim", 1);
-  PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
+  meshlink_handle_t *mesh_handle = meshlink_open("channelpollconf3", "nut", "node_sim", 1);
   assert(mesh_handle);
-
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
-	meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
 
-  PRINT_TEST_CASE_MSG("starting mesh\n");
   assert(meshlink_start(mesh_handle));
-  sleep(1);
+
   meshlink_node_t *node = meshlink_get_self(mesh_handle);
   assert(node != NULL);
 
-  PRINT_TEST_CASE_MSG("Opening TCP channel ex\n");
-  meshlink_channel_t *channel = node->priv;
-  channel = meshlink_channel_open_ex(mesh_handle, node, PORT, cb, NULL, 0, MESHLINK_CHANNEL_TCP);
-  fprintf(stderr, "meshlink_channel_open status: %s\n", meshlink_strerror(meshlink_errno));
+  /* Opening channel */
+  meshlink_channel_t *channel = meshlink_channel_open(mesh_handle, node, PORT, NULL, NULL, 0);
   assert(channel != NULL);
-  sleep(1);
 
-  PRINT_TEST_CASE_MSG("Setting poll cb\n");
-  meshlink_set_channel_poll_cb(NULL, channel, channel_poll);
+  /* Setting poll cb with NULL as mesh handler */
+  meshlink_set_channel_poll_cb(NULL, channel, poll_cb);
+  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
-  if(meshlink_errno == MESHLINK_EINVAL) {
-    PRINT_TEST_CASE_MSG("set poll callback reported error successfully when NULL is passed as mesh argument\n");
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelpollconf");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("set poll callback didn't report error when NULL is passed as mesh argument\n");
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelpollconf");
-    return false;
-  }
+  meshlink_close(mesh_handle);
+  meshlink_destroy("channelpollconf3");
+  return true;
 }
 
 /* Execute meshlink_channel_set_poll_cb Test Case # 3 */
@@ -227,40 +221,22 @@ static void test_case_channel_set_poll_cb_03(void **state) {
     Reports error accordingly by returning NULL
 */
 static bool test_steps_channel_set_poll_cb_03(void) {
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
   /* Create meshlink instance */
-  mesh_handle = meshlink_open("channelpollconf", "nut", "node_sim", 1);
-  PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
+  meshlink_handle_t *mesh_handle = meshlink_open("channelpollconf4", "nut", "node_sim", 1);
   assert(mesh_handle);
-
   meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_set_node_status_cb(mesh_handle, meshlink_callback_node_status);
-	meshlink_set_channel_accept_cb(mesh_handle, channel_accept);
-  PRINT_TEST_CASE_MSG("starting mesh\n");
+
   assert(meshlink_start(mesh_handle));
 
-  meshlink_node_t *node = meshlink_get_self(mesh_handle);
-  assert(node != NULL);
+  /* Setting poll cb with NULL as channel handler */
+  meshlink_set_channel_poll_cb(mesh_handle, NULL, poll_cb);
+  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
-  PRINT_TEST_CASE_MSG("Setting poll cb\n");
-  meshlink_set_channel_poll_cb(mesh_handle, NULL, channel_poll);
-
-  if(meshlink_errno == MESHLINK_EINVAL) {
-    PRINT_TEST_CASE_MSG("set poll callback reported error successfully when NULL is passed as mesh argument\n");
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelpollconf");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("set poll callback didn't report error when NULL is passed as mesh argument\n");
-    meshlink_stop(mesh_handle);
-    meshlink_close(mesh_handle);
-    meshlink_destroy("channelpollconf");
-    return false;
-  }
+  meshlink_close(mesh_handle);
+  meshlink_destroy("channelpollconf4");
+  return true;
 }
 
 

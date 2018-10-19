@@ -26,7 +26,7 @@
 #include "common_handlers.h"
 
 /* Modify this to change the logging level of Meshlink */
-#define TEST_MESHLINK_LOG_LEVEL MESHLINK_INFO
+#define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
 
 meshlink_handle_t *mesh_handle = NULL;
 bool mesh_started = false;
@@ -38,6 +38,7 @@ meshlink_handle_t *execute_open(char *node_name, char *dev_class) {
 
     /* Create meshlink instance */
     mesh_handle = meshlink_open("testconf", node_name, "node_sim", atoi(dev_class));
+    fprintf(stderr, "meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
     PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
     assert(mesh_handle);
 

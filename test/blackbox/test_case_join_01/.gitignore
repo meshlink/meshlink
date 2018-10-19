@@ -4,5 +4,3 @@ Makefile.in
 test
 node_sim_relay
 node_sim_peer 
-node_sim_nut
-testconf

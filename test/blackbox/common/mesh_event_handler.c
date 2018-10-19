@@ -109,6 +109,8 @@ bool mesh_event_sock_send( int client_id, mesh_event_t event, void *payload, siz
   ssize_t send_ret;
 
 	// Packing the mesh event
+	assert(client_id >= 0);
+	assert(event >= 0 && event < MAX_EVENT);
   mesh_event_send_packet.client_id   = client_id;
   mesh_event_send_packet.mesh_event  = event;
   if((payload == NULL) || (payload_length == 0)) {

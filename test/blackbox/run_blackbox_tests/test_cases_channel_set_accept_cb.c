@@ -40,46 +40,77 @@ static void test_case_set_channel_accept_cb_02(void **state);
 static bool test_steps_set_channel_accept_cb_02(void);
 
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len);
+static bool channel_reject(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len);
 
-/* channel_acc gives us access to test whether the accept callback has been invoked or not */
 static bool channel_acc;
+static bool channel_rej;
+static bool polled;
+static bool rejected;
+
 /* mutex for the common variable */
-pthread_mutex_t lock;
+static pthread_mutex_t accept_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t reject_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t poll_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t lock_receive = PTHREAD_MUTEX_INITIALIZER;
+
+static pthread_cond_t accept_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t reject_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t poll_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t receive_cond = PTHREAD_COND_INITIALIZER;
 
 static black_box_state_t test_case_channel_set_accept_cb_01_state = {
-    /* test_case_name = */ "test_case_channel_set_accept_cb_01",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_set_accept_cb_01",
 };
 static black_box_state_t test_case_channel_set_accept_cb_02_state = {
-    /* test_case_name = */ "test_case_channel_set_accept_cb_02",
-    /* node_names = */ NULL,
-    /* num_nodes = */ 0,
-    /* test_result (defaulted to) = */ false
+    .test_case_name = "test_case_channel_set_accept_cb_02",
 };
 
+/* channel receive callback */
+static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
+  if(!len) {
+    if(!meshlink_errno) {
+      pthread_mutex_lock(& lock_receive);
+      rejected = true;
+      assert(!pthread_cond_broadcast(&receive_cond));
+      pthread_mutex_unlock(& lock_receive);
+    }
+  }
 
-/* channel accept callback */
+  return;
+}
+
+/* channel reject callback */
+static bool channel_reject(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	(void)mesh;
+	(void)channel;
+	(void)port;
+	(void)data;
+	(void)len;
+	return false;
+}
+
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len) {
 	(void)dat;
 	(void)len;
   char *data = (char *) dat;
+  assert_int_equal(port, PORT);
 
-  pthread_mutex_lock(&lock);
+  pthread_mutex_lock(&accept_lock);
 	channel_acc = true;
-	pthread_mutex_unlock(&lock);
+  assert(!pthread_cond_broadcast(&accept_cond));
+	pthread_mutex_unlock(&accept_lock);
 
-	fprintf(stderr, "received data is : %s \n", data);
+	return true;
+}
 
-	if (PORT == port) {
-	  fprintf(stderr, "Accepted incoming channel from '%s'\n", channel->node->name);
-    return true;
-	}
-	else {
-	  fprintf(stderr, "Rejected incoming channel from '%s'\n", channel->node->name);
-  	return false;
-	}
+static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+	(void)len;
+  meshlink_set_channel_poll_cb(mesh, channel, NULL);
+  pthread_mutex_lock(&poll_lock);
+	polled = true;
+  assert(!pthread_cond_broadcast(&poll_cond));
+	pthread_mutex_unlock(&poll_lock);
+	return;
 }
 
 /* Execute meshlink_channel_set_accept_cb Test Case # 1 - Valid case*/
@@ -92,46 +123,33 @@ static void test_case_set_channel_accept_cb_01(void **state) {
     Test Steps:
     1. Open NUT(Node Under Test) & bar meshes.
     2. Set channel_accept callback for NUT's meshlink_set_channel_accept_cb API.
-    3. Export and Import to merge NUT and bar nodes in a single mesh.
-    4. Obtain node handle of NUT with bar's mesh handle.
-    5. Open a channel with NUT from bar to invoke channel accept callback
+    3. Export and Import nodes.
+    4. Open a channel with NUT from bar to invoke channel accept callback
+    5. Open a channel with bar from NUT to invoke channel accept callback
 
     Expected Result:
-    Opens a channel by invoking accept callback.
+    Opens a channel by invoking accept callback, when accept callback rejects the channel
+    it should invoke the other node's receive callback with length = 0 and no error.
 */
 static bool test_steps_set_channel_accept_cb_01(void) {
   /* deleting the confbase if already exists */
+  struct timespec timeout = {0};
   meshlink_destroy("acceptconf1");
   meshlink_destroy("acceptconf2");
-  /* Set up logging for Meshlink */
   meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance for NUT */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
+  /* Create meshlink instances */
   meshlink_handle_t *mesh1 = meshlink_open("acceptconf1", "nut", "chat", DEV_CLASS_STATIONARY);
-  if(!mesh1) {
-    PRINT_TEST_CASE_MSG("meshlink_open status for NUT: %s\n", meshlink_strerror(meshlink_errno));
-  }
   assert(mesh1 != NULL);
-
-  /* Create meshlink instance for bar */
-  PRINT_TEST_CASE_MSG("Opening bar\n");
   meshlink_handle_t *mesh2 = meshlink_open("acceptconf2", "bar", "chat", DEV_CLASS_STATIONARY);
-  if(!mesh2) {
-    fprintf(stderr, "meshlink_open status for bar: %s\n", meshlink_strerror(meshlink_errno));
-  }
   assert(mesh2 != NULL);
+	meshlink_set_log_cb(mesh1, MESHLINK_INFO, meshlink_callback_logger);
+	meshlink_set_log_cb(mesh2, MESHLINK_INFO, meshlink_callback_logger);
 
-  PRINT_TEST_CASE_MSG("setting channel accept cb for NUT\n");
+  meshlink_set_channel_accept_cb(mesh2, channel_reject);
   meshlink_set_channel_accept_cb(mesh1, channel_accept);
-  PRINT_TEST_CASE_MSG("setting NULL for channel accept cb for bar\n");
-  meshlink_set_channel_accept_cb(mesh2, channel_accept);
-  /* Making the channel_acc false before opening channel */
-  pthread_mutex_lock(&lock);
-  channel_acc = false;
-  pthread_mutex_unlock(&lock);
 
-  /* importing and exporting mesh meta data */
+  /* Export and Import on both sides */
   char *exp1 = meshlink_export(mesh1);
   assert(exp1 != NULL);
   char *exp2 = meshlink_export(mesh2);
@@ -139,51 +157,66 @@ static bool test_steps_set_channel_accept_cb_01(void) {
   assert(meshlink_import(mesh1, exp2));
   assert(meshlink_import(mesh2, exp1));
 
-  PRINT_TEST_CASE_MSG("NUT and bar connected successfully\n");
+  assert(meshlink_start(mesh1));
+  assert(meshlink_start(mesh2));
+  sleep(1);
 
-  PRINT_TEST_CASE_MSG("acquiring NUT node handle from bar\n");
   meshlink_node_t *destination = meshlink_get_node(mesh2, "nut");
   assert(destination != NULL);
 
-  bool mesh1_start = meshlink_start(mesh1);
-  if(!mesh1_start) {
-    fprintf(stderr, "meshlink_start status: %s\n", meshlink_strerror(meshlink_errno));
-  }
-  assert(mesh1_start);
-  sleep(1);
-  bool mesh2_start = meshlink_start(mesh2);
-  if(!mesh2_start) {
-  	fprintf(stderr, "meshlink_start status: %s\n", meshlink_strerror(meshlink_errno));
-  }
-  assert(mesh2_start);
-  sleep(1);
+  /* Open channel for nut node from bar node which should be accepted */
+  polled = false;
+  channel_acc = false;
+  meshlink_channel_t *channel2 = meshlink_channel_open(mesh2, destination, PORT, NULL, NULL, 0);
+  assert(channel2);
+  meshlink_set_channel_poll_cb(mesh2, channel2, poll_cb);
 
-  meshlink_channel_t *channel = meshlink_channel_open(mesh2, destination, PORT, NULL, NULL, 0);
-  if(!channel) {
-    fprintf(stderr, "Could not create channel to '%s': %s\n", destination->name, meshlink_strerror(meshlink_errno));
-    return false;
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(&poll_lock);
+  while(polled == false) {
+    assert(!pthread_cond_timedwait(&poll_cond, &poll_lock, &timeout));
   }
-  sleep(1);
+  pthread_mutex_unlock(&poll_lock);
 
-  pthread_mutex_lock(&lock);
-  bool ret = channel_acc;
-  pthread_mutex_unlock(&lock);
-  if(ret) {
-    PRINT_TEST_CASE_MSG("Accept callback invoked successfully when a new node imported\n");
-  } else {
-    PRINT_TEST_CASE_MSG("Accept callback not invoked when a new node imported\n");
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(&accept_lock);
+  while(channel_acc == false) {
+    assert(!pthread_cond_timedwait(&accept_cond, &accept_lock, &timeout));
   }
+  pthread_mutex_unlock(&accept_lock);
+
+  /* Open channel for bar node from nut node which should be rejected */
+  polled = false;
+  rejected = false;
+  channel_acc = false;
+  destination = meshlink_get_node(mesh1, "bar");
+  assert(destination != NULL);
+
+  meshlink_channel_t *channel1 = meshlink_channel_open(mesh1, destination, PORT, channel_receive_cb, NULL, 0);
+  assert(channel1);
+  meshlink_set_channel_poll_cb(mesh1, channel1, poll_cb);
+
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(&poll_lock);
+  while(polled == false) {
+    assert(!pthread_cond_timedwait(&poll_cond, &poll_lock, &timeout));
+  }
+  pthread_mutex_unlock(&poll_lock);
+
+  timeout.tv_sec = time(NULL) + 10;
+  pthread_mutex_lock(&lock_receive);
+  while(rejected == false) {
+    assert(!pthread_cond_timedwait(&receive_cond, &lock_receive, &timeout));
+  }
+  pthread_mutex_unlock(&lock_receive);
 
   /* closing channel, meshes and destroying confbase */
-  meshlink_channel_close(mesh2, channel);
-  meshlink_stop(mesh1);
-  meshlink_stop(mesh2);
   meshlink_close(mesh1);
   meshlink_close(mesh2);
   meshlink_destroy("acceptconf1");
   meshlink_destroy("acceptconf2");
-  // returns according whether callback is invoked or not.
-  return ret;
+
+  return true;
 }
 
 /* Execute meshlink_channel_set_accept_cb Test Case # 2 - Invalid case*/
@@ -200,15 +233,11 @@ static void test_case_set_channel_accept_cb_02(void **state) {
     meshlink_channel_set_accept_cb returning proper meshlink_errno.
 */
 static bool test_steps_set_channel_accept_cb_02(void) {
-  PRINT_TEST_CASE_MSG("setting channel accept cb for NUT\n");
+  /* setting channel accept cb with NULL as mesh handle and valid callback */
   meshlink_set_channel_accept_cb(NULL, channel_accept);
-  if(meshlink_errno == MESHLINK_EINVAL) {
-    PRINT_TEST_CASE_MSG("Accept callback reported error successfully when NULL is passed as mesh argument\n");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("Accept callback didn't report error when NULL is passed as mesh argument\n");
-    return false;
-  }
+  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+
+  return true;
 }
 
 
@@ -222,9 +251,7 @@ int test_meshlink_set_channel_accept_cb(void) {
 
   total_tests += sizeof(blackbox_channel_set_accept_cb_tests) / sizeof(blackbox_channel_set_accept_cb_tests[0]);
 
-  assert(pthread_mutex_init(&lock, NULL) == 0);
   int failed = cmocka_run_group_tests(blackbox_channel_set_accept_cb_tests ,NULL , NULL);
-  assert(pthread_mutex_destroy(&lock) == 0);
 
   return failed;
 }

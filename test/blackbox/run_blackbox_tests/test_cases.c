@@ -113,32 +113,25 @@ int black_box_all_nodes_setup(void **state) {
     return 0;
 }
 
-/* mutex for the common variable */
-static pthread_mutex_t lock;
-
-static bool meta_conn01_result;
+static bool meta_conn01_conn;
+static bool meta_conn01_closed;
+static bool meta_conn01_reconn;
 
 static void meta_conn01_cb(mesh_event_payload_t payload) {
   char event_node_name[][10] = {"RELAY", "PEER", "NUT"};
-  printf("%s : ", event_node_name[payload.client_id]);
+  fprintf(stderr, "%s : ", event_node_name[payload.client_id]);
 
-  pthread_mutex_lock(&lock);
   switch(payload.mesh_event) {
-    case META_CONN_SUCCESSFUL   : printf("Meta Connection Successful\n");
+    case META_CONN_SUCCESSFUL   : meta_conn01_conn = true;
                                   break;
-    case NODE_STARTED           : printf("Node started\n");
+    case NODE_STARTED           : fprintf(stderr, "Node started\n");
                                   break;
-    case META_RECONN_FAILURE    : printf("Failed to reconnect with");
-                                  meta_conn01_result = false;
+    case META_CONN_CLOSED       : meta_conn01_closed = true;
                                   break;
-    case META_RECONN_SUCCESSFUL : printf("Reconnected with");
-                                  meta_conn01_result = true;
+    case META_RECONN_SUCCESSFUL : meta_conn01_reconn = true;
                                   break;
   }
-  pthread_mutex_unlock(&lock);
-  if(payload.payload_length) {
-    printf(" %s\n", (char *)payload.payload);
-  }
+
   return;
 }
 
@@ -166,7 +159,6 @@ static bool test_steps_meta_conn_01(void) {
     int i;
     char *import;
 
-    assert(!pthread_mutex_init(&lock, NULL));
     import = mesh_event_sock_create(eth_if_name);
     invite_peer = invite_in_container("relay", "peer");
     invite_nut = invite_in_container("relay", NUT_NODE_NAME);
@@ -178,51 +170,44 @@ static bool test_steps_meta_conn_01(void) {
     wait_for_event(meta_conn01_cb, 5);
 
     PRINT_TEST_CASE_MSG("Waiting for peer to be connected with NUT\n");
-    if(!wait_for_event(meta_conn01_cb, 60)) {
-      return false;
-    }
+    assert(wait_for_event(meta_conn01_cb, 60));
+    assert(meta_conn01_conn);
 
     PRINT_TEST_CASE_MSG("Sending SIGTERM to peer\n");
     node_step_in_container("peer", "SIGTERM");
     PRINT_TEST_CASE_MSG("Waiting for peer to become unreachable\n");
-    if(!wait_for_event(meta_conn01_cb, 60)) {
-      return false;
-    }
+    assert(wait_for_event(meta_conn01_cb, 60));
+    assert(meta_conn01_closed);
 
-    PRINT_TEST_CASE_MSG("Waiting 60 sec before re-starting the peer node\n");
-    sleep(60);
     node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
     wait_for_event(meta_conn01_cb, 5);
     PRINT_TEST_CASE_MSG("Waiting for peer to be re-connected\n");
     wait_for_event(meta_conn01_cb, 60);
-    pthread_mutex_lock(&lock);
-    result = meta_conn01_result;
-    pthread_mutex_unlock(&lock);
+
+    assert_int_equal(meta_conn01_reconn, true);
+
     free(invite_peer);
     free(invite_nut);
-    pthread_mutex_destroy(&lock);
 
-    return result;
+    return true;
 }
 
 
-static bool meta_conn02_result;
+static bool meta_conn02_conn;
 
 static void meta_conn02_cb(mesh_event_payload_t payload) {
   char event_node_name[][10] = {"RELAY", "PEER", "NUT"};
-  printf("%s : ", event_node_name[payload.client_id]);
+  fprintf(stderr, "%s : ", event_node_name[payload.client_id]);
 
-  pthread_mutex_lock(&lock);
   switch(payload.mesh_event) {
-    case META_CONN_SUCCESSFUL   : printf("Meta Connection Successful\n");
-                                  meta_conn02_result = true;
+    case META_CONN_SUCCESSFUL   : fprintf(stderr, "Meta Connection Successful\n");
+                                  meta_conn02_conn = true;
                                   break;
-    case NODE_STARTED           : printf("Node started\n");
+    case NODE_STARTED           : fprintf(stderr, "Node started\n");
                                   break;
   }
-  pthread_mutex_unlock(&lock);
   if(payload.payload_length) {
-    printf(" %s\n", (char *)payload.payload);
+    fprintf(stderr, " %s\n", (char *)payload.payload);
   }
   return;
 }
@@ -248,7 +233,6 @@ static bool test_steps_meta_conn_02(void) {
     int i;
     char *import;
 
-    assert(!pthread_mutex_init(&lock, NULL));
     import = mesh_event_sock_create(eth_if_name);
     invite_peer = invite_in_container("relay", "peer");
     invite_nut = invite_in_container("relay", NUT_NODE_NAME);
@@ -260,11 +244,10 @@ static bool test_steps_meta_conn_02(void) {
     wait_for_event(meta_conn02_cb, 5);
 
     PRINT_TEST_CASE_MSG("Waiting for peer to be connected with NUT\n");
-    if(!wait_for_event(meta_conn02_cb, 60)) {
-      return false;
-    }
+    assert(wait_for_event(meta_conn02_cb, 60));
+    assert(meta_conn02_conn);
 
-    meta_conn02_result = false;
+    meta_conn02_conn = false;
     node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
     wait_for_event(meta_conn02_cb, 5);
     node_sim_in_container_event("nut", "1", NULL, NUT_ID, import);
@@ -274,38 +257,33 @@ static bool test_steps_meta_conn_02(void) {
     if(!wait_for_event(meta_conn02_cb, 60)) {
       return false;
     }
-    pthread_mutex_lock(&lock);
-    result = meta_conn02_result;
-    pthread_mutex_unlock(&lock);
+    result = meta_conn02_conn;
+
     free(invite_peer);
     free(invite_nut);
-    pthread_mutex_destroy(&lock);
 
     return result;
 }
 
 static bool meta_conn03_result;
+static bool meta_conn03_conn;
 
 static void meta_conn03_cb(mesh_event_payload_t payload) {
   char event_node_name[][10] = {"RELAY", "PEER", "NUT"};
-  printf("%s : ", event_node_name[payload.client_id]);
+  fprintf(stderr, "%s : ", event_node_name[payload.client_id]);
 
-  pthread_mutex_lock(&lock);
   switch(payload.mesh_event) {
-    case META_CONN_SUCCESSFUL   : printf("Meta Connection Successful\n");
+    case META_CONN_SUCCESSFUL   : fprintf(stderr, "Meta Connection Successful\n");
+                                  meta_conn03_conn = true;
                                   break;
-    case NODE_STARTED           : printf("Node started\n");
+    case NODE_STARTED           : fprintf(stderr, "Node started\n");
                                   break;
-    case META_RECONN_FAILURE    : printf("Failed to reconnect with");
+    case META_RECONN_FAILURE    : fprintf(stderr, "Failed to reconnect with");
                                   meta_conn03_result = false;
                                   break;
-    case META_RECONN_SUCCESSFUL : printf("Reconnected with");
+    case META_RECONN_SUCCESSFUL : fprintf(stderr, "Reconnected\n");
                                   meta_conn03_result = true;
                                   break;
-  }
-  pthread_mutex_unlock(&lock);
-  if(payload.payload_length) {
-    printf(" %s\n", (char *)payload.payload);
   }
   return;
 }
@@ -331,7 +309,6 @@ static bool test_steps_meta_conn_03(void) {
     int i;
     char *import;
 
-    assert(!pthread_mutex_init(&lock, NULL));
     import = mesh_event_sock_create(eth_if_name);
     invite_peer = invite_in_container("relay", "peer");
     invite_nut = invite_in_container("relay", NUT_NODE_NAME);
@@ -343,22 +320,18 @@ static bool test_steps_meta_conn_03(void) {
     wait_for_event(meta_conn03_cb, 5);
 
     PRINT_TEST_CASE_MSG("Waiting for peer to be connected with NUT\n");
-    if(!wait_for_event(meta_conn03_cb, 60)) {
-      return false;
-    }
+    assert(wait_for_event(meta_conn03_cb, 60));
+    assert(meta_conn03_conn);
 
     PRINT_TEST_CASE_MSG("Changing IP address of PEER container\n");
     change_ip(1);
     node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
     wait_for_event(meta_conn03_cb, 5);
     PRINT_TEST_CASE_MSG("Waiting for peer to be re-connected\n");
-    wait_for_event(meta_conn03_cb, 120);
-    pthread_mutex_lock(&lock);
+    wait_for_event(meta_conn03_cb, 5);
     result = meta_conn03_result;
-    pthread_mutex_unlock(&lock);
     free(invite_peer);
     free(invite_nut);
-    pthread_mutex_destroy(&lock);
 
     return result;
 }
@@ -368,21 +341,19 @@ static bool meta_conn04 = false;
 
 static void meta_conn04_cb(mesh_event_payload_t payload) {
   char event_node_name[][10] = {"PEER", "NUT"};
-  printf("%s : ", event_node_name[payload.client_id]);
+  fprintf(stderr, "%s : ", event_node_name[payload.client_id]);
 
-  pthread_mutex_lock(&lock);
   switch(payload.mesh_event) {
-    case META_CONN_SUCCESSFUL   : printf("Meta Connection Successful\n");
+    case META_CONN_SUCCESSFUL   : fprintf(stderr, "Meta Connection Successful\n");
                                   meta_conn04 = true;
                                   break;
-    case NODE_INVITATION        : printf("Invitation generated\n");
+    case NODE_INVITATION        : fprintf(stderr, "Invitation generated\n");
                                   invite_peer = malloc(payload.payload_length);
                                   strcpy(invite_peer, (char *)payload.payload);
                                   break;
-    case NODE_STARTED           : printf("Node started\n");
+    case NODE_STARTED           : fprintf(stderr, "Node started\n");
                                   break;
   }
-  pthread_mutex_unlock(&lock);
   return;
 }
 
@@ -433,11 +404,9 @@ static bool test_steps_meta_conn_04(void) {
     node_sim_in_container_event("peer", "1", NULL, "0", import);
     wait_for_event(meta_conn04_cb, 5);
 
-    PRINT_TEST_CASE_MSG("Waiting 120 sec for peer to be re-connected\n");
-    wait_for_event(meta_conn04_cb, 120);
-    pthread_mutex_lock(&lock);
+    PRINT_TEST_CASE_MSG("Waiting for peer to be re-connected\n");
+    wait_for_event(meta_conn04_cb, 5);
     result = meta_conn04;
-    pthread_mutex_unlock(&lock);
 
     free(invite_peer);
     free(import);
@@ -450,21 +419,17 @@ static bool meta_conn05 = false;
 
 static void meta_conn05_cb(mesh_event_payload_t payload) {
   char event_node_name[][10] = {"PEER", "NUT"};
-  printf("%s : ", event_node_name[payload.client_id]);
+  fprintf(stderr, "%s : ", event_node_name[payload.client_id]);
 
-  pthread_mutex_lock(&lock);
   switch(payload.mesh_event) {
-    case META_CONN_SUCCESSFUL   : printf("Meta Connection Successful\n");
-                                  meta_conn05 = true;
+    case META_CONN_SUCCESSFUL   : meta_conn05 = true;
                                   break;
-    case NODE_INVITATION        : printf("Invitation generated\n");
-                                  invitation = malloc(payload.payload_length);
+    case NODE_INVITATION        : invitation = malloc(payload.payload_length);
                                   strcpy(invitation, (char *)payload.payload);
                                   break;
-    case NODE_STARTED           : printf("Node started\n");
+    case NODE_STARTED           : fprintf(stderr, "Node started\n");
                                   break;
   }
-  pthread_mutex_unlock(&lock);
   return;
 }
 
@@ -497,21 +462,17 @@ static bool test_steps_meta_conn_05(void) {
     }
     node_sim_in_container_event("peer", "1", invitation, "0", import);
     wait_for_event(meta_conn05_cb, 5);
-    PRINT_TEST_CASE_MSG("Waiting for peer to be connected with NUT\n");
-    if(!wait_for_event(meta_conn05_cb, 60)) {
+    if(!wait_for_event(meta_conn05_cb, 5)) {
       return false;
     }
 
-    PRINT_TEST_CASE_MSG("Changing IP address of PEER container\n");
     change_ip(0);
     meta_conn05 = false;
     node_sim_in_container_event("peer", "1", NULL, "0", import);
     wait_for_event(meta_conn05_cb, 5);
-    PRINT_TEST_CASE_MSG("Waiting 120 sec for peer to be re-connected\n");
-    wait_for_event(meta_conn05_cb, 120);
-    pthread_mutex_lock(&lock);
+    PRINT_TEST_CASE_MSG("Waiting for peer to be re-connected\n");
+    wait_for_event(meta_conn05_cb, 5);
     result = meta_conn05;
-    pthread_mutex_unlock(&lock);
 
     free(invitation);
     free(import);
@@ -519,19 +480,19 @@ static bool test_steps_meta_conn_05(void) {
 }
 
 int test_meta_conn(void) {
-  const struct CMUnitTest blackbox_group0_tests[] = {/*
+  const struct CMUnitTest blackbox_group0_tests[] = {
         cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_01, setup_test, teardown_test,
             (void *)&test_meta_conn_1_state),
         cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_02, setup_test, teardown_test,
-            (void *)&test_meta_conn_2_state),*/
-        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_03, setup_test, NULL,
-            (void *)&test_meta_conn_3_state),/*
+            (void *)&test_meta_conn_2_state),
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_03, setup_test, teardown_test,
+            (void *)&test_meta_conn_3_state),
         cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_04, setup_test, teardown_test,
-            (void *)&test_meta_conn_4_state),*/
-        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_05, setup_test, NULL,
+            (void *)&test_meta_conn_4_state),
+        cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_05, setup_test, teardown_test,
             (void *)&test_meta_conn_5_state)
   };
   total_tests += sizeof(blackbox_group0_tests) / sizeof(blackbox_group0_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_group0_tests, black_box_group0_setup, NULL);
+  return cmocka_run_group_tests(blackbox_group0_tests, black_box_group0_setup, black_box_group0_teardown);
 }
