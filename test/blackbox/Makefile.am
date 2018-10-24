@@ -9,7 +9,8 @@ SUBDIRS = 										\
 	test_case_meta_conn_04  		\
 	test_case_meta_conn_05  		\
 	test_case_set_status_cb_01 	\
-	test_case_set_status_cb_02 	
+	test_case_set_status_cb_02 	\
+	test_case_channel_conn_01
 
 
 gen_invite_SOURCES = util/gen_invite.c common/common_handlers.c common/test_step.c common/mesh_event_handler.c 

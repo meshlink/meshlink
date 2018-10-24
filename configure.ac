@@ -148,6 +148,7 @@ AC_CONFIG_FILES([Makefile \
 		test/blackbox/test_case_set_status_cb_02/Makefile \
 		test/blackbox/test_case_join_01/Makefile \
 		test/blackbox/test_case_join_02/Makefile \
+		test/blackbox/test_case_channel_conn_01/Makefile \
 		examples/Makefile])
 
 AC_OUTPUT

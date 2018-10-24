@@ -16,4 +16,4 @@
 .dirstamp
 Makefile.in
 .libs
-geninvite
+gen_invite
