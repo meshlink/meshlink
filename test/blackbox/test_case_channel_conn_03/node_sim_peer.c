@@ -23,11 +23,9 @@
 #include <string.h>
 #include <pthread.h>
 #include <assert.h>
-#include <signal.h>
 #include "../common/common_handlers.h"
 #include "../common/test_step.h"
 #include "../common/mesh_event_handler.h"
-#include "../../utils.h"
 
 #define CMD_LINE_ARG_NODENAME   1
 #define CMD_LINE_ARG_DEVCLASS   2
@@ -36,10 +34,9 @@
 #define CMD_LINE_ARG_INVITEURL  5
 #define CHANNEL_PORT 1234
 
-static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len);
-static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len);
-
 static int client_id = -1;
+
+static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len);
 
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len) {
 	(void)dat;
@@ -56,21 +53,16 @@ static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel,
 	return false;
 }
 
-/* channel receive callback */
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
-  (void)mesh;
-  (void)channel;
-  (void)dat;
-  (void)len;
   if(len == 0) {
-    mesh_event_sock_send(client_id, ERR_NETWORK, NULL, 0);
-    assert(false);
+    assert(mesh_event_sock_send(client_id, ERR_NETWORK, NULL, 0));
+    return;
   }
 
   if(!strcmp(channel->node->name, "nut")) {
     if(!memcmp(dat, "test", 5)) {
       assert(meshlink_channel_send(mesh, channel, "reply", 5) >= 0);
-    } else if(!memcmp(dat, "after", 6)) {
+    } else if(!memcmp(dat, "after", 5)) {
       assert(mesh_event_sock_send(client_id, CHANNEL_DATA_RECIEVED, NULL, 0));
     }
   }
@@ -79,6 +71,7 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 
 int main(int argc, char *argv[]) {
   struct timeval main_loop_wait = { 2, 0 };
+  struct timespec timeout = {0};
 
   // Import mesh event handler
 
@@ -87,11 +80,9 @@ int main(int argc, char *argv[]) {
     mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
   }
 
-  // Setup required signals
+  // Run peer node instance
 
   setup_signals();
-
-  // Run peer node instance
 
   meshlink_handle_t *mesh = meshlink_open("testconf", argv[CMD_LINE_ARG_NODENAME],
                               "test_channel_conn", atoi(argv[CMD_LINE_ARG_DEVCLASS]));
@@ -105,7 +96,6 @@ int main(int argc, char *argv[]) {
   assert(meshlink_start(mesh));
 
   // All test steps executed - wait for signals to stop/start or close the mesh
-
   while(test_running) {
     select(1, NULL, NULL, NULL, &main_loop_wait);
   }

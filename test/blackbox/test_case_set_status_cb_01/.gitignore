@@ -1,6 +1,0 @@
-Makefile
-Makefile.in
-*.o
-test
-node_sim_relay
-node_sim_peer 

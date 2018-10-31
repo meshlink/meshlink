@@ -18,6 +18,7 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,8 +41,8 @@ static int client_id = -1;
 
 static struct sync_flag peer_reachable = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 static struct sync_flag channel_opened = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
+static struct sync_flag channel_closed = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 static struct sync_flag sigusr_received = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
-static struct sync_flag channel_received = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 
 static void send_event(mesh_event_t event);
 static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
@@ -50,18 +51,18 @@ static void mesh_siguser1_signal_handler(int sig_num);
 
 static void mesh_siguser1_signal_handler(int sig_num) {
   set_sync_flag(&sigusr_received);
-
   return;
 }
 
 static void send_event(mesh_event_t event) {
+  bool send_ret = false;
   int attempts;
   for(attempts = 0; attempts < 5; attempts += 1) {
-    if(mesh_event_sock_send(client_id, event, NULL, 0)) {
+    send_ret = mesh_event_sock_send(client_id, event, NULL, 0);
+    if(send_ret) {
       break;
     }
   }
-  assert(attempts < 5);
 
   return;
 }
@@ -84,8 +85,9 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
   if(len == 0) {
+    set_sync_flag(&channel_closed);
     send_event(ERR_NETWORK);
-    assert(false);
+    return;
   }
 
   if(!strcmp(channel->node->name, "peer")) {
@@ -145,9 +147,9 @@ int main(int argc, char *argv[]) {
 
   assert(wait_sync_flag(&sigusr_received, 10));
 
-  sleep(10);
-
   assert(meshlink_channel_send(mesh, channel, "after", 6) >= 0);
+
+  assert(wait_sync_flag(&channel_closed, 180));
 
   // All test steps executed - wait for signals to stop/start or close the mesh
   while(test_running) {

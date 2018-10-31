@@ -39,7 +39,14 @@
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len);
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len);
 
+static struct sync_flag sigusr = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 static int client_id = -1;
+
+static void mesh_siguser1_signal_handler(int sig_num) {
+  set_sync_flag(&sigusr);
+
+  return;
+}
 
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len) {
 	(void)dat;
@@ -64,15 +71,11 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
   (void)len;
   if(len == 0) {
     mesh_event_sock_send(client_id, ERR_NETWORK, NULL, 0);
-    assert(false);
+    return;
   }
 
-  if(!strcmp(channel->node->name, "nut")) {
-    if(!memcmp(dat, "test", 5)) {
-      assert(meshlink_channel_send(mesh, channel, "reply", 5) >= 0);
-    } else if(!memcmp(dat, "after", 6)) {
-      assert(mesh_event_sock_send(client_id, CHANNEL_DATA_RECIEVED, NULL, 0));
-    }
+  if(!strcmp(channel->node->name, "nut") && !memcmp(dat, "test", 5)) {
+    assert(meshlink_channel_send(mesh, channel, "reply", 5) >= 0);
   }
   return;
 }
@@ -90,6 +93,7 @@ int main(int argc, char *argv[]) {
   // Setup required signals
 
   setup_signals();
+  signal(SIGUSR1, mesh_siguser1_signal_handler);
 
   // Run peer node instance
 
@@ -103,6 +107,10 @@ int main(int argc, char *argv[]) {
     assert(meshlink_join(mesh, argv[CMD_LINE_ARG_INVITEURL]));
   }
   assert(meshlink_start(mesh));
+
+  assert(wait_sync_flag(&sigusr, 140));
+  meshlink_channel_t *channel = mesh->priv;
+  assert(meshlink_channel_send(mesh, channel, "failure", 7));
 
   // All test steps executed - wait for signals to stop/start or close the mesh
 
