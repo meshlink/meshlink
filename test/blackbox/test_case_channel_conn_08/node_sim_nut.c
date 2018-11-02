@@ -44,113 +44,116 @@ static struct sync_flag channel_closed = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .
 
 static void send_event(mesh_event_t event);
 static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
-                                        bool reachable);
+                           bool reachable);
 
 static void send_event(mesh_event_t event) {
-  int attempts;
-  for(attempts = 0; attempts < 5; attempts += 1) {
-    if(mesh_event_sock_send(client_id, event, NULL, 0)) {
-      break;
-    }
-  }
-  assert(attempts < 5);
+	int attempts;
 
-  return;
+	for(attempts = 0; attempts < 5; attempts += 1) {
+		if(mesh_event_sock_send(client_id, event, NULL, 0)) {
+			break;
+		}
+	}
+
+	assert(attempts < 5);
+
+	return;
 }
 
 static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
-                                        bool reachable) {
-    if(!strcasecmp(node->name, "peer")) {
-      if(reachable) {
-        set_sync_flag(&peer_reachable);
-      } else {
-        peer_reachable.flag = false;
-      }
-    }
+                           bool reachable) {
+	if(!strcasecmp(node->name, "peer")) {
+		if(reachable) {
+			set_sync_flag(&peer_reachable);
+		} else {
+			peer_reachable.flag = false;
+		}
+	}
 
-    return;
+	return;
 }
 
 static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
 	(void)len;
-  meshlink_set_channel_poll_cb(mesh, channel, NULL);
+	meshlink_set_channel_poll_cb(mesh, channel, NULL);
 	assert(meshlink_channel_send(mesh, channel, "test", 5) >= 0);
 	return;
 }
 
 /* channel receive callback */
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
-  if(len == 0) {
-    //send_event(ERR_NETWORK);
-    return;
-  }
+	if(len == 0) {
+		//send_event(ERR_NETWORK);
+		return;
+	}
 
-  if(!strcmp(channel->node->name, "peer")) {
-    if(!memcmp(dat, "reply", 5)) {
-      set_sync_flag(&channel_opened);
-    } else if(!memcmp(dat, "failure", 7)) {
-      assert(false);
-    }
-  }
+	if(!strcmp(channel->node->name, "peer")) {
+		if(!memcmp(dat, "reply", 5)) {
+			set_sync_flag(&channel_opened);
+		} else if(!memcmp(dat, "failure", 7)) {
+			assert(false);
+		}
+	}
 
-  return;
+	return;
 }
 
 int main(int argc, char *argv[]) {
-  struct timeval main_loop_wait = { 5, 0 };
-  int i;
+	struct timeval main_loop_wait = { 5, 0 };
+	int i;
 
-  // Import mesh event handler
+	// Import mesh event handler
 
-  if((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR] )) {
-    client_id = atoi(argv[CMD_LINE_ARG_CLIENTID]);
-    mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
-  }
+	if((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR])) {
+		client_id = atoi(argv[CMD_LINE_ARG_CLIENTID]);
+		mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
+	}
 
-  setup_signals();
+	setup_signals();
 
-  // Execute test steps
+	// Execute test steps
 
-  meshlink_handle_t *mesh = meshlink_open("testconf", argv[CMD_LINE_ARG_NODENAME],
-                              "test_channel_conn", atoi(argv[CMD_LINE_ARG_DEVCLASS]));
-  assert(mesh);
-  meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);
-  meshlink_set_node_status_cb(mesh, node_status_cb);
+	meshlink_handle_t *mesh = meshlink_open("testconf", argv[CMD_LINE_ARG_NODENAME],
+	                                        "test_channel_conn", atoi(argv[CMD_LINE_ARG_DEVCLASS]));
+	assert(mesh);
+	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);
+	meshlink_set_node_status_cb(mesh, node_status_cb);
 
-  if(argv[CMD_LINE_ARG_INVITEURL]) {
-    assert(meshlink_join(mesh, argv[CMD_LINE_ARG_INVITEURL]));
-  }
-  assert(meshlink_start(mesh));
+	if(argv[CMD_LINE_ARG_INVITEURL]) {
+		assert(meshlink_join(mesh, argv[CMD_LINE_ARG_INVITEURL]));
+	}
 
-  // Wait for peer node to join
+	assert(meshlink_start(mesh));
 
-  assert(wait_sync_flag(&peer_reachable, 10));
-  send_event(NODE_JOINED);
+	// Wait for peer node to join
 
-  // Open a channel to peer node
+	assert(wait_sync_flag(&peer_reachable, 10));
+	send_event(NODE_JOINED);
 
-  meshlink_node_t *peer_node = meshlink_get_node(mesh, "peer");
-  assert(peer_node);
-  meshlink_channel_t *channel = meshlink_channel_open(mesh, peer_node, CHANNEL_PORT,
-                                      channel_receive_cb, NULL, 0);
-  meshlink_set_channel_poll_cb(mesh, channel, poll_cb);
+	// Open a channel to peer node
 
-  assert(wait_sync_flag(&channel_opened, 10));
-  send_event(CHANNEL_OPENED);
+	meshlink_node_t *peer_node = meshlink_get_node(mesh, "peer");
+	assert(peer_node);
+	meshlink_channel_t *channel = meshlink_channel_open(mesh, peer_node, CHANNEL_PORT,
+	                              channel_receive_cb, NULL, 0);
+	meshlink_set_channel_poll_cb(mesh, channel, poll_cb);
 
-  // Restarting the node instance
+	assert(wait_sync_flag(&channel_opened, 10));
+	send_event(CHANNEL_OPENED);
 
-  meshlink_stop(mesh);
-  meshlink_start(mesh);
+	// Restarting the node instance
 
-  assert(wait_sync_flag(&peer_reachable, 60));
-  send_event(NODE_RESTARTED);
+	meshlink_stop(mesh);
+	meshlink_start(mesh);
 
-  // All test steps executed - wait for signals to stop/start or close the mesh
+	assert(wait_sync_flag(&peer_reachable, 60));
+	send_event(NODE_RESTARTED);
 
-  while(test_running) {
-    select(1, NULL, NULL, NULL, &main_loop_wait);
-  }
+	// All test steps executed - wait for signals to stop/start or close the mesh
 
-  meshlink_close(mesh);
+	while(test_running) {
+		select(1, NULL, NULL, NULL, &main_loop_wait);
+	}
+
+	meshlink_close(mesh);
 }

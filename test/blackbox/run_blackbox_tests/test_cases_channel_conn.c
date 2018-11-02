@@ -56,44 +56,44 @@ static char *test_channel_conn_2_nodes[] = { "peer", "nut" };
 static char *test_channel_conn_3_nodes[] = { "peer", "nut", "relay" };
 
 static black_box_state_t test_case_channel_conn_01_state = {
-    .test_case_name = "test_case_channel_conn_01",
-    .node_names = test_channel_conn_2_nodes,
-    .num_nodes = 2,
+	.test_case_name = "test_case_channel_conn_01",
+	.node_names = test_channel_conn_2_nodes,
+	.num_nodes = 2,
 };
 static black_box_state_t test_case_channel_conn_02_state = {
-    .test_case_name = "test_case_channel_conn_02",
-    .node_names = test_channel_conn_2_nodes,
-    .num_nodes = 2,
+	.test_case_name = "test_case_channel_conn_02",
+	.node_names = test_channel_conn_2_nodes,
+	.num_nodes = 2,
 };
 static black_box_state_t test_case_channel_conn_03_state = {
-    .test_case_name = "test_case_channel_conn_03",
-    .node_names = test_channel_conn_2_nodes,
-    .num_nodes = 2,
+	.test_case_name = "test_case_channel_conn_03",
+	.node_names = test_channel_conn_2_nodes,
+	.num_nodes = 2,
 };
 static black_box_state_t test_case_channel_conn_04_state = {
-    .test_case_name = "test_case_channel_conn_04",
-    .node_names = test_channel_conn_2_nodes,
-    .num_nodes = 2,
+	.test_case_name = "test_case_channel_conn_04",
+	.node_names = test_channel_conn_2_nodes,
+	.num_nodes = 2,
 };
 static black_box_state_t test_case_channel_conn_05_state = {
-    .test_case_name = "test_case_channel_conn_05",
-    .node_names = test_channel_conn_3_nodes,
-    .num_nodes = 3,
+	.test_case_name = "test_case_channel_conn_05",
+	.node_names = test_channel_conn_3_nodes,
+	.num_nodes = 3,
 };
 static black_box_state_t test_case_channel_conn_06_state = {
-    .test_case_name = "test_case_channel_conn_06",
-    .node_names = test_channel_conn_3_nodes,
-    .num_nodes = 3,
+	.test_case_name = "test_case_channel_conn_06",
+	.node_names = test_channel_conn_3_nodes,
+	.num_nodes = 3,
 };
 static black_box_state_t test_case_channel_conn_07_state = {
-    .test_case_name = "test_case_channel_conn_07",
-    .node_names = test_channel_conn_3_nodes,
-    .num_nodes = 3,
+	.test_case_name = "test_case_channel_conn_07",
+	.node_names = test_channel_conn_3_nodes,
+	.num_nodes = 3,
 };
 static black_box_state_t test_case_channel_conn_08_state = {
-    .test_case_name = "test_case_channel_conn_08",
-    .node_names = test_channel_conn_3_nodes,
-    .num_nodes = 3,
+	.test_case_name = "test_case_channel_conn_08",
+	.node_names = test_channel_conn_3_nodes,
+	.num_nodes = 3,
 };
 
 static bool joined;
@@ -106,32 +106,48 @@ static bool node_unreachable;
 
 /* Callback function for handling channel connection test cases mesh events */
 static void channel_conn_cb(mesh_event_payload_t payload) {
-  switch(payload.mesh_event) {
-    case NODE_JOINED            : joined = true;
-                                  break;
-    case CHANNEL_OPENED         : channel_opened = true;
-                                  break;
-    case NODE_RESTARTED         : node_restarted = true;
-                                  break;
-    case ERR_NETWORK            : received_error = true;
-                                  break;
-    case CHANNEL_DATA_RECIEVED  : channel_received = true;
-                                  break;
-    case NODE_UNREACHABLE       : node_unreachable = true;
-                                  break;
-    case NODE_REACHABLE         : node_reachable = true;
-                                  break;
-    default                     : PRINT_TEST_CASE_MSG("Undefined event occurred\n");
-  }
-  return;
+	switch(payload.mesh_event) {
+	case NODE_JOINED            :
+		joined = true;
+		break;
+
+	case CHANNEL_OPENED         :
+		channel_opened = true;
+		break;
+
+	case NODE_RESTARTED         :
+		node_restarted = true;
+		break;
+
+	case ERR_NETWORK            :
+		received_error = true;
+		break;
+
+	case CHANNEL_DATA_RECIEVED  :
+		channel_received = true;
+		break;
+
+	case NODE_UNREACHABLE       :
+		node_unreachable = true;
+		break;
+
+	case NODE_REACHABLE         :
+		node_reachable = true;
+		break;
+
+	default                     :
+		PRINT_TEST_CASE_MSG("Undefined event occurred\n");
+	}
+
+	return;
 }
 
 /* Execute channel connections Test Case # 1 - simulate a temporary network
     failure of about 30 seconds, messages sent while the network was down
     should be received by the other side after the network comes up again. */
 static void test_case_channel_conn_01(void **state) {
-  execute_test(test_steps_channel_conn_01, state);
-  return;
+	execute_test(test_steps_channel_conn_01, state);
+	return;
 }
 
 /* Test Steps for channel connections Test Case # 1
@@ -146,61 +162,62 @@ static void test_case_channel_conn_01(void **state) {
     Peer node receives data via channel without any error after restoring network.
 */
 static bool test_steps_channel_conn_01(void) {
-  char *invite_nut;
-  char *import;
+	char *invite_nut;
+	char *import;
 
-  joined = false;
-  channel_opened = false;
-  channel_received = false;
+	joined = false;
+	channel_opened = false;
+	channel_received = false;
 
-  // Setup Containers
+	// Setup Containers
 
-  install_in_container("nut", "iptables");
-  accept_port_rule("nut", "OUTPUT", "udp", 9000);
-  import = mesh_event_sock_create(eth_if_name);
-  invite_nut = invite_in_container("peer", "nut");
+	install_in_container("nut", "iptables");
+	accept_port_rule("nut", "OUTPUT", "udp", 9000);
+	import = mesh_event_sock_create(eth_if_name);
+	invite_nut = invite_in_container("peer", "nut");
+	assert(invite_nut);
 
-  // Run node instances in containers & open a channel
+	// Run node instances in containers & open a channel
 
-  node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
-  node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
+	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
 
-  wait_for_event(channel_conn_cb, 30);
-  assert(joined);
+	wait_for_event(channel_conn_cb, 30);
+	assert_int_equal(joined, true);
 
-  wait_for_event(channel_conn_cb, 30);
-  assert(channel_opened);
+	wait_for_event(channel_conn_cb, 30);
+	assert_int_equal(channel_opened, true);
 
-  // Simulate network failure in NUT's LXC container with it's IP address as NAT rule
+	// Simulate network failure in NUT's LXC container with it's IP address as NAT rule
 
-  block_node_ip("nut");
-  sleep(2);
+	block_node_ip("nut");
+	sleep(2);
 
-  // Sending SIGUSR1 signal to node-under-test indicating the network failure
+	// Sending SIGUSR1 signal to node-under-test indicating the network failure
 
-  node_step_in_container("nut", "SIGUSR1");
-  sleep(30);
+	node_step_in_container("nut", "SIGUSR1");
+	sleep(30);
 
-  // Restore NUT's network
+	// Restore NUT's network
 
-  unblock_node_ip("nut");
+	unblock_node_ip("nut");
 
-  // Wait for peer node to receive data via channel from NUT
+	// Wait for peer node to receive data via channel from NUT
 
-  wait_for_event(channel_conn_cb, 60);
-  assert(channel_received);
+	wait_for_event(channel_conn_cb, 60);
+	assert_int_equal(channel_received, true);
 
-  free(invite_nut);
-  free(import);
-  return true;
+	free(invite_nut);
+	free(import);
+	return true;
 }
 
 /* Execute channel connections Test Case # 2 - a simulated network failure
     of more than 1 minute, and sending messages over the channel during the
     failure. Then after about 1 minute, the channel should receive an error */
 static void test_case_channel_conn_02(void **state) {
-  execute_test(test_steps_channel_conn_02, state);
-  return;
+	execute_test(test_steps_channel_conn_02, state);
+	return;
 }
 
 /* Test Steps for channel connections Test Case # 2
@@ -216,60 +233,61 @@ static void test_case_channel_conn_02(void **state) {
       Peer node should receive error closing the channel after channel timeout(60 secs).
 */
 static bool test_steps_channel_conn_02(void) {
-  char *invite_nut;
-  char *import;
+	char *invite_nut;
+	char *import;
 
-  joined = false;
-  channel_opened = false;
-  received_error = false;
+	joined = false;
+	channel_opened = false;
+	received_error = false;
 
-  // Setup containers
+	// Setup containers
 
-  install_in_container("nut", "iptables");
-  accept_port_rule("nut", "OUTPUT", "udp", 9000);
-  import = mesh_event_sock_create(eth_if_name);
-  invite_nut = invite_in_container("peer", "nut");
+	install_in_container("nut", "iptables");
+	accept_port_rule("nut", "OUTPUT", "udp", 9000);
+	import = mesh_event_sock_create(eth_if_name);
+	invite_nut = invite_in_container("peer", "nut");
+	assert(invite_nut);
 
-  // Run NUT and peer node instances in containers & open a channel
+	// Run NUT and peer node instances in containers & open a channel
 
-  node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
-  node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
+	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
 
-  wait_for_event(channel_conn_cb, 30);
-  assert(joined);
+	wait_for_event(channel_conn_cb, 30);
+	assert_int_equal(joined, true);
 
-  wait_for_event(channel_conn_cb, 10);
-  assert(channel_opened);
+	wait_for_event(channel_conn_cb, 10);
+	assert_int_equal(channel_opened, true);
 
-  // Simulate network failure in NUT's LXC container with it's IP address as NAT rule
+	// Simulate network failure in NUT's LXC container with it's IP address as NAT rule
 
-  block_node_ip("nut");
+	block_node_ip("nut");
 
-  // Sending SIGUSR1 signal to node-under-test indicating the network failure
+	// Sending SIGUSR1 signal to node-under-test indicating the network failure
 
-  node_step_in_container("nut", "SIGUSR1");
-  sleep(90);
+	node_step_in_container("nut", "SIGUSR1");
+	sleep(90);
 
-  // Restore NUT containers network after 90 secs
+	// Restore NUT containers network after 90 secs
 
-  unblock_node_ip("nut");
+	unblock_node_ip("nut");
 
-  // Wait for peer node to send the event about the channel error occurred with length = 0
+	// Wait for peer node to send the event about the channel error occurred with length = 0
 
-  wait_for_event(channel_conn_cb, 90);
-  assert(received_error);
+	wait_for_event(channel_conn_cb, 90);
+	assert_int_equal(received_error, true);
 
-  free(invite_nut);
-  free(import);
-  return true;
+	free(invite_nut);
+	free(import);
+	return true;
 }
 
 /* Execute channel connections Test Case # 3 - a simulated network failure
     once node instance is made offline restore the network and send data via
     channel  */
 static void test_case_channel_conn_03(void **state) {
-  execute_test(test_steps_channel_conn_03, state);
-  return;
+	execute_test(test_steps_channel_conn_03, state);
+	return;
 }
 
 /* Test Steps for channel connections Test Case # 3
@@ -284,72 +302,73 @@ static void test_case_channel_conn_03(void **state) {
     Peer node should receive data from NUT without any error.
 */
 static bool test_steps_channel_conn_03(void) {
-  char *invite_nut;
-  char *import;
+	char *invite_nut;
+	char *import;
 
-  joined = false;
-  channel_opened = false;
-  node_unreachable = false;
-  node_reachable = false;
-  channel_received = false;
+	joined = false;
+	channel_opened = false;
+	node_unreachable = false;
+	node_reachable = false;
+	channel_received = false;
 
-  // Setup containers
+	// Setup containers
 
-  install_in_container("nut", "iptables");
-  accept_port_rule("nut", "OUTPUT", "udp", 9000);
-  import = mesh_event_sock_create(eth_if_name);
-  invite_nut = invite_in_container("peer", "nut");
+	install_in_container("nut", "iptables");
+	accept_port_rule("nut", "OUTPUT", "udp", 9000);
+	import = mesh_event_sock_create(eth_if_name);
+	invite_nut = invite_in_container("peer", "nut");
+	assert(invite_nut);
 
-  // Run NUT and peer node instances in containers & open a channel
+	// Run NUT and peer node instances in containers & open a channel
 
-  node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
-  node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
+	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
 
-  wait_for_event(channel_conn_cb, 30);
-  assert(joined);
+	wait_for_event(channel_conn_cb, 30);
+	assert_int_equal(joined, true);
 
-  wait_for_event(channel_conn_cb, 10);
-  assert(channel_opened);
+	wait_for_event(channel_conn_cb, 10);
+	assert_int_equal(channel_opened, true);
 
-  // Simulate network failure in NUT's LXC container with it's IP address as NAT rule
+	// Simulate network failure in NUT's LXC container with it's IP address as NAT rule
 
-  node_reachable = false;
-  block_node_ip("nut");
+	node_reachable = false;
+	block_node_ip("nut");
 
-  // Sending SIGUSR1 signal to node-under-test indicating the network failure
+	// Sending SIGUSR1 signal to node-under-test indicating the network failure
 
-  node_step_in_container("nut", "SIGUSR1");
+	node_step_in_container("nut", "SIGUSR1");
 
-  // Wait for the node status to become unreachable
+	// Wait for the node status to become unreachable
 
-  wait_for_event(channel_conn_cb, 100);
-  assert(node_unreachable);
+	wait_for_event(channel_conn_cb, 100);
+	assert_int_equal(node_unreachable, true);
 
-  // Restore NUT container's network
+	// Restore NUT container's network
 
-  unblock_node_ip("nut");
+	unblock_node_ip("nut");
 
-  // Wait for the node status to become reachable
+	// Wait for the node status to become reachable
 
-  wait_for_event(channel_conn_cb, 100);
-  assert(node_reachable);
+	wait_for_event(channel_conn_cb, 100);
+	assert_int_equal(node_reachable, true);
 
-  // Wait for data to be received at peer via channel from NUT after restoring n/w
+	// Wait for data to be received at peer via channel from NUT after restoring n/w
 
-  wait_for_event(channel_conn_cb, 90);
-  assert(channel_received);
+	wait_for_event(channel_conn_cb, 90);
+	assert_int_equal(channel_received, true);
 
-  free(invite_nut);
-  free(import);
-  return true;
+	free(invite_nut);
+	free(import);
+	return true;
 }
 
 /* Execute channel connections Test Case # 4 - receiving an error when node-under-test
     tries to send data on channel to peer node after peer node stops and starts the
     node instance */
 static void test_case_channel_conn_04(void **state) {
-  execute_test(test_steps_channel_conn_04, state);
-  return;
+	execute_test(test_steps_channel_conn_04, state);
+	return;
 }
 
 /* Test Steps for Meta-connections Test Case # 4
@@ -363,48 +382,49 @@ static void test_case_channel_conn_04(void **state) {
     Peer node should receive error(as length = 0) in receive callback of peer node's instance.
 */
 static bool test_steps_channel_conn_04(void) {
-  char *invite_nut;
-  char *import;
+	char *invite_nut;
+	char *import;
 
-  joined = false;
-  channel_opened = false;
-  node_restarted = false;
-  received_error = false;
-  import = mesh_event_sock_create(eth_if_name);
-  invite_nut = invite_in_container("peer", "nut");
+	joined = false;
+	channel_opened = false;
+	node_restarted = false;
+	received_error = false;
+	import = mesh_event_sock_create(eth_if_name);
+	invite_nut = invite_in_container("peer", "nut");
+	assert(invite_nut);
 
-  // Run NUT and peer node instances in containers and open a channel
+	// Run NUT and peer node instances in containers and open a channel
 
-  node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
-  node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
+	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
 
-  wait_for_event(channel_conn_cb, 10);
-  assert_int_equal(joined, true);
+	wait_for_event(channel_conn_cb, 10);
+	assert_int_equal(joined, true);
 
-  wait_for_event(channel_conn_cb, 10);
-  assert_int_equal(channel_opened, true);
+	wait_for_event(channel_conn_cb, 10);
+	assert_int_equal(channel_opened, true);
 
-  // Wait for NUT node instance to stop and start
+	// Wait for NUT node instance to stop and start
 
-  wait_for_event(channel_conn_cb, 60);
-  assert_int_equal(node_restarted, true);
+	wait_for_event(channel_conn_cb, 60);
+	assert_int_equal(node_restarted, true);
 
-  sleep(60);
+	sleep(60);
 
-  // After 1 min the channel between NUT and peer should result in error
+	// After 1 min the channel between NUT and peer should result in error
 
-  wait_for_event(channel_conn_cb, 10);
-  assert_int_equal(received_error, true);
+	wait_for_event(channel_conn_cb, 10);
+	assert_int_equal(received_error, true);
 
-  return true;
+	return true;
 }
 
 /* Execute channel connections Test Case # 5 - simulate a temporary network
     failure of about 30 seconds, messages sent while the network was down
     should be received by the other side after the network comes up again. */
 static void test_case_channel_conn_05(void **state) {
-  execute_test(test_steps_channel_conn_05, state);
-  return;
+	execute_test(test_steps_channel_conn_05, state);
+	return;
 }
 
 /* Test Steps for channel connections Test Case # 5
@@ -420,65 +440,65 @@ static void test_case_channel_conn_05(void **state) {
     Peer node receives data via channel without any error after restoring network.
 */
 static bool test_steps_channel_conn_05(void) {
-  char *invite_nut, *invite_peer;
-  char *import;
+	char *invite_nut, *invite_peer;
+	char *import;
 
-  joined = false;
-  channel_opened = false;
-  channel_received = false;
+	joined = false;
+	channel_opened = false;
+	channel_received = false;
 
-  // Setup containers
+	// Setup containers
 
-  install_in_container("nut", "iptables");
-  accept_port_rule("nut", "OUTPUT", "udp", 9000);
-  import = mesh_event_sock_create(eth_if_name);
-  invite_peer = invite_in_container("relay", "peer");
-  invite_nut = invite_in_container("relay", "nut");
-  assert(invite_nut);
-  assert(invite_peer);
+	install_in_container("nut", "iptables");
+	accept_port_rule("nut", "OUTPUT", "udp", 9000);
+	import = mesh_event_sock_create(eth_if_name);
+	invite_peer = invite_in_container("relay", "peer");
+	invite_nut = invite_in_container("relay", "nut");
+	assert(invite_nut);
+	assert(invite_peer);
 
-  // Run node instances and open a channel between NUT and peer nodes
+	// Run node instances and open a channel between NUT and peer nodes
 
-  node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
-  node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
-  node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
+	node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
+	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
 
-  wait_for_event(channel_conn_cb, 30);
-  assert(joined);
+	wait_for_event(channel_conn_cb, 30);
+	assert_int_equal(joined, true);
 
-  wait_for_event(channel_conn_cb, 30);
-  assert(channel_opened);
+	wait_for_event(channel_conn_cb, 30);
+	assert_int_equal(channel_opened, true);
 
-  // Create a network failure in NUT node's container with it's IP address
+	// Create a network failure in NUT node's container with it's IP address
 
-  block_node_ip("nut");
+	block_node_ip("nut");
 
-  // Sending SIGUSR1 signal to node-under-test indicating the network failure
+	// Sending SIGUSR1 signal to node-under-test indicating the network failure
 
-  node_step_in_container("nut", "SIGUSR1");
-  sleep(30);
+	node_step_in_container("nut", "SIGUSR1");
+	sleep(30);
 
-  // Restore the network
+	// Restore the network
 
-  unblock_node_ip("nut");
+	unblock_node_ip("nut");
 
-  // Wait for peer to get data from NUT node via channel after restoring network in < 60 secs
+	// Wait for peer to get data from NUT node via channel after restoring network in < 60 secs
 
-  wait_for_event(channel_conn_cb, 60);
-  assert_int_equal(channel_received, true);
+	wait_for_event(channel_conn_cb, 60);
+	assert_int_equal(channel_received, true);
 
-  free(invite_nut);
-  free(invite_peer);
-  free(import);
-  return true;
+	free(invite_nut);
+	free(invite_peer);
+	free(import);
+	return true;
 }
 
 /* Execute channel connections Test Case # 6 - a simulated network failure
     of more than 1 minute, and sending messages over the channel during the
     failure. Then after about 1 minute, the channel should receive an error */
 static void test_case_channel_conn_06(void **state) {
-  execute_test(test_steps_channel_conn_06, state);
-  return;
+	execute_test(test_steps_channel_conn_06, state);
+	return;
 }
 
 /* Test Steps for channel connections Test Case # 6
@@ -495,65 +515,65 @@ static void test_case_channel_conn_06(void **state) {
       Peer node should receive error closing the channel after channel timeout(60 secs).
 */
 static bool test_steps_channel_conn_06(void) {
-  char *invite_nut, *invite_peer;
-  char *import;
+	char *invite_nut, *invite_peer;
+	char *import;
 
-  joined = false;
-  channel_opened = false;
-  received_error = false;
+	joined = false;
+	channel_opened = false;
+	received_error = false;
 
-  // Setup containers
+	// Setup containers
 
-  install_in_container("nut", "iptables");
-  accept_port_rule("nut", "OUTPUT", "udp", 9000);
-  import = mesh_event_sock_create(eth_if_name);
-  invite_peer = invite_in_container("relay", "peer");
-  assert(invite_peer);
-  invite_nut = invite_in_container("relay", "nut");
-  assert(invite_nut);
+	install_in_container("nut", "iptables");
+	accept_port_rule("nut", "OUTPUT", "udp", 9000);
+	import = mesh_event_sock_create(eth_if_name);
+	invite_peer = invite_in_container("relay", "peer");
+	assert(invite_peer);
+	invite_nut = invite_in_container("relay", "nut");
+	assert(invite_nut);
 
-  // Run nodes in containers and open a channel between NUt and peer
+	// Run nodes in containers and open a channel between NUt and peer
 
-  node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
-  node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
-  node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
+	node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
+	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
 
-  wait_for_event(channel_conn_cb, 30);
-  assert(joined);
+	wait_for_event(channel_conn_cb, 30);
+	assert_int_equal(joined, true);
 
-  wait_for_event(channel_conn_cb, 10);
-  assert(channel_opened);
+	wait_for_event(channel_conn_cb, 10);
+	assert_int_equal(channel_opened, true);
 
-  // Simulate a network failure in NUT's container for > 60 secs
+	// Simulate a network failure in NUT's container for > 60 secs
 
-  block_node_ip("nut");
+	block_node_ip("nut");
 
-  // Sending SIGUSR1 signal to node-under-test indicating the network failure
+	// Sending SIGUSR1 signal to node-under-test indicating the network failure
 
-  node_step_in_container("nut", "SIGUSR1");
-  sleep(90);
+	node_step_in_container("nut", "SIGUSR1");
+	sleep(90);
 
-  // Restore the network after 90 secs
+	// Restore the network after 90 secs
 
-  unblock_node_ip("nut");
+	unblock_node_ip("nut");
 
-  // Wait for channel to receive error and receive the event
+	// Wait for channel to receive error and receive the event
 
-  wait_for_event(channel_conn_cb, 90);
-  assert_int_equal(received_error, true);
+	wait_for_event(channel_conn_cb, 90);
+	assert_int_equal(received_error, true);
 
-  free(invite_nut);
-  free(invite_peer);
-  free(import);
-  return true;
+	free(invite_nut);
+	free(invite_peer);
+	free(import);
+	return true;
 }
 
 /* Execute channel connections Test Case # 7 - a simulated network failure
     once node instance is made offline restore the network and send data via
     channel  */
 static void test_case_channel_conn_07(void **state) {
-  execute_test(test_steps_channel_conn_07, state);
-  return;
+	execute_test(test_steps_channel_conn_07, state);
+	return;
 }
 
 /* Test Steps for channel connections Test Case # 7
@@ -569,77 +589,77 @@ static void test_case_channel_conn_07(void **state) {
     Peer node should receive data from NUT without any error.
 */
 static bool test_steps_channel_conn_07(void) {
-  char *invite_nut, *invite_peer;
-  char *import;
+	char *invite_nut, *invite_peer;
+	char *import;
 
-  joined = false;
-  channel_opened = false;
-  node_unreachable = false;
-  node_reachable = false;
-  channel_received = false;
+	joined = false;
+	channel_opened = false;
+	node_unreachable = false;
+	node_reachable = false;
+	channel_received = false;
 
-  // Setup containers
+	// Setup containers
 
-  install_in_container("nut", "iptables");
-  accept_port_rule("nut", "OUTPUT", "udp", 9000);
-  import = mesh_event_sock_create(eth_if_name);
-  invite_peer = invite_in_container("relay", "peer");
-  invite_nut = invite_in_container("relay", "nut");
-  assert(invite_nut);
-  assert(invite_peer);
+	install_in_container("nut", "iptables");
+	accept_port_rule("nut", "OUTPUT", "udp", 9000);
+	import = mesh_event_sock_create(eth_if_name);
+	invite_peer = invite_in_container("relay", "peer");
+	invite_nut = invite_in_container("relay", "nut");
+	assert(invite_nut);
+	assert(invite_peer);
 
-  // Run nodes and open a channel
+	// Run nodes and open a channel
 
-  node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
-  node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
-  node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
+	node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
+	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
 
-  wait_for_event(channel_conn_cb, 30);
-  assert(joined);
+	wait_for_event(channel_conn_cb, 30);
+	assert_int_equal(joined, true);
 
-  wait_for_event(channel_conn_cb, 15);
-  assert(channel_opened);
+	wait_for_event(channel_conn_cb, 15);
+	assert_int_equal(channel_opened, true);
 
-  // Simulate a network failure
+	// Simulate a network failure
 
-  node_reachable = false;
-  block_node_ip("nut");
+	node_reachable = false;
+	block_node_ip("nut");
 
-  // Sending SIGUSR1 signal to node-under-test indicating the network failure
+	// Sending SIGUSR1 signal to node-under-test indicating the network failure
 
-  node_step_in_container("nut", "SIGUSR1");
+	node_step_in_container("nut", "SIGUSR1");
 
-  // Wait for node to become unreachable
+	// Wait for node to become unreachable
 
-  wait_for_event(channel_conn_cb, 100);
-  assert(node_unreachable);
+	wait_for_event(channel_conn_cb, 100);
+	assert_int_equal(node_unreachable, true);
 
-  // Restore the network
+	// Restore the network
 
-  unblock_node_ip("nut");
+	unblock_node_ip("nut");
 
-  // Wait for node to become reachable after restoring n/w
+	// Wait for node to become reachable after restoring n/w
 
-  wait_for_event(channel_conn_cb, 100);
-  assert(node_reachable);
+	wait_for_event(channel_conn_cb, 100);
+	assert_int_equal(node_reachable, true);
 
-  // Wait for peer node to receive data via channel without any error
+	// Wait for peer node to receive data via channel without any error
 
-  wait_for_event(channel_conn_cb, 90);
-  assert_int_equal(channel_received, true);
+	wait_for_event(channel_conn_cb, 90);
+	assert_int_equal(channel_received, true);
 
-  free(invite_nut);
-  free(invite_peer);
-  free(import);
-  return true;
+	free(invite_nut);
+	free(invite_peer);
+	free(import);
+	return true;
 }
 
 /* Execute channel connections Test Case # 8 - receiving an error when node-under-test
     tries to send data on channel to peer node after peer node stops and starts the
     node instance */
 static void test_case_channel_conn_08(void **state) {
-  execute_test(test_steps_channel_conn_08, state);
-  return;
+	execute_test(test_steps_channel_conn_08, state);
+	return;
 }
 
 /* Test Steps for Meta-connections Test Case # 8
@@ -654,94 +674,94 @@ static void test_case_channel_conn_08(void **state) {
     Peer node should receive error(as length = 0) in receive callback of peer node's instance.
 */
 static bool test_steps_channel_conn_08(void) {
-  char *invite_nut, *invite_peer;
-  char *import;
+	char *invite_nut, *invite_peer;
+	char *import;
 
-  joined = false;
-  channel_opened = false;
-  node_restarted = false;
-  received_error = false;
+	joined = false;
+	channel_opened = false;
+	node_restarted = false;
+	received_error = false;
 
-  // Setup containers
+	// Setup containers
 
-  import = mesh_event_sock_create(eth_if_name);
-  invite_peer = invite_in_container("relay", "peer");
-  invite_nut = invite_in_container("relay", "nut");
-  assert(invite_nut);
-  assert(invite_peer);
+	import = mesh_event_sock_create(eth_if_name);
+	invite_peer = invite_in_container("relay", "peer");
+	invite_nut = invite_in_container("relay", "nut");
+	assert(invite_nut);
+	assert(invite_peer);
 
-  // Run nodes and open a channel between NUT and peer
+	// Run nodes and open a channel between NUT and peer
 
-  node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
-  node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
-  node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
+	node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
+	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
 
-  wait_for_event(channel_conn_cb, 10);
-  assert_int_equal(joined, true);
+	wait_for_event(channel_conn_cb, 10);
+	assert_int_equal(joined, true);
 
-  wait_for_event(channel_conn_cb, 10);
-  assert_int_equal(channel_opened, true);
+	wait_for_event(channel_conn_cb, 10);
+	assert_int_equal(channel_opened, true);
 
-  // Wait for NUT node to restart it's instance
+	// Wait for NUT node to restart it's instance
 
-  wait_for_event(channel_conn_cb, 60);
-  assert_int_equal(node_restarted, true);
+	wait_for_event(channel_conn_cb, 60);
+	assert_int_equal(node_restarted, true);
 
-  sleep(60);
+	sleep(60);
 
-  // Signal peer to send data to NUT node via channel
+	// Signal peer to send data to NUT node via channel
 
-  node_step_in_container("peer", "SIGUSR1");
+	node_step_in_container("peer", "SIGUSR1");
 
-  // Wait for peer to receive channel error
+	// Wait for peer to receive channel error
 
-  wait_for_event(channel_conn_cb, 10);
-  assert_int_equal(received_error, true);
+	wait_for_event(channel_conn_cb, 10);
+	assert_int_equal(received_error, true);
 
-  free(invite_nut);
-  free(invite_peer);
-  free(import);
-  return true;
+	free(invite_nut);
+	free(invite_peer);
+	free(import);
+	return true;
 }
 
 static int black_box_group_setup(void **state) {
-  const char *nodes[] = { "peer", "nut", "relay" };
-  int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
+	const char *nodes[] = { "peer", "nut", "relay" };
+	int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
 
-  printf("Creating Containers\n");
-  destroy_containers();
-  create_containers(nodes, num_nodes);
+	printf("Creating Containers\n");
+	destroy_containers();
+	create_containers(nodes, num_nodes);
 
-  return 0;
+	return 0;
 }
 
 static int black_box_group_teardown(void **state) {
-  printf("Destroying Containers\n");
-  destroy_containers();
+	printf("Destroying Containers\n");
+	destroy_containers();
 
-  return 0;
+	return 0;
 }
 
 int test_case_channel_conn(void) {
-  const struct CMUnitTest blackbox_group0_tests[] = {
-        cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_01, setup_test, teardown_test,
-            (void *)&test_case_channel_conn_01_state),
-        cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_02, setup_test, teardown_test,
-            (void *)&test_case_channel_conn_02_state),
-        cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_03, setup_test, teardown_test,
-            (void *)&test_case_channel_conn_03_state),
-        cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_04, setup_test, teardown_test,
-            (void *)&test_case_channel_conn_04_state),
-        cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_05, setup_test, teardown_test,
-            (void *)&test_case_channel_conn_05_state),
-        cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_06, setup_test, teardown_test,
-            (void *)&test_case_channel_conn_06_state),
-        cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_07, setup_test, teardown_test,
-            (void *)&test_case_channel_conn_07_state),
-        cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_08, setup_test, teardown_test,
-            (void *)&test_case_channel_conn_08_state)
-  };
-  total_tests += sizeof(blackbox_group0_tests) / sizeof(blackbox_group0_tests[0]);
+	const struct CMUnitTest blackbox_group0_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_01, setup_test, teardown_test,
+		(void *)&test_case_channel_conn_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_02, setup_test, teardown_test,
+		(void *)&test_case_channel_conn_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_03, setup_test, teardown_test,
+		(void *)&test_case_channel_conn_03_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_04, setup_test, teardown_test,
+		(void *)&test_case_channel_conn_04_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_05, setup_test, teardown_test,
+		(void *)&test_case_channel_conn_05_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_06, setup_test, teardown_test,
+		(void *)&test_case_channel_conn_06_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_07, setup_test, teardown_test,
+		(void *)&test_case_channel_conn_07_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_08, setup_test, teardown_test,
+		(void *)&test_case_channel_conn_08_state)
+	};
+	total_tests += sizeof(blackbox_group0_tests) / sizeof(blackbox_group0_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_group0_tests, black_box_group_setup, black_box_group_teardown);
+	return cmocka_run_group_tests(blackbox_group0_tests, black_box_group_setup, black_box_group_teardown);
 }

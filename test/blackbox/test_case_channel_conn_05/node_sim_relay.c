@@ -31,26 +31,27 @@
 #define CMD_LINE_ARG_INVITEURL  5
 
 int main(int argc, char *argv[]) {
-    struct timeval main_loop_wait = { 5, 0 };
+	struct timeval main_loop_wait = { 5, 0 };
 
-  // Setup required signals
+	// Setup required signals
 
-  setup_signals();
+	setup_signals();
 
-  // Run relay node instance
+	// Run relay node instance
 
-  meshlink_handle_t *mesh = meshlink_open("testconf", argv[CMD_LINE_ARG_NODENAME],
-                              "test_channel_conn", atoi(argv[CMD_LINE_ARG_DEVCLASS]));
-  assert(mesh);
-  meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);
+	meshlink_handle_t *mesh = meshlink_open("testconf", argv[CMD_LINE_ARG_NODENAME],
+	                                        "test_channel_conn", atoi(argv[CMD_LINE_ARG_DEVCLASS]));
+	assert(mesh);
+	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);
 
 	meshlink_start(mesh);
 
-  /* All test steps executed - wait for signals to stop/start or close the mesh */
-  while(test_running)
-        select(1, NULL, NULL, NULL, &main_loop_wait);
+	/* All test steps executed - wait for signals to stop/start or close the mesh */
+	while(test_running) {
+		select(1, NULL, NULL, NULL, &main_loop_wait);
+	}
 
-  meshlink_close(mesh);
+	meshlink_close(mesh);
 
 	return 0;
 }

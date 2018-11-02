@@ -19,12 +19,14 @@ bool wait_sync_flag(struct sync_flag *s, int seconds) {
 	struct timespec timeout;
 	clock_gettime(CLOCK_REALTIME, &timeout);
 	timeout.tv_sec += seconds;
-  pthread_mutex_lock(&s->mutex);
+	pthread_mutex_lock(&s->mutex);
+
 	while(!s->flag)
 		if(!pthread_cond_timedwait(&s->cond, &s->mutex, &timeout)) {
 			break;
 		}
-  pthread_mutex_unlock(&s->mutex);
+
+	pthread_mutex_unlock(&s->mutex);
 	return s->flag;
 }
 

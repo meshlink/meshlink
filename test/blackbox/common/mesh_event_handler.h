@@ -42,45 +42,45 @@
 /// mesh events
 // TODO: Add more mesh event if required.
 typedef enum {
-  NO_PREFERENCE = 0,
-  META_CONN_SUCCESSFUL,
-  META_CONN,
-  META_DISCONN,
-  META_CONN_CLOSED,
-  NODE_INVITATION,
-  CHANGED_IP_ADDRESS,
-  NODE_UNREACHABLE,
-  NODE_REACHABLE,
-  META_RECONN_SUCCESSFUL,
-  META_RECONN_FAILURE,
-  MESH_DATA_RECEIVED,
-  NODE_STARTED,
-  NODE_RESTARTED,
-  NODE_JOINED,
-  PORT_NO,
-  ERR_NETWORK,
-  MESH_DATA_VERIFED,
-  CHANNEL_OPENED,
-  CHANNEL_REQ_RECIEVED,
-  CHANNEL_CONNECTED,
-  WAITED,
-  CHANNEL_DATA_RECIEVED,
-  CHANNEL_CLOSED,
-  MESH_NODE_DISCOVERED,
-  INCOMING_META_CONN,
-  OUTGOING_META_CONN,
-  AUTO_DISCONN,
+	NO_PREFERENCE = 0,
+	META_CONN_SUCCESSFUL,
+	META_CONN,
+	META_DISCONN,
+	META_CONN_CLOSED,
+	NODE_INVITATION,
+	CHANGED_IP_ADDRESS,
+	NODE_UNREACHABLE,
+	NODE_REACHABLE,
+	META_RECONN_SUCCESSFUL,
+	META_RECONN_FAILURE,
+	MESH_DATA_RECEIVED,
+	NODE_STARTED,
+	NODE_RESTARTED,
+	NODE_JOINED,
+	PORT_NO,
+	ERR_NETWORK,
+	MESH_DATA_VERIFED,
+	CHANNEL_OPENED,
+	CHANNEL_REQ_RECIEVED,
+	CHANNEL_CONNECTED,
+	WAITED,
+	CHANNEL_DATA_RECIEVED,
+	CHANNEL_CLOSED,
+	MESH_NODE_DISCOVERED,
+	INCOMING_META_CONN,
+	OUTGOING_META_CONN,
+	AUTO_DISCONN,
 
-  MAX_EVENT           // Maximum event enum
+	MAX_EVENT           // Maximum event enum
 } mesh_event_t;
 
 /// mesh event UDP packet
 typedef struct mesh_event_payload {
-  uint32_t      client_id;
-  mesh_event_t  mesh_event;
-  uint16_t      payload_length;
-  uint8_t       payload[PAYLOAD_MAX_SIZE];
-}mesh_event_payload_t;
+	uint32_t      client_id;
+	mesh_event_t  mesh_event;
+	uint16_t      payload_length;
+	uint8_t       payload[PAYLOAD_MAX_SIZE];
+} mesh_event_payload_t;
 
 /// callback for handling the mesh event
 /** mesh event callback called from wait_for_event() if the mesh event UDP server gets a mesh event.
@@ -96,10 +96,10 @@ typedef void (*mesh_event_callback_t)(mesh_event_payload_t mesh_event_packet);
  *  @param ifname       Name of the network interface to which the socket has to be created.
  *
  *  @return             This function returns a NULL terminated string which has IP address and
- *  										port number of the server socket. The application should call free() after
- *											it has finished using the exported string.
+ *                                                                              port number of the server socket. The application should call free() after
+ *                                                                                      it has finished using the exported string.
  */
-extern char *mesh_event_sock_create(const char *ifname );
+extern char *mesh_event_sock_create(const char *ifname);
 
 /// Waits for the mesh event for about the given timeout.
 /** This function waits for the mesh event that's expected to occur for the given timeout. If a mesh event
@@ -121,12 +121,12 @@ extern bool wait_for_event(mesh_event_callback_t callback, int timeout);
  *  @param payload          Payload can also be attached along with the mesh event if any, else NULL can
  *                          can be specified.
  *  @param payload_length   Length of the payload if specified else 0 can be specified.
- *													the maximum payload size can be upto PAYLOAD_MAX_SIZE and if the
+ *                                                                                                      the maximum payload size can be upto PAYLOAD_MAX_SIZE and if the
  *                          PAYLOAD_MAX_SIZE macro is changed it should not exceed the UDP datagram size.
  *
  *  @return                  This function returns true on success else returns false.
  */
-extern bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payload, size_t payload_length );
+extern bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payload, size_t payload_length);
 
 /// Imports the server address, saves it and opens an UDP client socket.
 /** This function creates an UDP socket, binds it with given interface address and returns a NULL
@@ -137,7 +137,7 @@ extern bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payloa
  *
  *  @return                  This function returns true on success else returns false.
  */
-extern bool mesh_event_sock_connect(const char *server_address );
+extern bool mesh_event_sock_connect(const char *server_address);
 
 bool wait_for_event_only(mesh_event_callback_t callback, int t, mesh_event_t event);
 #endif // _MESH_EVENT_HANDLER_H_

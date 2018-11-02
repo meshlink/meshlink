@@ -1,6 +1,8 @@
 #!/bin/sh
 host=$(hostname)
-meshlinkrootpath="/home/${host}/meshlink"
+cd ../
+meshlinkrootpath=$(pwd)
+cd test/
 lxcpath="/var/lib/lxc"
 lxcbridge="lxcbr0"
 ethifname="wlp2s0"

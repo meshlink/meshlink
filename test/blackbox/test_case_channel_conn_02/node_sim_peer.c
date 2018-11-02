@@ -48,62 +48,66 @@ static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel,
 	(void)dat;
 	(void)len;
 
-  assert(port == CHANNEL_PORT);
-  if(!strcmp(channel->node->name, "nut")) {
-    meshlink_set_channel_receive_cb(mesh, channel, channel_receive_cb);
-    mesh->priv = channel;
+	assert(port == CHANNEL_PORT);
 
-    return true;
-  }
+	if(!strcmp(channel->node->name, "nut")) {
+		meshlink_set_channel_receive_cb(mesh, channel, channel_receive_cb);
+		mesh->priv = channel;
+
+		return true;
+	}
 
 	return false;
 }
 
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
-  if(len == 0) {
-    assert(mesh_event_sock_send(client_id, ERR_NETWORK, NULL, 0));
-    return;
-  }
+	if(len == 0) {
+		assert(mesh_event_sock_send(client_id, ERR_NETWORK, NULL, 0));
+		return;
+	}
 
-  if(!strcmp(channel->node->name, "nut")) {
-    if(!memcmp(dat, "test", 5)) {
-      assert(meshlink_channel_send(mesh, channel, "reply", 5) >= 0);
-    }
-  }
-  return;
+	if(!strcmp(channel->node->name, "nut")) {
+		if(!memcmp(dat, "test", 5)) {
+			assert(meshlink_channel_send(mesh, channel, "reply", 5) >= 0);
+		}
+	}
+
+	return;
 }
 
 int main(int argc, char *argv[]) {
-  struct timeval main_loop_wait = { 2, 0 };
-  struct timespec timeout = {0};
+	struct timeval main_loop_wait = { 2, 0 };
+	struct timespec timeout = {0};
 
-  // Import mesh event handler
+	// Import mesh event handler
 
-  if((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR] )) {
-    client_id = atoi(argv[CMD_LINE_ARG_CLIENTID]);
-    mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
-  }
+	if((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR])) {
+		client_id = atoi(argv[CMD_LINE_ARG_CLIENTID]);
+		mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
+	}
 
-  // Run peer node instance
+	// Run peer node instance
 
-  setup_signals();
+	setup_signals();
 
-  meshlink_handle_t *mesh = meshlink_open("testconf", argv[CMD_LINE_ARG_NODENAME],
-                              "test_channel_conn", atoi(argv[CMD_LINE_ARG_DEVCLASS]));
-  assert(mesh);
-  meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);
-  meshlink_set_channel_accept_cb(mesh, channel_accept);
+	meshlink_handle_t *mesh = meshlink_open("testconf", argv[CMD_LINE_ARG_NODENAME],
+	                                        "test_channel_conn", atoi(argv[CMD_LINE_ARG_DEVCLASS]));
+	assert(mesh);
+	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);
+	meshlink_set_channel_accept_cb(mesh, channel_accept);
 
-  if(argv[CMD_LINE_ARG_INVITEURL]) {
-    assert(meshlink_join(mesh, argv[CMD_LINE_ARG_INVITEURL]));
-  }
-  assert(meshlink_start(mesh));
+	if(argv[CMD_LINE_ARG_INVITEURL]) {
+		assert(meshlink_join(mesh, argv[CMD_LINE_ARG_INVITEURL]));
+	}
 
-  // All test steps executed - wait for signals to stop/start or close the mesh
-  while(test_running) {
-    select(1, NULL, NULL, NULL, &main_loop_wait);
-  }
-  meshlink_close(mesh);
+	assert(meshlink_start(mesh));
 
-  return EXIT_SUCCESS;
+	// All test steps executed - wait for signals to stop/start or close the mesh
+	while(test_running) {
+		select(1, NULL, NULL, NULL, &main_loop_wait);
+	}
+
+	meshlink_close(mesh);
+
+	return EXIT_SUCCESS;
 }

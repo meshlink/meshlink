@@ -38,20 +38,19 @@ char *choose_arch = NULL;
 int total_tests;
 
 int main(int argc, char *argv[]) {
-  /* Set configuration */
-  assert(argc >= (CMD_LINE_ARG_CHOOSE_ARCH + 1));
-  meshlink_root_path = argv[CMD_LINE_ARG_MESHLINK_ROOT_PATH];
-  lxc_path = argv[CMD_LINE_ARG_LXC_PATH];
-  lxc_bridge = argv[CMD_LINE_ARG_LXC_BRIDGE_NAME];
-  eth_if_name = argv[CMD_LINE_ARG_ETH_IF_NAME];
-  choose_arch = argv[CMD_LINE_ARG_CHOOSE_ARCH];
+	/* Set configuration */
+	assert(argc >= (CMD_LINE_ARG_CHOOSE_ARCH + 1));
+	meshlink_root_path = argv[CMD_LINE_ARG_MESHLINK_ROOT_PATH];
+	lxc_path = argv[CMD_LINE_ARG_LXC_PATH];
+	lxc_bridge = argv[CMD_LINE_ARG_LXC_BRIDGE_NAME];
+	eth_if_name = argv[CMD_LINE_ARG_ETH_IF_NAME];
+	choose_arch = argv[CMD_LINE_ARG_CHOOSE_ARCH];
+	int failed_tests = 0;
 
-  int failed_tests = 0;
+	failed_tests += test_case_channel_conn();
 
-  failed_tests += test_case_channel_conn();
+	printf("[ PASSED ] %d test(s).\n", total_tests - failed_tests);
+	printf("[ FAILED ] %d test(s).\n", failed_tests);
 
-  printf("[ PASSED ] %d test(s).\n", total_tests - failed_tests);
-  printf("[ FAILED ] %d test(s).\n", failed_tests);
-
-  return failed_tests;
+	return failed_tests;
 }
