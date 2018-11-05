@@ -36,18 +36,18 @@ static bool test_steps_mesh_start_02(void);
 
 /* State structure for meshlink_start Test Case #1 */
 static black_box_state_t test_mesh_start_01_state = {
-    .test_case_name = "test_case_mesh_start_01",
+	.test_case_name = "test_case_mesh_start_01",
 };
 
 /* State structure for meshlink_start Test Case #2 */
 static black_box_state_t test_mesh_start_02_state = {
-    .test_case_name = "test_case_mesh_start_02",
+	.test_case_name = "test_case_mesh_start_02",
 };
 
 /* Execute meshlink_start Test Case # 1*/
 static void test_case_mesh_start_01(void **state) {
-	 execute_test(test_steps_mesh_start_01, state);
-   return;
+	execute_test(test_steps_mesh_start_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_start Test Case # 1
@@ -60,32 +60,32 @@ static void test_case_mesh_start_01(void **state) {
 */
 static bool test_steps_mesh_start_01(void) {
 
-  // Open instance
+	// Open instance
 
-  bool result = false;
-  meshlink_handle_t *mesh = meshlink_open("start_conf", "foo", "test", DEV_CLASS_STATIONARY);
-  assert(mesh);
+	bool result = false;
+	meshlink_handle_t *mesh = meshlink_open("start_conf", "foo", "test", DEV_CLASS_STATIONARY);
+	assert(mesh);
 
-  // Run node instance
+	// Run node instance
 
-  result = meshlink_start(mesh);
+	result = meshlink_start(mesh);
 
-  // Clean up
-  meshlink_close(mesh);
-  meshlink_destroy("start_conf");
+	// Clean up
+	meshlink_close(mesh);
+	meshlink_destroy("start_conf");
 
-  if (!result) {
-    fprintf(stderr, "meshlink_start status1: %s\n", meshlink_strerror(meshlink_errno));
-    return false;
-  } else {
-    return true;
-  }
+	if(!result) {
+		fprintf(stderr, "meshlink_start status1: %s\n", meshlink_strerror(meshlink_errno));
+		return false;
+	} else {
+		return true;
+	}
 }
 
 /* Execute meshlink_start Test Case # 2*/
 static void test_case_mesh_start_02(void **state) {
-  execute_test(test_steps_mesh_start_02, state);
-  return;
+	execute_test(test_steps_mesh_start_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_start Test Case # 2
@@ -97,33 +97,33 @@ static void test_case_mesh_start_02(void **state) {
     meshlink_start API handles the invalid parameter by returning false.
 */
 static bool test_steps_mesh_start_02(void) {
-  bool result = false;
-  meshlink_destroy("start_conf");
-  meshlink_handle_t *mesh = meshlink_open("start_conf", "foo", "test", DEV_CLASS_STATIONARY);
-  assert(mesh);
+	bool result = false;
+	meshlink_destroy("start_conf");
+	meshlink_handle_t *mesh = meshlink_open("start_conf", "foo", "test", DEV_CLASS_STATIONARY);
+	assert(mesh);
 
-  // Run instance with NULL argument
+	// Run instance with NULL argument
 
-  result = meshlink_start(NULL);
-  assert_int_equal(result, true);
+	result = meshlink_start(NULL);
+	assert_int_equal(result, true);
 
-  // Clean up
+	// Clean up
 
-  meshlink_close(mesh);
-  meshlink_destroy("start_conf");
-  return true;
+	meshlink_close(mesh);
+	meshlink_destroy("start_conf");
+	return true;
 }
 
 int test_meshlink_start(void) {
-  const struct CMUnitTest blackbox_start_tests[] = {
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_start_01, NULL, NULL,
-          (void *)&test_mesh_start_01_state),
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_start_02, NULL, NULL,
-          (void *)&test_mesh_start_02_state)
+	const struct CMUnitTest blackbox_start_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_start_01, NULL, NULL,
+		(void *)&test_mesh_start_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_start_02, NULL, NULL,
+		(void *)&test_mesh_start_02_state)
 
-  };
+	};
 
-  total_tests += sizeof(blackbox_start_tests) / sizeof(blackbox_start_tests[0]);
+	total_tests += sizeof(blackbox_start_tests) / sizeof(blackbox_start_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_start_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_start_tests, NULL, NULL);
 }

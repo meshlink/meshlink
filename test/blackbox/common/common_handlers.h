@@ -24,13 +24,13 @@
 #include "common_types.h"
 
 #define PRINT_TEST_CASE_HEADER()        if(state_ptr) \
-                                            fprintf(stderr, "[ %s ]\n", state_ptr->test_case_name)
+		fprintf(stderr, "[ %s ]\n", state_ptr->test_case_name)
 #define PRINT_TEST_CASE_MSG(...)        if(state_ptr) \
-                                            do { \
-                                                fprintf(stderr, "[ %s ] ", \
-                                                    state_ptr->test_case_name); \
-                                                fprintf(stderr, __VA_ARGS__); \
-                                            } while(0)
+		do { \
+			fprintf(stderr, "[ %s ] ", \
+			        state_ptr->test_case_name); \
+			fprintf(stderr, __VA_ARGS__); \
+		} while(0)
 
 extern bool meta_conn_status[];
 extern bool node_reachable_status[];
@@ -46,8 +46,8 @@ void mesh_close_signal_handler(int a);
 void mesh_stop_start_signal_handler(int a);
 void setup_signals(void);
 void meshlink_callback_node_status(meshlink_handle_t *mesh, meshlink_node_t *node,
-                                        bool reachable);
+                                   bool reachable);
 void meshlink_callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t level,
-                                      const char *text);
+                              const char *text);
 
 #endif // COMMON_HANDLERS_H

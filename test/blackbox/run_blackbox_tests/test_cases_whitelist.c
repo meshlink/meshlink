@@ -42,17 +42,17 @@ static bool test_steps_mesh_whitelist_03(void);
 
 /* State structure for meshlink_whitelist Test Case #1 */
 static black_box_state_t test_mesh_whitelist_01_state = {
-  .test_case_name = "test_case_mesh_whitelist_01",
+	.test_case_name = "test_case_mesh_whitelist_01",
 };
 
 /* State structure for meshlink_whitelist Test Case #2 */
 static black_box_state_t test_mesh_whitelist_02_state = {
-  .test_case_name = "test_case_mesh_whitelist_02",
+	.test_case_name = "test_case_mesh_whitelist_02",
 };
 
 /* State structure for meshlink_whitelist Test Case #3 */
 static black_box_state_t test_mesh_whitelist_03_state = {
-  .test_case_name = "test_case_mesh_whitelist_03",
+	.test_case_name = "test_case_mesh_whitelist_03",
 };
 
 static bool rec_stat;
@@ -65,8 +65,8 @@ static pthread_cond_t reachable_cond = PTHREAD_COND_INITIALIZER;
 
 /* Execute meshlink_whitelist Test Case # 1*/
 static void test_case_mesh_whitelist_01(void **state) {
-  execute_test(test_steps_mesh_whitelist_01, state);
-  return;
+	execute_test(test_steps_mesh_whitelist_01, state);
+	return;
 }
 
 
@@ -74,19 +74,19 @@ static void receive(meshlink_handle_t *mesh, meshlink_node_t *src, const void *d
 	const char *msg = data;
 	assert(len);
 
-  pthread_mutex_lock(& lock_receive);
-  rec_stat = true;
-  assert(!pthread_cond_broadcast(&receive_cond));
-  pthread_mutex_unlock(& lock_receive);
+	pthread_mutex_lock(& lock_receive);
+	rec_stat = true;
+	assert(!pthread_cond_broadcast(&receive_cond));
+	pthread_mutex_unlock(& lock_receive);
 
 }
 
 static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reach) {
 	if(!strcmp(node->name, "bar")) {
-    pthread_mutex_lock(&reachable_lock);
-    reachable = reach;
-    assert(!pthread_cond_broadcast(&reachable_cond));
-    pthread_mutex_unlock(&reachable_lock);
+		pthread_mutex_lock(&reachable_lock);
+		reachable = reach;
+		assert(!pthread_cond_broadcast(&reachable_cond));
+		pthread_mutex_unlock(&reachable_lock);
 	}
 }
 
@@ -101,7 +101,7 @@ static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reach
     meshlink_whitelist API whitelists the blacklisted node
 */
 static bool test_steps_mesh_whitelist_01(void) {
-  struct timespec timeout = {0};
+	struct timespec timeout = {0};
 
 	// Open two new meshlink instance.
 
@@ -133,13 +133,15 @@ static bool test_steps_mesh_whitelist_01(void) {
 	assert(meshlink_start(mesh2));
 
 	// Nodes should know each other
-  timeout.tv_sec = time(NULL) + 10;
-  pthread_mutex_lock(&reachable_lock);
-  while(reachable == false) {
-    assert(!pthread_cond_timedwait(&reachable_cond, &reachable_lock, &timeout));
-  }
-  pthread_mutex_unlock(&reachable_lock);
-  sleep(1);
+	timeout.tv_sec = time(NULL) + 10;
+	pthread_mutex_lock(&reachable_lock);
+
+	while(reachable == false) {
+		assert(!pthread_cond_timedwait(&reachable_cond, &reachable_lock, &timeout));
+	}
+
+	pthread_mutex_unlock(&reachable_lock);
+	sleep(1);
 
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
 	assert(bar);
@@ -148,35 +150,41 @@ static bool test_steps_mesh_whitelist_01(void) {
 
 	rec_stat = false;
 	assert(meshlink_send(mesh1, bar, "test", 5));
-  timeout.tv_sec = time(NULL) + 10;
-  pthread_mutex_lock(& lock_receive);
-  if(rec_stat == false) {
-    assert(pthread_cond_timedwait(&receive_cond, &lock_receive, &timeout) == 0);
-  }
-  pthread_mutex_unlock(& lock_receive);
+	timeout.tv_sec = time(NULL) + 10;
+	pthread_mutex_lock(& lock_receive);
+
+	if(rec_stat == false) {
+		assert(pthread_cond_timedwait(&receive_cond, &lock_receive, &timeout) == 0);
+	}
+
+	pthread_mutex_unlock(& lock_receive);
 
 
 	meshlink_blacklist(mesh1, foo);
 
 	rec_stat = false;
 	assert(meshlink_send(mesh1, bar, "test", 5));
-  timeout.tv_sec = time(NULL) + 10;
-  pthread_mutex_lock(& lock_receive);
-  if(rec_stat == false) {
-    int err = pthread_cond_timedwait(&receive_cond, &lock_receive, &timeout);
-    assert(err == ETIMEDOUT);
-  }
-  pthread_mutex_unlock(& lock_receive);
+	timeout.tv_sec = time(NULL) + 10;
+	pthread_mutex_lock(& lock_receive);
+
+	if(rec_stat == false) {
+		int err = pthread_cond_timedwait(&receive_cond, &lock_receive, &timeout);
+		assert(err == ETIMEDOUT);
+	}
+
+	pthread_mutex_unlock(& lock_receive);
 	meshlink_whitelist(mesh1, foo);
 
 	rec_stat = false;
 	bool result = meshlink_send(mesh2, foo, "test", 5);
-  timeout.tv_sec = time(NULL) + 10;
-  pthread_mutex_lock(& lock_receive);
-  if(rec_stat == false) {
-    assert(pthread_cond_timedwait(&receive_cond, &lock_receive, &timeout) == 0);
-  }
-  pthread_mutex_unlock(& lock_receive);
+	timeout.tv_sec = time(NULL) + 10;
+	pthread_mutex_lock(& lock_receive);
+
+	if(rec_stat == false) {
+		assert(pthread_cond_timedwait(&receive_cond, &lock_receive, &timeout) == 0);
+	}
+
+	pthread_mutex_unlock(& lock_receive);
 
 	// Clean up.
 
@@ -197,13 +205,13 @@ static bool test_steps_mesh_whitelist_01(void) {
     meshlink_whitelist API handles the invalid parameter when called by giving proper error number.
 */
 static void test_case_mesh_whitelist_02(void **state) {
-	 execute_test(test_steps_mesh_whitelist_02, state);
-   return;
+	execute_test(test_steps_mesh_whitelist_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_whitelist Test Case # 2*/
 static bool test_steps_mesh_whitelist_02(void) {
-  struct timespec timeout = {0};
+	struct timespec timeout = {0};
 
 	// Open two new meshlink instance.
 
@@ -233,12 +241,14 @@ static bool test_steps_mesh_whitelist_02(void) {
 	assert(meshlink_start(mesh2));
 
 	// Nodes should know each other
-  timeout.tv_sec = time(NULL) + 10;
-  pthread_mutex_lock(&reachable_lock);
-  while(reachable == false) {
-    assert(!pthread_cond_timedwait(&reachable_cond, &reachable_lock, &timeout));
-  }
-  pthread_mutex_unlock(&reachable_lock);
+	timeout.tv_sec = time(NULL) + 10;
+	pthread_mutex_lock(&reachable_lock);
+
+	while(reachable == false) {
+		assert(!pthread_cond_timedwait(&reachable_cond, &reachable_lock, &timeout));
+	}
+
+	pthread_mutex_unlock(&reachable_lock);
 
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
 	assert(bar);
@@ -252,7 +262,7 @@ static bool test_steps_mesh_whitelist_02(void) {
 	// Passing NULL as mesh handle but with valid node handle 'foo'
 
 	meshlink_whitelist(NULL, foo);
-  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	// Clean up.
 
@@ -266,8 +276,8 @@ static bool test_steps_mesh_whitelist_02(void) {
 
 /* Execute meshlink_whitelist Test Case # 3*/
 static void test_case_mesh_whitelist_03(void **state) {
-	 execute_test(test_steps_mesh_whitelist_03, state);
-   return;
+	execute_test(test_steps_mesh_whitelist_03, state);
+	return;
 }
 
 /* Test Steps for meshlink_whitelist Test Case # 3
@@ -289,7 +299,7 @@ static bool test_steps_mesh_whitelist_03(void) {
 	assert(meshlink_start(mesh));
 
 	meshlink_whitelist(mesh, NULL);
-  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	// Clean up.
 
@@ -299,16 +309,16 @@ static bool test_steps_mesh_whitelist_03(void) {
 }
 
 int test_meshlink_whitelist(void) {
-  const struct CMUnitTest blackbox_whitelist_tests[] = {
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_whitelist_01, NULL, NULL,
-            (void *)&test_mesh_whitelist_01_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_whitelist_02, NULL, NULL,
-            (void *)&test_mesh_whitelist_02_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_whitelist_03, NULL, NULL,
-            (void *)&test_mesh_whitelist_03_state)
-  };
+	const struct CMUnitTest blackbox_whitelist_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_whitelist_01, NULL, NULL,
+		(void *)&test_mesh_whitelist_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_whitelist_02, NULL, NULL,
+		(void *)&test_mesh_whitelist_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_whitelist_03, NULL, NULL,
+		(void *)&test_mesh_whitelist_03_state)
+	};
 
-  total_tests += sizeof(blackbox_whitelist_tests) / sizeof(blackbox_whitelist_tests[0]);
+	total_tests += sizeof(blackbox_whitelist_tests) / sizeof(blackbox_whitelist_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_whitelist_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_whitelist_tests, NULL, NULL);
 }

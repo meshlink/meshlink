@@ -40,23 +40,23 @@ static bool test_get_fingerprint_cb_02(void);
 static void test_case_get_fingerprint_cb_03(void **state);
 static bool test_get_fingerprint_cb_03(void);
 
- /* State structure for get_fingerprint Test Case #1 */
+/* State structure for get_fingerprint Test Case #1 */
 static black_box_state_t test_case_get_fingerprint_cb_01_state = {
-    .test_case_name = "test_case_get_fingerprint_cb_01",
+	.test_case_name = "test_case_get_fingerprint_cb_01",
 };
 /* State structure for get_fingerprint Test Case #2 */
 static black_box_state_t test_case_get_fingerprint_cb_02_state = {
-    .test_case_name = "test_case_get_fingerprint_cb_02",
+	.test_case_name = "test_case_get_fingerprint_cb_02",
 };
 /* State structure for get_fingerprint Test Case #3 */
 static black_box_state_t test_case_get_fingerprint_cb_03_state = {
-    .test_case_name = "test_case_get_fingerprint_cb_03",
+	.test_case_name = "test_case_get_fingerprint_cb_03",
 };
 
 /* Execute get_fingerprint Test Case # 1 - Valid Case of obtaing publickey of NUT */
 static void test_case_get_fingerprint_cb_01(void **state) {
-    execute_test(test_get_fingerprint_cb_01, state);
-    return;
+	execute_test(test_get_fingerprint_cb_01, state);
+	return;
 }
 /* Test Steps for get_fingerprint Test Case # 1 - Valid case
 
@@ -68,30 +68,30 @@ static void test_case_get_fingerprint_cb_01(void **state) {
     Obtain fingerprint of NUT successfully.
 */
 static bool test_get_fingerprint_cb_01(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  meshlink_handle_t *mesh_handle = meshlink_open("getfingerprintconf", "nut", "test", 1);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	/* Create meshlink instance */
+	meshlink_handle_t *mesh_handle = meshlink_open("getfingerprintconf", "nut", "test", 1);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  meshlink_node_t *node = meshlink_get_self(mesh_handle);
-  assert(node != NULL);
+	meshlink_node_t *node = meshlink_get_self(mesh_handle);
+	assert(node != NULL);
 
-  char *fp = meshlink_get_fingerprint(mesh_handle, node);
-  assert_int_not_equal(fp, NULL);
+	char *fp = meshlink_get_fingerprint(mesh_handle, node);
+	assert_int_not_equal(fp, NULL);
 
-  meshlink_close(mesh_handle);
-  meshlink_destroy("getfingerprintconf");
+	meshlink_close(mesh_handle);
+	meshlink_destroy("getfingerprintconf");
 
-  return true;
+	return true;
 }
 
 /* Execute get_fingerprint Test Case # 2 - Invalid Case - trying t0 obtain publickey of a node in a
    mesh by passing NULL as mesh handle argument*/
 static void test_case_get_fingerprint_cb_02(void **state) {
-    execute_test(test_get_fingerprint_cb_02, state);
-    return;
+	execute_test(test_get_fingerprint_cb_02, state);
+	return;
 }
 
 /* Test Steps for get_fingerprint Test Case # 2 - Invalid case
@@ -105,35 +105,35 @@ static void test_case_get_fingerprint_cb_02(void **state) {
     Return NULL by reporting error successfully.
 */
 static bool test_get_fingerprint_cb_02(void) {
-  /* Set up logging for Meshlink */
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	/* Set up logging for Meshlink */
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  PRINT_TEST_CASE_MSG("Opening NUT\n");
-  meshlink_handle_t *mesh_handle = meshlink_open("getfingerprintconf", "nut", "test", 1);
-  assert(mesh_handle);
+	/* Create meshlink instance */
+	PRINT_TEST_CASE_MSG("Opening NUT\n");
+	meshlink_handle_t *mesh_handle = meshlink_open("getfingerprintconf", "nut", "test", 1);
+	assert(mesh_handle);
 
-  /* Set up logging for Meshlink with the newly acquired Mesh Handle */
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  /* Getting node handle for itself */
-  meshlink_node_t *node = meshlink_get_self(mesh_handle);
-  assert(node != NULL);
+	/* Set up logging for Meshlink with the newly acquired Mesh Handle */
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	/* Getting node handle for itself */
+	meshlink_node_t *node = meshlink_get_self(mesh_handle);
+	assert(node != NULL);
 
-  /* passing NULL as mesh handle for meshlink_get_fingerprint API */
-  char *fp = meshlink_get_fingerprint(NULL, node);
-  assert_int_equal(fp, NULL);
+	/* passing NULL as mesh handle for meshlink_get_fingerprint API */
+	char *fp = meshlink_get_fingerprint(NULL, node);
+	assert_int_equal(fp, NULL);
 
-  meshlink_close(mesh_handle);
-  meshlink_destroy("getfingerprintconf");
+	meshlink_close(mesh_handle);
+	meshlink_destroy("getfingerprintconf");
 
-  return true;
+	return true;
 }
 
 /* Execute get_fingerprint Test Case # 3 - Invalid Case - trying t0 obtain publickey of a node in a
    mesh by passing NULL as node handle argument */
 static void test_case_get_fingerprint_cb_03(void **state) {
-    execute_test(test_get_fingerprint_cb_03, state);
-    return;
+	execute_test(test_get_fingerprint_cb_03, state);
+	return;
 }
 /* Test Steps for get_fingerprint Test Case # 3 - Invalid case
 
@@ -146,34 +146,34 @@ static void test_case_get_fingerprint_cb_03(void **state) {
     Return NULL by reporting error successfully.
 */
 static bool test_get_fingerprint_cb_03(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  meshlink_handle_t *mesh_handle = meshlink_open("getfingerprintconf", "nut", "test", 1);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	/* Create meshlink instance */
+	meshlink_handle_t *mesh_handle = meshlink_open("getfingerprintconf", "nut", "test", 1);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  char *fp = meshlink_get_fingerprint(mesh_handle, NULL);
-  assert_int_equal(fp, NULL);
+	char *fp = meshlink_get_fingerprint(mesh_handle, NULL);
+	assert_int_equal(fp, NULL);
 
-  meshlink_close(mesh_handle);
-  meshlink_destroy("getfingerprintconf");
+	meshlink_close(mesh_handle);
+	meshlink_destroy("getfingerprintconf");
 
-  return true;
+	return true;
 }
 
 int test_meshlink_get_fingerprint(void) {
-  const struct CMUnitTest blackbox_get_fingerprint_tests[] = {
-    cmocka_unit_test_prestate_setup_teardown(test_case_get_fingerprint_cb_01, NULL, NULL,
-          (void *)&test_case_get_fingerprint_cb_01_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_get_fingerprint_cb_02, NULL, NULL,
-          (void *)&test_case_get_fingerprint_cb_02_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_get_fingerprint_cb_03, NULL, NULL,
-          (void *)&test_case_get_fingerprint_cb_03_state)
-  };
+	const struct CMUnitTest blackbox_get_fingerprint_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_get_fingerprint_cb_01, NULL, NULL,
+		(void *)&test_case_get_fingerprint_cb_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_get_fingerprint_cb_02, NULL, NULL,
+		(void *)&test_case_get_fingerprint_cb_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_get_fingerprint_cb_03, NULL, NULL,
+		(void *)&test_case_get_fingerprint_cb_03_state)
+	};
 
-  total_tests += sizeof(blackbox_get_fingerprint_tests) / sizeof(blackbox_get_fingerprint_tests[0]);
+	total_tests += sizeof(blackbox_get_fingerprint_tests) / sizeof(blackbox_get_fingerprint_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_get_fingerprint_tests ,NULL , NULL);
+	return cmocka_run_group_tests(blackbox_get_fingerprint_tests , NULL , NULL);
 
 }

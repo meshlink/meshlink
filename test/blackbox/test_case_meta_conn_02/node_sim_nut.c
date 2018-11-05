@@ -35,74 +35,81 @@
 static bool conn_status = false;
 
 static void callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t level,
-                                      const char *text) {
-  char connection_match_msg[100];
+                            const char *text) {
+	char connection_match_msg[100];
 
-  fprintf(stderr, "meshlink>> %s\n", text);
+	fprintf(stderr, "meshlink>> %s\n", text);
 
-  if(strstr(text, "Connection") || strstr(text, "connection")) {
-    assert(snprintf(connection_match_msg, sizeof(connection_match_msg),
-                "Connection with peer") >= 0);
+	if(strstr(text, "Connection") || strstr(text, "connection")) {
+		assert(snprintf(connection_match_msg, sizeof(connection_match_msg),
+		                "Connection with peer") >= 0);
 
-    if(strstr(text, connection_match_msg) && strstr(text, "activated")) {
-      conn_status = true;
-      return;
-    }
+		if(strstr(text, connection_match_msg) && strstr(text, "activated")) {
+			conn_status = true;
+			return;
+		}
 
-    assert(snprintf(connection_match_msg, sizeof(connection_match_msg),
-                "Already connected to peer") >= 0);
-    if(strstr(text, connection_match_msg)) {
-      conn_status = true;
-      return;
-    }
+		assert(snprintf(connection_match_msg, sizeof(connection_match_msg),
+		                "Already connected to peer") >= 0);
 
-    assert(snprintf(connection_match_msg, sizeof(connection_match_msg),
-                "Connection closed by peer") >= 0);
-    if(strstr(text, connection_match_msg)) {
-      conn_status = false;
-      return;
-    }
+		if(strstr(text, connection_match_msg)) {
+			conn_status = true;
+			return;
+		}
 
-    assert(snprintf(connection_match_msg, sizeof(connection_match_msg),
-                "Closing connection with peer") >= 0);
-    if(strstr(text, connection_match_msg)) {
-      conn_status = false;
-      return;
-    }
-  }
+		assert(snprintf(connection_match_msg, sizeof(connection_match_msg),
+		                "Connection closed by peer") >= 0);
 
-  return;
+		if(strstr(text, connection_match_msg)) {
+			conn_status = false;
+			return;
+		}
+
+		assert(snprintf(connection_match_msg, sizeof(connection_match_msg),
+		                "Closing connection with peer") >= 0);
+
+		if(strstr(text, connection_match_msg)) {
+			conn_status = false;
+			return;
+		}
+	}
+
+	return;
 }
 
 int main(int argc, char *argv[]) {
-    int client_id;
-    bool result = false;
-    int i;
+	int client_id;
+	bool result = false;
+	int i;
 
-    if((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR] )) {
-      client_id = atoi(argv[CMD_LINE_ARG_CLIENTID]);
-      mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
-    }
+	if((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR])) {
+		client_id = atoi(argv[CMD_LINE_ARG_CLIENTID]);
+		mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
+	}
 
-    execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
-    meshlink_set_log_cb(mesh_handle, MESHLINK_INFO, callback_logger);
-    if(argv[CMD_LINE_ARG_INVITEURL]) {
-        execute_join(argv[CMD_LINE_ARG_INVITEURL]);
-    }
-    execute_start();
-    if(!mesh_event_sock_send(client_id, NODE_STARTED, NULL, 0)) {
-      fprintf(stderr, "Trying to resend mesh event\n");
-      sleep(1);
-    }
+	execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
+	meshlink_set_log_cb(mesh_handle, MESHLINK_INFO, callback_logger);
 
-    /* Connectivity of peer */
-    while(!conn_status) {
-      sleep(1);
-    }
-    fprintf(stderr, "Connected with Peer\n");
-    assert(mesh_event_sock_send(client_id, META_CONN_SUCCESSFUL, "Connected with Peer", 30));
+	if(argv[CMD_LINE_ARG_INVITEURL]) {
+		execute_join(argv[CMD_LINE_ARG_INVITEURL]);
+	}
 
-    execute_close();
+	execute_start();
 
-    return 0;
+	if(!mesh_event_sock_send(client_id, NODE_STARTED, NULL, 0)) {
+		fprintf(stderr, "Trying to resend mesh event\n");
+		sleep(1);
+	}
+
+	/* Connectivity of peer */
+	while(!conn_status) {
+		sleep(1);
+	}
+
+	fprintf(stderr, "Connected with Peer\n");
+	assert(mesh_event_sock_send(client_id, META_CONN_SUCCESSFUL, "Connected with Peer", 30));
+
+	execute_close();
+
+	return 0;
 }

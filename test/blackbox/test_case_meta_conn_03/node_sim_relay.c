@@ -31,31 +31,33 @@
 #define CMD_LINE_ARG_INVITEURL  5
 
 int main(int argc, char *argv[]) {
-    struct timeval main_loop_wait = { 5, 0 };
+	struct timeval main_loop_wait = { 5, 0 };
 
-    int client_id = -1;
+	int client_id = -1;
 
-    if ((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR] )) {
-      client_id = atoi(argv[CMD_LINE_ARG_CLIENTID]);
-      mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
-    }
-    /* Setup required signals */
-    setup_signals();
+	if((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR])) {
+		client_id = atoi(argv[CMD_LINE_ARG_CLIENTID]);
+		mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
+	}
 
-    /* Execute test steps */
-    execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
-    execute_start();
+	/* Setup required signals */
+	setup_signals();
 
-    if (client_id != -1) {
-      if(!mesh_event_sock_send(client_id, NODE_STARTED, NULL, 0)) {
-        fprintf(stderr, "Trying to resend mesh event\n");
-        sleep(1);
-      }
-    }
+	/* Execute test steps */
+	execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
+	execute_start();
 
-    /* All test steps executed - wait for signals to stop/start or close the mesh */
-    while(test_running)
-        select(1, NULL, NULL, NULL, &main_loop_wait);
+	if(client_id != -1) {
+		if(!mesh_event_sock_send(client_id, NODE_STARTED, NULL, 0)) {
+			fprintf(stderr, "Trying to resend mesh event\n");
+			sleep(1);
+		}
+	}
 
-    execute_close();
+	/* All test steps executed - wait for signals to stop/start or close the mesh */
+	while(test_running) {
+		select(1, NULL, NULL, NULL, &main_loop_wait);
+	}
+
+	execute_close();
 }

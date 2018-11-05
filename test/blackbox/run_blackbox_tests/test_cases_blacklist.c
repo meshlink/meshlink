@@ -41,23 +41,23 @@ static bool test_steps_mesh_blacklist_03(void);
 
 /* State structure for meshlink_blacklist Test Case #1 */
 static black_box_state_t test_mesh_blacklist_01_state = {
-    .test_case_name = "test_case_mesh_blacklist_01",
+	.test_case_name = "test_case_mesh_blacklist_01",
 };
 
 /* State structure for meshlink_blacklist Test Case #2 */
 static black_box_state_t test_mesh_blacklist_02_state = {
-    .test_case_name = "test_case_mesh_blacklist_02",
+	.test_case_name = "test_case_mesh_blacklist_02",
 };
 
 /* State structure for meshlink_blacklist Test Case #3 */
 static black_box_state_t test_mesh_blacklist_03_state = {
-    .test_case_name = "test_case_mesh_blacklist_03",
+	.test_case_name = "test_case_mesh_blacklist_03",
 };
 
 /* Execute meshlink_blacklist Test Case # 1*/
 void test_case_mesh_blacklist_01(void **state) {
-	 execute_test(test_steps_mesh_blacklist_01, state);
-   return;
+	execute_test(test_steps_mesh_blacklist_01, state);
+	return;
 }
 
 static bool received;
@@ -65,11 +65,12 @@ static bool received;
 static void receive(meshlink_handle_t *mesh, meshlink_node_t *src, const void *data, size_t len) {
 	const char *msg = data;
 	assert(len);
+
 	if(!strcmp(src->name, "bar") && len == 5 && !strcmp(msg, "test")) {
-    received = true;
+		received = true;
 	}
 
-  return;
+	return;
 }
 
 static bool bar_reachable;
@@ -99,10 +100,10 @@ bool test_steps_mesh_blacklist_01(void) {
 	// Open two new meshlink instance.
 	meshlink_handle_t *mesh1 = meshlink_open("blacklist_conf.1", "foo", "blacklist", DEV_CLASS_BACKBONE);
 	assert(mesh1 != NULL);
-  meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_handle_t *mesh2 = meshlink_open("blacklist_conf.2", "bar", "blacklist", DEV_CLASS_BACKBONE);
 	assert(mesh2 != NULL);
-  meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_set_receive_cb(mesh1, receive);
 
 	// Start both instances
@@ -110,14 +111,14 @@ bool test_steps_mesh_blacklist_01(void) {
 	meshlink_set_node_status_cb(mesh1, status_cb);
 	assert(meshlink_start(mesh1));
 	assert(meshlink_start(mesh2));
-  sleep(1);
+	sleep(1);
 
 	char *foo_export = meshlink_export(mesh1);
 	assert(foo_export != NULL);
 	assert(meshlink_import(mesh2, foo_export));
 	char *bar_export = meshlink_export(mesh2);
 	assert(meshlink_import(mesh1, bar_export));
-  sleep(5);
+	sleep(5);
 	assert_int_equal(bar_reachable, true);
 
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
@@ -147,8 +148,8 @@ bool test_steps_mesh_blacklist_01(void) {
 
 /* Execute meshlink_blacklist Test Case # 2*/
 void test_case_mesh_blacklist_02(void **state) {
-	 execute_test(test_steps_mesh_blacklist_02, state);
-   return;
+	execute_test(test_steps_mesh_blacklist_02, state);
+	return;
 }
 
 
@@ -172,7 +173,7 @@ bool test_steps_mesh_blacklist_02(void) {
 
 	// Passing NULL as mesh handle and node handle being some valid node handle
 	meshlink_blacklist(NULL, node);
-  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	// Clean up.
 	meshlink_close(mesh);
@@ -182,8 +183,8 @@ bool test_steps_mesh_blacklist_02(void) {
 
 /* Execute meshlink_blacklist Test Case # 3*/
 void test_case_mesh_blacklist_03(void **state) {
-	 execute_test(test_steps_mesh_blacklist_03, state);
-   return;
+	execute_test(test_steps_mesh_blacklist_03, state);
+	return;
 }
 
 /* Test Steps for meshlink_blacklist Test Case # 3
@@ -204,7 +205,7 @@ bool test_steps_mesh_blacklist_03(void) {
 
 	// Passing NULL as node handle and mesh handle being some valid mesh handle value
 	meshlink_blacklist(mesh, NULL);
-  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	// Clean up.
 	meshlink_close(mesh);
@@ -215,15 +216,15 @@ bool test_steps_mesh_blacklist_03(void) {
 int test_meshlink_blacklist(void) {
 	const struct CMUnitTest blackbox_blacklist_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_blacklist_01, NULL, NULL,
-          (void *)&test_mesh_blacklist_01_state),
+		(void *)&test_mesh_blacklist_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_blacklist_02, NULL, NULL,
-          (void *)&test_mesh_blacklist_02_state),
+		(void *)&test_mesh_blacklist_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_blacklist_03, NULL, NULL,
-          (void *)&test_mesh_blacklist_03_state)
+		(void *)&test_mesh_blacklist_03_state)
 	};
 
-  total_tests += sizeof(blackbox_blacklist_tests) / sizeof(blackbox_blacklist_tests[0]);
+	total_tests += sizeof(blackbox_blacklist_tests) / sizeof(blackbox_blacklist_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_blacklist_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_blacklist_tests, NULL, NULL);
 }
 

@@ -38,23 +38,23 @@ static bool test_steps_mesh_get_address_03(void);
 
 /* State structure for meshlink_get_external_address Test Case #1 */
 static black_box_state_t test_mesh_get_address_01_state = {
-    .test_case_name = "test_case_mesh_get_address_01",
+	.test_case_name = "test_case_mesh_get_address_01",
 };
 
 /* State structure for meshlink_get_external_address Test Case #2 */
 static black_box_state_t test_mesh_get_address_02_state = {
-    .test_case_name = "test_case_mesh_get_address_02",
+	.test_case_name = "test_case_mesh_get_address_02",
 };
 
 /* State structure for meshlink_get_external_address Test Case #3 */
 static black_box_state_t test_mesh_get_address_03_state = {
-    .test_case_name = "test_case_mesh_get_address_03",
+	.test_case_name = "test_case_mesh_get_address_03",
 };
 
 /* Execute meshlink_get_external_address Test Case # 1 */
 static void test_case_mesh_get_address_01(void **state) {
-    execute_test(test_steps_mesh_get_address_01, state);
-    return;
+	execute_test(test_steps_mesh_get_address_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_external_address Test Case # 1
@@ -67,7 +67,7 @@ static void test_case_mesh_get_address_01(void **state) {
     API returns the external address successfully.
 */
 static bool test_steps_mesh_get_address_01(void) {
-  meshlink_handle_t *mesh = meshlink_open("getex_conf", "foo", "test", DEV_CLASS_STATIONARY);
+	meshlink_handle_t *mesh = meshlink_open("getex_conf", "foo", "test", DEV_CLASS_STATIONARY);
 	assert(mesh != NULL);
 	assert(meshlink_start(mesh));
 
@@ -77,13 +77,13 @@ static bool test_steps_mesh_get_address_01(void) {
 	free(addr);
 	meshlink_close(mesh);
 	meshlink_destroy("getex_conf");
-  return true;
+	return true;
 }
 
 /* Execute meshlink_get_external_address Test Case # 2 */
 static void test_case_mesh_get_address_02(void **state) {
-    execute_test(test_steps_mesh_get_address_02, state);
-    return;
+	execute_test(test_steps_mesh_get_address_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_external_address Test Case # 2
@@ -99,13 +99,13 @@ static bool test_steps_mesh_get_address_02(void) {
 	char *ext = meshlink_get_external_address(NULL);
 	assert_int_equal(ext, NULL);
 
-  return true;
+	return true;
 }
 
 /* Execute meshlink_get_external_address Test Case # 3 */
 static void test_case_mesh_get_address_03(void **state) {
-    execute_test(test_steps_mesh_get_address_03, state);
-    return;
+	execute_test(test_steps_mesh_get_address_03, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_external_address Test Case # 3 - Functionality test
@@ -118,7 +118,7 @@ static void test_case_mesh_get_address_03(void **state) {
     API returns the external address successfully even if the mesh is started.
 */
 static bool test_steps_mesh_get_address_03(void) {
-  meshlink_handle_t *mesh = meshlink_open("getex_conf", "foo", "test", DEV_CLASS_STATIONARY);
+	meshlink_handle_t *mesh = meshlink_open("getex_conf", "foo", "test", DEV_CLASS_STATIONARY);
 	assert(mesh != NULL);
 	assert(meshlink_start(mesh));
 
@@ -128,19 +128,19 @@ static bool test_steps_mesh_get_address_03(void) {
 	free(addr);
 	meshlink_close(mesh);
 	meshlink_destroy("getex_conf");
-  return true;
+	return true;
 }
 
 int test_meshlink_get_external_address(void) {
-  const struct CMUnitTest blackbox_get_ex_addr_tests[] = {
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_address_01, NULL, NULL,
-            (void *)&test_mesh_get_address_01_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_address_02, NULL, NULL,
-            (void *)&test_mesh_get_address_02_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_address_03, NULL, NULL,
-            (void *)&test_mesh_get_address_03_state)
+	const struct CMUnitTest blackbox_get_ex_addr_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_address_01, NULL, NULL,
+		(void *)&test_mesh_get_address_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_address_02, NULL, NULL,
+		(void *)&test_mesh_get_address_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_address_03, NULL, NULL,
+		(void *)&test_mesh_get_address_03_state)
 	};
-  total_tests += sizeof(blackbox_get_ex_addr_tests) / sizeof(blackbox_get_ex_addr_tests[0]);
+	total_tests += sizeof(blackbox_get_ex_addr_tests) / sizeof(blackbox_get_ex_addr_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_get_ex_addr_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_get_ex_addr_tests, NULL, NULL);
 }

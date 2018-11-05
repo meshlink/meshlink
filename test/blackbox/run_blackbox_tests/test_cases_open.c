@@ -45,33 +45,33 @@ static bool test_steps_mesh_open_05(void);
 
 /* State structure for meshlink_open Test Case #1 */
 static black_box_state_t test_mesh_open_01_state = {
-    .test_case_name = "test_case_mesh_open_01",
+	.test_case_name = "test_case_mesh_open_01",
 };
 
 /* State structure for meshlink_open Test Case #2 */
 static black_box_state_t test_mesh_open_02_state = {
-    .test_case_name = "test_case_mesh_open_02",
+	.test_case_name = "test_case_mesh_open_02",
 };
 
 /* State structure for meshlink_open Test Case #3 */
 static black_box_state_t test_mesh_open_03_state = {
-    .test_case_name = "test_case_mesh_open_03",
+	.test_case_name = "test_case_mesh_open_03",
 };
 
 /* State structure for meshlink_open Test Case #4 */
 static black_box_state_t test_mesh_open_04_state = {
-    .test_case_name = "test_case_mesh_open_04",
+	.test_case_name = "test_case_mesh_open_04",
 };
 
 /* State structure for meshlink_open Test Case #5 */
 static black_box_state_t test_mesh_open_05_state = {
-    .test_case_name = "test_case_mesh_open_05",
+	.test_case_name = "test_case_mesh_open_05",
 };
 
 /* Execute meshlink_open Test Case # 1*/
 static void test_case_mesh_open_01(void **state) {
-  execute_test(test_steps_mesh_open_01, state);
-  return;
+	execute_test(test_steps_mesh_open_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_open Test Case # 1
@@ -83,18 +83,18 @@ static void test_case_mesh_open_01(void **state) {
     meshlink_open API should successfully return a mesh handle.
 */
 static bool test_steps_mesh_open_01(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_handle_t *mesh = meshlink_open("open_conf", "foo", "test", DEV_CLASS_STATIONARY);
-  assert_int_not_equal(mesh, NULL);
-  meshlink_close(mesh);
-  meshlink_destroy("open_conf");
-  return true;
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh = meshlink_open("open_conf", "foo", "test", DEV_CLASS_STATIONARY);
+	assert_int_not_equal(mesh, NULL);
+	meshlink_close(mesh);
+	meshlink_destroy("open_conf");
+	return true;
 }
 
 /* Execute meshlink_open Test Case # 2*/
 static void test_case_mesh_open_02(void **state) {
-  execute_test(test_steps_mesh_open_02, state);
-  return;
+	execute_test(test_steps_mesh_open_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_open Test Case # 2
@@ -106,16 +106,16 @@ static void test_case_mesh_open_02(void **state) {
     meshlink_open API should successfully report error by returning NULL pointer
 */
 static bool test_steps_mesh_open_02(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_handle_t *mesh = meshlink_open(NULL, "foo", "test", DEV_CLASS_STATIONARY);
-  assert_int_equal(mesh, NULL);
-  return true;
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh = meshlink_open(NULL, "foo", "test", DEV_CLASS_STATIONARY);
+	assert_int_equal(mesh, NULL);
+	return true;
 }
 
 /* Execute meshlink_open Test Case # 3 */
 static void test_case_mesh_open_03(void **state) {
-  execute_test(test_steps_mesh_open_03, state);
-  return;
+	execute_test(test_steps_mesh_open_03, state);
+	return;
 }
 
 /* Test Steps for meshlink_open Test Case # 3
@@ -127,17 +127,17 @@ static void test_case_mesh_open_03(void **state) {
     meshlink_open API should successfully report error by returning NULL pointer
 */
 static bool test_steps_mesh_open_03(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_handle_t *mesh = meshlink_open("openconf", NULL, "test", DEV_CLASS_STATIONARY);
-  assert_int_equal(mesh, NULL);
-  meshlink_destroy("open_conf");
-  return true;
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh = meshlink_open("openconf", NULL, "test", DEV_CLASS_STATIONARY);
+	assert_int_equal(mesh, NULL);
+	meshlink_destroy("open_conf");
+	return true;
 }
 
 /* Execute meshlink_open Test Case # 4*/
 static void test_case_mesh_open_04(void **state) {
-  execute_test(test_steps_mesh_open_04, state);
-  return;
+	execute_test(test_steps_mesh_open_04, state);
+	return;
 }
 
 /* Test Steps for meshlink_open Test Case # 4
@@ -149,17 +149,17 @@ static void test_case_mesh_open_04(void **state) {
     meshlink_open API should successfully report error by returning NULL pointer
 */
 static bool test_steps_mesh_open_04(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_handle_t *mesh = meshlink_open("openconf", "foo", NULL, DEV_CLASS_STATIONARY);
-  assert_int_equal(mesh, NULL);
-  meshlink_destroy("open_conf");
-  return true;
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh = meshlink_open("openconf", "foo", NULL, DEV_CLASS_STATIONARY);
+	assert_int_equal(mesh, NULL);
+	meshlink_destroy("open_conf");
+	return true;
 }
 
 /* Execute meshlink_open Test Case # 5*/
 static void test_case_mesh_open_05(void **state) {
-  execute_test(test_steps_mesh_open_05, state);
-  return;
+	execute_test(test_steps_mesh_open_05, state);
+	return;
 }
 
 /* Test Steps for meshlink_open Test Case # 5
@@ -171,28 +171,28 @@ static void test_case_mesh_open_05(void **state) {
     meshlink_open API should successfully report error by returning NULL pointer
 */
 static bool test_steps_mesh_open_05(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_handle_t *mesh = meshlink_open("openconf", "foo", "test", -1);
-  assert_int_equal(mesh, NULL);
-  meshlink_destroy("open_conf");
-  return true;
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh = meshlink_open("openconf", "foo", "test", -1);
+	assert_int_equal(mesh, NULL);
+	meshlink_destroy("open_conf");
+	return true;
 }
 
 int test_meshlink_open(void) {
-  const struct CMUnitTest blackbox_open_tests[] = {
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_open_01, NULL, NULL,
-          (void *)&test_mesh_open_01_state),
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_open_02, NULL, NULL,
-          (void *)&test_mesh_open_02_state),
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_open_03, NULL, NULL,
-          (void *)&test_mesh_open_03_state),
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_open_04, NULL, NULL,
-          (void *)&test_mesh_open_04_state),
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_open_05, NULL, NULL,
-          (void *)&test_mesh_open_05_state)
+	const struct CMUnitTest blackbox_open_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_open_01, NULL, NULL,
+		(void *)&test_mesh_open_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_open_02, NULL, NULL,
+		(void *)&test_mesh_open_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_open_03, NULL, NULL,
+		(void *)&test_mesh_open_03_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_open_04, NULL, NULL,
+		(void *)&test_mesh_open_04_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_open_05, NULL, NULL,
+		(void *)&test_mesh_open_05_state)
 
-  };
-  total_tests += sizeof(blackbox_open_tests) / sizeof(blackbox_open_tests[0]);
+	};
+	total_tests += sizeof(blackbox_open_tests) / sizeof(blackbox_open_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_open_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_open_tests, NULL, NULL);
 }

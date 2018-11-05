@@ -40,26 +40,26 @@ static bool test_steps_mesh_default_blacklist_02(void);
 
 /* State structure for meshlink_default_blacklist Test Case #1 */
 static black_box_state_t test_mesh_default_blacklist_01_state = {
-    .test_case_name = "test_case_mesh_default_blacklist_01",
+	.test_case_name = "test_case_mesh_default_blacklist_01",
 };
 
 /* State structure for meshlink_default_blacklist Test Case #2 */
 static black_box_state_t test_mesh_default_blacklist_02_state = {
-    .test_case_name = "test_case_mesh_default_blacklist_02",
+	.test_case_name = "test_case_mesh_default_blacklist_02",
 };
 
 /* Execute meshlink_default_blacklist Test Case # 1*/
 static void test_case_mesh_default_blacklist_01(void **state) {
-	 execute_test(test_steps_mesh_default_blacklist_01, state);
-   return;
+	execute_test(test_steps_mesh_default_blacklist_01, state);
+	return;
 }
 
 static bool received = false;
 
 static void receive(meshlink_handle_t *mesh, meshlink_node_t *src, const void *data, size_t len) {
-  assert(len);
+	assert(len);
 
-  if(!strcmp(src->name, "bar") || !strcmp(src->name, "foz")) {
+	if(!strcmp(src->name, "bar") || !strcmp(src->name, "foz")) {
 		received = true;
 	}
 }
@@ -97,13 +97,13 @@ static bool test_steps_mesh_default_blacklist_01(void) {
 	// Open two new meshlink instance.
 	meshlink_handle_t *mesh1 = meshlink_open("def_blacklist_conf.1", "foo", "blacklist", DEV_CLASS_BACKBONE);
 	assert(mesh1 != NULL);
-  meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_handle_t *mesh2 = meshlink_open("def_blacklist_conf.2", "bar", "blacklist", DEV_CLASS_BACKBONE);
 	assert(mesh2 != NULL);
-  meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_handle_t *mesh3 = meshlink_open("def_blacklist_conf.3", "foz", "blacklist", DEV_CLASS_BACKBONE);
 	assert(mesh3);
-  meshlink_set_log_cb(mesh3, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(mesh3, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_set_receive_cb(mesh1, receive);
 
 	meshlink_set_default_blacklist(mesh1, false);
@@ -115,15 +115,15 @@ static bool test_steps_mesh_default_blacklist_01(void) {
 	assert(meshlink_start(mesh1));
 	assert(meshlink_start(mesh2));
 	assert(meshlink_start(mesh3));
-  sleep(1);
+	sleep(1);
 
 	char *foo_export = meshlink_export(mesh1);
 	assert(foo_export != NULL);
 	assert(meshlink_import(mesh2, foo_export));
 	char *bar_export = meshlink_export(mesh2);
 	assert(meshlink_import(mesh1, bar_export));
-  sleep(5);
-  assert(bar_reachable);
+	sleep(5);
+	assert(bar_reachable);
 
 	// Nodes should learn about each other
 	meshlink_node_t *foo = NULL;
@@ -137,12 +137,12 @@ static bool test_steps_mesh_default_blacklist_01(void) {
 	// Enable default blacklist and join another node
 	meshlink_set_default_blacklist(mesh1, true);
 
-  char *foz_export = meshlink_export(mesh3);
+	char *foz_export = meshlink_export(mesh3);
 	assert(foz_export);
 	assert(meshlink_import(mesh1, foz_export));
 	assert(meshlink_import(mesh3, foo_export));
-  sleep(5);
-  assert(foz_reachable);
+	sleep(5);
+	assert(foz_reachable);
 
 	foo = meshlink_get_node(mesh3, "foo");
 	assert(foo);
@@ -168,8 +168,8 @@ static bool test_steps_mesh_default_blacklist_01(void) {
 
 /* Execute meshlink_default_blacklist Test Case # 2*/
 static void test_case_mesh_default_blacklist_02(void **state) {
-	 execute_test(test_steps_mesh_default_blacklist_02, state);
-   return;
+	execute_test(test_steps_mesh_default_blacklist_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_default_blacklist Test Case # 2
@@ -181,22 +181,22 @@ static void test_case_mesh_default_blacklist_02(void **state) {
     meshlink_default_blacklist API handles the invalid parameter when called by giving proper error number.
 */
 static bool test_steps_mesh_default_blacklist_02(void) {
-  // Passing NULL as mesh handle argument to the API
+	// Passing NULL as mesh handle argument to the API
 	meshlink_set_default_blacklist(NULL, true);
-  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	return true;
 }
 
 int test_meshlink_default_blacklist(void) {
-		const struct CMUnitTest blackbox_default_blacklist_tests[] = {
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_default_blacklist_01, NULL, NULL,
-            (void *)&test_mesh_default_blacklist_01_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_default_blacklist_02, NULL, NULL,
-            (void *)&test_mesh_default_blacklist_02_state)
-		};
+	const struct CMUnitTest blackbox_default_blacklist_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_default_blacklist_01, NULL, NULL,
+		(void *)&test_mesh_default_blacklist_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_default_blacklist_02, NULL, NULL,
+		(void *)&test_mesh_default_blacklist_02_state)
+	};
 
-  total_tests += sizeof(blackbox_default_blacklist_tests) / sizeof(blackbox_default_blacklist_tests[0]);
+	total_tests += sizeof(blackbox_default_blacklist_tests) / sizeof(blackbox_default_blacklist_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_default_blacklist_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_default_blacklist_tests, NULL, NULL);
 }

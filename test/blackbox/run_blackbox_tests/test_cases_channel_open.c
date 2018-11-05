@@ -40,28 +40,28 @@ static bool test_steps_mesh_channel_open_04(void);
 
 /* State structure for meshlink_channel_open Test Case #1 */
 static black_box_state_t test_mesh_channel_open_01_state = {
-    .test_case_name = "test_case_mesh_channel_open_01",
+	.test_case_name = "test_case_mesh_channel_open_01",
 };
 
 /* State structure for meshlink_channel_open Test Case #2 */
 static black_box_state_t test_mesh_channel_open_02_state = {
-    .test_case_name = "test_case_mesh_channel_open_02",
+	.test_case_name = "test_case_mesh_channel_open_02",
 };
 
 /* State structure for meshlink_channel_open Test Case #3 */
 static black_box_state_t test_mesh_channel_open_03_state = {
-    .test_case_name = "test_case_mesh_channel_open_03",
+	.test_case_name = "test_case_mesh_channel_open_03",
 };
 
 /* State structure for meshlink_channel_open Test Case #4 */
 static black_box_state_t test_mesh_channel_open_04_state = {
-    .test_case_name = "test_case_mesh_channel_open_04",
+	.test_case_name = "test_case_mesh_channel_open_04",
 };
 
 /* Execute meshlink_channel_open Test Case # 1*/
 static void test_case_mesh_channel_open_01(void **state) {
-	 execute_test(test_steps_mesh_channel_open_01, state);
-   return;
+	execute_test(test_steps_mesh_channel_open_01, state);
+	return;
 }
 
 static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
@@ -102,11 +102,11 @@ static bool test_steps_mesh_channel_open_01(void) {
 	// Start both instances
 	assert(meshlink_start(mesh1));
 	assert(meshlink_start(mesh2));
-  sleep(2);
+	sleep(2);
 
 	// Open a channel from foo to bar.
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-  assert(bar != NULL);
+	assert(bar != NULL);
 	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7000, receive_cb, NULL, 0);
 	assert_int_not_equal(channel, NULL);
 
@@ -129,8 +129,8 @@ static bool test_steps_mesh_channel_open_01(void) {
     meshlink_channel_open should open a channel by returning a channel handler
 */
 static void test_case_mesh_channel_open_02(void **state) {
-	 execute_test(test_steps_mesh_channel_open_02, state);
-   return;
+	execute_test(test_steps_mesh_channel_open_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_channel_open Test Case # 2*/
@@ -156,12 +156,12 @@ static bool test_steps_mesh_channel_open_02(void) {
 	// Start both instances
 	assert(meshlink_start(mesh1));
 	assert(meshlink_start(mesh2));
-  sleep(1);
+	sleep(1);
 
 	// Open a channel from foo to bar.
 
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-  assert(bar != NULL);
+	assert(bar != NULL);
 
 	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7000, NULL, NULL, 0);
 	assert_int_not_equal(channel, NULL);
@@ -176,8 +176,8 @@ static bool test_steps_mesh_channel_open_02(void) {
 
 /* Execute meshlink_channel_open Test Case # 3 */
 static void test_case_mesh_channel_open_03(void **state) {
-	 execute_test(test_steps_mesh_channel_open_03, state);
-   return;
+	execute_test(test_steps_mesh_channel_open_03, state);
+	return;
 }
 
 /* Test Steps for meshlink_channel_open Test Case # 3
@@ -212,8 +212,8 @@ static bool test_steps_mesh_channel_open_03(void) {
 
 /* Execute meshlink_channel_open Test Case # 4*/
 static void test_case_mesh_channel_open_04(void **state) {
-	 execute_test(test_steps_mesh_channel_open_04, state);
-   return;
+	execute_test(test_steps_mesh_channel_open_04, state);
+	return;
 }
 
 /* Test Steps for meshlink_channel_open Test Case # 4
@@ -247,18 +247,18 @@ static bool test_steps_mesh_channel_open_04(void) {
 }
 
 int test_meshlink_channel_open(void) {
-  const struct CMUnitTest blackbox_channel_open_tests[] = {
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_01, NULL, NULL,
-          (void *)&test_mesh_channel_open_01_state),
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_02, NULL, NULL,
-          (void *)&test_mesh_channel_open_02_state),
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_03, NULL, NULL,
-          (void *)&test_mesh_channel_open_03_state),
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_04, NULL, NULL,
-          (void *)&test_mesh_channel_open_04_state)
-  };
+	const struct CMUnitTest blackbox_channel_open_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_01, NULL, NULL,
+		(void *)&test_mesh_channel_open_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_02, NULL, NULL,
+		(void *)&test_mesh_channel_open_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_03, NULL, NULL,
+		(void *)&test_mesh_channel_open_03_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_04, NULL, NULL,
+		(void *)&test_mesh_channel_open_04_state)
+	};
 
-  total_tests += sizeof(blackbox_channel_open_tests) / sizeof(blackbox_channel_open_tests[0]);
+	total_tests += sizeof(blackbox_channel_open_tests) / sizeof(blackbox_channel_open_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_channel_open_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_channel_open_tests, NULL, NULL);
 }

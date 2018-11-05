@@ -38,23 +38,23 @@ static bool test_steps_mesh_pmtu_03(void);
 
 /* State structure for meshlink_get_pmtu Test Case #1 */
 static black_box_state_t test_mesh_pmtu_01_state = {
-    .test_case_name = "test_case_mesh_pmtu_01",
+	.test_case_name = "test_case_mesh_pmtu_01",
 };
 
 /* State structure for meshlink_get_pmtu Test Case #2 */
 static black_box_state_t test_mesh_pmtu_02_state = {
-    .test_case_name = "test_case_mesh_pmtu_02",
+	.test_case_name = "test_case_mesh_pmtu_02",
 };
 
 /* State structure for meshlink_get_pmtu Test Case #3 */
 static black_box_state_t test_mesh_pmtu_03_state = {
-    .test_case_name = "test_case_mesh_pmtu_03",
+	.test_case_name = "test_case_mesh_pmtu_03",
 };
 
 /* Execute meshlink_get_pmtu Test Case # 1 */
 static void test_case_mesh_pmtu_01(void **state) {
-  execute_test(test_steps_mesh_pmtu_01, state);
-  return;
+	execute_test(test_steps_mesh_pmtu_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_pmtu Test Case # 1
@@ -70,7 +70,7 @@ static bool test_steps_mesh_pmtu_01(void) {
 	meshlink_handle_t *mesh = meshlink_open("pmtu_conf", "foo", "test", DEV_CLASS_STATIONARY);
 	assert(mesh != NULL);
 
-  assert(meshlink_start(mesh));
+	assert(meshlink_start(mesh));
 	meshlink_node_t *dest_node = meshlink_get_self(mesh);
 	assert(dest_node != NULL);
 
@@ -79,7 +79,7 @@ static bool test_steps_mesh_pmtu_01(void) {
 
 	meshlink_close(mesh);
 	meshlink_destroy("pmtu_conf");
-  return true;
+	return true;
 }
 
 /* Execute meshlink_get_pmtu Test Case # 2
@@ -92,8 +92,8 @@ static bool test_steps_mesh_pmtu_01(void) {
     meshlink_get_pmtu should return -1 reporting the error
 */
 static void test_case_mesh_pmtu_02(void **state) {
-    execute_test(test_steps_mesh_pmtu_02, state);
-    return;
+	execute_test(test_steps_mesh_pmtu_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_pmtu Test Case # 2*/
@@ -101,7 +101,7 @@ static bool test_steps_mesh_pmtu_02(void) {
 	meshlink_handle_t *mesh = meshlink_open("pmtu_conf", "foo", "test", DEV_CLASS_STATIONARY);
 	assert(mesh != NULL);
 
-  assert(meshlink_start(mesh));
+	assert(meshlink_start(mesh));
 	meshlink_node_t *dest_node = meshlink_get_self(mesh);
 	assert(dest_node != NULL);
 
@@ -110,13 +110,13 @@ static bool test_steps_mesh_pmtu_02(void) {
 
 	meshlink_close(mesh);
 	meshlink_destroy("pmtu_conf");
-  return true;
+	return true;
 }
 
 /* Execute meshlink_get_pmtu Test Case # 3 */
 static void test_case_mesh_pmtu_03(void **state) {
-    execute_test(test_steps_mesh_pmtu_03, state);
-    return;
+	execute_test(test_steps_mesh_pmtu_03, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_pmtu Test Case # 3
@@ -132,27 +132,27 @@ static bool test_steps_mesh_pmtu_03(void) {
 	meshlink_handle_t *mesh = meshlink_open("pmtu_conf", "foo", "test", DEV_CLASS_STATIONARY);
 	assert(mesh != NULL);
 
-  assert(meshlink_start(mesh));
+	assert(meshlink_start(mesh));
 
 	ssize_t pmtu = meshlink_get_pmtu(mesh, NULL);
 	assert_int_equal(pmtu, -1);
 
 	meshlink_close(mesh);
 	meshlink_destroy("pmtu_conf");
-  return true;
+	return true;
 }
 
 int test_meshlink_pmtu(void) {
-		const struct CMUnitTest blackbox_pmtu_tests[] = {
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_pmtu_01, NULL, NULL,
-            (void *)&test_mesh_pmtu_01_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_pmtu_02, NULL, NULL,
-            (void *)&test_mesh_pmtu_02_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_pmtu_03, NULL, NULL,
-            (void *)&test_mesh_pmtu_03_state)
-		};
+	const struct CMUnitTest blackbox_pmtu_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_pmtu_01, NULL, NULL,
+		(void *)&test_mesh_pmtu_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_pmtu_02, NULL, NULL,
+		(void *)&test_mesh_pmtu_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_pmtu_03, NULL, NULL,
+		(void *)&test_mesh_pmtu_03_state)
+	};
 
-  total_tests += sizeof(blackbox_pmtu_tests) / sizeof(blackbox_pmtu_tests[0]);
+	total_tests += sizeof(blackbox_pmtu_tests) / sizeof(blackbox_pmtu_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_pmtu_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_pmtu_tests, NULL, NULL);
 }

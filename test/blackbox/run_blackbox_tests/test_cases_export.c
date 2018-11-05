@@ -37,20 +37,20 @@ static bool test_export_01(void);
 static void test_case_export_02(void **state);
 static bool test_export_02(void);
 
- /* State structure for export API Test Case #1 */
+/* State structure for export API Test Case #1 */
 static black_box_state_t test_case_export_01_state = {
-    .test_case_name = "test_case_export_01",
+	.test_case_name = "test_case_export_01",
 };
 /* State structure for export API Test Case #2 */
 static black_box_state_t test_case_export_02_state = {
-    .test_case_name = "test_case_export_02",
+	.test_case_name = "test_case_export_02",
 };
 
 
 /* Execute export Test Case # 1 - valid case*/
 static void test_case_export_01(void **state) {
-    execute_test(test_export_01, state);
-    return;
+	execute_test(test_export_01, state);
+	return;
 }
 /* Test Steps for export Test Case # 1 - Valid case
     Test Steps:
@@ -61,27 +61,27 @@ static void test_case_export_01(void **state) {
     API returns a NULL terminated string containing meta data of NUT.
 */
 static bool test_export_01(void) {
-  meshlink_destroy("exportconf");
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_destroy("exportconf");
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  /* Create meshlink instance */
-  meshlink_handle_t *mesh_handle = meshlink_open("exportconf", "nut", "node_sim", 1);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	/* Create meshlink instance */
+	meshlink_handle_t *mesh_handle = meshlink_open("exportconf", "nut", "node_sim", 1);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  char *expo = meshlink_export(mesh_handle);
-  assert_int_not_equal(expo, NULL);
+	char *expo = meshlink_export(mesh_handle);
+	assert_int_not_equal(expo, NULL);
 
-  meshlink_close(mesh_handle);
-  meshlink_destroy("exportconf");
+	meshlink_close(mesh_handle);
+	meshlink_destroy("exportconf");
 
-  return true;
+	return true;
 }
 
 /* Execute export Test Case # 2 - Invalid case*/
 static void test_case_export_02(void **state) {
-    execute_test(test_export_02, state);
-    return;
+	execute_test(test_export_02, state);
+	return;
 }
 /* Test Steps for export Test Case # 2 - Invalid case
     Test Steps:
@@ -92,24 +92,24 @@ static void test_case_export_02(void **state) {
     API returns NULL reporting error when NULL being passed as mesh handle.
 */
 static bool test_export_02(void) {
-  // Calling export API with NULL as mesh handle
-  char *expo = meshlink_export(NULL);
-  assert_int_equal(expo, NULL);
+	// Calling export API with NULL as mesh handle
+	char *expo = meshlink_export(NULL);
+	assert_int_equal(expo, NULL);
 
-  return true;
+	return true;
 }
 
 
 int test_meshlink_export(void) {
-  const struct CMUnitTest blackbox_export_tests[] = {
-    cmocka_unit_test_prestate_setup_teardown(test_case_export_01, NULL, NULL,
-          (void *)&test_case_export_01_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_export_02, NULL, NULL,
-          (void *)&test_case_export_02_state)
-  };
+	const struct CMUnitTest blackbox_export_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_export_01, NULL, NULL,
+		(void *)&test_case_export_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_export_02, NULL, NULL,
+		(void *)&test_case_export_02_state)
+	};
 
-  total_tests += sizeof(blackbox_export_tests)/sizeof(blackbox_export_tests[0]);
+	total_tests += sizeof(blackbox_export_tests) / sizeof(blackbox_export_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_export_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_export_tests, NULL, NULL);
 }
 

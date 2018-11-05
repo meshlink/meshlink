@@ -32,10 +32,10 @@
 #define LXC_BUILD_SCRIPT "build_container.sh"
 
 typedef struct black_box_state {
-    char *test_case_name;
-    char **node_names;
-    int num_nodes;
-    bool test_result;
+	char *test_case_name;
+	char **node_names;
+	int num_nodes;
+	bool test_result;
 } black_box_state_t;
 
 extern char *lxc_bridge;

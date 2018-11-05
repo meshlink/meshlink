@@ -41,24 +41,24 @@ static bool test_set_port_02(void);
 static void test_case_set_port_03(void **state);
 static bool test_set_port_03(void);
 
- /* State structure for set port API Test Case #1 */
+/* State structure for set port API Test Case #1 */
 static black_box_state_t test_case_set_port_01_state = {
-    .test_case_name = "test_case_set_port_01",
+	.test_case_name = "test_case_set_port_01",
 };
 /* State structure for set port API Test Case #2 */
 static black_box_state_t test_case_set_port_02_state = {
-    .test_case_name = "test_case_set_port_02",
+	.test_case_name = "test_case_set_port_02",
 };
 /* State structure for set port API Test Case #3 */
 static black_box_state_t test_case_set_port_03_state = {
-    .test_case_name = "test_case_set_port_03",
+	.test_case_name = "test_case_set_port_03",
 };
 
 
 /* Execute meshlink_set_port Test Case # 1 - valid case*/
 static void test_case_set_port_01(void **state) {
-    execute_test(test_set_port_01, state);
-    return;
+	execute_test(test_set_port_01, state);
+	return;
 }
 /* Test Steps for meshlink_set_port Test Case # 1 - Valid case
 
@@ -70,41 +70,41 @@ static void test_case_set_port_01(void **state) {
     Set the new port to the NUT.
 */
 static bool test_set_port_01(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  // Create meshlink instance
+	// Create meshlink instance
 
-  mesh_handle = meshlink_open("setportconf", "nut", "test", 1);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	mesh_handle = meshlink_open("setportconf", "nut", "test", 1);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  // Get old port and set a new port number
+	// Get old port and set a new port number
 
-  int port;
-  port = meshlink_get_port(mesh_handle);
-  assert(port > 0);
-  bool ret = meshlink_set_port(mesh_handle, 8000);
-  port = meshlink_get_port(mesh_handle);
-  assert(port > 0);
+	int port;
+	port = meshlink_get_port(mesh_handle);
+	assert(port > 0);
+	bool ret = meshlink_set_port(mesh_handle, 8000);
+	port = meshlink_get_port(mesh_handle);
+	assert(port > 0);
 
-  // Clean up
+	// Clean up
 
-  meshlink_close(mesh_handle);
-  meshlink_destroy("setportconf");
+	meshlink_close(mesh_handle);
+	meshlink_destroy("setportconf");
 
-  if(ret && (port == 8000)) {
-    PRINT_TEST_CASE_MSG("Port set successfully\n");
-    return true;
-  } else {
-    return false;
-  }
+	if(ret && (port == 8000)) {
+		PRINT_TEST_CASE_MSG("Port set successfully\n");
+		return true;
+	} else {
+		return false;
+	}
 
 }
 
 /* Execute meshlink_set_port Test Case # 2 - Invalid case*/
 static void test_case_set_port_02(void **state) {
-    execute_test(test_set_port_02, state);
-    return;
+	execute_test(test_set_port_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_set_port Test Case # 2 - Invalid case
@@ -116,23 +116,24 @@ static void test_case_set_port_02(void **state) {
     Report false indicating error.
 */
 static bool test_set_port_02(void) {
-  // meshlink_set_port called using NULL as mesh handle
+	// meshlink_set_port called using NULL as mesh handle
 
-  bool ret = meshlink_set_port(NULL, 8000);
+	bool ret = meshlink_set_port(NULL, 8000);
 
-  if(false == ret)  {
-    PRINT_TEST_CASE_MSG("NULL argument reported SUCCESSFULY\n");
-    return true;
-  }
-  PRINT_TEST_CASE_MSG("failed to report NULL argument\n");
-  return false;
+	if(false == ret)  {
+		PRINT_TEST_CASE_MSG("NULL argument reported SUCCESSFULY\n");
+		return true;
+	}
+
+	PRINT_TEST_CASE_MSG("failed to report NULL argument\n");
+	return false;
 }
 
 
 /* Execute meshlink_set_port Test Case # 3 - Setting port after starting mesh*/
 static void test_case_set_port_03(void **state) {
-  execute_test(test_set_port_03, state);
-  return;
+	execute_test(test_set_port_03, state);
+	return;
 }
 
 /* Test Steps for meshlink_set_port Test Case # 2 - functionality test
@@ -144,42 +145,42 @@ static void test_case_set_port_03(void **state) {
     New port number cannot be set while mesh is running.
 */
 static bool test_set_port_03(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  // Create meshlink instance
+	// Create meshlink instance
 
-  mesh_handle = meshlink_open("getportconf", "nut", "test", 1);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  assert(meshlink_start(mesh_handle));
+	mesh_handle = meshlink_open("getportconf", "nut", "test", 1);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	assert(meshlink_start(mesh_handle));
 
-  // Setting port after starting NUT
-  bool ret = meshlink_set_port(mesh_handle, 50000);
+	// Setting port after starting NUT
+	bool ret = meshlink_set_port(mesh_handle, 50000);
 
-  // Clean up
+	// Clean up
 
-  meshlink_close(mesh_handle);
-  meshlink_destroy("getportconf");
+	meshlink_close(mesh_handle);
+	meshlink_destroy("getportconf");
 
-  if(!ret) {
-    PRINT_TEST_CASE_MSG(" New port cannot be set after starting mesh \n");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("Port can be set even after starting mesh \n");
-    return false;
-  }
+	if(!ret) {
+		PRINT_TEST_CASE_MSG(" New port cannot be set after starting mesh \n");
+		return true;
+	} else {
+		PRINT_TEST_CASE_MSG("Port can be set even after starting mesh \n");
+		return false;
+	}
 }
 
 
- int test_meshlink_set_port(void) {
-  const struct CMUnitTest blackbox_set_port_tests[] = {
-    cmocka_unit_test_prestate_setup_teardown(test_case_set_port_01, NULL, NULL,
-          (void *)&test_case_set_port_01_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_set_port_02, NULL, NULL,
-          (void *)&test_case_set_port_02_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_set_port_03, NULL, NULL,
-          (void *)&test_case_set_port_03_state)
-    };
-    total_tests += sizeof(blackbox_set_port_tests) / sizeof(blackbox_set_port_tests[0]);
- return cmocka_run_group_tests(blackbox_set_port_tests, NULL, NULL);
+int test_meshlink_set_port(void) {
+	const struct CMUnitTest blackbox_set_port_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_set_port_01, NULL, NULL,
+		(void *)&test_case_set_port_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_set_port_02, NULL, NULL,
+		(void *)&test_case_set_port_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_set_port_03, NULL, NULL,
+		(void *)&test_case_set_port_03_state)
+	};
+	total_tests += sizeof(blackbox_set_port_tests) / sizeof(blackbox_set_port_tests[0]);
+	return cmocka_run_group_tests(blackbox_set_port_tests, NULL, NULL);
 }

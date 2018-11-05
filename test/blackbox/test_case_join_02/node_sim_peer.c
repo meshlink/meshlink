@@ -28,20 +28,24 @@
 #define CMD_LINE_ARG_INVITEURL  3
 
 int main(int argc, char *argv[]) {
-    struct timeval main_loop_wait = { 5, 0 };
+	struct timeval main_loop_wait = { 5, 0 };
 
-    /* Setup required signals */
-    setup_signals();
+	/* Setup required signals */
+	setup_signals();
 
-    /* Execute test steps */
-    execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
-    if (argv[CMD_LINE_ARG_INVITEURL])
-        execute_join(argv[CMD_LINE_ARG_INVITEURL]);
-    execute_start();
+	/* Execute test steps */
+	execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
 
-    /* All test steps executed - wait for signals to stop/start or close the mesh */
-    while(test_running)
-        select(1, NULL, NULL, NULL, &main_loop_wait);
+	if(argv[CMD_LINE_ARG_INVITEURL]) {
+		execute_join(argv[CMD_LINE_ARG_INVITEURL]);
+	}
 
-    execute_close();
+	execute_start();
+
+	/* All test steps executed - wait for signals to stop/start or close the mesh */
+	while(test_running) {
+		select(1, NULL, NULL, NULL, &main_loop_wait);
+	}
+
+	execute_close();
 }

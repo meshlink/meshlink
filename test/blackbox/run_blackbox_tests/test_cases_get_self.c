@@ -36,18 +36,18 @@ static bool test_steps_mesh_get_self_02(void);
 
 /* State structure for meshlink_get_self Test Case #1 */
 static black_box_state_t test_mesh_get_self_01_state = {
-    .test_case_name = "test_case_mesh_get_self_01",
+	.test_case_name = "test_case_mesh_get_self_01",
 };
 
 /* State structure for meshlink_get_self Test Case #2 */
 static black_box_state_t test_mesh_get_self_02_state = {
-    .test_case_name = "test_case_mesh_get_self_02",
+	.test_case_name = "test_case_mesh_get_self_02",
 };
 
 /* Execute meshlink_get_self Test Case # 1 */
 static void test_case_mesh_get_self_01(void **state) {
-    execute_test(test_steps_mesh_get_self_01, state);
-    return;
+	execute_test(test_steps_mesh_get_self_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_self Test Case # 1
@@ -73,14 +73,14 @@ static bool test_steps_mesh_get_self_01(void) {
 
 	meshlink_close(mesh);
 	meshlink_destroy("self_conf");
-  return true;
+	return true;
 
 }
 
 /* Execute meshlink_get_self Test Case # 2 */
 static void test_case_mesh_get_self_02(void **state) {
-    execute_test(test_steps_mesh_get_self_02, state);
-    return;
+	execute_test(test_steps_mesh_get_self_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_self Test Case # 2
@@ -96,18 +96,18 @@ static bool test_steps_mesh_get_self_02(void) {
 	meshlink_node_t *dest_node = meshlink_get_self(NULL);
 	assert_int_equal(dest_node, NULL);
 
-  return true;
+	return true;
 }
 
 int test_meshlink_get_self(void) {
-  const struct CMUnitTest blackbox_get_self_tests[] = {
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_self_01, NULL, NULL,
-          (void *)&test_mesh_get_self_01_state),
-      cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_self_02, NULL, NULL,
-          (void *)&test_mesh_get_self_02_state)
-  };
+	const struct CMUnitTest blackbox_get_self_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_self_01, NULL, NULL,
+		(void *)&test_mesh_get_self_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_self_02, NULL, NULL,
+		(void *)&test_mesh_get_self_02_state)
+	};
 
-  total_tests += sizeof(blackbox_get_self_tests) / sizeof(blackbox_get_self_tests[0]);
+	total_tests += sizeof(blackbox_get_self_tests) / sizeof(blackbox_get_self_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_get_self_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_get_self_tests, NULL, NULL);
 }

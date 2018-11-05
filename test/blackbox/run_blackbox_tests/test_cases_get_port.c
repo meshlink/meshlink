@@ -36,18 +36,18 @@ static bool test_steps_mesh_get_port_02(void);
 
 /* State structure for meshlink_get_port Test Case #1 */
 static black_box_state_t test_mesh_get_port_01_state = {
-    .test_case_name = "test_case_mesh_get_port_01",
+	.test_case_name = "test_case_mesh_get_port_01",
 };
 
 /* State structure for meshlink_get_port Test Case #2 */
 static black_box_state_t test_mesh_get_port_02_state = {
-    .test_case_name = "test_case_mesh_get_port_02",
+	.test_case_name = "test_case_mesh_get_port_02",
 };
 
 /* Execute meshlink_get_port Test Case # 1 */
 static void test_case_mesh_get_port_01(void **state) {
-    execute_test(test_steps_mesh_get_port_01, state);
-    return;
+	execute_test(test_steps_mesh_get_port_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_port Test Case # 1
@@ -61,7 +61,7 @@ static void test_case_mesh_get_port_01(void **state) {
     API returns valid port number.
 */
 static bool test_steps_mesh_get_port_01(void) {
-  meshlink_handle_t *mesh = meshlink_open("port_conf", "foo", "chat", DEV_CLASS_STATIONARY);
+	meshlink_handle_t *mesh = meshlink_open("port_conf", "foo", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh);
 	assert(meshlink_start(mesh));
 
@@ -70,13 +70,13 @@ static bool test_steps_mesh_get_port_01(void) {
 
 	meshlink_close(mesh);
 	meshlink_destroy("port_conf");
-  return true;
+	return true;
 }
 
 /* Execute meshlink_get_port Test Case # 2 */
 static void test_case_mesh_get_port_02(void **state) {
-    execute_test(test_steps_mesh_get_port_02, state);
-    return;
+	execute_test(test_steps_mesh_get_port_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_port Test Case # 2 - Invalid case
@@ -91,18 +91,18 @@ static bool test_steps_mesh_get_port_02(void) {
 	int port = meshlink_get_port(NULL);
 	assert_int_equal(port, -1);
 
-  return true;
+	return true;
 }
 
 int test_meshlink_get_port(void) {
-		const struct CMUnitTest blackbox_get_port_tests[] = {
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_port_01, NULL, NULL,
-            (void *)&test_mesh_get_port_01_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_port_02, NULL, NULL,
-            (void *)&test_mesh_get_port_02_state)
-		};
+	const struct CMUnitTest blackbox_get_port_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_port_01, NULL, NULL,
+		(void *)&test_mesh_get_port_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_port_02, NULL, NULL,
+		(void *)&test_mesh_get_port_02_state)
+	};
 
-  total_tests += sizeof(blackbox_get_port_tests) / sizeof(blackbox_get_port_tests[0]);
+	total_tests += sizeof(blackbox_get_port_tests) / sizeof(blackbox_get_port_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_get_port_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_get_port_tests, NULL, NULL);
 }

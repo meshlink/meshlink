@@ -76,36 +76,36 @@ char *choose_arch = NULL;
 int total_tests;
 
 int main(int argc, char *argv[]) {
-  /* Set configuration */
-  assert(argc >= (CMD_LINE_ARG_CHOOSE_ARCH + 1));
-  meshlink_root_path = argv[CMD_LINE_ARG_MESHLINK_ROOT_PATH];
-  lxc_path = argv[CMD_LINE_ARG_LXC_PATH];
-  lxc_bridge = argv[CMD_LINE_ARG_LXC_BRIDGE_NAME];
-  eth_if_name = argv[CMD_LINE_ARG_ETH_IF_NAME];
-  choose_arch = argv[CMD_LINE_ARG_CHOOSE_ARCH];
+	/* Set configuration */
+	assert(argc >= (CMD_LINE_ARG_CHOOSE_ARCH + 1));
+	meshlink_root_path = argv[CMD_LINE_ARG_MESHLINK_ROOT_PATH];
+	lxc_path = argv[CMD_LINE_ARG_LXC_PATH];
+	lxc_bridge = argv[CMD_LINE_ARG_LXC_BRIDGE_NAME];
+	eth_if_name = argv[CMD_LINE_ARG_ETH_IF_NAME];
+	choose_arch = argv[CMD_LINE_ARG_CHOOSE_ARCH];
 
-  int failed_tests = 0;
+	int failed_tests = 0;
 
-  failed_tests += test_meta_conn();
-  failed_tests += test_meshlink_set_status_cb();
-  failed_tests += test_meshlink_join();
-  failed_tests += test_meshlink_set_channel_poll_cb();
+	failed_tests += test_meta_conn();
+	failed_tests += test_meshlink_set_status_cb();
+	failed_tests += test_meshlink_join();
+	failed_tests += test_meshlink_set_channel_poll_cb();
 //  failed_tests += test_meshlink_channel_open_ex();
-  failed_tests += test_meshlink_channel_get_flags();
-  failed_tests += test_meshlink_set_channel_accept_cb();
-  failed_tests += test_meshlink_destroy();
-  failed_tests += test_meshlink_export();
-  failed_tests += test_meshlink_get_fingerprint();
-  failed_tests += test_meshlink_get_all_nodes();
-  failed_tests += test_meshlink_set_port();
-  failed_tests += test_meshlink_sign();
-  failed_tests += test_meshlink_verify();
-  failed_tests += test_meshlink_import();
-  failed_tests += test_meshlink_invite();
-  failed_tests += test_meshlink_set_receive_cb();
-  failed_tests += test_meshlink_set_log_cb();
-  failed_tests += test_meshlink_set_channel_receive_cb();
-  failed_tests += test_meshlink_hint_address();
+	failed_tests += test_meshlink_channel_get_flags();
+	failed_tests += test_meshlink_set_channel_accept_cb();
+	failed_tests += test_meshlink_destroy();
+	failed_tests += test_meshlink_export();
+	failed_tests += test_meshlink_get_fingerprint();
+	failed_tests += test_meshlink_get_all_nodes();
+	failed_tests += test_meshlink_set_port();
+	failed_tests += test_meshlink_sign();
+	failed_tests += test_meshlink_verify();
+	failed_tests += test_meshlink_import();
+	failed_tests += test_meshlink_invite();
+	failed_tests += test_meshlink_set_receive_cb();
+	failed_tests += test_meshlink_set_log_cb();
+	failed_tests += test_meshlink_set_channel_receive_cb();
+	failed_tests += test_meshlink_hint_address();
 
 	failed_tests += test_meshlink_open();
 	failed_tests += test_meshlink_start();
@@ -126,8 +126,8 @@ int main(int argc, char *argv[]) {
 	failed_tests += test_meshlink_channel_open();
 	failed_tests += test_meshlink_channel_close();
 
-  printf("[ PASSED ] %d test(s).\n", total_tests - failed_tests);
-  printf("[ FAILED ] %d test(s).\n", failed_tests);
+	printf("[ PASSED ] %d test(s).\n", total_tests - failed_tests);
+	printf("[ FAILED ] %d test(s).\n", failed_tests);
 
-  return failed_tests;
+	return failed_tests;
 }

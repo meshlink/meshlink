@@ -47,46 +47,46 @@ static bool test_sign_06(void);
 static void test_case_sign_07(void **state);
 static bool test_sign_07(void);
 
- /* State structure for sign API Test Case #1 */
+/* State structure for sign API Test Case #1 */
 static black_box_state_t test_case_sign_01_state = {
-    .test_case_name = "test_case_sign_01",
+	.test_case_name = "test_case_sign_01",
 };
 
 /* State structure for sign API Test Case #2 */
 static black_box_state_t test_case_sign_02_state = {
-    .test_case_name = "test_case_sign_02",
+	.test_case_name = "test_case_sign_02",
 };
 
 /* State structure for sign API Test Case #3 */
 static black_box_state_t test_case_sign_03_state = {
-    .test_case_name = "test_case_sign_03",
+	.test_case_name = "test_case_sign_03",
 };
 
 /* State structure for sign API Test Case #4 */
 static black_box_state_t test_case_sign_04_state = {
-    .test_case_name = "test_case_sign_04",
+	.test_case_name = "test_case_sign_04",
 };
 
 /* State structure for sign API Test Case #5 */
 static black_box_state_t test_case_sign_05_state = {
-    .test_case_name = "test_case_sign_05",
+	.test_case_name = "test_case_sign_05",
 };
 
 /* State structure for sign API Test Case #6 */
 static black_box_state_t test_case_sign_06_state = {
-    .test_case_name = "test_case_sign_06",
+	.test_case_name = "test_case_sign_06",
 };
 
 /* State structure for sign API Test Case #7 */
 static black_box_state_t test_case_sign_07_state = {
-    .test_case_name = "test_case_sign_07",
+	.test_case_name = "test_case_sign_07",
 };
 
 
 /* Execute sign_data Test Case # 1 - Valid case - sign a data successfully*/
 static void test_case_sign_01(void **state) {
-  execute_test(test_sign_01, state);
-   return;
+	execute_test(test_sign_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 1 - Valid case
@@ -99,32 +99,32 @@ static void test_case_sign_01(void **state) {
     Signs data successfully
 */
 static bool test_sign_01(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  // Create meshlink instance
-  meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  assert(meshlink_start(mesh_handle));
+	// Create meshlink instance
+	meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	assert(meshlink_start(mesh_handle));
 
-  // Signing data
+	// Signing data
 
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = MESHLINK_SIGLEN;
-  bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = MESHLINK_SIGLEN;
+	bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
 
-  // Clean up
-  meshlink_close(mesh_handle);
-  meshlink_destroy("signconf");
+	// Clean up
+	meshlink_close(mesh_handle);
+	meshlink_destroy("signconf");
 
-  return ret;
+	return ret;
 }
 
 /* Execute sign_data Test Case # 2 - Invalid case - meshlink_sign passing NULL as mesh handle argument*/
 static void test_case_sign_02(void **state) {
-    execute_test(test_sign_02, state);
-    return;
+	execute_test(test_sign_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 2 - invalid case
@@ -136,24 +136,26 @@ static void test_case_sign_02(void **state) {
     API returns false hinting the error.
 */
 static bool test_sign_02(void) {
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = MESHLINK_SIGLEN;
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = MESHLINK_SIGLEN;
 
-  PRINT_TEST_CASE_MSG("Calling meshlink_sign API \n");
-  bool ret = meshlink_sign(NULL, data, strlen(data) + 1, sig, &ssize);
-  if(!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as mesh_handle arg\n");
-    return true;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing NULL as mesh_handle arg\n");
-  return false;
+	PRINT_TEST_CASE_MSG("Calling meshlink_sign API \n");
+	bool ret = meshlink_sign(NULL, data, strlen(data) + 1, sig, &ssize);
+
+	if(!ret) {
+		PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as mesh_handle arg\n");
+		return true;
+	}
+
+	PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing NULL as mesh_handle arg\n");
+	return false;
 }
 
 /* Execute sign_data Test Case # 3 - Invalid case - meshlink_sign passing data to be signed as NULL */
 static void test_case_sign_03(void **state) {
-    execute_test(test_sign_03, state);
-    return;
+	execute_test(test_sign_03, state);
+	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 3 - invalid case
@@ -167,39 +169,39 @@ static void test_case_sign_03(void **state) {
     API returns false hinting the error.
 */
 static bool test_sign_03(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  // Create meshlink instance
-  meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  assert(meshlink_start(mesh_handle));
+	// Create meshlink instance
+	meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	assert(meshlink_start(mesh_handle));
 
-  // Signing Data
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = MESHLINK_SIGLEN;
-  bool ret = meshlink_sign(mesh_handle, NULL, strlen(data) + 1, sig, &ssize);
+	// Signing Data
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = MESHLINK_SIGLEN;
+	bool ret = meshlink_sign(mesh_handle, NULL, strlen(data) + 1, sig, &ssize);
 
-  // Clean up
+	// Clean up
 
-  meshlink_close(mesh_handle);
-  meshlink_destroy("signconf");
+	meshlink_close(mesh_handle);
+	meshlink_destroy("signconf");
 
-  if(!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as data arg\n");
-    return true;
-  } else {
-    PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing NULL as data arg\n");
-    return false;
-  }
+	if(!ret) {
+		PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as data arg\n");
+		return true;
+	} else {
+		PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing NULL as data arg\n");
+		return false;
+	}
 }
 
 /* Execute sign_data Test Case # 4 - Invalid case - meshlink_sign passing 0 as size of data
       to be signed */
 static void test_case_sign_04(void **state) {
-    execute_test(test_sign_04, state);
-    return;
+	execute_test(test_sign_04, state);
+	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 3 - invalid case
@@ -212,40 +214,41 @@ static void test_case_sign_04(void **state) {
     API returns false hinting the error.
 */
 static bool test_sign_04(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  // Create meshlink instance
+	// Create meshlink instance
 
-  meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  assert(meshlink_start(mesh_handle));
+	meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	assert(meshlink_start(mesh_handle));
 
-  // Signing data
+	// Signing data
 
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = MESHLINK_SIGLEN;
-  bool ret = meshlink_sign(mesh_handle, data, 0, sig, &ssize);
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = MESHLINK_SIGLEN;
+	bool ret = meshlink_sign(mesh_handle, data, 0, sig, &ssize);
 
-  // Clean up
+	// Clean up
 
-  meshlink_close(mesh_handle);
-  meshlink_destroy("signconf");
+	meshlink_close(mesh_handle);
+	meshlink_destroy("signconf");
 
-  if(!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing 0 as size of data arg\n");
-    return true;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing 0 as size of data arg\n");
-  return false;
+	if(!ret) {
+		PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing 0 as size of data arg\n");
+		return true;
+	}
+
+	PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing 0 as size of data arg\n");
+	return false;
 }
 
 /* Execute sign_data Test Case # 5 - Invalid case - meshlink_sign passing NULL as
       signature buffer argument*/
 static void test_case_sign_05(void **state) {
-    execute_test(test_sign_05, state);
-    return;
+	execute_test(test_sign_05, state);
+	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 5 - invalid case
@@ -258,40 +261,41 @@ static void test_case_sign_05(void **state) {
     API returns false hinting the error.
 */
 static bool test_sign_05(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  // Create meshlink instance
+	// Create meshlink instance
 
-  meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  assert(meshlink_start(mesh_handle));
+	meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	assert(meshlink_start(mesh_handle));
 
-  // Signing data
+	// Signing data
 
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = MESHLINK_SIGLEN;
-  bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, NULL, &ssize);
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = MESHLINK_SIGLEN;
+	bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, NULL, &ssize);
 
-  // Clean up
+	// Clean up
 
-  meshlink_close(mesh_handle);
-  meshlink_destroy("signconf");
+	meshlink_close(mesh_handle);
+	meshlink_destroy("signconf");
 
-  if(!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as sign arg\n");
-    return true;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing NULL as sign arg\n");
-  return false;
+	if(!ret) {
+		PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as sign arg\n");
+		return true;
+	}
+
+	PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing NULL as sign arg\n");
+	return false;
 }
 
 /* Execute sign_data Test Case # 6 - Invalid case - meshlink_sign passing NULL for size of
       signature argument */
 static void test_case_sign_06(void **state) {
-    execute_test(test_sign_06, state);
-    return;
+	execute_test(test_sign_06, state);
+	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 6 - invalid case
@@ -304,38 +308,39 @@ static void test_case_sign_06(void **state) {
     API returns false hinting the error.
 */
 static bool test_sign_06(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  // Create meshlink instance
-  meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  assert(meshlink_start(mesh_handle));
+	// Create meshlink instance
+	meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	assert(meshlink_start(mesh_handle));
 
-  // Signing data
+	// Signing data
 
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = MESHLINK_SIGLEN;
-  bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, NULL);
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = MESHLINK_SIGLEN;
+	bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, NULL);
 
-  // Clean up
+	// Clean up
 
-  meshlink_close(mesh_handle);
-  meshlink_destroy("signconf");
+	meshlink_close(mesh_handle);
+	meshlink_destroy("signconf");
 
-  if(!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as signsize arg\n");
-    return true;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing NULL as signsize arg\n");
-  return false;
+	if(!ret) {
+		PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as signsize arg\n");
+		return true;
+	}
+
+	PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing NULL as signsize arg\n");
+	return false;
 }
 
 /* Execute sign_data Test Case # 7 - Invalid case - meshlink_sign passing size of signature < MESHLINK_SIGLEN*/
 static void test_case_sign_07(void **state) {
-    execute_test(test_sign_07, state);
-    return;
+	execute_test(test_sign_07, state);
+	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 6 - invalid case
@@ -348,55 +353,56 @@ static void test_case_sign_07(void **state) {
     API returns false hinting the error.
 */
 static bool test_sign_07(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  // Create meshlink instance
+	// Create meshlink instance
 
-  meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  assert(meshlink_start(mesh_handle));
+	meshlink_handle_t *mesh_handle = meshlink_open("signconf", "nut", "node_sim", 1);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	assert(meshlink_start(mesh_handle));
 
-  // Signing data
+	// Signing data
 
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = 5;  //5 < MESHLINK_SIGLEN
-  bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = 5;  //5 < MESHLINK_SIGLEN
+	bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
 
-  // Cleanup
+	// Cleanup
 
-  meshlink_stop(mesh_handle);
-  meshlink_close(mesh_handle);
-  meshlink_destroy("signconf");
+	meshlink_stop(mesh_handle);
+	meshlink_close(mesh_handle);
+	meshlink_destroy("signconf");
 
-  if(!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing signsize < MESHLINK_SIGLEN arg\n");
-    return true;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing signsize < MESHLINK_SIGLEN arg\n");
-  return false;
+	if(!ret) {
+		PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing signsize < MESHLINK_SIGLEN arg\n");
+		return true;
+	}
+
+	PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing signsize < MESHLINK_SIGLEN arg\n");
+	return false;
 }
 
 
 int test_meshlink_sign(void) {
-  const struct CMUnitTest blackbox_sign_tests[] = {
-    cmocka_unit_test_prestate_setup_teardown(test_case_sign_01, NULL, NULL,
-            (void *)&test_case_sign_01_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_sign_02, NULL, NULL,
-            (void *)&test_case_sign_02_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_sign_03, NULL, NULL,
-            (void *)&test_case_sign_03_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_sign_04, NULL, NULL,
-            (void *)&test_case_sign_04_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_sign_05, NULL, NULL,
-            (void *)&test_case_sign_05_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_sign_06, NULL, NULL,
-            (void *)&test_case_sign_06_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_sign_07, NULL, NULL,
-          (void *)&test_case_sign_07_state)
-  };
-  total_tests += sizeof(blackbox_sign_tests) / sizeof(blackbox_sign_tests[0]);
+	const struct CMUnitTest blackbox_sign_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_sign_01, NULL, NULL,
+		(void *)&test_case_sign_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_sign_02, NULL, NULL,
+		(void *)&test_case_sign_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_sign_03, NULL, NULL,
+		(void *)&test_case_sign_03_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_sign_04, NULL, NULL,
+		(void *)&test_case_sign_04_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_sign_05, NULL, NULL,
+		(void *)&test_case_sign_05_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_sign_06, NULL, NULL,
+		(void *)&test_case_sign_06_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_sign_07, NULL, NULL,
+		(void *)&test_case_sign_07_state)
+	};
+	total_tests += sizeof(blackbox_sign_tests) / sizeof(blackbox_sign_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_sign_tests ,NULL , NULL);
- }
+	return cmocka_run_group_tests(blackbox_sign_tests , NULL , NULL);
+}

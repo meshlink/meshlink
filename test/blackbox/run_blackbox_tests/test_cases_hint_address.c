@@ -51,88 +51,88 @@ static void test_case_hint_address_01(void **state);
 static bool test_steps_hint_address_01(void);
 
 static black_box_state_t test_case_hint_address_01_state = {
-    .test_case_name = "test_case_hint_address_01",
+	.test_case_name = "test_case_hint_address_01",
 };
 
 
 /* Execute meshlink_hint_address Test Case # 1 - Valid Case*/
 void test_case_hint_address_01(void **state) {
-    execute_test(test_steps_hint_address_01, state);
-    return;
+	execute_test(test_steps_hint_address_01, state);
+	return;
 }
 /* Test Steps for meshlink_hint_address Test Case # 1 - Valid case */
 bool test_steps_hint_address_01(void) {
-  meshlink_destroy("hintconf1");
-  meshlink_destroy("hintconf2");
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_destroy("hintconf1");
+	meshlink_destroy("hintconf2");
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  // Create meshlink instance for the nodes
-  meshlink_handle_t *mesh1 = meshlink_open("hintconf1", "nut", "test", DEV_CLASS_STATIONARY);
-  assert(mesh1);
-  meshlink_handle_t *mesh2 = meshlink_open("hintconf2", "bar", "test", DEV_CLASS_STATIONARY);
-  assert(mesh2);
-  meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	// Create meshlink instance for the nodes
+	meshlink_handle_t *mesh1 = meshlink_open("hintconf1", "nut", "test", DEV_CLASS_STATIONARY);
+	assert(mesh1);
+	meshlink_handle_t *mesh2 = meshlink_open("hintconf2", "bar", "test", DEV_CLASS_STATIONARY);
+	assert(mesh2);
+	meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  // importing and exporting mesh meta data
-  char *exp1 = meshlink_export(mesh1);
-  assert(exp1 != NULL);
-  char *exp2 = meshlink_export(mesh2);
-  assert(exp2 != NULL);
-  assert(meshlink_import(mesh1, exp2));
-  assert(meshlink_import(mesh2, exp1));
-  free(exp1);
-  free(exp2);
+	// importing and exporting mesh meta data
+	char *exp1 = meshlink_export(mesh1);
+	assert(exp1 != NULL);
+	char *exp2 = meshlink_export(mesh2);
+	assert(exp2 != NULL);
+	assert(meshlink_import(mesh1, exp2));
+	assert(meshlink_import(mesh2, exp1));
+	free(exp1);
+	free(exp2);
 
-  // Nodes should learn about each other
-  sleep(1);
+	// Nodes should learn about each other
+	sleep(1);
 
-  // Start the nodes
-  assert(meshlink_start(mesh1));
-  assert(meshlink_start(mesh2));
+	// Start the nodes
+	assert(meshlink_start(mesh1));
+	assert(meshlink_start(mesh2));
 
-  // socket structure to be hinted
-  struct sockaddr_in hint;
-  hint.sin_family        = AF_INET;
-  hint.sin_port          = htons(PORT);
-  assert(inet_aton(ADDR, &hint.sin_addr));
+	// socket structure to be hinted
+	struct sockaddr_in hint;
+	hint.sin_family        = AF_INET;
+	hint.sin_port          = htons(PORT);
+	assert(inet_aton(ADDR, &hint.sin_addr));
 
-  // Getting node handle for the NUT itself
-  meshlink_node_t *node = meshlink_get_node(mesh1, "bar");
-  assert(node != NULL);
+	// Getting node handle for the NUT itself
+	meshlink_node_t *node = meshlink_get_node(mesh1, "bar");
+	assert(node != NULL);
 
-  meshlink_hint_address(mesh_handle, node, (struct sockaddr * )&hint);
+	meshlink_hint_address(mesh_handle, node, (struct sockaddr *)&hint);
 
-  int fp;
-  fp = open("./hintconf1/hosts/bar", O_RDONLY);
-  assert(fp >= 0);
-  off_t fsize = lseek(fp, 0, SEEK_END);
-  assert(fsize >= 0);
-  char *buff = (char *) calloc(1, fsize + 1);
-  assert(buff != NULL);
-  assert(lseek(fp, 0, SEEK_SET) == 0);
-  assert(read(fp, buff, fsize) >=0 );
-  buff[fsize] = '\0';
-  assert(close(fp) != -1);
+	int fp;
+	fp = open("./hintconf1/hosts/bar", O_RDONLY);
+	assert(fp >= 0);
+	off_t fsize = lseek(fp, 0, SEEK_END);
+	assert(fsize >= 0);
+	char *buff = (char *) calloc(1, fsize + 1);
+	assert(buff != NULL);
+	assert(lseek(fp, 0, SEEK_SET) == 0);
+	assert(read(fp, buff, fsize) >= 0);
+	buff[fsize] = '\0';
+	assert(close(fp) != -1);
 
-  assert_int_not_equal(strstr(buff, ADDR), NULL);
+	assert_int_not_equal(strstr(buff, ADDR), NULL);
 
-  meshlink_close(mesh1);
-  meshlink_close(mesh2);
-  meshlink_destroy("hintconf1");
-  meshlink_destroy("hintconf2");
+	meshlink_close(mesh1);
+	meshlink_close(mesh2);
+	meshlink_destroy("hintconf1");
+	meshlink_destroy("hintconf2");
 
-  return true;
+	return true;
 }
 
 
 int test_meshlink_hint_address(void) {
-  const struct CMUnitTest blackbox_hint_address_tests[] = {
-    cmocka_unit_test_prestate_setup_teardown(test_case_hint_address_01, NULL, NULL,
-            (void *)&test_case_hint_address_01_state)
-  };
+	const struct CMUnitTest blackbox_hint_address_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_hint_address_01, NULL, NULL,
+		(void *)&test_case_hint_address_01_state)
+	};
 
-  total_tests += sizeof(blackbox_hint_address_tests) / sizeof(blackbox_hint_address_tests[0]);
+	total_tests += sizeof(blackbox_hint_address_tests) / sizeof(blackbox_hint_address_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_hint_address_tests ,NULL , NULL);
+	return cmocka_run_group_tests(blackbox_hint_address_tests , NULL , NULL);
 }

@@ -45,28 +45,28 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 
 /* State structure for meshlink_channel_send Test Case #1 */
 static black_box_state_t test_mesh_channel_send_01_state = {
-    .test_case_name = "test_case_mesh_channel_send_01",
+	.test_case_name = "test_case_mesh_channel_send_01",
 };
 
 /* State structure for meshlink_channel_send Test Case #2 */
 static black_box_state_t test_mesh_channel_send_02_state = {
-    .test_case_name = "test_case_mesh_channel_send_02",
+	.test_case_name = "test_case_mesh_channel_send_02",
 };
 
 /* State structure for meshlink_channel_send Test Case #3 */
 static black_box_state_t test_mesh_channel_send_03_state = {
-    .test_case_name = "test_case_mesh_channel_send_03",
+	.test_case_name = "test_case_mesh_channel_send_03",
 };
 
 /* State structure for meshlink_channel_send Test Case #4 */
 static black_box_state_t test_mesh_channel_send_04_state = {
-    .test_case_name = "test_case_mesh_channel_send_04",
+	.test_case_name = "test_case_mesh_channel_send_04",
 };
 
 /* Execute meshlink_channel_send Test Case # 1*/
 static void test_case_mesh_channel_send_01(void **state) {
-	 execute_test(test_steps_mesh_channel_send_01, state);
-   return;
+	execute_test(test_steps_mesh_channel_send_01, state);
+	return;
 }
 
 static pthread_mutex_t poll_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -85,10 +85,10 @@ static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reach
 	(void)mesh;
 
 	if(!strcmp(node->name, "bar")) {
-    pthread_mutex_lock(& bar_reach_lock);
-    bar_reachable = reachable;
-    assert(!pthread_cond_broadcast(&status_cond));
-    pthread_mutex_unlock(& bar_reach_lock);
+		pthread_mutex_lock(& bar_reach_lock);
+		bar_reachable = reachable;
+		assert(!pthread_cond_broadcast(&status_cond));
+		pthread_mutex_unlock(& bar_reach_lock);
 	}
 }
 
@@ -103,39 +103,39 @@ static bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	assert(port == 7);
-  assert(!len);
+	assert(!len);
 
-  meshlink_set_channel_receive_cb(mesh, channel, receive_cb);
+	meshlink_set_channel_receive_cb(mesh, channel, receive_cb);
 
 	return true;
 }
 
 /* channel receive callback */
 static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
-  if(len == 5 && !memcmp(dat, "Hello", 5)) {
-    pthread_mutex_lock(& bar_responded_lock);
-    bar_responded = true;
-    assert(!pthread_cond_broadcast(&send_cond));
-    pthread_mutex_unlock(& bar_responded_lock);
-  }
+	if(len == 5 && !memcmp(dat, "Hello", 5)) {
+		pthread_mutex_lock(& bar_responded_lock);
+		bar_responded = true;
+		assert(!pthread_cond_broadcast(&send_cond));
+		pthread_mutex_unlock(& bar_responded_lock);
+	}
 
-  return;
+	return;
 }
 
 static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
 	(void)len;
 
-  meshlink_set_channel_poll_cb(mesh, channel, NULL);
-  pthread_mutex_lock(&poll_lock);
+	meshlink_set_channel_poll_cb(mesh, channel, NULL);
+	pthread_mutex_lock(&poll_lock);
 	polled = true;
-  assert(!pthread_cond_broadcast(&poll_cond));
+	assert(!pthread_cond_broadcast(&poll_cond));
 	pthread_mutex_unlock(&poll_lock);
 }
 
 
 /* Test Steps for meshlink_channel_send Test Case # 1*/
 static bool test_steps_mesh_channel_send_01(void) {
-  struct timespec timeout = {0};
+	struct timespec timeout = {0};
 	meshlink_destroy("chan_send_conf.1");
 	meshlink_destroy("chan_send_conf.2");
 
@@ -148,11 +148,11 @@ static bool test_steps_mesh_channel_send_01(void) {
 	meshlink_set_log_cb(mesh2, MESHLINK_DEBUG, meshlink_callback_logger);
 
 	char *data = meshlink_export(mesh1);
-  assert(data);
+	assert(data);
 	assert(meshlink_import(mesh2, data));
 	free(data);
 	data = meshlink_export(mesh2);
-  assert(data);
+	assert(data);
 	assert(meshlink_import(mesh1, data));
 	free(data);
 
@@ -168,37 +168,43 @@ static bool test_steps_mesh_channel_send_01(void) {
 	assert(meshlink_start(mesh1));
 	assert(meshlink_start(mesh2));
 
-  timeout.tv_sec = time(NULL) + 10;
-  pthread_mutex_lock(&bar_reach_lock);
-  while(bar_reachable == false) {
-    assert(!pthread_cond_timedwait(&status_cond, &bar_reach_lock, &timeout));
-  }
-  pthread_mutex_unlock(&bar_reach_lock);
+	timeout.tv_sec = time(NULL) + 10;
+	pthread_mutex_lock(&bar_reach_lock);
+
+	while(bar_reachable == false) {
+		assert(!pthread_cond_timedwait(&status_cond, &bar_reach_lock, &timeout));
+	}
+
+	pthread_mutex_unlock(&bar_reach_lock);
 
 	// Open a channel from foo to bar.
 
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-  assert(bar);
+	assert(bar);
 
 	bar_responded = false;
 	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, NULL, NULL, 0);
 	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb);
 
-  timeout.tv_sec = time(NULL) + 10;
-  pthread_mutex_lock(&poll_lock);
-  while(polled == false) {
-    assert(!pthread_cond_timedwait(&poll_cond, &poll_lock, &timeout));
-  }
-  pthread_mutex_unlock(&poll_lock);
+	timeout.tv_sec = time(NULL) + 10;
+	pthread_mutex_lock(&poll_lock);
+
+	while(polled == false) {
+		assert(!pthread_cond_timedwait(&poll_cond, &poll_lock, &timeout));
+	}
+
+	pthread_mutex_unlock(&poll_lock);
 
 	assert(meshlink_channel_send(mesh1, channel, "Hello", 5) >= 0);
 
-  timeout.tv_sec = time(NULL) + 20;
-  pthread_mutex_lock(&bar_responded_lock);
-  if(bar_responded == false) {
-    assert(!pthread_cond_timedwait(&send_cond, &bar_responded_lock, &timeout));
-  }
-  pthread_mutex_unlock(&bar_responded_lock);
+	timeout.tv_sec = time(NULL) + 20;
+	pthread_mutex_lock(&bar_responded_lock);
+
+	if(bar_responded == false) {
+		assert(!pthread_cond_timedwait(&send_cond, &bar_responded_lock, &timeout));
+	}
+
+	pthread_mutex_unlock(&bar_responded_lock);
 
 	// Clean up.
 
@@ -212,13 +218,13 @@ static bool test_steps_mesh_channel_send_01(void) {
 
 /* Execute meshlink_channel_send Test Case # 2*/
 static void test_case_mesh_channel_send_02(void **state) {
-	 execute_test(test_steps_mesh_channel_send_02, state);
-   return;
+	execute_test(test_steps_mesh_channel_send_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_channel_send Test Case # 2*/
 static bool test_steps_mesh_channel_send_02(void) {
-  struct timespec timeout = {0};
+	struct timespec timeout = {0};
 	meshlink_destroy("chan_send_conf.5");
 
 	// Open new meshlink instance.
@@ -233,17 +239,19 @@ static bool test_steps_mesh_channel_send_02(void) {
 	assert(meshlink_start(mesh1));
 
 	meshlink_node_t *node = meshlink_get_self(mesh1);
-  assert(node);
+	assert(node);
 
 	meshlink_channel_t *channel = meshlink_channel_open(mesh1, node, 7, receive_cb, NULL, 0);
 	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb);
 
-  timeout.tv_sec = time(NULL) + 10;
-  pthread_mutex_lock(&poll_lock);
-  while(polled == false) {
-    assert(!pthread_cond_timedwait(&poll_cond, &poll_lock, &timeout));
-  }
-  pthread_mutex_unlock(&poll_lock);
+	timeout.tv_sec = time(NULL) + 10;
+	pthread_mutex_lock(&poll_lock);
+
+	while(polled == false) {
+		assert(!pthread_cond_timedwait(&poll_cond, &poll_lock, &timeout));
+	}
+
+	pthread_mutex_unlock(&poll_lock);
 
 	ssize_t send_return = meshlink_channel_send(NULL, channel, "Hello", 5);
 
@@ -259,13 +267,13 @@ static bool test_steps_mesh_channel_send_02(void) {
 
 /* Execute meshlink_channel_send Test Case # 3*/
 static void test_case_mesh_channel_send_03(void **state) {
-	 execute_test(test_steps_mesh_channel_send_03, state);
-   return;
+	execute_test(test_steps_mesh_channel_send_03, state);
+	return;
 }
 
 /* Test Steps for meshlink_channel_send Test Case # 3*/
 static bool test_steps_mesh_channel_send_03(void) {
-  struct timespec timeout = {0};
+	struct timespec timeout = {0};
 	meshlink_destroy("chan_send_conf.7");
 	// Open new meshlink instance.
 
@@ -291,13 +299,13 @@ static bool test_steps_mesh_channel_send_03(void) {
 
 /* Execute meshlink_channel_send Test Case # 4*/
 static void test_case_mesh_channel_send_04(void **state) {
-	 execute_test(test_steps_mesh_channel_send_04, state);
-   return;
+	execute_test(test_steps_mesh_channel_send_04, state);
+	return;
 }
 
 /* Test Steps for meshlink_channel_send Test Case # 4*/
 static bool test_steps_mesh_channel_send_04(void) {
-  struct timespec timeout = {0};
+	struct timespec timeout = {0};
 	meshlink_destroy("chan_send_conf.9");
 	// Open two new meshlink instance.
 
@@ -311,17 +319,19 @@ static bool test_steps_mesh_channel_send_04(void) {
 	assert(meshlink_start(mesh1));
 
 	meshlink_node_t *node = meshlink_get_self(mesh1);
-  assert(node);
+	assert(node);
 
 	meshlink_channel_t *channel = meshlink_channel_open(mesh1, node, 7, receive_cb, NULL, 0);
 	meshlink_set_channel_poll_cb(mesh1, channel, poll_cb);
 
-  timeout.tv_sec = time(NULL) + 10;
-  pthread_mutex_lock(&poll_lock);
-  while(polled == false) {
-    assert(!pthread_cond_timedwait(&poll_cond, &poll_lock, &timeout));
-  }
-  pthread_mutex_unlock(&poll_lock);
+	timeout.tv_sec = time(NULL) + 10;
+	pthread_mutex_lock(&poll_lock);
+
+	while(polled == false) {
+		assert(!pthread_cond_timedwait(&poll_cond, &poll_lock, &timeout));
+	}
+
+	pthread_mutex_unlock(&poll_lock);
 
 	ssize_t send_return = meshlink_channel_send(mesh1, channel, NULL, 5);
 
@@ -336,18 +346,18 @@ static bool test_steps_mesh_channel_send_04(void) {
 }
 
 int test_meshlink_channel_send(void) {
-		const struct CMUnitTest blackbox_channel_send_tests[] = {
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_01, NULL, NULL,
-            (void *)&test_mesh_channel_send_01_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_02, NULL, NULL,
-            (void *)&test_mesh_channel_send_02_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_03, NULL, NULL,
-            (void *)&test_mesh_channel_send_03_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_04, NULL, NULL,
-            (void *)&test_mesh_channel_send_04_state)
-		};
+	const struct CMUnitTest blackbox_channel_send_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_01, NULL, NULL,
+		(void *)&test_mesh_channel_send_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_02, NULL, NULL,
+		(void *)&test_mesh_channel_send_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_03, NULL, NULL,
+		(void *)&test_mesh_channel_send_03_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_send_04, NULL, NULL,
+		(void *)&test_mesh_channel_send_04_state)
+	};
 
-  total_tests += sizeof(blackbox_channel_send_tests) / sizeof(blackbox_channel_send_tests[0]);
+	total_tests += sizeof(blackbox_channel_send_tests) / sizeof(blackbox_channel_send_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_channel_send_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_channel_send_tests, NULL, NULL);
 }

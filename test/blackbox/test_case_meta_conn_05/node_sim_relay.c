@@ -31,28 +31,30 @@
 #define CMD_LINE_ARG_INVITEURL  5
 
 int main(int argc, char *argv[]) {
-    struct timeval main_loop_wait = { 5, 0 };
+	struct timeval main_loop_wait = { 5, 0 };
 
-    int clientid = -1;
+	int clientid = -1;
 
-    if ((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR] )) {
-      clientid = atoi(argv[CMD_LINE_ARG_CLIENTID]);
-      mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
-    }
-    /* Setup required signals */
-    setup_signals();
+	if((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR])) {
+		clientid = atoi(argv[CMD_LINE_ARG_CLIENTID]);
+		mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
+	}
 
-    /* Execute test steps */
-    execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
-    execute_start();
+	/* Setup required signals */
+	setup_signals();
 
-    if (clientid != -1) {
-      mesh_event_sock_send(clientid, NODE_STARTED, NULL, 0);
-    }
+	/* Execute test steps */
+	execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
+	execute_start();
 
-    /* All test steps executed - wait for signals to stop/start or close the mesh */
-    while(test_running)
-        select(1, NULL, NULL, NULL, &main_loop_wait);
+	if(clientid != -1) {
+		mesh_event_sock_send(clientid, NODE_STARTED, NULL, 0);
+	}
 
-    execute_close();
+	/* All test steps executed - wait for signals to stop/start or close the mesh */
+	while(test_running) {
+		select(1, NULL, NULL, NULL, &main_loop_wait);
+	}
+
+	execute_close();
 }

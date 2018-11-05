@@ -51,40 +51,40 @@ static bool test_verify_08(void);
 
 /* State structure for verify API Test Case #1 */
 static black_box_state_t test_case_verify_01_state = {
-    .test_case_name = "test_case_verify_01",
+	.test_case_name = "test_case_verify_01",
 };
 
 /* State structure for verify API Test Case #2 */
 static black_box_state_t test_case_verify_02_state = {
-    .test_case_name = "test_case_verify_02",
+	.test_case_name = "test_case_verify_02",
 };
 
 /* State structure for verify API Test Case #3 */
 static black_box_state_t test_case_verify_03_state = {
-    .test_case_name = "test_case_verify_03",
+	.test_case_name = "test_case_verify_03",
 };
 
 /* State structure for verify API Test Case #4 */
 static black_box_state_t test_case_verify_04_state = {
-    .test_case_name = "test_case_verify_04",
+	.test_case_name = "test_case_verify_04",
 };
 
 /* State structure for verify API Test Case #5 */
 static black_box_state_t test_case_verify_05_state = {
-    .test_case_name = "test_case_verify_05",
+	.test_case_name = "test_case_verify_05",
 };
 
 /* State structure for verify API Test Case #6 */
 static black_box_state_t test_case_verify_06_state = {
-    .test_case_name = "test_case_verify_06",
+	.test_case_name = "test_case_verify_06",
 };
 
 
 
 /* Execute meshlink_verify Test Case # 1 - Valid case - verify a data successfully*/
 void test_case_verify_01(void **state) {
-  execute_test(test_verify_01, state);
-  return;
+	execute_test(test_verify_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 1 - Valid case
@@ -98,37 +98,38 @@ void test_case_verify_01(void **state) {
     Verifies data successfully with the apt signature
 */
 bool test_verify_01(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  assert(meshlink_start(mesh_handle));
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	assert(meshlink_start(mesh_handle));
 
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = MESHLINK_SIGLEN;
-  bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
-  assert(ret);
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = MESHLINK_SIGLEN;
+	bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
+	assert(ret);
 
-  meshlink_node_t *source = meshlink_get_node(mesh_handle, "nut");
-  assert(source);
-  ret = meshlink_verify(mesh_handle, source, data, strlen(data) + 1, sig, ssize);
-  meshlink_close(mesh_handle);
-  meshlink_destroy("verifyconf");
+	meshlink_node_t *source = meshlink_get_node(mesh_handle, "nut");
+	assert(source);
+	ret = meshlink_verify(mesh_handle, source, data, strlen(data) + 1, sig, ssize);
+	meshlink_close(mesh_handle);
+	meshlink_destroy("verifyconf");
 
-  if (!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_verify FAILED to verify data\n");
-    return false;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_verify Successfuly verified data\n");
-  return true;
+	if(!ret) {
+		PRINT_TEST_CASE_MSG("meshlink_verify FAILED to verify data\n");
+		return false;
+	}
+
+	PRINT_TEST_CASE_MSG("meshlink_verify Successfuly verified data\n");
+	return true;
 }
 
 
 /* Execute verify_data Test Case # 2 - Invalid case - meshlink_verify passing NULL args*/
 void test_case_verify_02(void **state) {
-    execute_test(test_verify_02, state);
-    return;
+	execute_test(test_verify_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 2 - Invalid case
@@ -143,36 +144,38 @@ void test_case_verify_02(void **state) {
     Reports error accordingly by returning false
 */
 bool test_verify_02(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  assert(meshlink_start(mesh_handle));
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	assert(meshlink_start(mesh_handle));
 
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = MESHLINK_SIGLEN;
-  bool sret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
-  assert(sret);
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = MESHLINK_SIGLEN;
+	bool sret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
+	assert(sret);
 
-  meshlink_node_t *source = meshlink_get_node(mesh_handle, "nut");
-  assert(source != NULL);
-  bool ret = meshlink_verify(NULL, source, data, strlen(data) + 1, sig, ssize);
-  meshlink_close(mesh_handle);
-  meshlink_destroy("verifyconf");
-  if(!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as mesh_handle arg\n");
-    return true;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing NULL as mesh_handle arg\n");
-  return false;
+	meshlink_node_t *source = meshlink_get_node(mesh_handle, "nut");
+	assert(source != NULL);
+	bool ret = meshlink_verify(NULL, source, data, strlen(data) + 1, sig, ssize);
+	meshlink_close(mesh_handle);
+	meshlink_destroy("verifyconf");
+
+	if(!ret) {
+		PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as mesh_handle arg\n");
+		return true;
+	}
+
+	PRINT_TEST_CASE_MSG("meshlink_sign FAILED to report error on passing NULL as mesh_handle arg\n");
+	return false;
 }
 
 
 /* Execute verify_data Test Case # 3 - Invalid case - meshlink_verify passing NULL args*/
 void test_case_verify_03(void **state) {
-    execute_test(test_verify_03, state);
-    return;
+	execute_test(test_verify_03, state);
+	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 3 - Invalid case
@@ -187,33 +190,34 @@ void test_case_verify_03(void **state) {
     Reports error accordingly by returning false
 */
 bool test_verify_03(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  assert(meshlink_start(mesh_handle));
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	assert(meshlink_start(mesh_handle));
 
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = MESHLINK_SIGLEN;
-  bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
-  assert(ret);
-  ret = meshlink_verify(mesh_handle, NULL, data, strlen(data) + 1, sig, ssize);
-  meshlink_close(mesh_handle);
-  meshlink_destroy("verifyconf");
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = MESHLINK_SIGLEN;
+	bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
+	assert(ret);
+	ret = meshlink_verify(mesh_handle, NULL, data, strlen(data) + 1, sig, ssize);
+	meshlink_close(mesh_handle);
+	meshlink_destroy("verifyconf");
 
-  if(!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_verify successfully reported NULL as node_handle arg\n");
-    return true;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_verify FAILED to report NULL as node_handle arg\n");
-  return false;
+	if(!ret) {
+		PRINT_TEST_CASE_MSG("meshlink_verify successfully reported NULL as node_handle arg\n");
+		return true;
+	}
+
+	PRINT_TEST_CASE_MSG("meshlink_verify FAILED to report NULL as node_handle arg\n");
+	return false;
 }
 
 /* Execute verify_data Test Case # 4 - Invalid case - meshlink_verify passing NULL args*/
 void test_case_verify_04(void **state) {
-    execute_test(test_verify_04, state);
-    return;
+	execute_test(test_verify_04, state);
+	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 4 - Invalid case
@@ -228,38 +232,39 @@ void test_case_verify_04(void **state) {
     Reports error accordingly by returning false
 */
 bool test_verify_04(void) {
-  meshlink_destroy("verifyconf");
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  assert(meshlink_start(mesh_handle));
+	meshlink_destroy("verifyconf");
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	assert(meshlink_start(mesh_handle));
 
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = MESHLINK_SIGLEN;
-  bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
-  assert(ret);
-  meshlink_node_t *source = meshlink_get_node(mesh_handle, "nut");
-  assert(source != NULL);
-  ret = meshlink_verify(mesh_handle, source, NULL, strlen(data) + 1, sig, ssize);
-  meshlink_stop(mesh_handle);
-  meshlink_close(mesh_handle);
-  meshlink_destroy("verifyconf");
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = MESHLINK_SIGLEN;
+	bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
+	assert(ret);
+	meshlink_node_t *source = meshlink_get_node(mesh_handle, "nut");
+	assert(source != NULL);
+	ret = meshlink_verify(mesh_handle, source, NULL, strlen(data) + 1, sig, ssize);
+	meshlink_stop(mesh_handle);
+	meshlink_close(mesh_handle);
+	meshlink_destroy("verifyconf");
 
-  if (!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_verify successfully reported NULL as data arg\n");
-    return true;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_verify FAILED to report NULL as data arg\n");
-  return false;
+	if(!ret) {
+		PRINT_TEST_CASE_MSG("meshlink_verify successfully reported NULL as data arg\n");
+		return true;
+	}
+
+	PRINT_TEST_CASE_MSG("meshlink_verify FAILED to report NULL as data arg\n");
+	return false;
 }
 
 
 /* Execute verify_data Test Case # 5 - Invalid case - meshlink_verify passing NULL args*/
 void test_case_verify_05(void **state) {
-    execute_test(test_verify_05, state);
-    return;
+	execute_test(test_verify_05, state);
+	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 5 - Invalid case
@@ -274,38 +279,39 @@ void test_case_verify_05(void **state) {
     Reports error accordingly by returning false
 */
 bool test_verify_05(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", 1);
-  assert(mesh_handle);
-  meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  assert(meshlink_start(mesh_handle));
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", 1);
+	assert(mesh_handle);
+	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	assert(meshlink_start(mesh_handle));
 
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = MESHLINK_SIGLEN;
-  bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
-  assert(ret);
-  meshlink_node_t *source = meshlink_get_node(mesh_handle, "nut");
-  assert(source != NULL);
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = MESHLINK_SIGLEN;
+	bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, &ssize);
+	assert(ret);
+	meshlink_node_t *source = meshlink_get_node(mesh_handle, "nut");
+	assert(source != NULL);
 
-  ret = meshlink_verify(mesh_handle, source, data, strlen(data) + 1, NULL, ssize);
-  meshlink_stop(mesh_handle);
-  meshlink_close(mesh_handle);
-  meshlink_destroy("verifyconf");
+	ret = meshlink_verify(mesh_handle, source, data, strlen(data) + 1, NULL, ssize);
+	meshlink_stop(mesh_handle);
+	meshlink_close(mesh_handle);
+	meshlink_destroy("verifyconf");
 
-  if(!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_verify successfully NULL as sign arg\n");
-    return true;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_verify FAILED to report NULL as sign arg\n");
-  return false;
+	if(!ret) {
+		PRINT_TEST_CASE_MSG("meshlink_verify successfully NULL as sign arg\n");
+		return true;
+	}
+
+	PRINT_TEST_CASE_MSG("meshlink_verify FAILED to report NULL as sign arg\n");
+	return false;
 }
 
 /* Execute verify_data Test Case # 6 - Functionality test, when a wrong source node is mentioned to verify
       the signed data */
 void test_case_verify_06(void **state) {
-    execute_test(test_verify_06, state);
-    return;
+	execute_test(test_verify_06, state);
+	return;
 }
 
 /* Test Steps for meshlink_verify Test Case # 6 - Functionality Test
@@ -320,64 +326,65 @@ void test_case_verify_06(void **state) {
     API returns false when it detects the wrong source node
 */
 bool test_verify_06(void) {
-  /* deleting the confbase if already exists */
-  meshlink_destroy("verifyconf1");
-  meshlink_destroy("verifyconf2");
-  /* Set up logging for Meshlink */
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_handle_t *mesh1 = meshlink_open("verifyconf1", "nut", "chat", DEV_CLASS_STATIONARY);
-  assert(mesh1);
-  meshlink_handle_t *mesh2 = meshlink_open("verifyconf2", "bar", "chat", DEV_CLASS_STATIONARY);
-  assert(mesh2);
+	/* deleting the confbase if already exists */
+	meshlink_destroy("verifyconf1");
+	meshlink_destroy("verifyconf2");
+	/* Set up logging for Meshlink */
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh1 = meshlink_open("verifyconf1", "nut", "chat", DEV_CLASS_STATIONARY);
+	assert(mesh1);
+	meshlink_handle_t *mesh2 = meshlink_open("verifyconf2", "bar", "chat", DEV_CLASS_STATIONARY);
+	assert(mesh2);
 
-  char *exp1 = meshlink_export(mesh1);
-  assert(exp1 != NULL);
-  char *exp2 = meshlink_export(mesh2);
-  assert(exp2 != NULL);
-  assert(meshlink_import(mesh1, exp2));
-  assert(meshlink_import(mesh2, exp1));
+	char *exp1 = meshlink_export(mesh1);
+	assert(exp1 != NULL);
+	char *exp2 = meshlink_export(mesh2);
+	assert(exp2 != NULL);
+	assert(meshlink_import(mesh1, exp2));
+	assert(meshlink_import(mesh2, exp1));
 
-  /* signing done by peer node  */
-  char *data = "Test";
-  char sig[MESHLINK_SIGLEN];
-  size_t ssize = MESHLINK_SIGLEN;
-  bool ret = meshlink_sign(mesh2, data, strlen(data) + 1, sig, &ssize);
-  assert(ret);
+	/* signing done by peer node  */
+	char *data = "Test";
+	char sig[MESHLINK_SIGLEN];
+	size_t ssize = MESHLINK_SIGLEN;
+	bool ret = meshlink_sign(mesh2, data, strlen(data) + 1, sig, &ssize);
+	assert(ret);
 
-  meshlink_node_t *source_nut = meshlink_get_self(mesh1);
-  assert(source_nut);
-  ret = meshlink_verify(mesh_handle, source_nut, data, strlen(data) + 1, sig, ssize);
-  meshlink_close(mesh1);
-  meshlink_close(mesh2);
-  meshlink_destroy("verifyconf1");
-  meshlink_destroy("verifyconf2");
+	meshlink_node_t *source_nut = meshlink_get_self(mesh1);
+	assert(source_nut);
+	ret = meshlink_verify(mesh_handle, source_nut, data, strlen(data) + 1, sig, ssize);
+	meshlink_close(mesh1);
+	meshlink_close(mesh2);
+	meshlink_destroy("verifyconf1");
+	meshlink_destroy("verifyconf2");
 
-  if(!ret) {
-    PRINT_TEST_CASE_MSG("meshlink_verify successfully returned 'false' when a wrong source node used to verify the data\n");
-    return true;
-  }
-  PRINT_TEST_CASE_MSG("meshlink_verify FAILED to report error when a wrong source is mentioned\n");
-  return false;
+	if(!ret) {
+		PRINT_TEST_CASE_MSG("meshlink_verify successfully returned 'false' when a wrong source node used to verify the data\n");
+		return true;
+	}
+
+	PRINT_TEST_CASE_MSG("meshlink_verify FAILED to report error when a wrong source is mentioned\n");
+	return false;
 }
 
 
 int test_meshlink_verify(void) {
-  const struct CMUnitTest blackbox_verify_tests[] = {
-    cmocka_unit_test_prestate_setup_teardown(test_case_verify_01, NULL, NULL,
-            (void *)&test_case_verify_01_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_verify_02, NULL, NULL,
-            (void *)&test_case_verify_02_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_verify_03, NULL, NULL,
-            (void *)&test_case_verify_03_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_verify_04, NULL, NULL,
-            (void *)&test_case_verify_04_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_verify_05, NULL, NULL,
-            (void *)&test_case_verify_05_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_verify_06, NULL, NULL,
-            (void *)&test_case_verify_06_state)
-  };
+	const struct CMUnitTest blackbox_verify_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_verify_01, NULL, NULL,
+		(void *)&test_case_verify_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_verify_02, NULL, NULL,
+		(void *)&test_case_verify_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_verify_03, NULL, NULL,
+		(void *)&test_case_verify_03_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_verify_04, NULL, NULL,
+		(void *)&test_case_verify_04_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_verify_05, NULL, NULL,
+		(void *)&test_case_verify_05_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_verify_06, NULL, NULL,
+		(void *)&test_case_verify_06_state)
+	};
 
-  total_tests += sizeof(blackbox_verify_tests) / sizeof(blackbox_verify_tests[0]);
+	total_tests += sizeof(blackbox_verify_tests) / sizeof(blackbox_verify_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_verify_tests ,NULL , NULL);
- }
+	return cmocka_run_group_tests(blackbox_verify_tests , NULL , NULL);
+}

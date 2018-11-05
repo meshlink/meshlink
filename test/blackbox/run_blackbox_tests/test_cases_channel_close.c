@@ -36,18 +36,18 @@ static bool test_steps_mesh_channel_close_02(void);
 
 /* State structure for meshlink_channel_close Test Case #1 */
 static black_box_state_t test_mesh_channel_close_01_state = {
-    .test_case_name = "test_case_mesh_channel_close_01",
+	.test_case_name = "test_case_mesh_channel_close_01",
 };
 
 /* State structure for meshlink_channel_close Test Case #2 */
 static black_box_state_t test_mesh_channel_close_02_state = {
-    .test_case_name = "test_case_mesh_channel_close_02",
+	.test_case_name = "test_case_mesh_channel_close_02",
 };
 
 /* Execute meshlink_channel_close Test Case # 1*/
 static void test_case_mesh_channel_close_01(void **state) {
-	 execute_test(test_steps_mesh_channel_close_01, state);
-   return;
+	execute_test(test_steps_mesh_channel_close_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_channel_close Test Case # 1*/
@@ -66,6 +66,7 @@ static bool test_steps_mesh_channel_close_01(void) {
 
 	meshlink_handle_t *mesh2 = meshlink_open("chan_close_conf.4", "bar", "channels", DEV_CLASS_BACKBONE);
 	assert(mesh2 != NULL);
+
 	if(!mesh2) {
 		fprintf(stderr, "Could not initialize configuration for bar\n");
 		return false;
@@ -88,12 +89,12 @@ static bool test_steps_mesh_channel_close_01(void) {
 	// Open a channel from foo to bar.
 
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-  assert(bar != NULL);
+	assert(bar != NULL);
 	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7, NULL, NULL, 0);
 	assert(channel != NULL);
 
 	meshlink_channel_close(NULL, channel);
-  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 
 	// Clean up.
@@ -107,8 +108,8 @@ static bool test_steps_mesh_channel_close_01(void) {
 
 /* Execute meshlink_channel_close Test Case # 2*/
 static void test_case_mesh_channel_close_02(void **state) {
-	 execute_test(test_steps_mesh_channel_close_02, state);
-   return;
+	execute_test(test_steps_mesh_channel_close_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_channel_close Test Case # 2*/
@@ -124,7 +125,7 @@ static bool test_steps_mesh_channel_close_02(void) {
 
 	// Pass NULL as mesh handle
 	meshlink_channel_close(mesh, NULL);
-  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	// Clean up.
 
@@ -134,14 +135,14 @@ static bool test_steps_mesh_channel_close_02(void) {
 }
 
 int test_meshlink_channel_close(void) {
-		const struct CMUnitTest blackbox_channel_close_tests[] = {
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_close_01, NULL, NULL,
-            (void *)&test_mesh_channel_close_01_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_close_02, NULL, NULL,
-            (void *)&test_mesh_channel_close_02_state)
-		};
+	const struct CMUnitTest blackbox_channel_close_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_close_01, NULL, NULL,
+		(void *)&test_mesh_channel_close_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_close_02, NULL, NULL,
+		(void *)&test_mesh_channel_close_02_state)
+	};
 
-  total_tests += sizeof(blackbox_channel_close_tests) / sizeof(blackbox_channel_close_tests[0]);
+	total_tests += sizeof(blackbox_channel_close_tests) / sizeof(blackbox_channel_close_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_channel_close_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_channel_close_tests, NULL, NULL);
 }

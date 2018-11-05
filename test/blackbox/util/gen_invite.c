@@ -25,14 +25,14 @@
 #define CMD_LINE_ARG_INVITEE    2
 
 int main(int argc, char *argv[]) {
-    char *invite = NULL;
+	char *invite = NULL;
 
-    /* Start mesh, generate an invite and print out the invite */
-    execute_open(argv[CMD_LINE_ARG_NODENAME], "1");
-    execute_start();
-    invite = execute_invite(argv[CMD_LINE_ARG_INVITEE]);
-    printf("%s\n", invite);
-    //execute_close();
+	/* Start mesh, generate an invite and print out the invite */
+	execute_open(argv[CMD_LINE_ARG_NODENAME], "1");
+	execute_start();
+	invite = execute_invite(argv[CMD_LINE_ARG_INVITEE]);
+	printf("%s\n", invite);
+	//execute_close();
 
-    return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }

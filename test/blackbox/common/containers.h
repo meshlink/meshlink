@@ -39,7 +39,7 @@ void restart_all_containers(void);
 char *invite_in_container(const char *inviter, const char *invitee);
 void node_sim_in_container(const char *node, const char *device_class, const char *invite_url);
 void node_sim_in_container_event(const char *node, const char *device_class,
-                           const char *invite_url, const char *clientId, const char *import);
+                                 const char *invite_url, const char *clientId, const char *import);
 void node_step_in_container(const char *node, const char *sig);
 void change_ip(int node);
 

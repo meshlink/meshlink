@@ -46,27 +46,27 @@ static bool log;
 
 /* State structure for log callback Test Case #1 */
 static black_box_state_t test_case_set_log_cb_01_state = {
-    .test_case_name = "test_case_set_log_cb_01",
+	.test_case_name = "test_case_set_log_cb_01",
 };
 
 /* State structure for log callback Test Case #2 */
 static black_box_state_t test_case_set_log_cb_02_state = {
-    .test_case_name = "test_case_set_log_cb_02",
+	.test_case_name = "test_case_set_log_cb_02",
 };
 
 
 /* log callback */
 static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
-  fprintf(stderr, "Received log text : %s\n", text);
-  log = true;
+	fprintf(stderr, "Received log text : %s\n", text);
+	log = true;
 
-  return;
+	return;
 }
 
 /* Execute meshlink_set_log_cb Test Case # 1 - Valid case */
 static void test_case_set_log_cb_01(void **state) {
-    execute_test(test_set_log_cb_01, state);
-    return;
+	execute_test(test_set_log_cb_01, state);
+	return;
 }
 /* Test Steps for meshlink_set_receive_cb Test Case # 1
 
@@ -78,42 +78,43 @@ static void test_case_set_log_cb_01(void **state) {
     log callback should be invoked when NUT joins with relay.
 */
 static bool test_set_log_cb_01(void) {
-  meshlink_destroy("logconf");
+	meshlink_destroy("logconf");
 
-  // Create meshlink instance for NUT
+	// Create meshlink instance for NUT
 
-  meshlink_handle_t *mesh = meshlink_open("logconf", "nut", "test", DEV_CLASS_STATIONARY);
-  assert(mesh != NULL);
+	meshlink_handle_t *mesh = meshlink_open("logconf", "nut", "test", DEV_CLASS_STATIONARY);
+	assert(mesh != NULL);
 
-  // Set up logging for Meshlink with the newly acquired Mesh Handle
+	// Set up logging for Meshlink with the newly acquired Mesh Handle
 
-  log = false;
-  meshlink_set_log_cb(mesh, TEST_MESHLINK_LOG_LEVEL, log_cb);
+	log = false;
+	meshlink_set_log_cb(mesh, TEST_MESHLINK_LOG_LEVEL, log_cb);
 
-  // Starting node to log
+	// Starting node to log
 
-  bool mesh_start = meshlink_start(mesh);
-  assert(mesh_start);
+	bool mesh_start = meshlink_start(mesh);
+	assert(mesh_start);
 
-  bool ret = log;
-  if(ret) {
-    PRINT_TEST_CASE_MSG("Log call back invoked at least more than once\n");
-  } else {
-    PRINT_TEST_CASE_MSG("Log call back not invoked at least once\n");
-  }
+	bool ret = log;
 
-  // closing meshes and destroying confbase
+	if(ret) {
+		PRINT_TEST_CASE_MSG("Log call back invoked at least more than once\n");
+	} else {
+		PRINT_TEST_CASE_MSG("Log call back not invoked at least once\n");
+	}
 
-  meshlink_close(mesh);
-  meshlink_destroy("logconf");
+	// closing meshes and destroying confbase
 
-  return ret;
+	meshlink_close(mesh);
+	meshlink_destroy("logconf");
+
+	return ret;
 }
 
 /* Execute meshlink_set_log_cb Test Case # 2 - Invalid case */
 static void test_case_set_log_cb_02(void **state) {
-    execute_test(test_set_log_cb_02, state);
-    return;
+	execute_test(test_set_log_cb_02, state);
+	return;
 }
 /* Test Steps for meshlink_set_poll_cb Test Case # 2
 
@@ -125,25 +126,25 @@ static void test_case_set_log_cb_02(void **state) {
 */
 static bool test_set_log_cb_02(void) {
 
-  // Setting an invalid level
+	// Setting an invalid level
 
-  meshlink_set_log_cb(NULL, 1000, NULL);
-  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+	meshlink_set_log_cb(NULL, 1000, NULL);
+	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
-  return true;
+	return true;
 }
 
 
 int test_meshlink_set_log_cb(void) {
-  const struct CMUnitTest blackbox_log_tests[] = {
-    cmocka_unit_test_prestate_setup_teardown(test_case_set_log_cb_01, NULL, NULL,
-            (void *)&test_case_set_log_cb_01_state),
-    cmocka_unit_test_prestate_setup_teardown(test_case_set_log_cb_02, NULL, NULL,
-            (void *)&test_case_set_log_cb_02_state)
-  };
-  total_tests += sizeof(blackbox_log_tests) / sizeof(blackbox_log_tests[0]);
+	const struct CMUnitTest blackbox_log_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_set_log_cb_01, NULL, NULL,
+		(void *)&test_case_set_log_cb_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_set_log_cb_02, NULL, NULL,
+		(void *)&test_case_set_log_cb_02_state)
+	};
+	total_tests += sizeof(blackbox_log_tests) / sizeof(blackbox_log_tests[0]);
 
-  int failed = cmocka_run_group_tests(blackbox_log_tests, NULL, NULL);
+	int failed = cmocka_run_group_tests(blackbox_log_tests, NULL, NULL);
 
-  return failed;
+	return failed;
 }

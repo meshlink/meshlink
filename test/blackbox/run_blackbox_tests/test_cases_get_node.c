@@ -43,28 +43,28 @@ static bool test_steps_mesh_get_node_04(void);
 
 /* State structure for meshlink_get_node Test Case #1 */
 static black_box_state_t test_mesh_get_node_01_state = {
-    .test_case_name = "test_case_mesh_get_node_01",
+	.test_case_name = "test_case_mesh_get_node_01",
 };
 
 /* State structure for meshlink_get_node Test Case #2 */
 static black_box_state_t test_mesh_get_node_02_state = {
-    .test_case_name = "test_case_mesh_get_node_02",
+	.test_case_name = "test_case_mesh_get_node_02",
 };
 
 /* State structure for meshlink_get_node Test Case #3 */
 static black_box_state_t test_mesh_get_node_03_state = {
-    .test_case_name = "test_case_mesh_get_node_03",
+	.test_case_name = "test_case_mesh_get_node_03",
 };
 
 /* State structure for meshlink_get_node Test Case #4 */
 static black_box_state_t test_mesh_get_node_04_state = {
-    .test_case_name = "test_case_mesh_get_node_04",
+	.test_case_name = "test_case_mesh_get_node_04",
 };
 
 /* Execute meshlink_get_node Test Case # 1 */
 static void test_case_mesh_get_node_01(void **state) {
-    execute_test(test_steps_mesh_get_node_01, state);
-    return;
+	execute_test(test_steps_mesh_get_node_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_node Test Case # 1
@@ -77,19 +77,19 @@ static void test_case_mesh_get_node_01(void **state) {
     node handle of it's own is obtained
 */
 static bool test_steps_mesh_get_node_01(void) {
-  meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_destroy("getnode1");
 	meshlink_destroy("getnode2");
 
-  // Opening NUT and bar nodes
-  meshlink_handle_t *mesh1 = meshlink_open("getnode1", "nut", "test", DEV_CLASS_STATIONARY);
+	// Opening NUT and bar nodes
+	meshlink_handle_t *mesh1 = meshlink_open("getnode1", "nut", "test", DEV_CLASS_STATIONARY);
 	assert(mesh1 != NULL);
-  meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-  meshlink_handle_t *mesh2 = meshlink_open("getnode2", "bar", "test", DEV_CLASS_STATIONARY);
+	meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh2 = meshlink_open("getnode2", "bar", "test", DEV_CLASS_STATIONARY);
 	assert(mesh2 != NULL);
-  meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-  // Exporting and Importing mutually
+	// Exporting and Importing mutually
 	char *exp1 = meshlink_export(mesh1);
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
@@ -110,13 +110,13 @@ static bool test_steps_mesh_get_node_01(void) {
 	meshlink_close(mesh2);
 	meshlink_destroy("getnode1");
 	meshlink_destroy("getnode2");
-  return true;
+	return true;
 }
 
 /* Execute meshlink_get_node Test Case # 2 */
 static void test_case_mesh_get_node_02(void **state) {
-    execute_test(test_steps_mesh_get_node_02, state);
-    return;
+	execute_test(test_steps_mesh_get_node_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_node Test Case # 2
@@ -131,13 +131,13 @@ static bool test_steps_mesh_get_node_02(void) {
 	meshlink_node_t *get_node = meshlink_get_node(NULL, "foo");
 	assert_int_equal(get_node, NULL);
 
-  return true;
+	return true;
 }
 
 /* Execute meshlink_get_node Test Case # 3 */
 static void test_case_mesh_get_node_03(void **state) {
-    execute_test(test_steps_mesh_get_node_03, state);
-    return;
+	execute_test(test_steps_mesh_get_node_03, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_node Test Case # 3
@@ -158,13 +158,13 @@ static bool test_steps_mesh_get_node_03(void) {
 
 	meshlink_close(mesh);
 	meshlink_destroy("node_conf.3");
-  return true;
+	return true;
 }
 
 /* Execute meshlink_get_node Test Case # 4 */
 static void test_case_mesh_get_node_04(void **state) {
-    execute_test(test_steps_mesh_get_node_04, state);
-    return;
+	execute_test(test_steps_mesh_get_node_04, state);
+	return;
 }
 
 /* Test Steps for meshlink_get_node Test Case # 4
@@ -188,22 +188,22 @@ static bool test_steps_mesh_get_node_04(void) {
 
 	meshlink_close(mesh);
 	meshlink_destroy("node_conf");
-  return true;
+	return true;
 }
 
 int test_meshlink_get_node(void) {
-		const struct CMUnitTest blackbox_get_node_tests[] = {
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_node_01, NULL, NULL,
-            (void *)&test_mesh_get_node_01_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_node_02, NULL, NULL,
-            (void *)&test_mesh_get_node_02_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_node_03, NULL, NULL,
-            (void *)&test_mesh_get_node_03_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_node_04, NULL, NULL,
-            (void *)&test_mesh_get_node_04_state)
-		};
+	const struct CMUnitTest blackbox_get_node_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_node_01, NULL, NULL,
+		(void *)&test_mesh_get_node_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_node_02, NULL, NULL,
+		(void *)&test_mesh_get_node_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_node_03, NULL, NULL,
+		(void *)&test_mesh_get_node_03_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_node_04, NULL, NULL,
+		(void *)&test_mesh_get_node_04_state)
+	};
 
-  total_tests += sizeof(blackbox_get_node_tests) / sizeof(blackbox_get_node_tests[0]);
+	total_tests += sizeof(blackbox_get_node_tests) / sizeof(blackbox_get_node_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_get_node_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_get_node_tests, NULL, NULL);
 }

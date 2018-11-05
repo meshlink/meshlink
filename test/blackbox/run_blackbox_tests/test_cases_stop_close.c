@@ -40,53 +40,53 @@ static bool test_steps_mesh_stop_01(void);
 
 /* State structure for meshlink_close Test Case #1 */
 static black_box_state_t test_mesh_close_01_state = {
-    .test_case_name = "test_case_mesh_close_01",
+	.test_case_name = "test_case_mesh_close_01",
 };
 
 /* State structure for meshlink_close Test Case #1 */
 static black_box_state_t test_mesh_stop_01_state = {
-    .test_case_name = "test_case_mesh_stop_01",
+	.test_case_name = "test_case_mesh_stop_01",
 };
 
 /* Execute meshlink_close Test Case # 1*/
 static void test_case_mesh_close_01(void **state) {
-	 execute_test(test_steps_mesh_close_01, state);
-   return;
+	execute_test(test_steps_mesh_close_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_close Test Case # 1*/
 
 static bool test_steps_mesh_close_01(void) {
-  meshlink_close(NULL);
-  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+	meshlink_close(NULL);
+	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
-  return true;
+	return true;
 }
 
 /* Execute meshlink_stop Test Case # 1*/
 static void test_case_mesh_stop_01(void **state) {
-	 execute_test(test_steps_mesh_stop_01, state);
-   return;
+	execute_test(test_steps_mesh_stop_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_stop Test Case # 1*/
 static bool test_steps_mesh_stop_01(void) {
-  meshlink_stop(NULL);
-  assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+	meshlink_stop(NULL);
+	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
-  return true;
+	return true;
 }
 
 int test_meshlink_stop_close(void) {
-		const struct CMUnitTest blackbox_stop_close_tests[] = {
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_stop_01, NULL, NULL,
-            (void *)&test_mesh_stop_01_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_close_01, NULL, NULL,
-            (void *)&test_mesh_close_01_state)
-		};
+	const struct CMUnitTest blackbox_stop_close_tests[] = {
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_stop_01, NULL, NULL,
+		(void *)&test_mesh_stop_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_close_01, NULL, NULL,
+		(void *)&test_mesh_close_01_state)
+	};
 
-  total_tests += sizeof(blackbox_stop_close_tests) / sizeof(blackbox_stop_close_tests[0]);
+	total_tests += sizeof(blackbox_stop_close_tests) / sizeof(blackbox_stop_close_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_stop_close_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_stop_close_tests, NULL, NULL);
 }
 

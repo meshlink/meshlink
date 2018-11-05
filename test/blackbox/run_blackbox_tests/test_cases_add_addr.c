@@ -38,23 +38,23 @@ static bool test_steps_mesh_add_address_03(void);
 
 /* State structure for meshlink_add_address Test Case #1 */
 static black_box_state_t test_mesh_add_address_01_state = {
-    .test_case_name = "test_case_mesh_add_address_01",
+	.test_case_name = "test_case_mesh_add_address_01",
 };
 
 /* State structure for meshlink_add_address Test Case #2 */
 static black_box_state_t test_mesh_add_address_02_state = {
-    .test_case_name = "test_case_mesh_add_address_02",
+	.test_case_name = "test_case_mesh_add_address_02",
 };
 
 /* State structure for meshlink_add_address Test Case #3 */
 static black_box_state_t test_mesh_add_address_03_state = {
-    .test_case_name = "test_case_mesh_add_address_03",
+	.test_case_name = "test_case_mesh_add_address_03",
 };
 
 /* Execute meshlink_add_address Test Case # 1 */
 static void test_case_mesh_add_address_01(void **state) {
-    execute_test(test_steps_mesh_add_address_01, state);
-    return;
+	execute_test(test_steps_mesh_add_address_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_add_address Test Case # 1
@@ -68,11 +68,11 @@ static void test_case_mesh_add_address_01(void **state) {
     meshlink_add_address API adds the new address given to it's confbase
 */
 static bool test_steps_mesh_add_address_01(void) {
-  char *node = "foo";
+	char *node = "foo";
 	meshlink_destroy("add_conf.1");
 
 	// Create node instance
-  meshlink_handle_t *mesh = meshlink_open("add_conf.1", node, "chat", DEV_CLASS_STATIONARY);
+	meshlink_handle_t *mesh = meshlink_open("add_conf.1", node, "chat", DEV_CLASS_STATIONARY);
 	assert(mesh != NULL);
 
 	char *hostname = "localhost";
@@ -82,27 +82,29 @@ static bool test_steps_mesh_add_address_01(void) {
 	// Open the foo host file from confbase to verify address being added
 	bool found = false;
 	FILE *fp = fopen("./add_conf.1/hosts/foo", "r");
-  assert(fp);
-  char line[100];
-  while(fgets(line, 100, fp) != NULL) {
-    if(strcasestr(line, "Address") && strcasestr(line, hostname)) {
-      found = true;
-    }
-  }
-  assert(!fclose(fp));
+	assert(fp);
+	char line[100];
 
-  assert_int_equal(found, true);
+	while(fgets(line, 100, fp) != NULL) {
+		if(strcasestr(line, "Address") && strcasestr(line, hostname)) {
+			found = true;
+		}
+	}
 
-  // Clean up
+	assert(!fclose(fp));
+
+	assert_int_equal(found, true);
+
+	// Clean up
 	meshlink_close(mesh);
 	meshlink_destroy("add_conf.1");
-  return true;
+	return true;
 }
 
 /* Execute meshlink_add_address Test Case # 2 */
 static void test_case_mesh_add_address_02(void **state) {
-    execute_test(test_steps_mesh_add_address_02, state);
-    return;
+	execute_test(test_steps_mesh_add_address_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_add_address Test Case # 2
@@ -115,17 +117,17 @@ static void test_case_mesh_add_address_02(void **state) {
     meshlink_add_address API returns false by reporting error successfully.
 */
 static bool test_steps_mesh_add_address_02(void) {
-  // Passing NULL as mesh handle argument to meshlink_add_address API
+	// Passing NULL as mesh handle argument to meshlink_add_address API
 	bool result = meshlink_add_address(NULL, "localhost");
 	assert_int_equal(result, false);
 
-  return true;
+	return true;
 }
 
 /* Execute meshlink_add_address Test Case # 3 */
 static void test_case_mesh_add_address_03(void **state) {
-    execute_test(test_steps_mesh_add_address_03, state);
-    return;
+	execute_test(test_steps_mesh_add_address_03, state);
+	return;
 }
 
 /* Test Steps for meshlink_add_address Test Case # 3
@@ -140,8 +142,8 @@ static void test_case_mesh_add_address_03(void **state) {
 static bool test_steps_mesh_add_address_03(void) {
 	meshlink_destroy("add_conf.3");
 
-  // Create node instance
-  meshlink_handle_t *mesh = meshlink_open("add_conf.3", "foo", "chat", DEV_CLASS_STATIONARY);
+	// Create node instance
+	meshlink_handle_t *mesh = meshlink_open("add_conf.3", "foo", "chat", DEV_CLASS_STATIONARY);
 	assert(mesh != NULL);
 
 	bool result = meshlink_add_address(mesh, NULL);
@@ -149,21 +151,21 @@ static bool test_steps_mesh_add_address_03(void) {
 
 	meshlink_close(mesh);
 	meshlink_destroy("add_conf.3");
-  return true;
+	return true;
 }
 
 int test_meshlink_add_address(void) {
 	const struct CMUnitTest blackbox_add_addr_tests[] = {
-			cmocka_unit_test_prestate_setup_teardown(test_case_mesh_add_address_01, NULL, NULL,
-           (void *)&test_mesh_add_address_01_state),
-			cmocka_unit_test_prestate_setup_teardown(test_case_mesh_add_address_02, NULL, NULL,
-           (void *)&test_mesh_add_address_02_state),
-			cmocka_unit_test_prestate_setup_teardown(test_case_mesh_add_address_03, NULL, NULL,
-           (void *)&test_mesh_add_address_03_state)
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_add_address_01, NULL, NULL,
+		(void *)&test_mesh_add_address_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_add_address_02, NULL, NULL,
+		(void *)&test_mesh_add_address_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_add_address_03, NULL, NULL,
+		(void *)&test_mesh_add_address_03_state)
 	};
 
-  total_tests += sizeof(blackbox_add_addr_tests) / sizeof(blackbox_add_addr_tests[0]);
+	total_tests += sizeof(blackbox_add_addr_tests) / sizeof(blackbox_add_addr_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_add_addr_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_add_addr_tests, NULL, NULL);
 }
 

@@ -34,26 +34,27 @@ pid_t tcpdump_start(char *interface) {
 	int pipes[2];
 	pipe(pipes);
 	PRINT_TEST_CASE_MSG("\x1b[32mLaunching TCP Dump ..\x1b[0m\n");
-  if((tcpdump_pid = fork()) == 0) {
-                              prctl(PR_SET_PDEATHSIG, SIGHUP);
-    close(pipes[1]);
-    // Open log file for TCP Dump
-    int fd = open(TCPDUMP_LOG_FILE, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    assert(fd != -1);
-    close(STDOUT_FILENO);
-    assert(dup2(fd, STDOUT_FILENO) != -1);
 
-    // Launch TCPDump with port numbers of sleepy, gateway & relay
-    int ret = execvp("/usr/sbin/tcpdump", argv);
-    perror("execvp ");
-    assert(ret != -1);
-  } else {
-    close(pipes[0]);
+	if((tcpdump_pid = fork()) == 0) {
+		prctl(PR_SET_PDEATHSIG, SIGHUP);
+		close(pipes[1]);
+		// Open log file for TCP Dump
+		int fd = open(TCPDUMP_LOG_FILE, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		assert(fd != -1);
+		close(STDOUT_FILENO);
+		assert(dup2(fd, STDOUT_FILENO) != -1);
+
+		// Launch TCPDump with port numbers of sleepy, gateway & relay
+		int ret = execvp("/usr/sbin/tcpdump", argv);
+		perror("execvp ");
+		assert(ret != -1);
+	} else {
+		close(pipes[0]);
 		return tcpdump_pid;
 	}
 }
 
 void tcpdump_stop(pid_t tcpdump_pid) {
-  PRINT_TEST_CASE_MSG("\n\x1b[32mStopping TCP Dump.\x1b[0m\n");
-  assert(!kill(tcpdump_pid, SIGTERM));
+	PRINT_TEST_CASE_MSG("\n\x1b[32mStopping TCP Dump.\x1b[0m\n");
+	assert(!kill(tcpdump_pid, SIGTERM));
 }

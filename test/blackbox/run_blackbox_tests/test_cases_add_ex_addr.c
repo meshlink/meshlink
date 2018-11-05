@@ -36,18 +36,18 @@ static bool test_steps_mesh_add_ex_address_02(void);
 
 /* State structure for meshlink_add_external_address Test Case #1 */
 static black_box_state_t test_mesh_add_ex_address_01_state = {
-    .test_case_name = "test_case_mesh_add_ex_address_01",
+	.test_case_name = "test_case_mesh_add_ex_address_01",
 };
 
 /* State structure for meshlink_add_external_address Test Case #2 */
 static black_box_state_t test_mesh_add_ex_address_02_state = {
-    .test_case_name = "test_case_mesh_add_ex_address_01",
+	.test_case_name = "test_case_mesh_add_ex_address_01",
 };
 
 /* Execute meshlink_add_external_address Test Case # 1 */
 void test_case_mesh_add_ex_address_01(void **state) {
-    execute_test(test_steps_mesh_add_ex_address_01, state);
-    return;
+	execute_test(test_steps_mesh_add_ex_address_01, state);
+	return;
 }
 
 /* Test Steps for meshlink_add_external_address Test Case # 1
@@ -62,10 +62,10 @@ void test_case_mesh_add_ex_address_01(void **state) {
     meshlink_add_external_address API adds the new address given to it's confbase
 */
 bool test_steps_mesh_add_ex_address_01(void) {
-  meshlink_destroy("addex_conf.1");
+	meshlink_destroy("addex_conf.1");
 
-  // Create node instance
-  meshlink_handle_t *mesh = meshlink_open("addex_conf.1", "foo", "test", DEV_CLASS_STATIONARY);
+	// Create node instance
+	meshlink_handle_t *mesh = meshlink_open("addex_conf.1", "foo", "test", DEV_CLASS_STATIONARY);
 	assert(mesh != NULL);
 
 	char *external_address = meshlink_get_external_address(mesh);
@@ -77,26 +77,28 @@ bool test_steps_mesh_add_ex_address_01(void) {
 	// Open the foo host file from confbase to verify address being added
 	bool found = false;
 	FILE *fp = fopen("./addex_conf.1/hosts/foo", "r");
-  assert(fp);
-  char line[100];
-  while(fgets(line, 100, fp) != NULL) {
-    if(strcasestr(line, "Address") && strcasestr(line, external_address)) {
-      found = true;
-    }
-  }
-  assert(!fclose(fp));
+	assert(fp);
+	char line[100];
 
-  assert_int_equal(found, true);
+	while(fgets(line, 100, fp) != NULL) {
+		if(strcasestr(line, "Address") && strcasestr(line, external_address)) {
+			found = true;
+		}
+	}
+
+	assert(!fclose(fp));
+
+	assert_int_equal(found, true);
 
 	meshlink_close(mesh);
 	meshlink_destroy("addex_conf.1");
-  return true;
+	return true;
 }
 
 /* Execute meshlink_add_external_address Test Case # 2 */
 void test_case_mesh_add_ex_address_02(void **state) {
-    execute_test(test_steps_mesh_add_ex_address_02, state);
-    return;
+	execute_test(test_steps_mesh_add_ex_address_02, state);
+	return;
 }
 
 /* Test Steps for meshlink_add_external_address Test Case # 2
@@ -112,19 +114,19 @@ bool test_steps_mesh_add_ex_address_02(void) {
 	bool result = meshlink_add_external_address(NULL);
 	assert_int_equal(result, false);
 
-  return true;
+	return true;
 }
 
 int test_meshlink_add_external_address(void) {
 	const struct CMUnitTest blackbox_add_ex_addr_tests[] = {
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_add_ex_address_01, NULL, NULL,
-            (void *)&test_mesh_add_ex_address_01_state),
-				cmocka_unit_test_prestate_setup_teardown(test_case_mesh_add_ex_address_02, NULL, NULL,
-            (void *)&test_mesh_add_ex_address_02_state)
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_add_ex_address_01, NULL, NULL,
+		(void *)&test_mesh_add_ex_address_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_add_ex_address_02, NULL, NULL,
+		(void *)&test_mesh_add_ex_address_02_state)
 	};
 
-  total_tests += sizeof(blackbox_add_ex_addr_tests) / sizeof(blackbox_add_ex_addr_tests[0]);
+	total_tests += sizeof(blackbox_add_ex_addr_tests) / sizeof(blackbox_add_ex_addr_tests[0]);
 
-  return cmocka_run_group_tests(blackbox_add_ex_addr_tests, NULL, NULL);
+	return cmocka_run_group_tests(blackbox_add_ex_addr_tests, NULL, NULL);
 }
 
