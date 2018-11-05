@@ -29,3 +29,4 @@ core.*
 /INSTALL
 ar-lib
 meshlink.layout
+*.cbp
