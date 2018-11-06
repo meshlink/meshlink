@@ -65,24 +65,18 @@
 #include "../common/containers.h"
 #include "../common/common_handlers.h"
 
-#define CMD_LINE_ARG_MESHLINK_ROOT_PATH 1
-#define CMD_LINE_ARG_LXC_PATH 2
-#define CMD_LINE_ARG_LXC_BRIDGE_NAME 3
-#define CMD_LINE_ARG_ETH_IF_NAME 4
-#define CMD_LINE_ARG_CHOOSE_ARCH 5
-
 char *meshlink_root_path = NULL;
 char *choose_arch = NULL;
 int total_tests;
 
 int main(int argc, char *argv[]) {
 	/* Set configuration */
-	assert(argc >= (CMD_LINE_ARG_CHOOSE_ARCH + 1));
-	meshlink_root_path = argv[CMD_LINE_ARG_MESHLINK_ROOT_PATH];
-	lxc_path = argv[CMD_LINE_ARG_LXC_PATH];
-	lxc_bridge = argv[CMD_LINE_ARG_LXC_BRIDGE_NAME];
-	eth_if_name = argv[CMD_LINE_ARG_ETH_IF_NAME];
-	choose_arch = argv[CMD_LINE_ARG_CHOOSE_ARCH];
+	assert(argc > 5);
+	meshlink_root_path = argv[1];
+	lxc_path = argv[2];
+	lxc_bridge = argv[3];
+	eth_if_name = argv[4];
+	choose_arch = argv[5];
 
 	int failed_tests = 0;
 

@@ -71,7 +71,6 @@ static black_box_state_t test_mesh_open_05_state = {
 /* Execute meshlink_open Test Case # 1*/
 static void test_case_mesh_open_01(void **state) {
 	execute_test(test_steps_mesh_open_01, state);
-	return;
 }
 
 /* Test Steps for meshlink_open Test Case # 1
@@ -86,6 +85,7 @@ static bool test_steps_mesh_open_01(void) {
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_handle_t *mesh = meshlink_open("open_conf", "foo", "test", DEV_CLASS_STATIONARY);
 	assert_int_not_equal(mesh, NULL);
+
 	meshlink_close(mesh);
 	meshlink_destroy("open_conf");
 	return true;
@@ -94,7 +94,6 @@ static bool test_steps_mesh_open_01(void) {
 /* Execute meshlink_open Test Case # 2*/
 static void test_case_mesh_open_02(void **state) {
 	execute_test(test_steps_mesh_open_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_open Test Case # 2
@@ -109,13 +108,13 @@ static bool test_steps_mesh_open_02(void) {
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_handle_t *mesh = meshlink_open(NULL, "foo", "test", DEV_CLASS_STATIONARY);
 	assert_int_equal(mesh, NULL);
+
 	return true;
 }
 
 /* Execute meshlink_open Test Case # 3 */
 static void test_case_mesh_open_03(void **state) {
 	execute_test(test_steps_mesh_open_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_open Test Case # 3
@@ -130,6 +129,7 @@ static bool test_steps_mesh_open_03(void) {
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_handle_t *mesh = meshlink_open("openconf", NULL, "test", DEV_CLASS_STATIONARY);
 	assert_int_equal(mesh, NULL);
+
 	meshlink_destroy("open_conf");
 	return true;
 }
@@ -137,7 +137,6 @@ static bool test_steps_mesh_open_03(void) {
 /* Execute meshlink_open Test Case # 4*/
 static void test_case_mesh_open_04(void **state) {
 	execute_test(test_steps_mesh_open_04, state);
-	return;
 }
 
 /* Test Steps for meshlink_open Test Case # 4
@@ -152,6 +151,7 @@ static bool test_steps_mesh_open_04(void) {
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_handle_t *mesh = meshlink_open("openconf", "foo", NULL, DEV_CLASS_STATIONARY);
 	assert_int_equal(mesh, NULL);
+
 	meshlink_destroy("open_conf");
 	return true;
 }
@@ -159,7 +159,6 @@ static bool test_steps_mesh_open_04(void) {
 /* Execute meshlink_open Test Case # 5*/
 static void test_case_mesh_open_05(void **state) {
 	execute_test(test_steps_mesh_open_05, state);
-	return;
 }
 
 /* Test Steps for meshlink_open Test Case # 5
@@ -174,6 +173,7 @@ static bool test_steps_mesh_open_05(void) {
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_handle_t *mesh = meshlink_open("openconf", "foo", "test", -1);
 	assert_int_equal(mesh, NULL);
+
 	meshlink_destroy("open_conf");
 	return true;
 }

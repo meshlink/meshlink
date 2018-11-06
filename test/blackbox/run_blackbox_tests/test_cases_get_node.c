@@ -64,7 +64,6 @@ static black_box_state_t test_mesh_get_node_04_state = {
 /* Execute meshlink_get_node Test Case # 1 */
 static void test_case_mesh_get_node_01(void **state) {
 	execute_test(test_steps_mesh_get_node_01, state);
-	return;
 }
 
 /* Test Steps for meshlink_get_node Test Case # 1
@@ -116,7 +115,6 @@ static bool test_steps_mesh_get_node_01(void) {
 /* Execute meshlink_get_node Test Case # 2 */
 static void test_case_mesh_get_node_02(void **state) {
 	execute_test(test_steps_mesh_get_node_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_get_node Test Case # 2
@@ -137,7 +135,6 @@ static bool test_steps_mesh_get_node_02(void) {
 /* Execute meshlink_get_node Test Case # 3 */
 static void test_case_mesh_get_node_03(void **state) {
 	execute_test(test_steps_mesh_get_node_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_get_node Test Case # 3
@@ -164,7 +161,6 @@ static bool test_steps_mesh_get_node_03(void) {
 /* Execute meshlink_get_node Test Case # 4 */
 static void test_case_mesh_get_node_04(void **state) {
 	execute_test(test_steps_mesh_get_node_04, state);
-	return;
 }
 
 /* Test Steps for meshlink_get_node Test Case # 4

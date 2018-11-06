@@ -74,7 +74,6 @@ static black_box_state_t test_case_import_06_state = {
 /* Execute import Test Case # 1 - valid case*/
 static void test_case_import_01(void **state) {
 	execute_test(test_import_01, state);
-	return;
 }
 /* Test Steps for meshlink_import Test Case # 1 - Valid case
 
@@ -106,11 +105,7 @@ static bool test_import_01(void) {
 	bool imp1 = meshlink_import(mesh1, exp2);
 	bool imp2 = meshlink_import(mesh2, exp1);
 
-	if(imp1 && imp2) {
-		PRINT_TEST_CASE_MSG("meshlink_import mesh1 & mesh2 imported successfully\n");
-	} else {
-		fprintf(stderr, "Failed to IMPORT mesh1 & mesh2\n");
-	}
+	assert_int_equal(imp1 && imp2, true);
 
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
@@ -122,7 +117,6 @@ static bool test_import_01(void) {
 /* Execute import Test Case # 2 - invalid case*/
 static void test_case_import_02(void **state) {
 	execute_test(test_import_02, state);
-	return;
 }
 /* Test Steps for meshlink_import Test Case # 2 - Invalid case
 
@@ -154,25 +148,19 @@ static bool test_import_02(void) {
 
 	bool imp1 = meshlink_import(NULL, exp2);
 	bool imp2 = meshlink_import(mesh2, exp1);
-
-	if((!imp1) && imp2) {
-		PRINT_TEST_CASE_MSG("meshlink_import mesh1 successfully reported error when NULL mesh handler argument error\n");
-	} else {
-		PRINT_TEST_CASE_MSG("Failed to report NULL argument error\n");
-	}
+	assert_int_equal((!imp1) && imp2, true);
 
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
-	return (!imp1) && imp2;
+	return true;
 }
 
 
 /* Execute import Test Case # 3 - invalid case*/
 static void test_case_import_03(void **state) {
 	execute_test(test_import_03, state);
-	return;
 }
 /* Test Steps for meshlink_import Test Case # 3 - Invalid case
 
@@ -206,23 +194,18 @@ static bool test_import_03(void) {
 	bool imp1 = meshlink_import(mesh1, NULL);
 	bool imp2 = meshlink_import(mesh2, exp1);
 
-	if((!imp1) && imp2) {
-		PRINT_TEST_CASE_MSG("meshlink_import mesh1 successfully reported error when NULL is passed as exported data argument\n");
-	} else {
-		PRINT_TEST_CASE_MSG("Failed to report NULL argument error\n");
-	}
+	assert_int_equal((!imp1) && imp2, true);
 
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
-	return (!imp1) && imp2;
+	return true;
 }
 
 /* Execute import Test Case # 4 - invalid case garbage string*/
 static void test_case_import_04(void **state) {
 	execute_test(test_import_04, state);
-	return;
 }
 /* Test Steps for meshlink_import Test Case # 4 - Invalid case
 
@@ -256,24 +239,18 @@ static bool test_import_04(void) {
 	// Importing NUT with garbage string as exported data argument
 	bool imp1 = meshlink_import(mesh1, "1/2/3");
 	bool imp2 = meshlink_import(mesh2, exp1);
-
-	if((!imp1) && imp2) {
-		PRINT_TEST_CASE_MSG("meshlink_import mesh1 successfully reported error when a garbage string is passed as exported data argument\n");
-	} else {
-		PRINT_TEST_CASE_MSG("Failed to report error when a garbage string is used for importing meta data\n");
-	}
+  assert_int_equal((!imp1) && imp2, true);
 
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
-	return (!imp1) && imp2;
+	return true;
 }
 
 /* Execute import Test Case # 5 - valid case*/
 static void test_case_import_05(void **state) {
 	execute_test(test_import_05, state);
-	return;
 }
 /* Test Steps for meshlink_import Test Case # 5 - Invalid case
 
@@ -299,32 +276,25 @@ static bool test_import_05(void) {
 	meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	/* Exporting  & Importing nodes */
-	PRINT_TEST_CASE_MSG("Exporting NUT & bar\n");
 	char *exp1 = meshlink_export(mesh1);
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-	PRINT_TEST_CASE_MSG("Importing NUT & bar\n");
 	bool imp1 = meshlink_import(mesh1, exp2);
 	assert(imp1);
 	bool imp2 = meshlink_import(mesh2, exp1);
 	assert(imp2);
 
 	/** Trying to import twice **/
-	PRINT_TEST_CASE_MSG("trying to import twice \n");
 	bool imp3 = meshlink_import(mesh2, exp1);
 
-	if(imp3) {
-		PRINT_TEST_CASE_MSG("meshlink_import when imported twice returned 'true'\n");
-	} else {
-		PRINT_TEST_CASE_MSG("meshlink_import when imported twice returned 'false'\n");
-	}
+	assert_int_equal(imp3, false);
 
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
 	meshlink_destroy("importconf1");
 	meshlink_destroy("importconf2");
-	return !imp3;
+	return true;
 }
 
 int test_meshlink_import(void) {

@@ -77,7 +77,6 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 	polled = true;
 	assert(!pthread_cond_broadcast(&poll_cond));
 	pthread_mutex_unlock(&poll_lock);
-	return;
 }
 
 static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *source, bool reach) {
@@ -85,14 +84,11 @@ static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *source, boo
 	reachable = true;
 	assert(!pthread_cond_broadcast(&reachable_cond));
 	pthread_mutex_unlock(&reachable_lock);
-
-	return;
 }
 
 /* Execute meshlink_channel_set_poll_cb Test Case # 1 */
 static void test_case_channel_set_poll_cb_01(void **state) {
 	execute_test(test_steps_channel_set_poll_cb_01, state);
-	return;
 }
 /* Test Steps for meshlink_channel_set_poll_cb Test Case # 1
 
@@ -171,7 +167,6 @@ static bool test_steps_channel_set_poll_cb_01(void) {
 /* Execute meshlink_channel_set_poll_cb Test Case # 2 */
 static void test_case_channel_set_poll_cb_02(void **state) {
 	execute_test(test_steps_channel_set_poll_cb_02, state);
-	return;
 }
 /* Test Steps for meshlink_channel_set_poll_cb Test Case # 2
 
@@ -212,7 +207,6 @@ static bool test_steps_channel_set_poll_cb_02(void) {
 /* Execute meshlink_channel_set_poll_cb Test Case # 3 */
 static void test_case_channel_set_poll_cb_03(void **state) {
 	execute_test(test_steps_channel_set_poll_cb_03, state);
-	return;
 }
 /* Test Steps for meshlink_channel_set_poll_cb Test Case # 3
 

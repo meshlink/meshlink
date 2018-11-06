@@ -86,7 +86,6 @@ static black_box_state_t test_case_sign_07_state = {
 /* Execute sign_data Test Case # 1 - Valid case - sign a data successfully*/
 static void test_case_sign_01(void **state) {
 	execute_test(test_sign_01, state);
-	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 1 - Valid case
@@ -140,7 +139,7 @@ static bool test_sign_02(void) {
 	char sig[MESHLINK_SIGLEN];
 	size_t ssize = MESHLINK_SIGLEN;
 
-	PRINT_TEST_CASE_MSG("Calling meshlink_sign API \n");
+	// Calling meshlink_sign API
 	bool ret = meshlink_sign(NULL, data, strlen(data) + 1, sig, &ssize);
 
 	if(!ret) {
@@ -155,7 +154,6 @@ static bool test_sign_02(void) {
 /* Execute sign_data Test Case # 3 - Invalid case - meshlink_sign passing data to be signed as NULL */
 static void test_case_sign_03(void **state) {
 	execute_test(test_sign_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 3 - invalid case
@@ -201,7 +199,6 @@ static bool test_sign_03(void) {
       to be signed */
 static void test_case_sign_04(void **state) {
 	execute_test(test_sign_04, state);
-	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 3 - invalid case
@@ -248,7 +245,6 @@ static bool test_sign_04(void) {
       signature buffer argument*/
 static void test_case_sign_05(void **state) {
 	execute_test(test_sign_05, state);
-	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 5 - invalid case
@@ -295,7 +291,6 @@ static bool test_sign_05(void) {
       signature argument */
 static void test_case_sign_06(void **state) {
 	execute_test(test_sign_06, state);
-	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 6 - invalid case
@@ -340,7 +335,6 @@ static bool test_sign_06(void) {
 /* Execute sign_data Test Case # 7 - Invalid case - meshlink_sign passing size of signature < MESHLINK_SIGLEN*/
 static void test_case_sign_07(void **state) {
 	execute_test(test_sign_07, state);
-	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 6 - invalid case

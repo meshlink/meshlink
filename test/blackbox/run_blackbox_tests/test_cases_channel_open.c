@@ -61,7 +61,6 @@ static black_box_state_t test_mesh_channel_open_04_state = {
 /* Execute meshlink_channel_open Test Case # 1*/
 static void test_case_mesh_channel_open_01(void **state) {
 	execute_test(test_steps_mesh_channel_open_01, state);
-	return;
 }
 
 static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
@@ -130,7 +129,6 @@ static bool test_steps_mesh_channel_open_01(void) {
 */
 static void test_case_mesh_channel_open_02(void **state) {
 	execute_test(test_steps_mesh_channel_open_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_channel_open Test Case # 2*/
@@ -177,7 +175,6 @@ static bool test_steps_mesh_channel_open_02(void) {
 /* Execute meshlink_channel_open Test Case # 3 */
 static void test_case_mesh_channel_open_03(void **state) {
 	execute_test(test_steps_mesh_channel_open_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_channel_open Test Case # 3
@@ -213,7 +210,6 @@ static bool test_steps_mesh_channel_open_03(void) {
 /* Execute meshlink_channel_open Test Case # 4*/
 static void test_case_mesh_channel_open_04(void **state) {
 	execute_test(test_steps_mesh_channel_open_04, state);
-	return;
 }
 
 /* Test Steps for meshlink_channel_open Test Case # 4

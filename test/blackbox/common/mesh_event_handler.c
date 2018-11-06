@@ -36,8 +36,8 @@
 
 // TODO: Implement mesh event handling with reentrant functions(if required).
 static struct sockaddr_in server_addr;
-static int client_fd;
-static int server_fd;
+static int client_fd = -1;
+static int server_fd = -1;
 
 char *mesh_event_sock_create(const char *if_name) {
 	struct sockaddr_in server;
@@ -80,12 +80,10 @@ char *mesh_event_sock_create(const char *if_name) {
 	return ip;
 }
 
-bool mesh_event_sock_connect(const char *import) {
+void mesh_event_sock_connect(const char *import) {
 	char *port = NULL;
 
-	if(import == NULL) {
-		return false;
-	}
+	assert(import);
 
 	char *ip = strdup(import);
 	assert((port = strchr(ip, ':')) != NULL);
@@ -98,13 +96,7 @@ bool mesh_event_sock_connect(const char *import) {
 	server_addr.sin_port        = htons(atoi(port));
 	client_fd = socket(AF_INET, SOCK_DGRAM, 0);
 	free(ip);
-
-	if(client_fd < 0) {
-		perror("client socket status");
-		return false;
-	} else {
-		return true;
-	}
+	assert(client_fd >= 0);
 }
 
 bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payload, size_t payload_length) {
@@ -113,6 +105,7 @@ bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payload, size
 
 	// Packing the mesh event
 	assert(client_id >= 0);
+  assert(client_fd >= 0);
 	assert(event >= 0 && event < MAX_EVENT);
 	mesh_event_send_packet.client_id   = client_id;
 	mesh_event_send_packet.mesh_event  = event;
@@ -142,6 +135,10 @@ bool wait_for_event(mesh_event_callback_t callback, int t) {
 	int activity;
 	mesh_event_payload_t mesh_event_rec_packet;
 
+	assert(callback);
+	assert(server_fd >= -1);
+  assert(t >= 0);
+
 	timeout.tv_sec  = t;
 	timeout.tv_usec = 0;
 	FD_ZERO(&read_fds);
@@ -157,7 +154,7 @@ bool wait_for_event(mesh_event_callback_t callback, int t) {
 		} else if(FD_ISSET(server_fd, &read_fds)) {
 			// Unpacking the mesh event
 			ssize_t recv_ret = recvfrom(server_fd, &mesh_event_rec_packet, sizeof(mesh_event_rec_packet), 0, &client, &soc_len);
-
+      assert(recv_ret == sizeof(mesh_event_rec_packet));
 			callback(mesh_event_rec_packet);
 			return true;
 		}

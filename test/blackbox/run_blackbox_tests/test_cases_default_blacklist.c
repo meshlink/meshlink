@@ -73,8 +73,6 @@ void status_cb1(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) 
 	} else if(!strcmp(node->name, "foz")) {
 		foz_reachable = reachable;
 	}
-
-	return;
 }
 
 /* Test Steps for meshlink_default_blacklist Test Case # 1
@@ -147,7 +145,6 @@ static bool test_steps_mesh_default_blacklist_01(void) {
 	foo = meshlink_get_node(mesh3, "foo");
 	assert(foo);
 	assert(meshlink_send(mesh3, foo, "test", 5));
-
 	received = false;
 	assert(meshlink_send(mesh3, foo, "test", 5));
 	assert_after(!received, 2);
@@ -169,7 +166,6 @@ static bool test_steps_mesh_default_blacklist_01(void) {
 /* Execute meshlink_default_blacklist Test Case # 2*/
 static void test_case_mesh_default_blacklist_02(void **state) {
 	execute_test(test_steps_mesh_default_blacklist_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_default_blacklist Test Case # 2

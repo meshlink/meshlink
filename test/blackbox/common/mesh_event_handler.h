@@ -133,9 +133,9 @@ extern bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payloa
  *  @param server_address    NULL terminated string that's exported by mesh_event_sock_create() which
  *                           which contains IP address and port number of the mesh event server.
  *
- *  @return                  This function returns true on success else returns false.
+ *  @return                  void
  */
-extern bool mesh_event_sock_connect(const char *server_address);
+extern void mesh_event_sock_connect(const char *server_address);
 
 bool wait_for_event_only(mesh_event_callback_t callback, int t, mesh_event_t event);
 #endif // _MESH_EVENT_HANDLER_H_

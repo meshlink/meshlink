@@ -67,8 +67,6 @@ void rename_container(const char *old_name, const char *new_name) {
 	rename_status = system(rename_command);
 	PRINT_TEST_CASE_MSG("Container '%s' rename status: %d\n", old_name, rename_status);
 	assert(rename_status == 0);
-
-	return;
 }
 
 /* Run 'cmd' inside the Container created for 'node' and return the first line of the output
@@ -184,8 +182,6 @@ void container_wait_ip(int node) {
 	                    container_ips[node]);
 
 	free(ip);
-
-	return;
 }
 
 /* Create all required test containers */
@@ -283,8 +279,6 @@ void setup_containers(void **state) {
 		new_container->start(new_container, 0, NULL);
 		container_wait_ip(i);
 	}
-
-	return;
 }
 
 /* Destroy all Containers with names containing 'run_' - Containers saved for debugging will
@@ -313,8 +307,6 @@ void destroy_containers(void) {
 			test_containers[i]->destroy_with_snapshots(test_containers[i]);
 		}
 	}
-
-	return;
 }
 
 /* Restart all the Containers being used in the current test case i.e. Containers with
@@ -334,8 +326,6 @@ void restart_all_containers(void) {
 		test_container->start(test_container, 0, NULL);
 		container_wait_ip(i);
 	}
-
-	return;
 }
 
 /* Run the gen_invite command inside the 'inviter' container to generate an invite
@@ -364,8 +354,6 @@ void node_sim_in_container(const char *node, const char *device_class, const cha
 	                (invite_url) ? invite_url : "", node) >= 0);
 	run_in_container(node_sim_command, node, true);
 	PRINT_TEST_CASE_MSG("node_sim_%s started in Container\n", node);
-
-	return;
 }
 
 /* Run the node_sim_<nodename> program inside the 'node''s container with event handling capable*/
@@ -382,8 +370,6 @@ void node_sim_in_container_event(const char *node, const char *device_class,
 	                    node, clientId);
 	PRINT_TEST_CASE_MSG("node_sim_%s mesh event import string : %s\n",
 	                    node, import);
-
-	return;
 }
 
 /* Run the node_step.sh script inside the 'node''s container to send the 'sig' signal to the
@@ -396,8 +382,6 @@ void node_step_in_container(const char *node, const char *sig) {
 	                node, sig) >= 0);
 	run_in_container(node_step_command, node, false);
 	PRINT_TEST_CASE_MSG("Signal %s sent to node_sim_%s\n", sig, node);
-
-	return;
 }
 
 /* Change the IP Address of the Container running 'node'
@@ -468,5 +452,4 @@ void change_ip(int node) {
 	strncpy(container_ips[node], new_ip, sizeof(new_ip));   // Save the new IP Addres
 	PRINT_TEST_CASE_MSG("Node '%s' IP Address changed to %s\n", state_ptr->node_names[node],
 	                    container_ips[node]);
-	return;
 }

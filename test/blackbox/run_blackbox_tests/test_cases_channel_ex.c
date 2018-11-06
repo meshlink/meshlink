@@ -46,8 +46,6 @@ static void test_case_channel_ex_05(void **state);
 static bool test_steps_channel_ex_05(void);
 static void test_case_channel_ex_06(void **state);
 static bool test_steps_channel_ex_06(void);
-static void test_case_channel_ex_07(void **state);
-static bool test_steps_channel_ex_07(void);
 
 static void cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len);
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len);
@@ -113,7 +111,6 @@ static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel,
     valid case by passing all valid arguments */
 static void test_case_channel_ex_01(void **state) {
 	execute_test(test_steps_channel_ex_01, state);
-	return;
 }
 
 /* Test Steps for meshlink_channel_open_ex Test Case # 1 - Valid case
@@ -173,7 +170,6 @@ static bool test_steps_channel_ex_01(void) {
     0 for send queue & it's length respectively and others with valid arguments */
 static void test_case_channel_ex_02(void **state) {
 	execute_test(test_steps_channel_ex_02, state);
-	return;
 }
 /* Test Steps for meshlink_channel_open_ex Test Case # 2 - Valid case (TCP channel)
 
@@ -225,7 +221,6 @@ static bool test_steps_channel_ex_02(void) {
 /* Execute meshlink_channel_open_ex Test Case # 3 - Open a UDP channel */
 static void test_case_channel_ex_03(void **state) {
 	execute_test(test_steps_channel_ex_03, state);
-	return;
 }
 /* Test Steps for meshlink_channel_open_ex Test Case # 3 - Valid case (UDP channel)
 
@@ -279,7 +274,6 @@ static bool test_steps_channel_ex_03(void) {
     and send queue */
 static void test_case_channel_ex_04(void **state) {
 	execute_test(test_steps_channel_ex_04, state);
-	return;
 }
 /* Test Steps for meshlink_channel_open_ex Test Case # 4 - Valid Case (Disabling receive callback)
 
@@ -332,7 +326,6 @@ static bool test_steps_channel_ex_04(void) {
     for the API */
 static void test_case_channel_ex_05(void **state) {
 	execute_test(test_steps_channel_ex_05, state);
-	return;
 }
 /* Test Steps for meshlink_channel_open_ex Test Case # 5 - Invalid case (NULL as mesh argument)
 
@@ -373,7 +366,6 @@ static bool test_steps_channel_ex_05(void) {
     for the API*/
 static void test_case_channel_ex_06(void **state) {
 	execute_test(test_steps_channel_ex_06, state);
-	return;
 }
 
 /* Test Steps for meshlink_channel_open_ex Test Case # 6 - Invalid case (NULL as node argument)
@@ -406,13 +398,6 @@ static bool test_steps_channel_ex_06(void) {
 	meshlink_close(mesh_handle);
 	meshlink_destroy("channelexconf");
 	return true;
-}
-
-/* Execute meshlink_channel_open_ex Test Case # 7 Opening channel using invalid argument as
-    flag argument for the API*/
-static void test_case_channel_ex_07(void **state) {
-	execute_test(test_steps_channel_ex_07, state);
-	return;
 }
 
 int test_meshlink_channel_open_ex(void) {

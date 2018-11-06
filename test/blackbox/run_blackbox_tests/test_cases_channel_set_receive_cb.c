@@ -79,8 +79,6 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 	rec_stat = true;
 	assert(!pthread_cond_broadcast(&receive_cond));
 	pthread_mutex_unlock(& lock_receive);
-
-	return;
 }
 
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
@@ -104,7 +102,6 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 /* Execute meshlink_channel_set_receive_cb Test Case # 1 */
 static void test_case_set_channel_receive_cb_01(void **state) {
 	execute_test(test_steps_set_channel_receive_cb_01, state);
-	return;
 }
 /* Test Steps for meshlink_channel_set_receive_cb Test Case # 1 - Valid case
 
@@ -163,7 +160,6 @@ static bool test_steps_set_channel_receive_cb_01(void) {
 /* Execute meshlink_channel_set_receive_cb Test Case # 2 */
 static void test_case_set_channel_receive_cb_02(void **state) {
 	execute_test(test_steps_set_channel_receive_cb_02, state);
-	return;
 }
 /* Test Steps for meshlink_channel_set_receive_cb Test Case # 2 - Invalid case
 
@@ -206,7 +202,6 @@ static bool test_steps_set_channel_receive_cb_02(void) {
 /* Execute meshlink_channel_set_receive_cb Test Case # 3 */
 static void test_case_set_channel_receive_cb_03(void **state) {
 	execute_test(test_steps_set_channel_receive_cb_03, state);
-	return;
 }
 /* Test Steps for meshlink_channel_set_receive_cb Test Case # 3 - Invalid case
 

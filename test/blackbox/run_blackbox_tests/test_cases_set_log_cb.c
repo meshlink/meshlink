@@ -59,14 +59,11 @@ static black_box_state_t test_case_set_log_cb_02_state = {
 static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
 	fprintf(stderr, "Received log text : %s\n", text);
 	log = true;
-
-	return;
 }
 
 /* Execute meshlink_set_log_cb Test Case # 1 - Valid case */
 static void test_case_set_log_cb_01(void **state) {
 	execute_test(test_set_log_cb_01, state);
-	return;
 }
 /* Test Steps for meshlink_set_receive_cb Test Case # 1
 
@@ -97,24 +94,19 @@ static bool test_set_log_cb_01(void) {
 
 	bool ret = log;
 
-	if(ret) {
-		PRINT_TEST_CASE_MSG("Log call back invoked at least more than once\n");
-	} else {
-		PRINT_TEST_CASE_MSG("Log call back not invoked at least once\n");
-	}
+	assert_int_equal(ret, true);
 
 	// closing meshes and destroying confbase
 
 	meshlink_close(mesh);
 	meshlink_destroy("logconf");
 
-	return ret;
+	return true;
 }
 
 /* Execute meshlink_set_log_cb Test Case # 2 - Invalid case */
 static void test_case_set_log_cb_02(void **state) {
 	execute_test(test_set_log_cb_02, state);
-	return;
 }
 /* Test Steps for meshlink_set_poll_cb Test Case # 2
 

@@ -54,7 +54,6 @@ static black_box_state_t test_mesh_add_address_03_state = {
 /* Execute meshlink_add_address Test Case # 1 */
 static void test_case_mesh_add_address_01(void **state) {
 	execute_test(test_steps_mesh_add_address_01, state);
-	return;
 }
 
 /* Test Steps for meshlink_add_address Test Case # 1
@@ -104,7 +103,6 @@ static bool test_steps_mesh_add_address_01(void) {
 /* Execute meshlink_add_address Test Case # 2 */
 static void test_case_mesh_add_address_02(void **state) {
 	execute_test(test_steps_mesh_add_address_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_add_address Test Case # 2
@@ -127,7 +125,6 @@ static bool test_steps_mesh_add_address_02(void) {
 /* Execute meshlink_add_address Test Case # 3 */
 static void test_case_mesh_add_address_03(void **state) {
 	execute_test(test_steps_mesh_add_address_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_add_address Test Case # 3

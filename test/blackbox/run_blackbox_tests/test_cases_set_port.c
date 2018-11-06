@@ -58,7 +58,6 @@ static black_box_state_t test_case_set_port_03_state = {
 /* Execute meshlink_set_port Test Case # 1 - valid case*/
 static void test_case_set_port_01(void **state) {
 	execute_test(test_set_port_01, state);
-	return;
 }
 /* Test Steps for meshlink_set_port Test Case # 1 - Valid case
 
@@ -85,26 +84,20 @@ static bool test_set_port_01(void) {
 	assert(port > 0);
 	bool ret = meshlink_set_port(mesh_handle, 8000);
 	port = meshlink_get_port(mesh_handle);
-	assert(port > 0);
+
+	assert_int_equal(port, 8000);
+	assert_int_equal(ret, true);
 
 	// Clean up
 
 	meshlink_close(mesh_handle);
 	meshlink_destroy("setportconf");
-
-	if(ret && (port == 8000)) {
-		PRINT_TEST_CASE_MSG("Port set successfully\n");
-		return true;
-	} else {
-		return false;
-	}
-
+  return true;
 }
 
 /* Execute meshlink_set_port Test Case # 2 - Invalid case*/
 static void test_case_set_port_02(void **state) {
 	execute_test(test_set_port_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_set_port Test Case # 2 - Invalid case
@@ -120,12 +113,7 @@ static bool test_set_port_02(void) {
 
 	bool ret = meshlink_set_port(NULL, 8000);
 
-	if(false == ret)  {
-		PRINT_TEST_CASE_MSG("NULL argument reported SUCCESSFULY\n");
-		return true;
-	}
-
-	PRINT_TEST_CASE_MSG("failed to report NULL argument\n");
+	assert_int_equal(ret, false);
 	return false;
 }
 
@@ -133,7 +121,6 @@ static bool test_set_port_02(void) {
 /* Execute meshlink_set_port Test Case # 3 - Setting port after starting mesh*/
 static void test_case_set_port_03(void **state) {
 	execute_test(test_set_port_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_set_port Test Case # 2 - functionality test
@@ -156,19 +143,12 @@ static bool test_set_port_03(void) {
 
 	// Setting port after starting NUT
 	bool ret = meshlink_set_port(mesh_handle, 50000);
+	assert_int_equal(ret, false);
 
 	// Clean up
 
 	meshlink_close(mesh_handle);
 	meshlink_destroy("getportconf");
-
-	if(!ret) {
-		PRINT_TEST_CASE_MSG(" New port cannot be set after starting mesh \n");
-		return true;
-	} else {
-		PRINT_TEST_CASE_MSG("Port can be set even after starting mesh \n");
-		return false;
-	}
 }
 
 

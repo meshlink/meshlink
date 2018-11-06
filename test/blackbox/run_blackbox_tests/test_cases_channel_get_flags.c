@@ -57,7 +57,6 @@ static black_box_state_t test_case_channel_get_flags_04_state = {
 /* Execute meshlink_channel_get_flags Test Case # 1 - Valid case*/
 static void test_case_channel_get_flags_01(void **state) {
 	execute_test(test_steps_channel_get_flags_01, state);
-	return;
 }
 /* Test Steps for meshlink_channel_get_flags Test Case # 1
 
@@ -103,7 +102,6 @@ static bool test_steps_channel_get_flags_01(void) {
 /* Execute meshlink_channel_get_flags Test Case # 2 - Invalid case*/
 static void test_case_channel_get_flags_02(void **state) {
 	execute_test(test_steps_channel_get_flags_02, state);
-	return;
 }
 /* Test Steps for meshlink_channel_get_flags Test Case # 2
 
@@ -152,7 +150,6 @@ static bool test_steps_channel_get_flags_02(void) {
 /* Execute meshlink_channel_get flags Test Case # 3 - Invalid case*/
 static void test_case_channel_get_flags_03(void **state) {
 	execute_test(test_steps_channel_get_flags_03, state);
-	return;
 }
 /* Test Steps for meshlink_channel_get_flags Test Case # 3
 

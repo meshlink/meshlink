@@ -138,15 +138,12 @@ static void meta_conn01_cb(mesh_event_payload_t payload) {
 		meta_conn01_reconn = true;
 		break;
 	}
-
-	return;
 }
 
 /* Execute Meta-connections Test Case # 1 - re-connection to peer after disconnection when
     connected via a third node */
 static void test_case_meta_conn_01(void **state) {
 	execute_test(test_steps_meta_conn_01, state);
-	return;
 }
 
 /* Test Steps for Meta-connections Test Case # 1 - re-connection to peer after disconnection when
@@ -220,14 +217,11 @@ static void meta_conn02_cb(mesh_event_payload_t payload) {
 	if(payload.payload_length) {
 		fprintf(stderr, " %s\n", (char *)payload.payload);
 	}
-
-	return;
 }
 /* Execute Meta-connections Test Case # 2 - re-connection to peer via third node
     after changing IP of NUT and peer */
 static void test_case_meta_conn_02(void **state) {
 	execute_test(test_steps_meta_conn_02, state);
-	return;
 }
 /* Test Steps for Meta-connections Test Case # 2 - re-connection to peer via third node
     after changing IP of NUT and peer
@@ -306,14 +300,11 @@ static void meta_conn03_cb(mesh_event_payload_t payload) {
 		meta_conn03_result = true;
 		break;
 	}
-
-	return;
 }
 /* Execute Meta-connections Test Case # 3 - re-connection to peer via third node
     after changing IP of peer */
 static void test_case_meta_conn_03(void **state) {
 	execute_test(test_steps_meta_conn_03, state);
-	return;
 }
 /* Test Steps for Meta-connections Test Case # 3 - re-connection to peer via third node
     after changing IP of peer
@@ -381,15 +372,12 @@ static void meta_conn04_cb(mesh_event_payload_t payload) {
 		fprintf(stderr, "Node started\n");
 		break;
 	}
-
-	return;
 }
 
 /* Execute Meta-connections Test Case # 4 - re-connection to peer after changing IP of
     NUT and peer */
 static void test_case_meta_conn_04(void **state) {
 	execute_test(test_steps_meta_conn_04, state);
-	return;
 }
 
 /* Execute Meta-connections Test Case # 4 - re-connection to peer after changing IP of
@@ -467,14 +455,11 @@ static void meta_conn05_cb(mesh_event_payload_t payload) {
 		fprintf(stderr, "Node started\n");
 		break;
 	}
-
-	return;
 }
 
 /* Execute Meta-connections Test Case # 5 - re-connection to peer after changing IP of peer */
 static void test_case_meta_conn_05(void **state) {
 	execute_test(test_steps_meta_conn_05, state);
-	return;
 }
 
 /* Execute Meta-connections Test Case # 5 - re-connection to peer after changing IP of peer

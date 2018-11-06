@@ -47,7 +47,6 @@ static black_box_state_t test_mesh_get_port_02_state = {
 /* Execute meshlink_get_port Test Case # 1 */
 static void test_case_mesh_get_port_01(void **state) {
 	execute_test(test_steps_mesh_get_port_01, state);
-	return;
 }
 
 /* Test Steps for meshlink_get_port Test Case # 1
@@ -76,7 +75,6 @@ static bool test_steps_mesh_get_port_01(void) {
 /* Execute meshlink_get_port Test Case # 2 */
 static void test_case_mesh_get_port_02(void **state) {
 	execute_test(test_steps_mesh_get_port_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_get_port Test Case # 2 - Invalid case

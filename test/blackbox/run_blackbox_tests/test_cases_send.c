@@ -69,7 +69,6 @@ static black_box_state_t test_mesh_send_06_state = {
 /* Execute meshlink_send Test Case # 1 */
 static void test_case_mesh_send_01(void **state) {
 	execute_test(test_steps_mesh_send_01, state);
-	return;
 }
 
 static bool receive_data = false;
@@ -81,8 +80,6 @@ static void receive(meshlink_handle_t *mesh, meshlink_node_t *dest_node, const v
 	if(!memcmp(data, "test", 5)) {
 		receive_data = true;
 	}
-
-	return;
 }
 
 /* Test Steps for meshlink_send Test Case # 1
@@ -127,7 +124,6 @@ static bool test_steps_mesh_send_01(void) {
 */
 static void test_case_mesh_send_02(void **state) {
 	execute_test(test_steps_mesh_send_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_send Test Case # 2*/
@@ -159,7 +155,6 @@ static bool test_steps_mesh_send_02(void) {
 */
 static void test_case_mesh_send_03(void **state) {
 	execute_test(test_steps_mesh_send_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_send Test Case # 3*/

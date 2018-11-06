@@ -54,7 +54,6 @@ static black_box_state_t test_mesh_pmtu_03_state = {
 /* Execute meshlink_get_pmtu Test Case # 1 */
 static void test_case_mesh_pmtu_01(void **state) {
 	execute_test(test_steps_mesh_pmtu_01, state);
-	return;
 }
 
 /* Test Steps for meshlink_get_pmtu Test Case # 1
@@ -93,7 +92,6 @@ static bool test_steps_mesh_pmtu_01(void) {
 */
 static void test_case_mesh_pmtu_02(void **state) {
 	execute_test(test_steps_mesh_pmtu_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_get_pmtu Test Case # 2*/
@@ -116,7 +114,6 @@ static bool test_steps_mesh_pmtu_02(void) {
 /* Execute meshlink_get_pmtu Test Case # 3 */
 static void test_case_mesh_pmtu_03(void **state) {
 	execute_test(test_steps_mesh_pmtu_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_get_pmtu Test Case # 3

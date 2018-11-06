@@ -58,7 +58,6 @@ static black_box_state_t test_case_hint_address_01_state = {
 /* Execute meshlink_hint_address Test Case # 1 - Valid Case*/
 void test_case_hint_address_01(void **state) {
 	execute_test(test_steps_hint_address_01, state);
-	return;
 }
 /* Test Steps for meshlink_hint_address Test Case # 1 - Valid case */
 bool test_steps_hint_address_01(void) {
@@ -117,6 +116,7 @@ bool test_steps_hint_address_01(void) {
 
 	assert_int_not_equal(strstr(buff, ADDR), NULL);
 
+	free(buff);
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
 	meshlink_destroy("hintconf1");

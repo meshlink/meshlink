@@ -37,21 +37,13 @@ static void test_case_set_status_cb_01(void **state);
 static bool test_set_status_cb_01(void);
 static void test_case_set_status_cb_02(void **state);
 static bool test_set_status_cb_02(void);
-static void test_case_set_status_cb_03(void **state);
-static bool test_set_status_cb_03(void);
 
 /* status variable gives access to the status callback to know whether invoked or not */
 static bool status;
 
-/* mutex for the common variable */
-pthread_mutex_t lock;
-
 /* State structure for status callback Test Case #1 */
-static char *test_stat_1_nodes[] = {"relay" };
 static black_box_state_t test_case_set_status_cb_01_state = {
 	.test_case_name = "test_case_set_status_cb_01",
-	.node_names = test_stat_1_nodes,
-	.num_nodes = 1,
 };
 
 /* State structure for status callback Test Case #2 */
@@ -68,83 +60,64 @@ static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *source, bool rea
 	} else {
 		fprintf(stderr, "[ %s ] node not reachable\n", source->name) ;
 	}
-
-	pthread_mutex_lock(&lock);
-	status = true;
-	pthread_mutex_unlock(&lock);
-	return;
+	status = reach;
 }
-
-static int black_box_group_status_setup(void **state) {
-	const char *nodes[] = { "relay" };
-	int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
-
-	printf("Creating Containers\n");
-	destroy_containers();
-	create_containers(nodes, num_nodes);
-
-	return 0;
-}
-
-static int black_box_group_status_teardown(void **state) {
-	printf("Destroying Containers\n");
-	destroy_containers();
-
-	return 0;
-}
-
 
 /* Execute status callback Test Case # 1 - valid case */
 static void test_case_set_status_cb_01(void **state) {
 	execute_test(test_set_status_cb_01, state);
-	return;
 }
 
 /* Test Steps for meshlink_set_status_cb Test Case # 1
 
     Test Steps:
-    1. Run relay and Open NUT
-    2. Set log callback for the NUT and Start NUT
+    1. Run bar and nut node instances
+    2. Set status callback for the NUT and Start NUT
 
     Expected Result:
     status callback should be invoked when NUT connects/disconnects with 'relay' node.
 */
 static bool test_set_status_cb_01(void) {
-	meshlink_destroy("set_status_cb_conf");
+	meshlink_destroy("set_status_cb_conf.1");
+	meshlink_destroy("set_status_cb_conf.2");
 
-	// Create node instances
-
-	char *invite_nut = invite_in_container("relay", "nut");
-	node_sim_in_container("relay", "1", NULL);
-	sleep(1);
-
-	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-	mesh_handle = meshlink_open("set_status_cb_conf", "nut", "node_sim", 1);
-	assert(mesh_handle);
-	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	// Opening NUT and bar nodes
+	meshlink_handle_t *mesh1 = meshlink_open("set_status_cb_conf.1", "nut", "test", DEV_CLASS_STATIONARY);
+	assert(mesh1 != NULL);
+	meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_handle_t *mesh2 = meshlink_open("set_status_cb_conf.2", "bar", "test", DEV_CLASS_STATIONARY);
+	assert(mesh2 != NULL);
+	meshlink_set_log_cb(mesh2, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	// Set up callback for node status
+	meshlink_set_node_status_cb(mesh1, status_cb);
 
-	pthread_mutex_lock(&lock);
-	status = false;
-	pthread_mutex_unlock(&lock);
-	meshlink_set_node_status_cb(mesh_handle, status_cb);
+	// Exporting and Importing mutually
+	char *exp1 = meshlink_export(mesh1);
+	assert(exp1 != NULL);
+	char *exp2 = meshlink_export(mesh2);
+	assert(exp2 != NULL);
+	bool imp1 = meshlink_import(mesh1, exp2);
+	bool imp2 = meshlink_import(mesh2, exp1);
 
-	// Joining Node-Under-Test with relay
-
-	assert(meshlink_join(mesh_handle, invite_nut));
-	assert(meshlink_start(mesh_handle));
+	assert(meshlink_start(mesh1));
+	assert(meshlink_start(mesh2));
 	sleep(1);
 
-	pthread_mutex_lock(&lock);
-	bool ret = status;
-	pthread_mutex_unlock(&lock);
+	// Test for status from status callback
+	assert_int_equal(status, true);
 
-	assert_int_equal(ret, true);
+	meshlink_close(mesh2);
+	sleep(1);
 
-	free(invite_nut);
-	meshlink_close(mesh_handle);
-	meshlink_destroy("set_status_cb_conf");
+	// Test for status from status callback
+	assert_int_equal(status, false);
+
+	free(exp1);
+	free(exp2);
+	meshlink_close(mesh1);
+	meshlink_destroy("set_status_cb_conf.1");
+	meshlink_destroy("set_status_cb_conf.2");
 
 	return true;
 }
@@ -152,7 +125,6 @@ static bool test_set_status_cb_01(void) {
 /* Execute status callback Test Case # 2 - Invalid case */
 static void test_case_set_status_cb_02(void **state) {
 	execute_test(test_set_status_cb_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_set_status_cb Test Case # 2
@@ -167,8 +139,8 @@ static bool test_set_status_cb_02(void) {
 
 	// Create meshlink instance
 
-	meshlink_destroy("set_status_cb_conf");
-	meshlink_handle_t *mesh_handle = meshlink_open("set_status_cb_conf", "nut", "node_sim", 1);
+	meshlink_destroy("set_status_cb_conf.3");
+	meshlink_handle_t *mesh_handle = meshlink_open("set_status_cb_conf.3", "nut", "node_sim", 1);
 	assert(mesh_handle);
 
 	// Pass NULL as meshlink_set_node_status_cb's argument
@@ -180,25 +152,21 @@ static bool test_set_status_cb_02(void) {
 	// Clean up
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("set_status_cb_conf");
+	meshlink_destroy("set_status_cb_conf.3");
 	return true;
 }
 
 
 int test_meshlink_set_status_cb(void) {
 	const struct CMUnitTest blackbox_status_tests[] = {
-		cmocka_unit_test_prestate_setup_teardown(test_case_set_status_cb_01, setup_test, teardown_test,
+		cmocka_unit_test_prestate_setup_teardown(test_case_set_status_cb_01, NULL, NULL,
 		(void *)&test_case_set_status_cb_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_set_status_cb_02, NULL, NULL,
 		(void *)&test_case_set_status_cb_02_state)
 	};
 	total_tests += sizeof(blackbox_status_tests) / sizeof(blackbox_status_tests[0]);
 
-	assert(pthread_mutex_init(&lock, NULL) == 0);
-
-	int failed = cmocka_run_group_tests(blackbox_status_tests, black_box_group_status_setup, black_box_group_status_teardown);
-
-	pthread_mutex_destroy(&lock);
+	int failed = cmocka_run_group_tests(blackbox_status_tests, NULL, NULL);
 
 	return failed;
 }

@@ -84,7 +84,6 @@ static black_box_state_t test_case_verify_06_state = {
 /* Execute meshlink_verify Test Case # 1 - Valid case - verify a data successfully*/
 void test_case_verify_01(void **state) {
 	execute_test(test_verify_01, state);
-	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 1 - Valid case
@@ -129,7 +128,6 @@ bool test_verify_01(void) {
 /* Execute verify_data Test Case # 2 - Invalid case - meshlink_verify passing NULL args*/
 void test_case_verify_02(void **state) {
 	execute_test(test_verify_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 2 - Invalid case
@@ -175,7 +173,6 @@ bool test_verify_02(void) {
 /* Execute verify_data Test Case # 3 - Invalid case - meshlink_verify passing NULL args*/
 void test_case_verify_03(void **state) {
 	execute_test(test_verify_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 3 - Invalid case
@@ -217,7 +214,6 @@ bool test_verify_03(void) {
 /* Execute verify_data Test Case # 4 - Invalid case - meshlink_verify passing NULL args*/
 void test_case_verify_04(void **state) {
 	execute_test(test_verify_04, state);
-	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 4 - Invalid case
@@ -264,7 +260,6 @@ bool test_verify_04(void) {
 /* Execute verify_data Test Case # 5 - Invalid case - meshlink_verify passing NULL args*/
 void test_case_verify_05(void **state) {
 	execute_test(test_verify_05, state);
-	return;
 }
 
 /* Test Steps for meshlink_sign Test Case # 5 - Invalid case
@@ -311,7 +306,6 @@ bool test_verify_05(void) {
       the signed data */
 void test_case_verify_06(void **state) {
 	execute_test(test_verify_06, state);
-	return;
 }
 
 /* Test Steps for meshlink_verify Test Case # 6 - Functionality Test

@@ -66,7 +66,6 @@ static black_box_state_t test_mesh_channel_send_04_state = {
 /* Execute meshlink_channel_send Test Case # 1*/
 static void test_case_mesh_channel_send_01(void **state) {
 	execute_test(test_steps_mesh_channel_send_01, state);
-	return;
 }
 
 static pthread_mutex_t poll_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -118,8 +117,6 @@ static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, con
 		assert(!pthread_cond_broadcast(&send_cond));
 		pthread_mutex_unlock(& bar_responded_lock);
 	}
-
-	return;
 }
 
 static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
@@ -219,7 +216,6 @@ static bool test_steps_mesh_channel_send_01(void) {
 /* Execute meshlink_channel_send Test Case # 2*/
 static void test_case_mesh_channel_send_02(void **state) {
 	execute_test(test_steps_mesh_channel_send_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_channel_send Test Case # 2*/
@@ -268,7 +264,6 @@ static bool test_steps_mesh_channel_send_02(void) {
 /* Execute meshlink_channel_send Test Case # 3*/
 static void test_case_mesh_channel_send_03(void **state) {
 	execute_test(test_steps_mesh_channel_send_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_channel_send Test Case # 3*/
@@ -300,7 +295,6 @@ static bool test_steps_mesh_channel_send_03(void) {
 /* Execute meshlink_channel_send Test Case # 4*/
 static void test_case_mesh_channel_send_04(void **state) {
 	execute_test(test_steps_mesh_channel_send_04, state);
-	return;
 }
 
 /* Test Steps for meshlink_channel_send Test Case # 4*/

@@ -51,7 +51,6 @@ static black_box_state_t test_mesh_stop_01_state = {
 /* Execute meshlink_close Test Case # 1*/
 static void test_case_mesh_close_01(void **state) {
 	execute_test(test_steps_mesh_close_01, state);
-	return;
 }
 
 /* Test Steps for meshlink_close Test Case # 1*/
@@ -66,7 +65,6 @@ static bool test_steps_mesh_close_01(void) {
 /* Execute meshlink_stop Test Case # 1*/
 static void test_case_mesh_stop_01(void **state) {
 	execute_test(test_steps_mesh_stop_01, state);
-	return;
 }
 
 /* Test Steps for meshlink_stop Test Case # 1*/

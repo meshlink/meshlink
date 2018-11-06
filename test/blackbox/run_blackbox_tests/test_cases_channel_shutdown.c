@@ -120,8 +120,6 @@ static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, con
 		assert(meshlink_channel_send(mesh, channel, "echo", 4) >= 0);
 
 	}
-
-	return;
 }
 
 static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
@@ -137,7 +135,6 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 /* Execute meshlink_channel_shutdown Test Case # 1*/
 static void test_case_mesh_channel_shutdown_01(void **state) {
 	execute_test(test_steps_mesh_channel_shutdown_01, state);
-	return;
 }
 
 /* Test Steps for meshlink_channel_shutdown Test Case # 1 - Valid case
@@ -265,7 +262,6 @@ static bool test_steps_mesh_channel_shutdown_01(void) {
 /* Execute meshlink_channel_shutdown Test Case # 2*/
 static void test_case_mesh_channel_shutdown_02(void **state) {
 	execute_test(test_steps_mesh_channel_shutdown_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_channel_shutdown Test Case # 2 - Invalid case
@@ -310,7 +306,6 @@ static bool test_steps_mesh_channel_shutdown_02(void) {
 /* Execute meshlink_channel_shutdown Test Case # 3*/
 static void test_case_mesh_channel_shutdown_03(void **state) {
 	execute_test(test_steps_mesh_channel_shutdown_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_channel_shutdown Test Case # 3

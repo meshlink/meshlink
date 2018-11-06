@@ -50,7 +50,6 @@ static black_box_state_t test_case_export_02_state = {
 /* Execute export Test Case # 1 - valid case*/
 static void test_case_export_01(void **state) {
 	execute_test(test_export_01, state);
-	return;
 }
 /* Test Steps for export Test Case # 1 - Valid case
     Test Steps:
@@ -81,7 +80,6 @@ static bool test_export_01(void) {
 /* Execute export Test Case # 2 - Invalid case*/
 static void test_case_export_02(void **state) {
 	execute_test(test_export_02, state);
-	return;
 }
 /* Test Steps for export Test Case # 2 - Invalid case
     Test Steps:

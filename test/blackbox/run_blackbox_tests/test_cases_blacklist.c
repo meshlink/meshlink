@@ -57,7 +57,6 @@ static black_box_state_t test_mesh_blacklist_03_state = {
 /* Execute meshlink_blacklist Test Case # 1*/
 void test_case_mesh_blacklist_01(void **state) {
 	execute_test(test_steps_mesh_blacklist_01, state);
-	return;
 }
 
 static bool received;
@@ -69,8 +68,6 @@ static void receive(meshlink_handle_t *mesh, meshlink_node_t *src, const void *d
 	if(!strcmp(src->name, "bar") && len == 5 && !strcmp(msg, "test")) {
 		received = true;
 	}
-
-	return;
 }
 
 static bool bar_reachable;
@@ -149,7 +146,6 @@ bool test_steps_mesh_blacklist_01(void) {
 /* Execute meshlink_blacklist Test Case # 2*/
 void test_case_mesh_blacklist_02(void **state) {
 	execute_test(test_steps_mesh_blacklist_02, state);
-	return;
 }
 
 
@@ -184,7 +180,6 @@ bool test_steps_mesh_blacklist_02(void) {
 /* Execute meshlink_blacklist Test Case # 3*/
 void test_case_mesh_blacklist_03(void **state) {
 	execute_test(test_steps_mesh_blacklist_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_blacklist Test Case # 3

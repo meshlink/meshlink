@@ -72,8 +72,6 @@ void execute_join(char *invite_url) {
 	join_status = meshlink_join(mesh_handle, invite_url);
 	PRINT_TEST_CASE_MSG("meshlink_join status: %s\n", meshlink_strerror(meshlink_errno));
 	assert(join_status);
-
-	return;
 }
 
 void execute_start(void) {
@@ -82,23 +80,17 @@ void execute_start(void) {
 	PRINT_TEST_CASE_MSG("meshlink_start status: %s\n", meshlink_strerror(meshlink_errno));
 	assert(start_init_status);
 	mesh_started = true;
-
-	return;
 }
 
 void execute_stop(void) {
 	assert(mesh_handle);
 	meshlink_stop(mesh_handle);
 	mesh_started = false;
-
-	return;
 }
 
 void execute_close(void) {
 	assert(mesh_handle);
 	meshlink_close(mesh_handle);
-
-	return;
 }
 
 void execute_change_ip(void) {
@@ -149,7 +141,5 @@ void execute_change_ip(void) {
 
 	free(eth_if_ip);
 	free(eth_if_netmask);
-
-	return;
 }
 

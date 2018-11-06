@@ -35,7 +35,6 @@ int setup_test(void **state) {
 
 	for(i = 0; i < state_ptr->num_nodes; i++) {
 		meta_conn_status[i] = false;
-		node_reachable_status[i] = false;
 	}
 
 	setup_containers(state);
@@ -52,8 +51,6 @@ void execute_test(test_step_func_t step_func, void **state) {
 	if(!test_state->test_result) {
 		fail();
 	}
-
-	return;
 }
 
 int teardown_test(void **state) {

@@ -56,7 +56,6 @@ static black_box_state_t test_case_get_fingerprint_cb_03_state = {
 /* Execute get_fingerprint Test Case # 1 - Valid Case of obtaing publickey of NUT */
 static void test_case_get_fingerprint_cb_01(void **state) {
 	execute_test(test_get_fingerprint_cb_01, state);
-	return;
 }
 /* Test Steps for get_fingerprint Test Case # 1 - Valid case
 
@@ -91,7 +90,6 @@ static bool test_get_fingerprint_cb_01(void) {
    mesh by passing NULL as mesh handle argument*/
 static void test_case_get_fingerprint_cb_02(void **state) {
 	execute_test(test_get_fingerprint_cb_02, state);
-	return;
 }
 
 /* Test Steps for get_fingerprint Test Case # 2 - Invalid case
@@ -133,7 +131,6 @@ static bool test_get_fingerprint_cb_02(void) {
    mesh by passing NULL as node handle argument */
 static void test_case_get_fingerprint_cb_03(void **state) {
 	execute_test(test_get_fingerprint_cb_03, state);
-	return;
 }
 /* Test Steps for get_fingerprint Test Case # 3 - Invalid case
 

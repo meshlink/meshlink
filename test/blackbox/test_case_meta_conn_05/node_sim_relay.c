@@ -35,16 +35,16 @@ int main(int argc, char *argv[]) {
 
 	int clientid = -1;
 
-	if((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR])) {
-		clientid = atoi(argv[CMD_LINE_ARG_CLIENTID]);
-		mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
+	if((argv[3]) && (argv[4])) {
+		clientid = atoi(argv[3]);
+		mesh_event_sock_connect(argv[4]);
 	}
 
 	/* Setup required signals */
 	setup_signals();
 
 	/* Execute test steps */
-	execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
+	execute_open(argv[1], argv[2]);
 	execute_start();
 
 	if(clientid != -1) {

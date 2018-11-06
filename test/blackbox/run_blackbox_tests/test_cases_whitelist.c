@@ -66,7 +66,6 @@ static pthread_cond_t reachable_cond = PTHREAD_COND_INITIALIZER;
 /* Execute meshlink_whitelist Test Case # 1*/
 static void test_case_mesh_whitelist_01(void **state) {
 	execute_test(test_steps_mesh_whitelist_01, state);
-	return;
 }
 
 
@@ -109,8 +108,10 @@ static bool test_steps_mesh_whitelist_01(void) {
 	meshlink_destroy("whitelist_conf.2");
 	meshlink_handle_t *mesh1 = meshlink_open("whitelist_conf.1", "foo", "test", DEV_CLASS_BACKBONE);
 	assert(mesh1);
+	meshlink_set_log_cb(mesh1, MESHLINK_DEBUG, meshlink_callback_logger);
 	meshlink_handle_t *mesh2 = meshlink_open("whitelist_conf.2", "bar", "test", DEV_CLASS_BACKBONE);
 	assert(mesh2);
+	meshlink_set_log_cb(mesh2, MESHLINK_DEBUG, meshlink_callback_logger);
 	meshlink_set_receive_cb(mesh2, receive);
 	meshlink_set_receive_cb(mesh1, receive);
 
@@ -206,7 +207,6 @@ static bool test_steps_mesh_whitelist_01(void) {
 */
 static void test_case_mesh_whitelist_02(void **state) {
 	execute_test(test_steps_mesh_whitelist_02, state);
-	return;
 }
 
 /* Test Steps for meshlink_whitelist Test Case # 2*/
@@ -277,7 +277,6 @@ static bool test_steps_mesh_whitelist_02(void) {
 /* Execute meshlink_whitelist Test Case # 3*/
 static void test_case_mesh_whitelist_03(void **state) {
 	execute_test(test_steps_mesh_whitelist_03, state);
-	return;
 }
 
 /* Test Steps for meshlink_whitelist Test Case # 3

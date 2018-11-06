@@ -78,20 +78,20 @@ static void callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t level,
 }
 
 int main(int argc, char *argv[]) {
-	int client_id;
+	int client_id = -1;
 	bool result = false;
 	int i;
 
-	if((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR])) {
-		client_id = atoi(argv[CMD_LINE_ARG_CLIENTID]);
-		mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
+	if((argv[3]) && (argv[4])) {
+		client_id = atoi(argv[3]);
+		mesh_event_sock_connect(argv[4]);
 	}
 
-	execute_open(argv[CMD_LINE_ARG_NODENAME], argv[CMD_LINE_ARG_DEVCLASS]);
+	execute_open(argv[1], argv[2]);
 	meshlink_set_log_cb(mesh_handle, MESHLINK_INFO, callback_logger);
 
-	if(argv[CMD_LINE_ARG_INVITEURL]) {
-		execute_join(argv[CMD_LINE_ARG_INVITEURL]);
+	if(argv[5]) {
+		execute_join(argv[5]);
 	}
 
 	execute_start();

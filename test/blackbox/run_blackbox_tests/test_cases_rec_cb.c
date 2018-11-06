@@ -68,19 +68,15 @@ static void rec_cb(meshlink_handle_t *mesh, meshlink_node_t *source, const void 
 	assert(len);
 
 	pthread_mutex_lock(&lock);
-
 	if(len == 5 && !memcmp(data, "test", 5)) {
 		received = true;
 	}
-
 	pthread_mutex_unlock(&lock);
-	return;
 }
 
 /* Execute meshlink_set_receive_cb Test Case # 1 - Valid case */
 static void test_case_set_rec_cb_01(void **state) {
 	execute_test(test_set_rec_cb_01, state);
-	return;
 }
 /* Test Steps for meshlink_set_receive_cb Test Case # 1
 
@@ -113,26 +109,18 @@ static bool test_set_rec_cb_01(void) {
 	sleep(1);
 
 	pthread_mutex_lock(&lock);
-	bool ret = received;
+	assert_int_equal(received, true);
 	pthread_mutex_unlock(&lock);
 
 	meshlink_close(mesh_handle);
 	meshlink_destroy("set_receive_cb_conf");
-
-	if(ret) {
-		PRINT_TEST_CASE_MSG("Invoked callback\n");
-		return true;
-	} else {
-		PRINT_TEST_CASE_MSG("No callback invoked\n");
-		return false;
-	}
+	return true;
 }
 
 
 /* Execute meshlink_set_receive_cb Test Case # 2 - Invalid case */
 static void test_case_set_rec_cb_02(void **state) {
 	execute_test(test_set_rec_cb_02, state);
-	return;
 }
 /* Test Steps for meshlink_set_receive_cb Test Case # 2
 
@@ -156,7 +144,6 @@ static bool test_set_rec_cb_02(void) {
       starting the mesh */
 static void test_case_set_rec_cb_03(void **state) {
 	execute_test(test_set_rec_cb_03, state);
-	return;
 }
 /* Test Steps for meshlink_set_receive_cb Test Case # 3
 
@@ -190,19 +177,12 @@ static bool test_set_rec_cb_03(void) {
 	sleep(1);
 
 	pthread_mutex_lock(&lock);
-	bool ret = received;
+	assert_int_equal(received, true);
 	pthread_mutex_unlock(&lock);
 
 	meshlink_close(mesh_handle);
 	meshlink_destroy("set_receive_cb_conf");
-
-	if(ret) {
-		PRINT_TEST_CASE_MSG("Invoked callback\n");
-		return true;
-	} else {
-		PRINT_TEST_CASE_MSG("No callback invoked\n");
-		return false;
-	}
+  return true;
 }
 
 int test_meshlink_set_receive_cb(void) {

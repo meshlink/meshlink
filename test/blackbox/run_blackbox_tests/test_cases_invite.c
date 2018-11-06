@@ -64,7 +64,6 @@ static black_box_state_t test_case_invite_04_state = {
 /* Execute invite Test Case # 1 - valid case*/
 static void test_case_invite_01(void **state) {
 	execute_test(test_invite_01, state);
-	return;
 }
 /*Test Steps for meshlink_invite Test Case # 1 - Valid case
     Test Steps:
@@ -80,28 +79,21 @@ static bool test_invite_01(void) {
 
 	// Create meshlink instance
 	meshlink_handle_t *mesh_handle = meshlink_open("inviteconf", "nut", "node_sim", 1);
-	fprintf(stderr, "meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
 	assert(mesh_handle);
 	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	char *invitation = meshlink_invite(mesh_handle, "new");
+	assert_int_equal(invitation, NULL);
 
+	free(invitation);
 	meshlink_close(mesh_handle);
 	meshlink_destroy("inviteconf");
-
-	if(invitation == NULL) {
-		PRINT_TEST_CASE_MSG("Failed to generate INVITATION\n");
-		return false;
-	} else {
-		PRINT_TEST_CASE_MSG("Generated INVITATION successfully\t %s \n", invitation);
-		return true;
-	}
+	return true;
 }
 
 /* Execute invite Test Case # 2 - Invalid case*/
 static void test_case_invite_02(void **state) {
 	execute_test(test_invite_02, state);
-	return;
 }
 /*Test Steps for meshlink_invite Test Case # 2 - Invalid case
     Test Steps:
@@ -121,7 +113,6 @@ static bool test_invite_02(void) {
 /* Execute invite Test Case # 3 - Invalid case*/
 static void test_case_invite_03(void **state) {
 	execute_test(test_invite_03, state);
-	return;
 }
 /*Test Steps for meshlink_invite Test Case # 3 - Invalid case
     Test Steps:
@@ -137,29 +128,21 @@ static bool test_invite_03(void) {
 
 	// Create meshlink instance
 	meshlink_handle_t *mesh_handle = meshlink_open("inviteconf", "nut", "node_sim", 1);
-	fprintf(stderr, "meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
 	assert(mesh_handle);
 	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	// Trying to generate INVITATION by passing NULL as mesh link handle
 	char *invitation = meshlink_invite(mesh_handle, NULL);
+	assert_int_equal(invitation, NULL);
 
 	meshlink_close(mesh_handle);
 	meshlink_destroy("inviteconf");
-
-	if(invitation == NULL) {
-		PRINT_TEST_CASE_MSG("invite API reported error SUCCESSFULLY\n");
-		return true;
-	} else {
-		PRINT_TEST_CASE_MSG("Failed to report error\n");
-		return false;
-	}
+  return true;
 }
 
 /* Execute invite Test Case # 4 - Functionality test*/
 static void test_case_invite_04(void **state) {
 	execute_test(test_invite_04, state);
-	return;
 }
 /*Test Steps for meshlink_invite Test Case # 4 - Functionality test
 
@@ -177,7 +160,6 @@ static bool test_invite_04(void) {
 
 	// Create meshlink instance
 	meshlink_handle_t *mesh_handle = meshlink_open("inviteconf", "nut", "test", 1);
-	fprintf(stderr, "meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
 	assert(mesh_handle);
 	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 

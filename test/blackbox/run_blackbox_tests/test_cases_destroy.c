@@ -55,7 +55,6 @@ static black_box_state_t test_case_meshlink_destroy_03_state = {
 /* Execute destroy Test Case # 1 - valid case*/
 static void test_case_meshlink_destroy_01(void **state) {
 	execute_test(test_meshlink_destroy_01, state);
-	return;
 }
 
 /* Test Steps for destroy Test Case # 1 - Valid case
@@ -91,7 +90,6 @@ static bool test_meshlink_destroy_01(void) {
 /* Execute destroy Test Case # 2 - passing NULL argument to the API */
 static void test_case_meshlink_destroy_02(void **state) {
 	execute_test(test_meshlink_destroy_02, state);
-	return;
 }
 
 /* Test Steps for destroy Test Case # 2 - Invalid case
@@ -112,7 +110,6 @@ static bool test_meshlink_destroy_02(void) {
 /* Execute status Test Case # 3 - destroying non existing file */
 static void test_case_meshlink_destroy_03(void **state) {
 	execute_test(test_meshlink_destroy_03, state);
-	return;
 }
 /* Test Steps for destroy Test Case # 3 - Invalid case
     Test Steps:

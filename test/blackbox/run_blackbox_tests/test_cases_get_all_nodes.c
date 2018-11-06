@@ -61,7 +61,6 @@ static black_box_state_t test_case_get_all_nodes_03_state = {
 /* Execute get_all_nodes Test Case # 1 - Valid case - get all nodes in the mesh */
 static void test_case_get_all_nodes_01(void **state) {
 	execute_test(test_get_all_nodes_01, state);
-	return;
 }
 /* Test Steps for get_all_nodes Test Case # 1 - Valid case
 
@@ -118,7 +117,6 @@ static bool test_get_all_nodes_01(void) {
 /* Execute get_all_nodes Test Case # 2 - Invalid case - get all nodes in the mesh passing NULL */
 static void test_case_get_all_nodes_02(void **state) {
 	execute_test(test_get_all_nodes_02, state);
-	return;
 }
 
 /* Test Steps for get_all_nodes Test Case # 2 - Invalid case
@@ -142,7 +140,6 @@ static bool test_get_all_nodes_02(void) {
 /* Execute get_all_nodes Test Case # 3 - Invalid case - get all nodes in the mesh passing NULL as nmeb arg */
 static void test_case_get_all_nodes_03(void **state) {
 	execute_test(test_get_all_nodes_03, state);
-	return;
 }
 /* Test Steps for get_all_nodes Test Case # 3 - Invalid case
 
