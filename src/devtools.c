@@ -18,7 +18,6 @@
 */
 
 #include "system.h"
-#include <assert.h>
 
 #include "logger.h"
 #include "meshlink_internal.h"

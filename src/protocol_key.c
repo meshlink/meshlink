@@ -31,44 +31,6 @@
 #include "utils.h"
 #include "xalloc.h"
 
-void send_key_changed(meshlink_handle_t *mesh) {
-	send_request(mesh, mesh->everyone, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
-
-	/* Force key exchange for connections using SPTPS */
-
-	for splay_each(node_t, n, mesh->nodes)
-		if(n->status.reachable && n->status.validkey) {
-			sptps_force_kex(&n->sptps);
-		}
-}
-
-bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
-	char name[MAX_STRING_SIZE];
-	node_t *n;
-
-	if(sscanf(request, "%*d %*x " MAX_STRING, name) != 1) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "KEY_CHANGED", c->name);
-		return false;
-	}
-
-	if(seen_request(mesh, request)) {
-		return true;
-	}
-
-	n = lookup_node(mesh, name);
-
-	if(!n) {
-		logger(mesh, MESHLINK_ERROR, "Got %s from %s origin %s which does not exist", "KEY_CHANGED", c->name, name);
-		return true;
-	}
-
-	/* Tell the others */
-
-	forward_request(mesh, c, request);
-
-	return true;
-}
-
 static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	(void)type;
 	node_t *to = handle;

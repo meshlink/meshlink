@@ -89,6 +89,7 @@ struct meshlink_handle {
 	struct splay_tree_t *config;
 	struct splay_tree_t *edges;
 	struct splay_tree_t *nodes;
+	struct splay_tree_t *node_ids;
 
 	struct list_t *connections;
 	struct list_t *outgoings;
@@ -119,7 +120,6 @@ struct meshlink_handle {
 
 	bool default_blacklist;
 
-	hash_t *node_udp_cache;
 	struct connection_t *everyone;
 	struct ecdsa *invitation_key;
 	int invitation_timeout;
@@ -162,12 +162,6 @@ struct meshlink_channel {
 	meshlink_channel_receive_cb_t receive_cb;
 	meshlink_channel_poll_cb_t poll_cb;
 };
-
-/// Header for data packets routed between nodes
-typedef struct meshlink_packethdr {
-	uint8_t destination[16];
-	uint8_t source[16];
-} __attribute__((__packed__)) meshlink_packethdr_t;
 
 extern void meshlink_send_from_queue(event_loop_t *el, meshlink_handle_t *mesh);
 extern void update_node_status(meshlink_handle_t *mesh, struct node_t *n);

@@ -29,45 +29,6 @@
 #include "protocol.h"
 #include "utils.h"
 
-int maxoutbufsize = 0;
-
-/* Status and error notification routines */
-
-bool status_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
-	int statusno;
-	char statusstring[MAX_STRING_SIZE];
-
-	if(sscanf(request, "%*d %d " MAX_STRING, &statusno, statusstring) != 2) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "STATUS", c->name);
-		return false;
-	}
-
-	logger(mesh, MESHLINK_INFO, "Status message from %s: %d: %s", c->name, statusno, statusstring);
-
-	return true;
-}
-
-bool error_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
-	int err;
-	char errorstring[MAX_STRING_SIZE];
-
-	if(sscanf(request, "%*d %d " MAX_STRING, &err, errorstring) != 2) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ERROR", c->name);
-		return false;
-	}
-
-	logger(mesh, MESHLINK_INFO, "Error message from %s: %d: %s", c->name, err, errorstring);
-
-	return false;
-}
-
-bool termreq_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
-	(void)mesh;
-	(void)c;
-	(void)request;
-	return false;
-}
-
 bool send_ping(meshlink_handle_t *mesh, connection_t *c) {
 	c->status.pinged = true;
 	c->last_ping_time = mesh->loop.now.tv_sec;
@@ -104,18 +65,4 @@ bool pong_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	}
 
 	return true;
-}
-
-/* Sending and receiving packets via TCP */
-
-bool tcppacket_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
-	short int len;
-
-	if(sscanf(request, "%*d %hd", &len) != 1) {
-		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "PACKET", c->name);
-		return false;
-	}
-
-	// This should never happen with MeshLink.
-	return false;
 }

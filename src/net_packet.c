@@ -28,7 +28,6 @@
 #include "net.h"
 #include "netutl.h"
 #include "protocol.h"
-#include "route.h"
 #include "utils.h"
 #include "xalloc.h"
 
@@ -204,25 +203,7 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 
 /* VPN packet I/O */
 
-static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
-	logger(mesh, MESHLINK_DEBUG, "Received packet of %d bytes from %s", packet->len, n->name);
-
-	if(n->status.blacklisted) {
-		logger(mesh, MESHLINK_WARNING, "Dropping packet from blacklisted node %s", n->name);
-	} else {
-		n->in_packets++;
-		n->in_bytes += packet->len;
-
-		route(mesh, n, packet);
-	}
-}
-
-static bool try_mac(meshlink_handle_t *mesh, node_t *n, const vpn_packet_t *inpkt) {
-	(void)mesh;
-	return sptps_verify_datagram(&n->sptps, inpkt->data, inpkt->len);
-}
-
-static void receive_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *inpkt) {
+static void receive_udppacket(meshlink_handle_t *mesh, node_t *n, const void *data, uint16_t len) {
 	if(!n->sptps.state) {
 		if(!n->status.waitingforkey) {
 			logger(mesh, MESHLINK_DEBUG, "Got packet from %s but we haven't exchanged keys yet", n->name);
@@ -234,7 +215,7 @@ static void receive_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 		return;
 	}
 
-	sptps_receive_data(&n->sptps, inpkt->data, inpkt->len);
+	sptps_receive_data(&n->sptps, data, len);
 }
 
 static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
@@ -400,7 +381,14 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 		choose_udp_address(mesh, to, &sa, &sock);
 	}
 
-	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
+	/* Add the source and destination IDs */
+
+	vpn_packet_t pkt;
+	pkt.src = mesh->self->id;
+	pkt.dst = to->id;
+	memcpy(pkt.data, data, len);
+
+	if(sendto(mesh->listen_socket[sock].udp.fd, &pkt.src, len + 16, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
 		if(sockmsgsize(sockerrno)) {
 			if(to->maxmtu >= len) {
 				to->maxmtu = len - 1;
@@ -422,6 +410,8 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 	node_t *from = handle;
 	meshlink_handle_t *mesh = from->mesh;
 
+	assert(!from->status.blacklisted);
+
 	if(type == SPTPS_HANDSHAKE) {
 		if(!from->status.validkey) {
 			logger(mesh, MESHLINK_INFO, "SPTPS key exchange with %s succesful", from->name);
@@ -441,16 +431,52 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 		return false;
 	}
 
-	vpn_packet_t inpkt;
+	if(type == SPTPS_UNENCRYPTED) {
+		/* This is a packet that needs to be forwarded */
+		struct {
+			uint64_t src;
+			uint64_t dst;
+		} hdr;
+
+		if(len < sizeof(hdr)) {
+			logger(mesh, MESHLINK_ERROR, "Too short packet from %s", from->name);
+			return false;
+		}
+
+		memcpy(&hdr, data, sizeof(hdr));
+
+		if(hdr.src == mesh->self->id) {
+			logger(mesh, MESHLINK_WARNING, "Dropping packet from ourself");
+			return true;
+		}
+
+		node_t *orig = lookup_node_id(mesh, hdr.src);
+
+		if(!orig) {
+			logger(mesh, MESHLINK_ERROR, "Received packet from %s with unknown source", from->name);
+			return true;
+		}
+
+		if(orig->status.blacklisted) {
+			logger(mesh, MESHLINK_WARNING, "Dropping packet from blacklisted node %s", orig->name);
+			return true;
+		}
+
+		if(hdr.dst == mesh->self->id) {
+			receive_udppacket(mesh, orig, data, len);
+		}
+
+		// TODO: forward
+		return true;
+	}
 
 	if(type == PKT_PROBE) {
+		vpn_packet_t inpkt;
 		inpkt.len = len;
 		inpkt.probe = true;
 		memcpy(inpkt.data, data, len);
 		mtu_probe_h(mesh, from, &inpkt, len);
 		return true;
-	} else {
-		inpkt.probe = false;
 	}
 
 	if(type & ~(PKT_COMPRESSED)) {
@@ -463,10 +489,10 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 		return false;
 	}
 
-	memcpy(inpkt.data, data, len); // TODO: get rid of memcpy
-	inpkt.len = len;
+	if(mesh->receive_cb) {
+		mesh->receive_cb(mesh, (meshlink_node_t *)from, data, len);
+	}
 
-	receive_packet(mesh, from, &inpkt);
 	return true;
 }
 
@@ -511,38 +537,37 @@ void broadcast_packet(meshlink_handle_t *mesh, const node_t *from, vpn_packet_t 
 		}
 }
 
-static node_t *try_harder(meshlink_handle_t *mesh, const sockaddr_t *from, const vpn_packet_t *pkt) {
-	node_t *n = NULL;
-	bool hard = false;
-	static time_t last_hard_try = 0;
+void forward_udppacket(meshlink_handle_t *mesh, const node_t *from, vpn_packet_t *pkt) {
+	node_t *to = lookup_node_id(mesh, pkt->dst);
 
-	for splay_each(edge_t, e, mesh->edges) {
-		if(!e->to->status.reachable || e->to == mesh->self) {
-			continue;
-		}
+	if(!to) {
+		logger(mesh, MESHLINK_WARNING, "Received UDP packet from %s with unknown destination", from->name);
+		return;
+	}
 
-		if(sockaddrcmp_noport(from, &e->address)) {
-			if(last_hard_try == mesh->loop.now.tv_sec) {
-				continue;
+	if(pkt->len > to->minmtu) {
+		// send via TCP
+		abort();
+	}
+
+	const sockaddr_t *sa;
+	int sock;
+
+	choose_udp_address(mesh, to, &sa, &sock);
+
+	if(sendto(mesh->listen_socket[sock].udp.fd, &pkt->src, pkt->len + 16, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
+		if(sockmsgsize(sockerrno)) {
+			if(to->maxmtu >= pkt->len) {
+				to->maxmtu = pkt->len - 1;
 			}
 
-			hard = true;
+			if(to->mtu >= pkt->len) {
+				to->mtu = pkt->len - 1;
+			}
+		} else {
+			logger(mesh, MESHLINK_WARNING, "Error forwarding UDP SPTPS packet to %s: %s", to->name, sockstrerror(sockerrno));
 		}
-
-		if(!try_mac(mesh, e->to, pkt)) {
-			continue;
-		}
-
-		n = e->to;
-		break;
 	}
-
-	if(hard) {
-		last_hard_try = mesh->loop.now.tv_sec;
-	}
-
-	last_hard_try = mesh->loop.now.tv_sec;
-	return n;
 }
 
 void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
@@ -556,9 +581,9 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 	node_t *n;
 	int len;
 
-	len = recvfrom(ls->udp.fd, pkt.data, MAXSIZE, 0, &from.sa, &fromlen);
+	len = recvfrom(ls->udp.fd, &pkt.src, 16 + MAXSIZE, 0, &from.sa, &fromlen);
 
-	if(len <= 0 || len > MAXSIZE) {
+	if(len <= 16 || len > MAXSIZE + 16) {
 		if(!sockwouldblock(sockerrno)) {
 			logger(mesh, MESHLINK_ERROR, "Receiving packet failed: %s", sockstrerror(sockerrno));
 		}
@@ -566,25 +591,20 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 		return;
 	}
 
-	pkt.len = len;
+	if(!pkt.src || !pkt.dst) {
+		logger(mesh, MESHLINK_WARNING, "Unhandled NULL ids in packet header");
+		return;
+	}
 
-	sockaddrunmap(&from); /* Some braindead IPv6 implementations do stupid things. */
+	pkt.len = len - 16;
 
-	n = lookup_node_udp(mesh, &from);
+	n = lookup_node_id(mesh, pkt.src);
 
 	if(!n) {
-		n = try_harder(mesh, &from, &pkt);
-
-		if(n) {
-			update_node_udp(mesh, n, &from);
-		} else if(mesh->log_level >= MESHLINK_WARNING) {
-			hostname = sockaddr2hostname(&from);
-			logger(mesh, MESHLINK_WARNING, "Received UDP packet from unknown source %s", hostname);
-			free(hostname);
-			return;
-		} else {
-			return;
-		}
+		hostname = sockaddr2hostname(&from);
+		logger(mesh, MESHLINK_WARNING, "Received UDP packet from unknown source %s", hostname);
+		free(hostname);
+		return;
 	}
 
 	if(n->status.blacklisted) {
@@ -592,7 +612,20 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 		return;
 	}
 
+	if(n == mesh->self) {
+		logger(mesh, MESHLINK_WARNING, "Dropping packet from ourself");
+		return;
+	}
+
 	n->sock = ls - mesh->listen_socket;
 
-	receive_udppacket(mesh, n, &pkt);
+	if(sockaddrcmp_noport(&n->address, &from)) {
+		update_node_udp(mesh, n, &from);
+	}
+
+	if(pkt.dst != mesh->self->id) {
+		forward_udppacket(mesh, n, &pkt);
+	} else {
+		receive_udppacket(mesh, n, pkt.data, pkt.len);
+	}
 }

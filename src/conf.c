@@ -18,7 +18,6 @@
 */
 
 #include "system.h"
-#include <assert.h>
 
 #include "splay_tree.h"
 #include "connection.h"

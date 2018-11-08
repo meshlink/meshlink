@@ -32,6 +32,7 @@
 #define SPTPS_HANDSHAKE 128   // Key exchange and authentication
 #define SPTPS_ALERT 129       // Warning or error messages
 #define SPTPS_CLOSE 130       // Application closed the connection
+#define SPTPS_UNENCRYPTED 131 // Unencrypted data
 
 // Key exchange states
 #define SPTPS_KEX 1           // Waiting for the first Key EXchange record
@@ -45,13 +46,16 @@ typedef bool (*receive_record_t)(void *handle, uint8_t type, const void *data, u
 typedef struct sptps {
 	bool initiator;
 	bool datagram;
+
+	bool instate;
+	bool passthrough;
+
 	int state;
 
 	char *inbuf;
 	size_t buflen;
 	uint16_t reclen;
 
-	bool instate;
 	chacha_poly1305_ctx_t *incipher;
 	uint32_t inseqno;
 	uint32_t received;
@@ -84,6 +88,8 @@ extern void (*sptps_log)(sptps_t *s, int s_errno, const char *format, va_list ap
 extern bool sptps_start(sptps_t *s, void *handle, bool initiator, bool datagram, ecdsa_t *mykey, ecdsa_t *hiskey, const char *label, size_t labellen, send_data_t send_data, receive_record_t receive_record);
 extern bool sptps_stop(sptps_t *s);
 extern bool sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16_t len);
+extern bool sptps_send_unencrypted(sptps_t *s, const void *data, uint16_t len);
+extern bool sptps_expect_unencrypted(sptps_t *s, uint16_t len);
 extern bool sptps_receive_data(sptps_t *s, const void *data, size_t len);
 extern bool sptps_force_kex(sptps_t *s);
 extern bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len);

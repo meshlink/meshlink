@@ -33,22 +33,32 @@ static int node_compare(const node_t *a, const node_t *b) {
 	return strcmp(a->name, b->name);
 }
 
+static int node_id_compare(const node_t *a, const node_t *b) {
+	if(a->id < b->id) {
+		return -1;
+	} else if(a->id == b->id) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
 void init_nodes(meshlink_handle_t *mesh) {
 	mesh->nodes = splay_alloc_tree((splay_compare_t) node_compare, (splay_action_t) free_node);
-	mesh->node_udp_cache = hash_alloc(0x100, sizeof(sockaddr_t));
+	mesh->node_ids = splay_alloc_tree((splay_compare_t) node_id_compare, NULL);
 }
 
 void exit_nodes(meshlink_handle_t *mesh) {
-	if(mesh->node_udp_cache) {
-		hash_free(mesh->node_udp_cache);
-	}
-
 	if(mesh->nodes) {
 		splay_delete_tree(mesh->nodes);
 	}
 
-	mesh->node_udp_cache = NULL;
+	if(mesh->node_ids) {
+		splay_delete_tree(mesh->node_ids);
+	}
+
 	mesh->nodes = NULL;
+	mesh->node_ids = NULL;
 }
 
 node_t *new_node(void) {
@@ -88,6 +98,7 @@ void free_node(node_t *n) {
 void node_add(meshlink_handle_t *mesh, node_t *n) {
 	n->mesh = mesh;
 	splay_insert(mesh->nodes, n);
+	update_node_id(mesh, n);
 }
 
 void node_del(meshlink_handle_t *mesh, node_t *n) {
@@ -102,15 +113,65 @@ void node_del(meshlink_handle_t *mesh, node_t *n) {
 
 node_t *lookup_node(meshlink_handle_t *mesh, const char *name) {
 	const node_t n = {.name = (char *)name};
-	node_t *result;
-
-	result = splay_search(mesh->nodes, &n);
-
-	return result;
+	return splay_search(mesh->nodes, &n);
 }
 
-node_t *lookup_node_udp(meshlink_handle_t *mesh, const sockaddr_t *sa) {
-	return hash_search(mesh->node_udp_cache, sa);
+node_t *lookup_node_id(meshlink_handle_t *mesh, uint64_t id) {
+	const node_t n = {.id = id};
+	return splay_search(mesh->node_ids, &n);
+}
+
+void update_node_id(meshlink_handle_t *mesh, node_t *n) {
+	if(n->id) {
+		logger(mesh, LOG_WARNING, "Node %s already has id %"PRIu64"\n", n->name, n->id);
+		return;
+	}
+
+	struct {
+		uint8_t public[32];
+		uint32_t gen;
+	} input;
+
+	uint8_t hash[64];
+	uint64_t id;
+
+	memset(&input, 0, sizeof input);
+
+	strncpy(input.public, n->name, sizeof input.public);
+	input.gen = 0;
+
+	while(true) {
+		sha512(&input, sizeof input, hash);
+		memcpy(&id, hash, sizeof id);
+		input.gen++;
+
+		// ID 0 is reserved
+		if(!id) {
+			continue;
+		}
+
+		// Check if there is a conflict with an existing node
+		node_t *other = lookup_node_id(mesh, id);
+		int cmp = other ? strcmp(n->name, other->name) : 0;
+
+		// If yes and we sort after the other, try again
+		if(cmp > 0) {
+			continue;
+		}
+
+		if(other) {
+			splay_delete(mesh->node_ids, other);
+		}
+
+		n->id = id;
+		splay_insert(mesh->node_ids, n);
+
+		if(other) {
+			update_node_id(mesh, other);
+		}
+
+		break;
+	}
 }
 
 void update_node_udp(meshlink_handle_t *mesh, node_t *n, const sockaddr_t *sa) {
@@ -118,8 +179,6 @@ void update_node_udp(meshlink_handle_t *mesh, node_t *n, const sockaddr_t *sa) {
 		logger(mesh, MESHLINK_WARNING, "Trying to update UDP address of mesh->self!");
 		return;
 	}
-
-	hash_insert(mesh->node_udp_cache, &n->address, NULL);
 
 	if(sa) {
 		n->address = *sa;
@@ -131,8 +190,6 @@ void update_node_udp(meshlink_handle_t *mesh, node_t *n, const sockaddr_t *sa) {
 				break;
 			}
 		}
-
-		hash_insert(mesh->node_udp_cache, sa, n);
 
 		meshlink_hint_address(mesh, (meshlink_node_t *)n, &sa->sa);
 

@@ -31,22 +31,27 @@
 /* Jumptable for the request handlers */
 
 static bool (*request_handlers[])(meshlink_handle_t *, connection_t *, const char *) = {
-	id_h, NULL, NULL, NULL /* metakey_h, challenge_h, chal_reply_h */, ack_h,
-	status_h, error_h, termreq_h,
-	ping_h, pong_h,
-	NULL, NULL, //add_subnet_h, del_subnet_h,
-	add_edge_h, del_edge_h,
-	key_changed_h, req_key_h, ans_key_h, tcppacket_h, NULL, //control_h,
+	id_h,
+	ack_h,
+	ping_h,
+	pong_h,
+	add_edge_h,
+	del_edge_h,
+	req_key_h,
+	ans_key_h,
 };
 
 /* Request names */
 
 static char (*request_name[]) = {
-	"ID", "METAKEY", "CHALLENGE", "CHAL_REPLY", "ACK",
-	"STATUS", "ERROR", "TERMREQ",
-	"PING", "PONG",
-	"ADD_SUBNET", "DEL_SUBNET",
-	"ADD_EDGE", "DEL_EDGE", "KEY_CHANGED", "REQ_KEY", "ANS_KEY", "PACKET", "CONTROL",
+	"ID",
+	"ACK",
+	"PING",
+	"PONG",
+	"ADD_EDGE",
+	"DEL_EDGE",
+	"REQ_KEY",
+	"ANS_KEY",
 };
 
 bool check_id(const char *id) {

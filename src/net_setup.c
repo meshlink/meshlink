@@ -28,7 +28,6 @@
 #include "net.h"
 #include "netutl.h"
 #include "protocol.h"
-#include "route.h"
 #include "utils.h"
 #include "xalloc.h"
 
@@ -469,7 +468,6 @@ bool setup_network(meshlink_handle_t *mesh) {
 
 	mesh->pinginterval = 60;
 	mesh->pingtimeout = 5;
-	maxoutbufsize = 10 * MTU;
 
 	if(!setup_myself(mesh)) {
 		return false;

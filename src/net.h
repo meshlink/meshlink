@@ -41,6 +41,9 @@ typedef struct vpn_packet_t {
 		unsigned int tcp: 1;
 	};
 	uint16_t len;           /* the actual number of bytes in the `data' field */
+
+	uint64_t src;
+	uint64_t dst;
 	uint8_t data[MAXSIZE];
 } vpn_packet_t;
 

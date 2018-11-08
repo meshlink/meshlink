@@ -106,6 +106,7 @@ static bool send_record_priv_datagram(sptps_t *s, uint8_t type, const void *data
 		return s->send_data(s->handle, type, buffer, len + 5UL);
 	}
 }
+
 // Send a record (private version, accepts all record types, handles encryption and authentication).
 static bool send_record_priv(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
 	if(s->datagram) {
@@ -145,6 +146,38 @@ bool sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16_t len)
 	}
 
 	return send_record_priv(s, type, data, len);
+}
+
+// Pass through unencrypted data.
+bool sptps_send_unencrypted(sptps_t *s, const void *data, uint16_t len) {
+	// Sanity checks: application cannot send data before handshake is finished,
+	// and only non-datagram allowed.
+	if(!s->outstate) {
+		return error(s, EINVAL, "Handshake phase not finished yet");
+	}
+
+	if(s->datagram) {
+		return error(s, EINVAL, "Not allowed for datagrams");
+	}
+
+	return s->send_data(s->handle, SPTPS_UNENCRYPTED, data, len);
+}
+
+// Expect a given number of unencrypted bytes.
+bool sptps_expect_unencrypted(sptps_t *s, uint16_t len) {
+	// Sanity checks: application cannot send data before handshake is finished,
+	// and only non-datagram allowed.
+	if(!s->instate) {
+		return error(s, EINVAL, "Handshake phase not finished yet");
+	}
+
+	if(s->datagram) {
+		return error(s, EINVAL, "Not allowed for datagrams");
+	}
+
+	s->reclen = len;
+	s->passthrough = true;
+	return true;
 }
 
 // Send a Key EXchange record, containing a random nonce and an ECDHE public key.
@@ -564,6 +597,46 @@ bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 	const char *ptr = data;
 
 	while(len) {
+		if(s->passthrough) {
+			if(!s->buflen && s->reclen <= len) {
+				len -= s->reclen;
+				ptr += s->reclen;
+
+				s->reclen = 0;
+				s->passthrough = false;
+
+				if(!s->receive_record(s->handle, SPTPS_UNENCRYPTED, data, s->reclen)) {
+					return false;
+				}
+
+				continue;
+			}
+
+			size_t toread = s->reclen - s->buflen;
+			if (toread >= len) {
+				toread = len;
+			}
+
+			memcpy(s->inbuf + s->buflen, ptr, toread);
+			s->buflen += toread;
+			len -= toread;
+			ptr += toread;
+
+			if(s->buflen < s->reclen) {
+				return;
+			}
+
+			s->reclen = 0;
+			s->passthrough = false;
+
+			if(!s->receive_record(s->handle, SPTPS_UNENCRYPTED, data, s->reclen)) {
+				return false;
+			}
+
+			s->buflen = 0;
+			continue;
+		}
+
 		// First read the 2 length bytes.
 		if(s->buflen < 2) {
 			size_t toread = 2 - s->buflen;

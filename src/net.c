@@ -31,8 +31,6 @@
 #include "protocol.h"
 #include "xalloc.h"
 
-#include <assert.h>
-
 #if !defined(min)
 static inline int min(int a, int b) {
 	return a < b ? a : b;

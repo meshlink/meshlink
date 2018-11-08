@@ -38,7 +38,6 @@ typedef struct {
 #include "netutl.h"
 #include "node.h"
 #include "protocol.h"
-#include "route.h"
 #include "sockaddr.h"
 #include "utils.h"
 #include "xalloc.h"
@@ -1457,7 +1456,7 @@ void meshlink_close(meshlink_handle_t *mesh) {
 
 	if(mesh->conffile) {
 		fclose(mesh->conffile);
-        }
+	}
 
 	memset(mesh, 0, sizeof(*mesh));
 
@@ -1535,10 +1534,8 @@ void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, me
 }
 
 bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
-	meshlink_packethdr_t *hdr;
-
 	// Validate arguments
-	if(!mesh || !destination || len >= MAXSIZE - sizeof(*hdr)) {
+	if(!mesh || !destination || len >= MAXSIZE) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
@@ -1562,16 +1559,11 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 
 	packet->probe = false;
 	packet->tcp = false;
-	packet->len = len + sizeof(*hdr);
+	packet->len = len;
+	packet->src = mesh->self->id;
+	packet->dst = ((node_t *)destination)->id;
 
-	hdr = (meshlink_packethdr_t *)packet->data;
-	memset(hdr, 0, sizeof(*hdr));
-	// leave the last byte as 0 to make sure strings are always
-	// null-terminated if they are longer than the buffer
-	strncpy((char *)hdr->destination, destination->name, (sizeof(hdr)->destination) - 1);
-	strncpy((char *)hdr->source, mesh->self->name, (sizeof(hdr)->source) - 1);
-
-	memcpy(packet->data + sizeof(*hdr), data, len);
+	memcpy(packet->data, data, len);
 
 	// Queue it
 	if(!meshlink_queue_push(&mesh->outpacketqueue, packet)) {
@@ -1596,7 +1588,13 @@ void meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
 
 	mesh->self->in_packets++;
 	mesh->self->in_bytes += packet->len;
-	route(mesh, mesh->self, packet);
+	node_t *dest = lookup_node_id(mesh, packet->dst);
+
+	if(dest) {
+		send_packet(mesh, dest, packet);
+	}
+
+	free(packet);
 }
 
 ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination) {

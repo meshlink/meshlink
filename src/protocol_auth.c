@@ -37,8 +37,6 @@
 #include "xalloc.h"
 #include "ed25519/sha512.h"
 
-#include <assert.h>
-
 extern bool node_write_devclass(meshlink_handle_t *mesh, node_t *n);
 
 static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
@@ -342,8 +340,8 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 		free(mykey);
 
-		c->protocol_minor = 2;
-		c->allow_request = 1;
+		c->protocol_minor = PROT_MINOR;
+		c->allow_request = LAST;
 
 		return sptps_start(&c->sptps, c, false, false, mesh->invitation_key, c->ecdsa, meshlink_invitation_label, sizeof(meshlink_invitation_label), send_meta_sptps, receive_invitation_sptps);
 	}
@@ -407,14 +405,6 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			send_req_key(mesh, n);
 		}
 
-		return false;
-	}
-
-	/* Forbid version rollback for nodes whose ECDSA key we know */
-
-	if(ecdsa_active(c->ecdsa) && c->protocol_minor < 2) {
-		logger(mesh, MESHLINK_ERROR, "Peer %s tries to roll back protocol version to %d.%d",
-		       c->name, c->protocol_major, c->protocol_minor);
 		return false;
 	}
 

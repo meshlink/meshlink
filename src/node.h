@@ -53,6 +53,8 @@ typedef struct node_t {
 	int sock;                               /* Socket to use for outgoing UDP packets */
 	sockaddr_t address;                     /* his real (internet) ip to send UDP packets to */
 
+	uint64_t id;                            /* Unique ID for this node */
+
 	node_status_t status;
 	time_t last_state_change;
 	time_t last_req_key;
@@ -95,7 +97,8 @@ extern void free_node(node_t *);
 extern void node_add(struct meshlink_handle *mesh, node_t *);
 extern void node_del(struct meshlink_handle *mesh, node_t *);
 extern node_t *lookup_node(struct meshlink_handle *mesh, const char *);
-extern node_t *lookup_node_udp(struct meshlink_handle *mesh, const sockaddr_t *);
+extern node_t *lookup_node_id(struct meshlink_handle *mesh, uint64_t id);
 extern void update_node_udp(struct meshlink_handle *mesh, node_t *, const sockaddr_t *);
+extern void update_node_id(struct meshlink_handle *mesh, node_t *);
 
 #endif
