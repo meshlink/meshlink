@@ -10,6 +10,8 @@ TESTS = \
 	sign-verify.test \
 	trio.test
 
+SUBDIRS = blackbox
+
 dist_check_SCRIPTS = $(TESTS)
 
 AM_CPPFLAGS = $(PTHREAD_CFLAGS) -I${top_srcdir}/src -iquote. -Wall

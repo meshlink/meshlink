@@ -138,6 +138,19 @@ AC_CHECK_DECLS([freeaddrinfo, gai_strerror, getaddrinfo, getnameinfo],
 
 AC_CACHE_SAVE
 
-AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile test/Makefile examples/Makefile])
+AC_CONFIG_FILES([
+	 Makefile
+	 src/Makefile
+	 doc/Makefile
+	 test/Makefile
+	 test/blackbox/Makefile
+	 test/blackbox/run_blackbox_tests/Makefile
+	 test/blackbox/test_case_meta_conn_01/Makefile
+	 test/blackbox/test_case_meta_conn_02/Makefile
+	 test/blackbox/test_case_meta_conn_03/Makefile
+	 test/blackbox/test_case_meta_conn_04/Makefile
+	 test/blackbox/test_case_meta_conn_05/Makefile
+	 examples/Makefile
+])
 
 AC_OUTPUT
