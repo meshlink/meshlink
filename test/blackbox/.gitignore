@@ -1,0 +1,10 @@
+*.log
+*.o
+*.trs
+*conf*
+.deps
+.dirstamp
+Makefile
+Makefile.in
+.libs
+gen_invite

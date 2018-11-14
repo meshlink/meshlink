@@ -23,6 +23,7 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_LIBTOOL
+AX_PTHREAD
 
 dnl Check and set OS
 
@@ -57,9 +58,11 @@ dnl No -fstack-protector-all because it doesn't work on all platforms or archite
 
 AC_ARG_ENABLE([hardening], AS_HELP_STRING([--disable-hardening], [disable compiler and linker hardening flags]))
 AS_IF([test "x$enable_hardening" != "xno"],
-  [AX_CHECK_COMPILE_FLAG([-DFORTIFY_SOURCE=2], [CPPFLAGS="$CPPFLAGS -DFORITFY_SOURCE=2"])
-   AX_CHECK_COMPILE_FLAG([-fno-strict-overflow], [CPPFLAGS="$CPPFLAGS -fno-strict-overflow"])
-   AX_CHECK_COMPILE_FLAG([-fwrapv], [CPPFLAGS="$CPPFLAGS -fwrapv"])
+  [CPPFLAGS="$CPPFLAGS -W -pedantic"
+   AX_CHECK_COMPILE_FLAG([-DFORTIFY_SOURCE=2], [CPPFLAGS="$CPPFLAGS -DFORITFY_SOURCE=2"])
+   AX_CHECK_COMPILE_FLAG([-fwrapv], [CPPFLAGS="$CPPFLAGS -fwrapv"],
+     [AX_CHECK_COMPILE_FLAG([-fno-strict-overflow], [CPPFLAGS="$CPPFLAGS -fno-strict-overflow"])]
+   )
    case $host_os in
      *mingw*)
        AX_CHECK_LINK_FLAG([-Wl,--dynamicbase], [LDFLAGS="$LDFLAGS -Wl,--dynamicbase"])
@@ -130,6 +133,17 @@ AC_CHECK_DECLS([freeaddrinfo, gai_strerror, getaddrinfo, getnameinfo],
 
 AC_CACHE_SAVE
 
-AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile test/Makefile examples/Makefile])
+AC_CONFIG_FILES([Makefile \
+		src/Makefile \
+		doc/Makefile \
+		test/Makefile \
+		test/blackbox/Makefile \
+		test/blackbox/run_blackbox_tests/Makefile \
+		test/blackbox/test_case_meta_conn_01/Makefile \
+		test/blackbox/test_case_meta_conn_02/Makefile \
+		test/blackbox/test_case_meta_conn_03/Makefile \
+		test/blackbox/test_case_meta_conn_04/Makefile \
+		test/blackbox/test_case_meta_conn_05/Makefile \
+		examples/Makefile])
 
 AC_OUTPUT

@@ -174,13 +174,19 @@ public:
 	 */
 
 	/// This function is called whenever another node sends data to the local node.
-	virtual void receive(node *source, const void *data, size_t length) { /* do nothing */ }
+	virtual void receive(node *source, const void *data, size_t length) {
+		/* do nothing */
+	}
 
 	/// This functions is called  whenever another node's status changed.
-	virtual void node_status(node *peer, bool reachable)                { /* do nothing */ }
+	virtual void node_status(node *peer, bool reachable)                {
+		/* do nothing */
+	}
 
 	/// This functions is called whenever MeshLink has some information to log.
-	virtual void log(log_level_t level, const char *message)            { /* do nothing */ }
+	virtual void log(log_level_t level, const char *message)            {
+		/* do nothing */
+	}
 
 	/// This functions is called whenever another node attemps to open a channel to the local node.
 	/**
@@ -217,7 +223,9 @@ public:
 	 *  @param data         A pointer to a buffer containing data sent by the source.
 	 *  @param len          The length of the data.
 	 */
-	virtual void channel_receive(channel *channel, const void *data, size_t len) { /* do nothing */ }
+	virtual void channel_receive(channel *channel, const void *data, size_t len) {
+		/* do nothing */
+	}
 
 	/// This function is called by Meshlink when data can be send on a channel.
 	/**
@@ -229,7 +237,9 @@ public:
 	 *  @param channel      A handle for the channel.
 	 *  @param len          The maximum length of data that is guaranteed to be accepted by a call to channel_send().
 	 */
-	virtual void channel_poll(channel *channel, size_t len) { /* do nothing */ }
+	virtual void channel_poll(channel *channel, size_t len) {
+		/* do nothing */
+	}
 
 	/// Start MeshLink.
 	/** This function causes MeshLink to open network sockets, make outgoing connections, and

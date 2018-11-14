@@ -28,3 +28,5 @@ core.*
 /stamp-h1
 /INSTALL
 ar-lib
+meshlink.layout
+*.cbp

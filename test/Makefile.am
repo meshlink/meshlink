@@ -9,9 +9,12 @@ TESTS = \
 	invite-join.test \
 	sign-verify.test
 
+SUBDIRS = blackbox
+
 dist_check_SCRIPTS = $(TESTS)
 
-AM_CPPFLAGS = -I${top_srcdir}/src -iquote. -Wall
+AM_CPPFLAGS = $(PTHREAD_CFLAGS) -I${top_srcdir}/src -iquote. -Wall
+AM_LDFLAGS = $(PTHREAD_LIBS)
 
 check_PROGRAMS = \
 	basic \
