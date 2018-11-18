@@ -10,7 +10,9 @@ TESTS = \
 	sign-verify.test \
 	trio.test
 
+if BLACKBOX_TESTS
 SUBDIRS = blackbox
+endif
 
 dist_check_SCRIPTS = $(TESTS)
 
