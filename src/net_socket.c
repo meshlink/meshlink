@@ -453,7 +453,7 @@ static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgo
 	}
 
 	if(outgoing->state == OUTGOING_CANONICAL) {
-		if(outgoing->aip || get_next_cfg(mesh, outgoing, "CanonicalAddress")) {
+		while(outgoing->aip || get_next_cfg(mesh, outgoing, "CanonicalAddress")) {
 			if(get_next_ai(mesh, outgoing)) {
 				return true;
 			} else {
@@ -467,7 +467,7 @@ static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgo
 	}
 
 	if(outgoing->state == OUTGOING_RECENT) {
-		if(outgoing->aip || get_next_cfg(mesh, outgoing, "Address")) {
+		while(outgoing->aip || get_next_cfg(mesh, outgoing, "Address")) {
 			if(get_next_ai(mesh, outgoing)) {
 				return true;
 			} else {
