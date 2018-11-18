@@ -50,4 +50,24 @@ void meshlink_callback_node_status(meshlink_handle_t *mesh, meshlink_node_t *nod
 void meshlink_callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t level,
                               const char *text);
 
+void change_ip(int node);
+void create_bridge(const char *bridgeName);
+void add_interface(const char *bridgeName, const char *interfaceName);
+void add_veth_pair(const char *vethName1, const char *vethName2);
+void bring_if_up(const char *bridgeName);
+void replaceAll(char *str, const char *oldWord, const char *newWord);
+void switch_bridge(const char *containerName, const char *currentBridge, const char *newBridge);
+void bring_if_down(const char *bridgeName);
+void del_interface(const char *bridgeName, const char *interfaceName);
+void delete_bridge(const char *bridgeName);
+void create_container_on_bridge(const char *containerName, const char *bridgeName, const char *ifName);
+void config_dnsmasq(const char *containerName, const char *ifName, const char *listenAddress, const char *dhcpRange);
+void config_nat(const char *containerName, const char *listenAddress);
+void create_nat_layer(const char *containerName, const char *bridgeName, const char *ifName, const char *listenAddress, char *dhcpRange);
+void destroy_nat_layer(const char *containerName, const char *bridgeName);
+void incoming_firewall_ipv4(const char *packetType, int portNumber);
+void incoming_firewall_ipv6(const char *packetType, int portNumber);
+void outgoing_firewall_ipv4(const char *packetType, int portNumber);
+void outgoing_firewall_ipv6(const char *packetType, int portNumber);
+
 #endif // COMMON_HANDLERS_H

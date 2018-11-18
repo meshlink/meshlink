@@ -24,6 +24,6 @@
 #include <stdbool.h>
 
 extern int total_tests;
-extern int test_case_channel_conn(void);
+extern int test_meshlink_channel_conn(void);
 
 #endif // TEST_CASES_CHANNEL_CONN_H
