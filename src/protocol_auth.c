@@ -402,7 +402,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 		node_t *n = lookup_node(mesh, c->name);
 
-		if(n && !n->status.waitingforkey) {
+		if(n && n->status.reachable && !n->status.waitingforkey) {
 			logger(mesh, MESHLINK_INFO, "Requesting key from peer %s", c->name);
 			send_req_key(mesh, n);
 		}
