@@ -1459,7 +1459,7 @@ void meshlink_close(meshlink_handle_t *mesh) {
 
 	if(mesh->conffile) {
 		fclose(mesh->conffile);
-        }
+	}
 
 	memset(mesh, 0, sizeof(*mesh));
 
