@@ -392,8 +392,6 @@ static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
 		flags |= MESHLINK_INVITE_IPV4 | MESHLINK_INVITE_IPV6;
 	}
 
-	fprintf(stderr, "flags = %u\n", flags);
-
 	// Add local addresses if requested
 	if(flags & MESHLINK_INVITE_LOCAL) {
 		if(flags & MESHLINK_INVITE_IPV4) {

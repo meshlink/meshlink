@@ -63,7 +63,7 @@ void sptps_log_stderr(sptps_t *s, int s_errno, const char *format, va_list ap) {
 	fputc('\n', stderr);
 }
 
-void (*sptps_log)(sptps_t *s, int s_errno, const char *format, va_list ap) = sptps_log_stderr;
+void (*sptps_log)(sptps_t *s, int s_errno, const char *format, va_list ap) = sptps_log_quiet;
 
 // Log an error message.
 static bool error(sptps_t *s, int s_errno, const char *format, ...) {

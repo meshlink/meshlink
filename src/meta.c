@@ -138,7 +138,6 @@ bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 			int left = c->inbuf.len - c->inbuf.offset;
 
 			if(left > 0) {
-				fprintf(stderr, "GOT A LITTLE MORE\n");
 				return sptps_receive_data(&c->sptps, buffer_read(&c->inbuf, left), left);
 			} else {
 				return true;
