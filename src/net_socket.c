@@ -481,14 +481,18 @@ static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgo
 	}
 
 	if(outgoing->state == OUTGOING_KNOWN) {
-		if(outgoing->aip || get_recent(mesh, outgoing)) {
-			if(get_next_ai(mesh, outgoing)) {
-				return true;
-			} else {
-				free_known_addresses(outgoing->ai);
-				outgoing->ai = NULL;
-				outgoing->aip = NULL;
-			}
+		if(!outgoing->aip) {
+			get_recent(mesh, outgoing);
+		} else {
+			outgoing->aip = outgoing->aip->ai_next;
+		}
+
+		if(outgoing->aip) {
+			return true;
+		} else {
+			free_known_addresses(outgoing->ai);
+			outgoing->ai = NULL;
+			outgoing->aip = NULL;
 		}
 
 		outgoing->state = OUTGOING_END;
