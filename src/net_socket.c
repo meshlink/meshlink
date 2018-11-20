@@ -636,6 +636,22 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	do_outgoing_connection(mesh, outgoing);
 }
 
+/// Delayed close of a filedescriptor.
+static void tarpit(int fd) {
+	static int pits[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+	static int next_pit = 0;
+
+	if(pits[next_pit] != -1) {
+		closesocket(pits[next_pit]);
+	}
+
+	pits[next_pit++] = fd;
+
+	if(next_pit >= (int)(sizeof pits / sizeof pits[0])) {
+		next_pit = 0;
+	}
+}
+
 /*
   accept a new tcp connect and create a
   new connection
@@ -663,56 +679,22 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 
 	sockaddrunmap(&sa);
 
-	// Check if we get many connections from the same host
-
-	static sockaddr_t prev_sa;
-	static int tarpit = -1;
-
-	if(tarpit >= 0) {
-		closesocket(tarpit);
-		tarpit = -1;
-	}
-
-	if(!sockaddrcmp_noport(&sa, &prev_sa)) {
-		static int samehost_burst;
-		static int samehost_burst_time;
-
-		if(mesh->loop.now.tv_sec - samehost_burst_time > samehost_burst) {
-			samehost_burst = 0;
-		} else {
-			samehost_burst -= mesh->loop.now.tv_sec - samehost_burst_time;
-		}
-
-		samehost_burst_time = mesh->loop.now.tv_sec;
-		samehost_burst++;
-
-		if(samehost_burst > max_connection_burst) {
-			tarpit = fd;
-			return;
-		}
-	}
-
-	memcpy(&prev_sa, &sa, sizeof(sa));
-
-	// Check if we get many connections from different hosts
+	/* Rate limit incoming connections to max_connection_burst/second. */
 
 	static int connection_burst;
 	static int connection_burst_time;
 
-	if(mesh->loop.now.tv_sec - connection_burst_time > connection_burst) {
+	if(mesh->loop.now.tv_sec != connection_burst_time) {
+		connection_burst_time = mesh->loop.now.tv_sec;
 		connection_burst = 0;
-	} else {
-		connection_burst -= mesh->loop.now.tv_sec - connection_burst_time;
 	}
-
-	connection_burst_time = mesh->loop.now.tv_sec;
-	connection_burst++;
 
 	if(connection_burst >= max_connection_burst) {
-		connection_burst = max_connection_burst;
-		tarpit = fd;
+		tarpit(fd);
 		return;
 	}
+
+	connection_burst++;
 
 	// Accept the new connection
 
