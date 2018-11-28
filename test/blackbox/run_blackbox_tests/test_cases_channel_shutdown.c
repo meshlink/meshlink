@@ -344,11 +344,11 @@ static bool test_steps_mesh_channel_shutdown_03(void) {
 int test_meshlink_channel_shutdown(void) {
 	const struct CMUnitTest blackbox_channel_shutdown_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_shutdown_01, NULL, NULL,
-		                (void *)&test_mesh_channel_shutdown_01_state),
+		(void *)&test_mesh_channel_shutdown_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_shutdown_02, NULL, NULL,
-		                (void *)&test_mesh_channel_shutdown_02_state),
+		(void *)&test_mesh_channel_shutdown_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_shutdown_03, NULL, NULL,
-		                (void *)&test_mesh_channel_shutdown_03_state)
+		(void *)&test_mesh_channel_shutdown_03_state)
 	};
 	total_tests += sizeof(blackbox_channel_shutdown_tests) / sizeof(blackbox_channel_shutdown_tests[0]);
 

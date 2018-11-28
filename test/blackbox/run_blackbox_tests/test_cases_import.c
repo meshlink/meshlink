@@ -300,15 +300,15 @@ static bool test_import_05(void) {
 int test_meshlink_import(void) {
 	const struct CMUnitTest blackbox_import_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_import_01, NULL, NULL,
-		                (void *)&test_case_import_01_state),
+		(void *)&test_case_import_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_import_02, NULL, NULL,
-		                (void *)&test_case_import_02_state),
+		(void *)&test_case_import_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_import_03, NULL, NULL,
-		                (void *)&test_case_import_03_state),
+		(void *)&test_case_import_03_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_import_04, NULL, NULL,
-		                (void *)&test_case_import_04_state),
+		(void *)&test_case_import_04_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_import_05, NULL, NULL,
-		                (void *)&test_case_import_05_state)
+		(void *)&test_case_import_05_state)
 	};
 	total_tests += sizeof(blackbox_import_tests) / sizeof(blackbox_import_tests[0]);
 

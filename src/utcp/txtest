@@ -1,7 +1,0 @@
-#!/bin/sh
-[ -f txtest-data ] || head -c 100000 /dev/urandom >txtest-data
-rm -f txtest-copy
-./test 9999 >txtest-copy 2>txtest-server.log &
-./test localhost 9999 2>txtest-client.log <txtest-data
-wait
-cmp txtest-data txtest-copy

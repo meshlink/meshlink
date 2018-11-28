@@ -187,11 +187,11 @@ static bool test_steps_channel_get_flags_03(void) {
 int test_meshlink_channel_get_flags(void) {
 	const struct CMUnitTest blackbox_channel_get_flags_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_get_flags_01, NULL, NULL,
-		                (void *)&test_case_channel_get_flags_01_state),
+		(void *)&test_case_channel_get_flags_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_get_flags_02, NULL, NULL,
-		                (void *)&test_case_channel_get_flags_02_state),
+		(void *)&test_case_channel_get_flags_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_get_flags_03, NULL, NULL,
-		                (void *)&test_case_channel_get_flags_03_state)
+		(void *)&test_case_channel_get_flags_03_state)
 	};
 
 	total_tests += sizeof(blackbox_channel_get_flags_tests) / sizeof(blackbox_channel_get_flags_tests[0]);

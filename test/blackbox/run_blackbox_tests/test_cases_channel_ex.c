@@ -403,17 +403,17 @@ static bool test_steps_channel_ex_06(void) {
 int test_meshlink_channel_open_ex(void) {
 	const struct CMUnitTest blackbox_channel_ex_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_01, NULL, NULL,
-		                (void *)&test_case_channel_ex_01_state),
+		(void *)&test_case_channel_ex_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_02, NULL, NULL,
-		                (void *)&test_case_channel_ex_02_state),
+		(void *)&test_case_channel_ex_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_03, NULL, NULL,
-		                (void *)&test_case_channel_ex_03_state),
+		(void *)&test_case_channel_ex_03_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_04, NULL, NULL,
-		                (void *)&test_case_channel_ex_04_state),
+		(void *)&test_case_channel_ex_04_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_05, NULL, NULL,
-		                (void *)&test_case_channel_ex_05_state),
+		(void *)&test_case_channel_ex_05_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_06, NULL, NULL,
-		                (void *)&test_case_channel_ex_06_state)
+		(void *)&test_case_channel_ex_06_state)
 	};
 
 	total_tests += sizeof(blackbox_channel_ex_tests) / sizeof(blackbox_channel_ex_tests[0]);

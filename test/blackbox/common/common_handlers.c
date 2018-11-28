@@ -41,14 +41,16 @@ bool meta_conn_status[10];
 bool test_running;
 
 static int meshlink_get_node_in_container(const char *name) {
-  int i;
-  for(i = 0; i < state_ptr->num_nodes; i++) {
-    if(!strcasecmp(state_ptr->node_names[i], name)) {
-      return i;
-      break;
-    }
-  }
-  return -1;
+	int i;
+
+	for(i = 0; i < state_ptr->num_nodes; i++) {
+		if(!strcasecmp(state_ptr->node_names[i], name)) {
+			return i;
+			break;
+		}
+	}
+
+	return -1;
 }
 
 void mesh_close_signal_handler(int a) {
@@ -147,33 +149,35 @@ void start_nw_intf(const char *if_name) {
 
 void meshlink_callback_node_status(meshlink_handle_t *mesh, meshlink_node_t *node,
                                    bool reachable) {
-  (void)mesh;
+	(void)mesh;
 	fprintf(stderr, "Node %s became %s\n", node->name, (reachable) ? "reachable" : "unreachable");
 }
 
 void meshlink_callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t level,
                               const char *text) {
-  (void)mesh;
-  (void)level;
+	(void)mesh;
+	(void)level;
 
 	fprintf(stderr, "meshlink>> %s\n", text);
 
 	if(state_ptr) {
-    bool status;
-    char name[100];
-    if(sscanf(text, "Connection with %s activated", name) == 1) {
-      status = true;
-    } else if (sscanf(text, "Already connected to %s", name) == 1) {
-      status = true;
-    } else if(sscanf(text, "Connection closed by %s", name) == 1) {
-      status = false;
-    } else if(sscanf(text, "Closing connection with %s", name) == 1) {
-      status = false;
-    } else {
-      return;
-    }
-    int i = meshlink_get_node_in_container(name);
-    assert(i != -1);
-    meta_conn_status[i] = status;
+		bool status;
+		char name[100];
+
+		if(sscanf(text, "Connection with %s activated", name) == 1) {
+			status = true;
+		} else if(sscanf(text, "Already connected to %s", name) == 1) {
+			status = true;
+		} else if(sscanf(text, "Connection closed by %s", name) == 1) {
+			status = false;
+		} else if(sscanf(text, "Closing connection with %s", name) == 1) {
+			status = false;
+		} else {
+			return;
+		}
+
+		int i = meshlink_get_node_in_container(name);
+		assert(i != -1);
+		meta_conn_status[i] = status;
 	}
 }

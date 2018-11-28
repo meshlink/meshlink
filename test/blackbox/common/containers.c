@@ -78,7 +78,7 @@ void rename_container(const char *old_name, const char *new_name) {
 char *run_in_container(const char *cmd, const char *container_name, bool daemonize) {
 	char container_find_name[100];
 	struct lxc_container *container;
-  char *output = NULL;
+	char *output = NULL;
 	size_t output_len = 0;
 
 	assert(cmd);
@@ -92,7 +92,7 @@ char *run_in_container(const char *cmd, const char *container_name, bool daemoni
 	    Need to determine why it doesn't work, and make it work */
 	if(daemonize) {
 		char run_script_path[100];
-  	char *attach_argv[4];
+		char *attach_argv[4];
 
 		assert(snprintf(run_script_path, sizeof(run_script_path), "%s/" LXC_UTIL_REL_PATH "/" LXC_RUN_SCRIPT,
 		                meshlink_root_path) >= 0);
@@ -107,23 +107,24 @@ char *run_in_container(const char *cmd, const char *container_name, bool daemoni
 			assert(execv(attach_argv[0], attach_argv) != -1);   // Run exec() in the child process
 		}
 	} else {
-	  char *attach_command;
-	  size_t attach_command_len;
-	  int i;
-	  attach_command_len = strlen(meshlink_root_path) + strlen(LXC_UTIL_REL_PATH) + strlen(LXC_RUN_SCRIPT) + strlen(cmd) + strlen(container->name) + 10;
-	  attach_command = malloc(attach_command_len);
-	  assert(attach_command);
+		char *attach_command;
+		size_t attach_command_len;
+		int i;
+		attach_command_len = strlen(meshlink_root_path) + strlen(LXC_UTIL_REL_PATH) + strlen(LXC_RUN_SCRIPT) + strlen(cmd) + strlen(container->name) + 10;
+		attach_command = malloc(attach_command_len);
+		assert(attach_command);
 
 		assert(snprintf(attach_command, attach_command_len,
 		                "%s/" LXC_UTIL_REL_PATH "/" LXC_RUN_SCRIPT " \"%s\" %s", meshlink_root_path, cmd,
 		                container->name) >= 0);
-    FILE *attach_fp;
+		FILE *attach_fp;
 		assert(attach_fp = popen(attach_command, "r"));
 		free(attach_command);
 		/* If the command has an output, strip out any trailing carriage returns or newlines and
 		    return it, otherwise return NULL */
 		output = NULL;
 		output_len = 0;
+
 		if(getline(&output, &output_len, attach_fp) != -1) {
 			i = strlen(output) - 1;
 
@@ -136,6 +137,7 @@ char *run_in_container(const char *cmd, const char *container_name, bool daemoni
 			free(output);
 			output = NULL;
 		}
+
 		assert(pclose(attach_fp) != -1);
 	}
 
@@ -210,7 +212,7 @@ void create_containers(const char *node_names[], int num_nodes) {
 			        first_container->error_num, first_container->error_string);
 			assert(snapshot_status != -1);
 		} else {
-		  assert(first_container);
+			assert(first_container);
 			snap_restore_status = first_container->snapshot_restore(first_container, "snap0",
 			                      container_name);
 			fprintf(stderr, "Snapshot restore to Container '%s' status: %d - %s\n", container_name,
@@ -354,7 +356,7 @@ void node_sim_in_container(const char *node, const char *device_class, const cha
 	                "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/node_sim_%s %s %s %s "
 	                "1>&2 2>> node_sim_%s.log", node, node, device_class,
 	                (invite_url) ? invite_url : "", node) >= 0);
-PRINT_TEST_CASE_MSG("%s\n", node_sim_command);
+	PRINT_TEST_CASE_MSG("%s\n", node_sim_command);
 	run_in_container(node_sim_command, node, true);
 	PRINT_TEST_CASE_MSG("node_sim_%s started in Container\n", node);
 }
@@ -368,7 +370,7 @@ void node_sim_in_container_event(const char *node, const char *device_class,
 	                "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/node_sim_%s %s %s %s %s %s "
 	                "1>&2 2>> node_sim_%s.log", node, node, device_class,
 	                clientId, import, (invite_url) ? invite_url : "", node) >= 0);
-PRINT_TEST_CASE_MSG("%s\n", node_sim_command);
+	PRINT_TEST_CASE_MSG("%s\n", node_sim_command);
 	run_in_container(node_sim_command, node, true);
 	PRINT_TEST_CASE_MSG("node_sim_%s(Client Id :%s) started in Container with event handling\n",
 	                    node, clientId);

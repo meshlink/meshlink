@@ -189,11 +189,11 @@ static bool test_meshlink_join_03(void) {
 int test_meshlink_join(void) {
 	const struct CMUnitTest blackbox_join_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_meshlink_join_01, NULL, NULL,
-		                (void *)&test_case_join_01_state),
+		(void *)&test_case_join_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_meshlink_join_02, NULL, NULL,
-		                (void *)&test_case_join_02_state),
+		(void *)&test_case_join_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_meshlink_join_03, NULL, NULL,
-		                (void *)&test_case_join_03_state)
+		(void *)&test_case_join_03_state)
 	};
 	total_tests += sizeof(blackbox_join_tests) / sizeof(blackbox_join_tests[0]);
 

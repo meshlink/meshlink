@@ -152,32 +152,32 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 		        "/hint  <name> <address> <port>\n"
 		        "/quit                 Exit this program.\n"
 		);
-	} else if(!strcasecmp(buf, "hint")){
-	  char *node_name = arg;
-	  arg = strchr(arg, ' ');
-	  *arg++ = '\0';
-	  meshlink_node_t *node = meshlink_get_node(mesh, node_name);
-	  assert(node);
-    char *address = arg;
-	  arg = strchr(arg, ' ');
-	  *arg++ = '\0';
-	  char *port = arg;
-    struct sockaddr_in hint;
-    hint.sin_family        = AF_INET;
-    hint.sin_port          = htons(port);
-    assert(inet_aton(address, &hint.sin_addr));
-    meshlink_hint_address(mesh, node, (struct sockaddr *)&hint);
+	} else if(!strcasecmp(buf, "hint")) {
+		char *node_name = arg;
+		arg = strchr(arg, ' ');
+		*arg++ = '\0';
+		meshlink_node_t *node = meshlink_get_node(mesh, node_name);
+		assert(node);
+		char *address = arg;
+		arg = strchr(arg, ' ');
+		*arg++ = '\0';
+		char *port = arg;
+		struct sockaddr_in hint;
+		hint.sin_family        = AF_INET;
+		hint.sin_port          = htons(port);
+		assert(inet_aton(address, &hint.sin_addr));
+		meshlink_hint_address(mesh, node, (struct sockaddr *)&hint);
 	} else if(!strcasecmp(buf, "canon")) {
-	  char *node_name = arg;
-	  arg = strchr(arg, ' ');
-	  *arg++ = '\0';
-	  meshlink_node_t *node = meshlink_get_node(mesh, node_name);
-	  assert(node);
-    char *address = arg;
-	  arg = strchr(arg, ' ');
-	  *arg++ = '\0';
-	  char *port = arg;
-    meshlink_set_canonical_address(mesh, node, address, port);
+		char *node_name = arg;
+		arg = strchr(arg, ' ');
+		*arg++ = '\0';
+		meshlink_node_t *node = meshlink_get_node(mesh, node_name);
+		assert(node);
+		char *address = arg;
+		arg = strchr(arg, ' ');
+		*arg++ = '\0';
+		char *port = arg;
+		meshlink_set_canonical_address(mesh, node, address, port);
 	} else {
 		fprintf(stderr, "Unknown command '/%s'\n", buf);
 	}
