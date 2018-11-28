@@ -1,6 +1,6 @@
 /*
     test_cases_rec_cb.c -- Execution of specific meshlink black box test cases
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -68,9 +68,11 @@ static void rec_cb(meshlink_handle_t *mesh, meshlink_node_t *source, const void 
 	assert(len);
 
 	pthread_mutex_lock(&lock);
+
 	if(len == 5 && !memcmp(data, "test", 5)) {
 		received = true;
 	}
+
 	pthread_mutex_unlock(&lock);
 }
 
@@ -182,22 +184,22 @@ static bool test_set_rec_cb_03(void) {
 
 	meshlink_close(mesh_handle);
 	meshlink_destroy("set_receive_cb_conf");
-  return true;
+	return true;
 }
 
 int test_meshlink_set_receive_cb(void) {
 	const struct CMUnitTest blackbox_receive_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_set_rec_cb_01, NULL, NULL,
-		(void *)&test_case_set_rec_cb_01_state),
+		                (void *)&test_case_set_rec_cb_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_set_rec_cb_02, NULL, NULL,
-		(void *)&test_case_set_rec_cb_02_state),
+		                (void *)&test_case_set_rec_cb_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_set_rec_cb_03, NULL, NULL,
-		(void *)&test_case_set_rec_cb_03_state)
+		                (void *)&test_case_set_rec_cb_03_state)
 	};
 	total_tests += sizeof(blackbox_receive_tests) / sizeof(blackbox_receive_tests[0]);
 
 	assert(pthread_mutex_init(&lock, NULL) == 0);
-	int failed = cmocka_run_group_tests(blackbox_receive_tests , NULL , NULL);
+	int failed = cmocka_run_group_tests(blackbox_receive_tests, NULL, NULL);
 	assert(pthread_mutex_destroy(&lock) == 0);
 
 	return failed;

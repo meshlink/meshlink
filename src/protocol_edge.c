@@ -35,15 +35,15 @@
 
 extern bool node_write_devclass(meshlink_handle_t *mesh, node_t *n);
 
-bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
+bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e, int contradictions) {
 	bool x;
 	char *address, *port;
 
 	sockaddr2str(&e->address, &address, &port);
 
-	x = send_request(mesh, c, "%d %x %s %d %s %s %s %d %x %d", ADD_EDGE, rand(),
+	x = send_request(mesh, c, "%d %x %s %d %s %s %s %d %x %d %d", ADD_EDGE, rand(),
 	                 e->from->name, e->from->devclass, e->to->name, address, port, e->to->devclass,
-	                 e->options, e->weight);
+	                 e->options, e->weight, contradictions);
 	free(address);
 	free(port);
 
@@ -62,9 +62,10 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	sockaddr_t address;
 	uint32_t options;
 	int weight;
+	int contradictions = 0;
 
-	if(sscanf(request, "%*d %*x "MAX_STRING" %d "MAX_STRING" "MAX_STRING" "MAX_STRING" %d %x %d",
-	                from_name, &from_devclass, to_name, to_address, to_port, &to_devclass, &options, &weight) != 8) {
+	if(sscanf(request, "%*d %*x "MAX_STRING" %d "MAX_STRING" "MAX_STRING" "MAX_STRING" %d %x %d %d",
+	                from_name, &from_devclass, to_name, to_address, to_port, &to_devclass, &options, &weight, &contradictions) < 8) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ADD_EDGE", c->name);
 		return false;
 	}
@@ -104,6 +105,10 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		node_add(mesh, from);
 	}
 
+	if(contradictions > 50) {
+		handle_duplicate_node(mesh, from);
+	}
+
 	from->devclass = from_devclass;
 	node_write_devclass(mesh, from);
 
@@ -130,7 +135,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			if(from == mesh->self) {
 				logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself which does not match existing entry",
 				       "ADD_EDGE", c->name);
-				send_add_edge(mesh, c, e);
+				send_add_edge(mesh, c, e, 0);
 				return true;
 			} else {
 				logger(mesh, MESHLINK_WARNING, "Got %s from %s which does not match existing entry",
@@ -148,7 +153,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		e = new_edge();
 		e->from = from;
 		e->to = to;
-		send_del_edge(mesh, c, e);
+		send_del_edge(mesh, c, e, mesh->contradicting_add_edge);
 		free_edge(e);
 		return true;
 	}
@@ -172,9 +177,9 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	return true;
 }
 
-bool send_del_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e) {
-	return send_request(mesh, c, "%d %x %s %s", DEL_EDGE, rand(),
-	                    e->from->name, e->to->name);
+bool send_del_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e, int contradictions) {
+	return send_request(mesh, c, "%d %x %s %s %d", DEL_EDGE, rand(),
+	                    e->from->name, e->to->name, contradictions);
 }
 
 bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -182,8 +187,9 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char from_name[MAX_STRING_SIZE];
 	char to_name[MAX_STRING_SIZE];
 	node_t *from, *to;
+	int contradictions = 0;
 
-	if(sscanf(request, "%*d %*x "MAX_STRING" "MAX_STRING, from_name, to_name) != 2) {
+	if(sscanf(request, "%*d %*x "MAX_STRING" "MAX_STRING" %d", from_name, to_name, &contradictions) < 2) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "DEL_EDGE", c->name);
 		return false;
 	}
@@ -216,6 +222,10 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		return true;
 	}
 
+	if(contradictions > 50) {
+		handle_duplicate_node(mesh, from);
+	}
+
 	/* Check if edge exists */
 
 	e = lookup_edge(from, to);
@@ -230,7 +240,7 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself",
 		       "DEL_EDGE", c->name);
 		mesh->contradicting_del_edge++;
-		send_add_edge(mesh, c, e);    /* Send back a correction */
+		send_add_edge(mesh, c, e, mesh->contradicting_del_edge);    /* Send back a correction */
 		return true;
 	}
 
@@ -252,7 +262,7 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		e = lookup_edge(to, mesh->self);
 
 		if(e) {
-			send_del_edge(mesh, mesh->everyone, e);
+			send_del_edge(mesh, mesh->everyone, e, 0);
 			edge_del(mesh, e);
 		}
 	}

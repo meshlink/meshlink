@@ -4,6 +4,9 @@ AM_CPPFLAGS = -Wall
 
 ed25519_SOURCES = \
 	ed25519/add_scalar.c \
+	ed25519/ecdh.c \
+	ed25519/ecdsa.c \
+	ed25519/ecdsagen.c \
 	ed25519/ed25519.h \
 	ed25519/fe.c ed25519/fe.h \
 	ed25519/fixedint.h \
@@ -37,7 +40,6 @@ libmeshlink_la_SOURCES = \
 	conf.c conf.h \
 	connection.c connection.h \
 	crypto.c crypto.h \
-	discovery.c discovery.h \
 	dropin.c dropin.h \
 	ecdh.h \
 	ecdsa.h \
@@ -80,15 +82,18 @@ libmeshlink_la_SOURCES = \
 	$(chacha_poly1305_SOURCES) \
 	$(utcp_SOURCES)
 
-libmeshlink_la_CFLAGS = -fPIC -I${top_srcdir}/catta/include/ -iquote.
+libmeshlink_la_CFLAGS = $(PTHREAD_CFLAGS) -fPIC -iquote.
+libmeshlink_la_LDFLAGS += $(PTHREAD_LIBS)
+
+if CATTA
+libmeshlink_la_SOURCES += \
+	discovery.c discovery.h
+
+libmeshlink_la_CFLAGS += -I${top_srcdir}/catta/include/
 
 if MINGW
 libmeshlink_la_CFLAGS += -I${top_srcdir}/catta/src/compat/windows/include/
 endif
 
-libmeshlink_la_LIBADD = -lpthread ${top_builddir}/catta/src/libcatta.la
-
-libmeshlink_la_SOURCES += \
-	ed25519/ecdh.c \
-	ed25519/ecdsa.c \
-	ed25519/ecdsagen.c
+libmeshlink_la_LIBADD = ${top_builddir}/catta/src/libcatta.la
+endif

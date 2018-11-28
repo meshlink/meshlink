@@ -151,7 +151,7 @@ bool send_id(meshlink_handle_t *mesh, connection_t *c) {
 			return false;
 		}
 
-	return send_request(mesh, c, "%d %s %d.%d", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor);
+	return send_request(mesh, c, "%d %s %d.%d %s", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor, mesh->appname);
 }
 
 static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data, uint16_t len) {
@@ -239,6 +239,24 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 
 	if(!f) {
 		logger(mesh, MESHLINK_ERROR, "Error trying to open invitation %s\n", cookie);
+		unlink(usedname);
+		return false;
+	}
+
+	// Check the timestamp
+	struct stat st;
+
+	if(fstat(fileno(f), &st)) {
+		logger(mesh, MESHLINK_ERROR, "Could not stat invitation file %s\n", usedname);
+		fclose(f);
+		unlink(usedname);
+		return false;
+	}
+
+	if(time(NULL) > st.st_mtime + mesh->invitation_timeout) {
+		logger(mesh, MESHLINK_ERROR, "Peer %s tried to use an outdated invitation file %s\n", c->name, usedname);
+		fclose(f);
+		unlink(usedname);
 		return false;
 	}
 
@@ -369,6 +387,14 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		}
 	}
 
+	bool blacklisted = false;
+	get_config_bool(lookup_config(c->config_tree, "blacklisted"), &blacklisted);
+
+	if(blacklisted) {
+		logger(mesh, MESHLINK_EPEER, "Peer %s is blacklisted", c->name);
+		return false;
+	}
+
 	read_ecdsa_public_key(mesh, c);
 
 	if(!ecdsa_active(c->ecdsa)) {
@@ -376,7 +402,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 		node_t *n = lookup_node(mesh, c->name);
 
-		if(n && !n->status.waitingforkey) {
+		if(n && n->status.reachable && !n->status.waitingforkey) {
 			logger(mesh, MESHLINK_INFO, "Requesting key from peer %s", c->name);
 			send_req_key(mesh, n);
 		}
@@ -420,7 +446,7 @@ static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
 
 	for splay_each(node_t, n, mesh->nodes) {
 		for splay_each(edge_t, e, n->edge_tree) {
-			send_add_edge(mesh, c, e);
+			send_add_edge(mesh, c, e, 0);
 		}
 	}
 }
@@ -515,7 +541,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	/* Notify everyone of the new edge */
 
-	send_add_edge(mesh, mesh->everyone, c->edge);
+	send_add_edge(mesh, mesh->everyone, c->edge, 0);
 
 	/* Run MST and SSSP algorithms */
 

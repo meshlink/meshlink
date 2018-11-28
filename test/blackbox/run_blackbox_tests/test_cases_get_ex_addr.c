@@ -1,6 +1,6 @@
 /*
     test_cases_get_ex_addr.c -- Execution of specific meshlink black box test cases
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -131,11 +131,11 @@ static bool test_steps_mesh_get_address_03(void) {
 int test_meshlink_get_external_address(void) {
 	const struct CMUnitTest blackbox_get_ex_addr_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_address_01, NULL, NULL,
-		(void *)&test_mesh_get_address_01_state),
+		                (void *)&test_mesh_get_address_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_address_02, NULL, NULL,
-		(void *)&test_mesh_get_address_02_state),
+		                (void *)&test_mesh_get_address_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_address_03, NULL, NULL,
-		(void *)&test_mesh_get_address_03_state)
+		                (void *)&test_mesh_get_address_03_state)
 	};
 	total_tests += sizeof(blackbox_get_ex_addr_tests) / sizeof(blackbox_get_ex_addr_tests[0]);
 

@@ -1,6 +1,6 @@
 /*
     test_cases_import.c -- Execution of specific meshlink black box test cases
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -239,7 +239,7 @@ static bool test_import_04(void) {
 	// Importing NUT with garbage string as exported data argument
 	bool imp1 = meshlink_import(mesh1, "1/2/3");
 	bool imp2 = meshlink_import(mesh2, exp1);
-  assert_int_equal((!imp1) && imp2, true);
+	assert_int_equal((!imp1) && imp2, true);
 
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
@@ -300,17 +300,17 @@ static bool test_import_05(void) {
 int test_meshlink_import(void) {
 	const struct CMUnitTest blackbox_import_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_import_01, NULL, NULL,
-		(void *)&test_case_import_01_state),
+		                (void *)&test_case_import_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_import_02, NULL, NULL,
-		(void *)&test_case_import_02_state),
+		                (void *)&test_case_import_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_import_03, NULL, NULL,
-		(void *)&test_case_import_03_state),
+		                (void *)&test_case_import_03_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_import_04, NULL, NULL,
-		(void *)&test_case_import_04_state),
+		                (void *)&test_case_import_04_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_import_05, NULL, NULL,
-		(void *)&test_case_import_05_state)
+		                (void *)&test_case_import_05_state)
 	};
 	total_tests += sizeof(blackbox_import_tests) / sizeof(blackbox_import_tests[0]);
 
-	return cmocka_run_group_tests(blackbox_import_tests , NULL , NULL);
+	return cmocka_run_group_tests(blackbox_import_tests, NULL, NULL);
 }

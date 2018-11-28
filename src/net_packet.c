@@ -19,10 +19,6 @@
 
 #include "system.h"
 
-#ifdef HAVE_ZLIB
-#include <zlib.h>
-#endif
-
 #include "conf.h"
 #include "connection.h"
 #include "crypto.h"
@@ -370,7 +366,7 @@ static void send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *ori
 		return;
 	}
 
-	return send_sptps_packet(mesh, n, origpkt);
+	send_sptps_packet(mesh, n, origpkt);
 }
 
 bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
@@ -555,7 +551,7 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 	listen_socket_t *ls = data;
 	vpn_packet_t pkt;
 	char *hostname;
-	sockaddr_t from = {};
+	sockaddr_t from = {0};
 	socklen_t fromlen = sizeof(from);
 	node_t *n;
 	int len;

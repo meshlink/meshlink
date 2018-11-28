@@ -1,6 +1,6 @@
 #    lxc_copy.sh -- Script to transfer multiple files into an LXC Container
 #		    Designed to work on unprivileged Containers
-#    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+#    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by

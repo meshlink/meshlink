@@ -1,7 +1,7 @@
 /*
     run_blackbox_tests.c -- Implementation of Black Box Test Execution for meshlink
 
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -62,6 +62,9 @@
 #include "test_cases_channel_set_poll_cb.h"
 #include "test_cases_channel_set_receive_cb.h"
 #include "test_cases_hint_address.h"
+
+#include "test_cases_channel_conn.h"
+
 #include "../common/containers.h"
 #include "../common/common_handlers.h"
 
@@ -119,6 +122,8 @@ int main(int argc, char *argv[]) {
 	failed_tests += test_meshlink_default_blacklist();
 	failed_tests += test_meshlink_channel_open();
 	failed_tests += test_meshlink_channel_close();
+
+	failed_tests += test_meshlink_channel_conn();
 
 	printf("[ PASSED ] %d test(s).\n", total_tests - failed_tests);
 	printf("[ FAILED ] %d test(s).\n", failed_tests);

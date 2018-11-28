@@ -66,6 +66,7 @@ struct meshlink_handle {
 	dev_class_t devclass;
 
 	char *confbase;
+	FILE *conffile;
 
 	meshlink_receive_cb_t receive_cb;
 	meshlink_node_status_cb_t node_status_cb;
@@ -73,6 +74,7 @@ struct meshlink_handle {
 	meshlink_log_level_t log_level;
 
 	meshlink_channel_accept_cb_t channel_accept_cb;
+	meshlink_node_duplicate_cb_t node_duplicate_cb;
 
 	pthread_t thread;
 	bool threadstarted;
@@ -120,6 +122,7 @@ struct meshlink_handle {
 	hash_t *node_udp_cache;
 	struct connection_t *everyone;
 	struct ecdsa *invitation_key;
+	int invitation_timeout;
 
 	int pinginterval;       /* seconds between pings */
 	int pingtimeout;        /* seconds to wait for response */
@@ -170,6 +173,8 @@ extern void meshlink_send_from_queue(event_loop_t *el, meshlink_handle_t *mesh);
 extern void update_node_status(meshlink_handle_t *mesh, struct node_t *n);
 extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
+extern int check_port(meshlink_handle_t *mesh);
+extern void handle_duplicate_node(meshlink_handle_t *mesh, struct node_t *n);
 
 /// Device class traits
 typedef struct {

@@ -1,6 +1,6 @@
 /*
     test_cases_status_cb.c -- Execution of specific meshlink black box test cases
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *source, bool rea
 	} else {
 		fprintf(stderr, "[ %s ] node not reachable\n", source->name) ;
 	}
+
 	status = reach;
 }
 
@@ -160,9 +161,9 @@ static bool test_set_status_cb_02(void) {
 int test_meshlink_set_status_cb(void) {
 	const struct CMUnitTest blackbox_status_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_set_status_cb_01, NULL, NULL,
-		(void *)&test_case_set_status_cb_01_state),
+		                (void *)&test_case_set_status_cb_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_set_status_cb_02, NULL, NULL,
-		(void *)&test_case_set_status_cb_02_state)
+		                (void *)&test_case_set_status_cb_02_state)
 	};
 	total_tests += sizeof(blackbox_status_tests) / sizeof(blackbox_status_tests[0]);
 

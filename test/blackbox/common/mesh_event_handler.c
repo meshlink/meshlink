@@ -1,6 +1,6 @@
 /*
     mesh_event_handler.c -- handling of mesh events API
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -105,7 +105,7 @@ bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payload, size
 
 	// Packing the mesh event
 	assert(client_id >= 0);
-  assert(client_fd >= 0);
+	assert(client_fd >= 0);
 	assert(event >= 0 && event < MAX_EVENT);
 	mesh_event_send_packet.client_id   = client_id;
 	mesh_event_send_packet.mesh_event  = event;
@@ -137,7 +137,7 @@ bool wait_for_event(mesh_event_callback_t callback, int t) {
 
 	assert(callback);
 	assert(server_fd >= -1);
-  assert(t >= 0);
+	assert(t >= 0);
 
 	timeout.tv_sec  = t;
 	timeout.tv_usec = 0;
@@ -154,7 +154,7 @@ bool wait_for_event(mesh_event_callback_t callback, int t) {
 		} else if(FD_ISSET(server_fd, &read_fds)) {
 			// Unpacking the mesh event
 			ssize_t recv_ret = recvfrom(server_fd, &mesh_event_rec_packet, sizeof(mesh_event_rec_packet), 0, &client, &soc_len);
-      assert(recv_ret == sizeof(mesh_event_rec_packet));
+			assert(recv_ret == sizeof(mesh_event_rec_packet));
 			callback(mesh_event_rec_packet);
 			return true;
 		}

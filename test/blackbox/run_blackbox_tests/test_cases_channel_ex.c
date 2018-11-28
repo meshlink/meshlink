@@ -1,6 +1,6 @@
 /*
     test_cases_channel_ex.c -- Execution of specific meshlink black box test cases
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -403,23 +403,23 @@ static bool test_steps_channel_ex_06(void) {
 int test_meshlink_channel_open_ex(void) {
 	const struct CMUnitTest blackbox_channel_ex_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_01, NULL, NULL,
-		(void *)&test_case_channel_ex_01_state),
+		                (void *)&test_case_channel_ex_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_02, NULL, NULL,
-		(void *)&test_case_channel_ex_02_state),
+		                (void *)&test_case_channel_ex_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_03, NULL, NULL,
-		(void *)&test_case_channel_ex_03_state),
+		                (void *)&test_case_channel_ex_03_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_04, NULL, NULL,
-		(void *)&test_case_channel_ex_04_state),
+		                (void *)&test_case_channel_ex_04_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_05, NULL, NULL,
-		(void *)&test_case_channel_ex_05_state),
+		                (void *)&test_case_channel_ex_05_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_ex_06, NULL, NULL,
-		(void *)&test_case_channel_ex_06_state)
+		                (void *)&test_case_channel_ex_06_state)
 	};
 
 	total_tests += sizeof(blackbox_channel_ex_tests) / sizeof(blackbox_channel_ex_tests[0]);
 
 	assert(pthread_mutex_init(&lock, NULL) == 0);
-	int failed = cmocka_run_group_tests(blackbox_channel_ex_tests , NULL , NULL);
+	int failed = cmocka_run_group_tests(blackbox_channel_ex_tests, NULL, NULL);
 	assert(pthread_mutex_destroy(&lock) == 0);
 
 	return failed;

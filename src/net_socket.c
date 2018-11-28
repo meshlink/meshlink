@@ -389,65 +389,143 @@ static void free_known_addresses(struct addrinfo *ai) {
 	}
 }
 
+static bool get_recent(meshlink_handle_t *mesh, outgoing_t *outgoing) {
+	node_t *n = lookup_node(mesh, outgoing->name);
+
+	if(!n) {
+		return false;
+	}
+
+	outgoing->ai = get_known_addresses(n);
+	outgoing->aip = outgoing->ai;
+	return outgoing->aip;
+}
+
+static bool get_next_ai(meshlink_handle_t *mesh, outgoing_t *outgoing) {
+	if(!outgoing->ai) {
+		char *address = NULL;
+
+		if(get_config_string(outgoing->cfg, &address)) {
+			char *port;
+			char *space = strchr(address, ' ');
+
+			if(space) {
+				port = xstrdup(space + 1);
+				*space = 0;
+			} else {
+				if(!get_config_string(lookup_config(outgoing->config_tree, "Port"), &port)) {
+					logger(mesh, MESHLINK_ERROR, "No Port known for %s", outgoing->name);
+					return false;
+				}
+			}
+
+			outgoing->ai = str2addrinfo(address, port, SOCK_STREAM);
+			free(port);
+			free(address);
+		}
+
+		outgoing->aip = outgoing->ai;
+	} else {
+		outgoing->aip = outgoing->aip->ai_next;
+	}
+
+	return outgoing->aip;
+}
+
+static bool get_next_cfg(meshlink_handle_t *mesh, outgoing_t *outgoing, char *variable) {
+	(void)mesh;
+
+	if(!outgoing->cfg) {
+		outgoing->cfg = lookup_config(outgoing->config_tree, variable);
+	} else {
+		outgoing->cfg = lookup_config_next(outgoing->config_tree, outgoing->cfg);
+	}
+
+	return outgoing->cfg;
+}
+
+static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgoing) {
+	bool start = false;
+
+	if(outgoing->state == OUTGOING_START) {
+		start = true;
+		outgoing->state = OUTGOING_CANONICAL;
+	}
+
+	if(outgoing->state == OUTGOING_CANONICAL) {
+		while(outgoing->aip || get_next_cfg(mesh, outgoing, "CanonicalAddress")) {
+			if(get_next_ai(mesh, outgoing)) {
+				return true;
+			} else {
+				freeaddrinfo(outgoing->ai);
+				outgoing->ai = NULL;
+				outgoing->aip = NULL;
+			}
+		}
+
+		outgoing->state = OUTGOING_RECENT;
+	}
+
+	if(outgoing->state == OUTGOING_RECENT) {
+		while(outgoing->aip || get_next_cfg(mesh, outgoing, "Address")) {
+			if(get_next_ai(mesh, outgoing)) {
+				return true;
+			} else {
+				freeaddrinfo(outgoing->ai);
+				outgoing->ai = NULL;
+				outgoing->aip = NULL;
+			}
+		}
+
+		outgoing->state = OUTGOING_KNOWN;
+	}
+
+	if(outgoing->state == OUTGOING_KNOWN) {
+		if(!outgoing->aip) {
+			get_recent(mesh, outgoing);
+		} else {
+			outgoing->aip = outgoing->aip->ai_next;
+		}
+
+		if(outgoing->aip) {
+			return true;
+		} else {
+			free_known_addresses(outgoing->ai);
+			outgoing->ai = NULL;
+			outgoing->aip = NULL;
+		}
+
+		outgoing->state = OUTGOING_END;
+	}
+
+	if(start) {
+		outgoing->state = OUTGOING_NO_KNOWN_ADDRESSES;
+	}
+
+	return false;
+}
+
 bool do_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
-	char *address, *port, *space;
 	struct addrinfo *proxyai = NULL;
 	int result;
 
 begin:
 
-	if(!outgoing->ai && !outgoing->nai) {
-		if(!outgoing->cfg) {
+	if(!get_next_outgoing_address(mesh, outgoing)) {
+		if(outgoing->state == OUTGOING_NO_KNOWN_ADDRESSES) {
+			logger(mesh, MESHLINK_ERROR, "No known addresses for %s", outgoing->name);
+		} else {
 			logger(mesh, MESHLINK_ERROR, "Could not set up a meta connection to %s", outgoing->name);
 			retry_outgoing(mesh, outgoing);
-			return false;
 		}
 
-		get_config_string(outgoing->cfg, &address);
-
-		space = strchr(address, ' ');
-
-		if(space) {
-			port = xstrdup(space + 1);
-			*space = 0;
-		} else {
-			// TODO: Only allow Address statements?
-			if(!get_config_string(lookup_config(outgoing->config_tree, "Port"), &port)) {
-				logger(mesh, MESHLINK_ERROR, "No Port known for %s", outgoing->name);
-				retry_outgoing(mesh, outgoing);
-				return false;
-			}
-		}
-
-		outgoing->ai = str2addrinfo(address, port, SOCK_STREAM);
-		free(address);
-		free(port);
-
-		outgoing->aip = outgoing->ai;
-		outgoing->cfg = lookup_config_next(outgoing->config_tree, outgoing->cfg);
-	}
-
-	if(!outgoing->aip) {
-		if(outgoing->ai) {
-			freeaddrinfo(outgoing->ai);
-		}
-
-		outgoing->ai = NULL;
-
-		if(outgoing->nai) {
-			free_known_addresses(outgoing->nai);
-		}
-
-		outgoing->nai = NULL;
-
-		goto begin;
+		return false;
 	}
 
 	connection_t *c = new_connection();
 	c->outgoing = outgoing;
 
 	memcpy(&c->address, outgoing->aip->ai_addr, outgoing->aip->ai_addrlen);
-	outgoing->aip = outgoing->aip->ai_next;
 
 	char *hostname = sockaddr2hostname(&c->address);
 
@@ -471,7 +549,7 @@ begin:
 	}
 
 	if(c->socket == -1) {
-		logger(mesh, MESHLINK_ERROR, "Creating socket for %s at %s failed: %s", c->name, c->hostname, sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Creating socket for %s at %s failed: %s", c->name, hostname, sockstrerror(sockerrno));
 		free_connection(c);
 		free(hostname);
 		goto begin;
@@ -537,29 +615,45 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 		return;
 	}
 
+
+	if(outgoing->ai) {
+		if(outgoing->state == OUTGOING_KNOWN) {
+			free_known_addresses(outgoing->ai);
+		} else {
+			freeaddrinfo(outgoing->ai);
+		}
+	}
+
+	outgoing->cfg = NULL;
+
 	exit_configuration(&outgoing->config_tree); // discard old configuration if present
 	init_configuration(&outgoing->config_tree);
 	read_host_config(mesh, outgoing->config_tree, outgoing->name);
-	outgoing->cfg = lookup_config(outgoing->config_tree, "Address");
-
 	get_config_bool(lookup_config(outgoing->config_tree, "blacklisted"), &blacklisted);
+
+	outgoing->state = OUTGOING_START;
 
 	if(blacklisted) {
 		return;
 	}
 
-	if(!outgoing->cfg) {
-		if(n) {
-			outgoing->aip = outgoing->nai = get_known_addresses(n);
-		}
+	do_outgoing_connection(mesh, outgoing);
+}
 
-		if(!outgoing->nai) {
-			logger(mesh, MESHLINK_ERROR, "No address known for %s", outgoing->name);
-			return;
-		}
+/// Delayed close of a filedescriptor.
+static void tarpit(int fd) {
+	static int pits[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+	static int next_pit = 0;
+
+	if(pits[next_pit] != -1) {
+		closesocket(pits[next_pit]);
 	}
 
-	do_outgoing_connection(mesh, outgoing);
+	pits[next_pit++] = fd;
+
+	if(next_pit >= (int)(sizeof pits / sizeof pits[0])) {
+		next_pit = 0;
+	}
 }
 
 /*
@@ -571,7 +665,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	meshlink_handle_t *mesh = loop->data;
 	listen_socket_t *l = data;
 	connection_t *c;
-	sockaddr_t sa;
+	sockaddr_t sa = {0};
 	int fd;
 	socklen_t len = sizeof(sa);
 
@@ -589,56 +683,22 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 
 	sockaddrunmap(&sa);
 
-	// Check if we get many connections from the same host
-
-	static sockaddr_t prev_sa;
-	static int tarpit = -1;
-
-	if(tarpit >= 0) {
-		closesocket(tarpit);
-		tarpit = -1;
-	}
-
-	if(!sockaddrcmp_noport(&sa, &prev_sa)) {
-		static int samehost_burst;
-		static int samehost_burst_time;
-
-		if(mesh->loop.now.tv_sec - samehost_burst_time > samehost_burst) {
-			samehost_burst = 0;
-		} else {
-			samehost_burst -= mesh->loop.now.tv_sec - samehost_burst_time;
-		}
-
-		samehost_burst_time = mesh->loop.now.tv_sec;
-		samehost_burst++;
-
-		if(samehost_burst > max_connection_burst) {
-			tarpit = fd;
-			return;
-		}
-	}
-
-	memcpy(&prev_sa, &sa, sizeof(sa));
-
-	// Check if we get many connections from different hosts
+	/* Rate limit incoming connections to max_connection_burst/second. */
 
 	static int connection_burst;
 	static int connection_burst_time;
 
-	if(mesh->loop.now.tv_sec - connection_burst_time > connection_burst) {
+	if(mesh->loop.now.tv_sec != connection_burst_time) {
+		connection_burst_time = mesh->loop.now.tv_sec;
 		connection_burst = 0;
-	} else {
-		connection_burst -= mesh->loop.now.tv_sec - connection_burst_time;
 	}
-
-	connection_burst_time = mesh->loop.now.tv_sec;
-	connection_burst++;
 
 	if(connection_burst >= max_connection_burst) {
-		connection_burst = max_connection_burst;
-		tarpit = fd;
+		tarpit(fd);
 		return;
 	}
+
+	connection_burst++;
 
 	// Accept the new connection
 
@@ -651,7 +711,7 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	c->last_ping_time = mesh->loop.now.tv_sec;
 
 	char *hostname = sockaddr2hostname(&sa);
-	logger(mesh, MESHLINK_INFO, "Connection from %s", c->hostname);
+	logger(mesh, MESHLINK_INFO, "Connection from %s", hostname);
 	free(hostname);
 
 	io_add(&mesh->loop, &c->io, handle_meta_io, c, c->socket, IO_READ);
@@ -670,11 +730,11 @@ static void free_outgoing(outgoing_t *outgoing) {
 	timeout_del(&mesh->loop, &outgoing->ev);
 
 	if(outgoing->ai) {
-		freeaddrinfo(outgoing->ai);
-	}
-
-	if(outgoing->nai) {
-		free_known_addresses(outgoing->nai);
+		if(outgoing->state == OUTGOING_KNOWN) {
+			free_known_addresses(outgoing->ai);
+		} else {
+			freeaddrinfo(outgoing->ai);
+		}
 	}
 
 	if(outgoing->config_tree) {
@@ -708,8 +768,8 @@ void try_outgoing_connections(meshlink_handle_t *mesh) {
 
 		if(!check_id(name)) {
 			logger(mesh, MESHLINK_ERROR,
-			       "Invalid name for outgoing connection in %s line %d",
-			       cfg->file, cfg->line);
+			       "Invalid name for outgoing connection in line %d",
+			       cfg->line);
 			free(name);
 			continue;
 		}

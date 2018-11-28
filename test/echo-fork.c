@@ -24,6 +24,8 @@ void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *tex
 }
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
+
 	if(!strcmp(node->name, "bar")) {
 		bar_reachable = reachable;
 	} else if(!strcmp(node->name, "foo"))
@@ -33,10 +35,18 @@ void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 }
 
 void foo_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+	(void)mesh;
+	(void)channel;
+	(void)data;
+	(void)len;
+
 	// One way only.
 }
 
 void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+	(void)mesh;
+	(void)channel;
+
 	if(!len) {
 		fprintf(stderr, "Connection closed by foo\n");
 		foo_closed = true;
@@ -48,6 +58,12 @@ void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const 
 }
 
 bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	(void)mesh;
+	(void)channel;
+	(void)port;
+	(void)data;
+	(void)len;
+
 	return false;
 }
 
@@ -66,6 +82,8 @@ bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 }
 
 void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+	(void)len;
+
 	meshlink_set_channel_poll_cb(mesh, channel, NULL);
 	bar_responded = true;
 }
@@ -208,7 +226,7 @@ int main2(void) {
 }
 
 
-int main(int argc, char *argv[]) {
+int main() {
 	debug_level = getenv("DEBUG") ? MESHLINK_DEBUG : MESHLINK_ERROR;
 
 	// Initialize and exchange configuration.

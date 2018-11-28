@@ -34,6 +34,9 @@ void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *tex
 }
 
 void a_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+	(void)mesh;
+	(void)channel;
+
 	if(len == 5 && !memcmp(data, "Hello", 5)) {
 		b_responded = true;
 	} else if(len == 0) {
@@ -51,10 +54,18 @@ void b_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const vo
 }
 
 bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	(void)mesh;
+	(void)channel;
+	(void)port;
+	(void)data;
+	(void)len;
+
 	return false;
 }
 
 bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	(void)port;
+
 	meshlink_set_channel_accept_cb(mesh, NULL);
 	meshlink_set_channel_receive_cb(mesh, channel, b_receive_cb);
 
@@ -66,17 +77,22 @@ bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 }
 
 void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+	(void)len;
+
 	meshlink_set_channel_poll_cb(mesh, channel, NULL);
-	set_sync_flag(channel->priv);
+	set_sync_flag(channel->priv, true);
 }
 
 void poll_cb2(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+	(void)mesh;
+	(void)channel;
+
 	if(len) {
 		a_nonzero_poll_cb = true;
 	}
 }
 
-int main(int argc, char *argv[]) {
+int main() {
 	meshlink_handle_t *a, *b;
 	open_meshlink_pair(&a, &b, "channels-cornercases");
 	//meshlink_set_log_cb(a, MESHLINK_DEBUG, log_cb);
@@ -92,7 +108,7 @@ int main(int argc, char *argv[]) {
 	meshlink_node_t *nb = meshlink_get_node(a, "b");
 	assert(nb);
 
-	struct sync_flag channel_opened = {};
+	struct sync_flag channel_opened = {.flag = false};
 	pthread_mutex_lock(&channel_opened.mutex);
 
 	meshlink_channel_t *channel = meshlink_channel_open(a, nb, 7, a_receive_cb, NULL, 0);

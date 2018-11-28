@@ -1,6 +1,6 @@
 /*
     test_cases_channel_open.c -- Execution of specific meshlink black box test cases
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -245,13 +245,13 @@ static bool test_steps_mesh_channel_open_04(void) {
 int test_meshlink_channel_open(void) {
 	const struct CMUnitTest blackbox_channel_open_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_01, NULL, NULL,
-		(void *)&test_mesh_channel_open_01_state),
+		                (void *)&test_mesh_channel_open_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_02, NULL, NULL,
-		(void *)&test_mesh_channel_open_02_state),
+		                (void *)&test_mesh_channel_open_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_03, NULL, NULL,
-		(void *)&test_mesh_channel_open_03_state),
+		                (void *)&test_mesh_channel_open_03_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_channel_open_04, NULL, NULL,
-		(void *)&test_mesh_channel_open_04_state)
+		                (void *)&test_mesh_channel_open_04_state)
 	};
 
 	total_tests += sizeof(blackbox_channel_open_tests) / sizeof(blackbox_channel_open_tests[0]);

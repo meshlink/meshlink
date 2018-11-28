@@ -3,7 +3,7 @@
 
 /*
     test_cases_channel_conn.h -- Declarations for Individual Test Case implementation functions
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,6 +24,6 @@
 #include <stdbool.h>
 
 extern int total_tests;
-extern int test_case_channel_conn(void);
+extern int test_meshlink_channel_conn(void);
 
 #endif // TEST_CASES_CHANNEL_CONN_H
