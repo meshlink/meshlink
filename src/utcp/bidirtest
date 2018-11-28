@@ -1,0 +1,8 @@
+#!/bin/sh
+[ -f bidirtest-data ] || head -c 10000 /dev/urandom >bidirtest-data
+rm -f bidirtest-copy-client bidirtest-copy-server
+./test 9999 <bidirtest-data >bidirtest-copy-server 2>bidirtest-server.log &
+./test localhost 9999 <bidirtest-data >bidirtest-copy-client 2>bidirtest-client.log
+wait
+cmp bidirtest-data bidirtest-copy-server
+cmp bidirtest-data bidirtest-copy-client

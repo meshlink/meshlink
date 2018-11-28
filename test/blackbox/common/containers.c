@@ -75,32 +75,30 @@ void rename_container(const char *old_name, const char *new_name) {
     'cmd' is run as a daemon if 'daemonize' is true - this mode is useful for running node
     simulations in Containers
     The caller is responsible for freeing the returned string */
-char *run_in_container(const char *cmd, const char *node, bool daemonize) {
-	char attach_command[400];
-	char *attach_argv[4];
+char *run_in_container(const char *cmd, const char *container_name, bool daemonize) {
 	char container_find_name[100];
 	struct lxc_container *container;
-	FILE *attach_fp;
-	char *output = NULL;
-	size_t output_len;
-	int i;
+  char *output = NULL;
+	size_t output_len = 0;
 
+	assert(cmd);
+	assert(container_name);
 	assert(snprintf(container_find_name, sizeof(container_find_name), "%s_%s",
-	                state_ptr->test_case_name, node) >= 0);
+	                state_ptr->test_case_name, container_name) >= 0);
 	assert(container = find_container(container_find_name));
 
 	/* Run the command within the Container, either as a daemon or foreground process */
 	/* TO DO: Perform this operation using the LXC API - currently does not work using the API
 	    Need to determine why it doesn't work, and make it work */
 	if(daemonize) {
-		for(i = 0; i < 3; i++) {
-			assert(attach_argv[i] = malloc(DAEMON_ARGV_LEN));
-		}
+		char run_script_path[100];
+  	char *attach_argv[4];
 
-		assert(snprintf(attach_argv[0], DAEMON_ARGV_LEN, "%s/" LXC_UTIL_REL_PATH "/" LXC_RUN_SCRIPT,
+		assert(snprintf(run_script_path, sizeof(run_script_path), "%s/" LXC_UTIL_REL_PATH "/" LXC_RUN_SCRIPT,
 		                meshlink_root_path) >= 0);
-		strncpy(attach_argv[1], cmd, DAEMON_ARGV_LEN);
-		strncpy(attach_argv[2], container->name, DAEMON_ARGV_LEN);
+		attach_argv[0] = run_script_path;
+		attach_argv[1] = (char *)cmd;
+		attach_argv[2] = container->name;
 		attach_argv[3] = NULL;
 
 		/* To daemonize, create a child process and detach it from its parent (this program) */
@@ -108,20 +106,24 @@ char *run_in_container(const char *cmd, const char *node, bool daemonize) {
 			assert(daemon(1, 0) != -1);    // Detach from the parent process
 			assert(execv(attach_argv[0], attach_argv) != -1);   // Run exec() in the child process
 		}
-
-		for(i = 0; i < 3; i++) {
-			free(attach_argv[i]);
-		}
 	} else {
-		assert(snprintf(attach_command, sizeof(attach_command),
+	  char *attach_command;
+	  size_t attach_command_len;
+	  int i;
+	  attach_command_len = strlen(meshlink_root_path) + strlen(LXC_UTIL_REL_PATH) + strlen(LXC_RUN_SCRIPT) + strlen(cmd) + strlen(container->name) + 10;
+	  attach_command = malloc(attach_command_len);
+	  assert(attach_command);
+
+		assert(snprintf(attach_command, attach_command_len,
 		                "%s/" LXC_UTIL_REL_PATH "/" LXC_RUN_SCRIPT " \"%s\" %s", meshlink_root_path, cmd,
 		                container->name) >= 0);
+    FILE *attach_fp;
 		assert(attach_fp = popen(attach_command, "r"));
+		free(attach_command);
 		/* If the command has an output, strip out any trailing carriage returns or newlines and
 		    return it, otherwise return NULL */
-		assert(output = malloc(100));
-		output_len = sizeof(output);
-
+		output = NULL;
+		output_len = 0;
 		if(getline(&output, &output_len, attach_fp) != -1) {
 			i = strlen(output) - 1;
 
@@ -134,7 +136,6 @@ char *run_in_container(const char *cmd, const char *node, bool daemonize) {
 			free(output);
 			output = NULL;
 		}
-
 		assert(pclose(attach_fp) != -1);
 	}
 
@@ -189,7 +190,7 @@ void create_containers(const char *node_names[], int num_nodes) {
 	int i;
 	char container_name[100];
 	int create_status, snapshot_status, snap_restore_status;
-	struct lxc_container *first_container;
+	struct lxc_container *first_container = NULL;
 
 	for(i = 0; i < num_nodes; i++) {
 		assert(snprintf(container_name, sizeof(container_name), "run_%s", node_names[i]) >= 0);
@@ -209,6 +210,7 @@ void create_containers(const char *node_names[], int num_nodes) {
 			        first_container->error_num, first_container->error_string);
 			assert(snapshot_status != -1);
 		} else {
+		  assert(first_container);
 			snap_restore_status = first_container->snapshot_restore(first_container, "snap0",
 			                      container_name);
 			fprintf(stderr, "Snapshot restore to Container '%s' status: %d - %s\n", container_name,
@@ -346,12 +348,13 @@ char *invite_in_container(const char *inviter, const char *invitee) {
 
 /* Run the node_sim_<nodename> program inside the 'node''s container */
 void node_sim_in_container(const char *node, const char *device_class, const char *invite_url) {
-	char node_sim_command[200];
+	char node_sim_command[200 + (invite_url) ? strlen(invite_url) : 0];
 
 	assert(snprintf(node_sim_command, sizeof(node_sim_command),
 	                "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/node_sim_%s %s %s %s "
 	                "1>&2 2>> node_sim_%s.log", node, node, device_class,
 	                (invite_url) ? invite_url : "", node) >= 0);
+PRINT_TEST_CASE_MSG("%s\n", node_sim_command);
 	run_in_container(node_sim_command, node, true);
 	PRINT_TEST_CASE_MSG("node_sim_%s started in Container\n", node);
 }
@@ -359,12 +362,13 @@ void node_sim_in_container(const char *node, const char *device_class, const cha
 /* Run the node_sim_<nodename> program inside the 'node''s container with event handling capable */
 void node_sim_in_container_event(const char *node, const char *device_class,
                                  const char *invite_url, const char *clientId, const char *import) {
-	char node_sim_command[200];
+	char node_sim_command[1000];
 
 	assert(snprintf(node_sim_command, sizeof(node_sim_command),
 	                "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/node_sim_%s %s %s %s %s %s "
 	                "1>&2 2>> node_sim_%s.log", node, node, device_class,
 	                clientId, import, (invite_url) ? invite_url : "", node) >= 0);
+PRINT_TEST_CASE_MSG("%s\n", node_sim_command);
 	run_in_container(node_sim_command, node, true);
 	PRINT_TEST_CASE_MSG("node_sim_%s(Client Id :%s) started in Container with event handling\n",
 	                    node, clientId);
