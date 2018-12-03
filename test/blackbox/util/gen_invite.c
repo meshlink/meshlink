@@ -18,21 +18,30 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "../../../src/meshlink.h"
 #include "../common/test_step.h"
+#include "../common/common_handlers.h"
 
 #define CMD_LINE_ARG_NODENAME   1
 #define CMD_LINE_ARG_INVITEE    2
 
 int main(int argc, char *argv[]) {
-	char *invite = NULL;
 
-	/* Start mesh, generate an invite and print out the invite */
-	execute_open(argv[CMD_LINE_ARG_NODENAME], "1");
-	execute_start();
-	invite = execute_invite(argv[CMD_LINE_ARG_INVITEE]);
-	printf("%s\n", invite);
-	//execute_close();
+	/* Set up logging for Meshlink */
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, meshlink_callback_logger);
+
+	/* Create meshlink instance */
+	meshlink_handle_t *mesh = meshlink_open(argv[1], argv[1], "node_sim", DEV_CLASS_BACKBONE);
+	assert(mesh);
+	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);
+
+	assert(meshlink_start(mesh));
+	char *invitation = meshlink_invite(mesh, argv[2]);
+	assert(invitation);
+	printf("%s\n", invitation);
+
+	meshlink_close(mesh);
 
 	return EXIT_SUCCESS;
 }
