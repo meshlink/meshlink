@@ -176,11 +176,11 @@ static bool test_steps_mesh_send_03(void) {
 int test_meshlink_send(void) {
 	const struct CMUnitTest blackbox_send_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_send_01, NULL, NULL,
-		(void *)&test_mesh_send_01_state),
+		                (void *)&test_mesh_send_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_send_02, NULL, NULL,
-		(void *)&test_mesh_send_02_state),
+		                (void *)&test_mesh_send_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_send_03, NULL, NULL,
-		(void *)&test_mesh_send_03_state)
+		                (void *)&test_mesh_send_03_state)
 	};
 
 	total_tests += sizeof(blackbox_send_tests) / sizeof(blackbox_send_tests[0]);

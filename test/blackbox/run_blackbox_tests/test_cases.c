@@ -508,15 +508,15 @@ static bool test_steps_meta_conn_05(void) {
 int test_meta_conn(void) {
 	const struct CMUnitTest blackbox_group0_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_01, setup_test, teardown_test,
-		(void *)&test_meta_conn_1_state),
+		                (void *)&test_meta_conn_1_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_02, setup_test, teardown_test,
-		(void *)&test_meta_conn_2_state),
+		                (void *)&test_meta_conn_2_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_03, setup_test, teardown_test,
-		(void *)&test_meta_conn_3_state),
+		                (void *)&test_meta_conn_3_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_04, setup_test, teardown_test,
-		(void *)&test_meta_conn_4_state),
+		                (void *)&test_meta_conn_4_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_meta_conn_05, setup_test, teardown_test,
-		(void *)&test_meta_conn_5_state)
+		                (void *)&test_meta_conn_5_state)
 	};
 	total_tests += sizeof(blackbox_group0_tests) / sizeof(blackbox_group0_tests[0]);
 

@@ -1,18 +1,7 @@
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <setjmp.h>
-#include <cmocka.h>
-#include <pthread.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
 #include "../src/meshlink.h"
 
 static void log_message(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
@@ -148,36 +137,8 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 		        "/join <invitation>    Join an existing mesh using an invitation.\n"
 		        "/kick <name>          Blacklist the given node.\n"
 		        "/who [<name>]         List all nodes or show information about the given node.\n"
-		        "/canon <name> <address> <port>\n"
-		        "/hint  <name> <address> <port>\n"
 		        "/quit                 Exit this program.\n"
 		);
-	} else if(!strcasecmp(buf, "hint")) {
-		char *node_name = arg;
-		arg = strchr(arg, ' ');
-		*arg++ = '\0';
-		meshlink_node_t *node = meshlink_get_node(mesh, node_name);
-		assert(node);
-		char *address = arg;
-		arg = strchr(arg, ' ');
-		*arg++ = '\0';
-		char *port = arg;
-		struct sockaddr_in hint;
-		hint.sin_family        = AF_INET;
-		hint.sin_port          = htons(port);
-		assert(inet_aton(address, &hint.sin_addr));
-		meshlink_hint_address(mesh, node, (struct sockaddr *)&hint);
-	} else if(!strcasecmp(buf, "canon")) {
-		char *node_name = arg;
-		arg = strchr(arg, ' ');
-		*arg++ = '\0';
-		meshlink_node_t *node = meshlink_get_node(mesh, node_name);
-		assert(node);
-		char *address = arg;
-		arg = strchr(arg, ' ');
-		*arg++ = '\0';
-		char *port = arg;
-		meshlink_set_canonical_address(mesh, node, address, port);
 	} else {
 		fprintf(stderr, "Unknown command '/%s'\n", buf);
 	}

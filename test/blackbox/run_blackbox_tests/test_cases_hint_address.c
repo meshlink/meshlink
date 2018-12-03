@@ -129,7 +129,7 @@ bool test_steps_hint_address_01(void) {
 int test_meshlink_hint_address(void) {
 	const struct CMUnitTest blackbox_hint_address_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_hint_address_01, NULL, NULL,
-		(void *)&test_case_hint_address_01_state)
+		                (void *)&test_case_hint_address_01_state)
 	};
 
 	total_tests += sizeof(blackbox_hint_address_tests) / sizeof(blackbox_hint_address_tests[0]);

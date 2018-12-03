@@ -95,9 +95,9 @@ static bool test_steps_mesh_get_port_02(void) {
 int test_meshlink_get_port(void) {
 	const struct CMUnitTest blackbox_get_port_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_port_01, NULL, NULL,
-		(void *)&test_mesh_get_port_01_state),
+		                (void *)&test_mesh_get_port_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_port_02, NULL, NULL,
-		(void *)&test_mesh_get_port_02_state)
+		                (void *)&test_mesh_get_port_02_state)
 	};
 
 	total_tests += sizeof(blackbox_get_port_tests) / sizeof(blackbox_get_port_tests[0]);

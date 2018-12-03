@@ -365,17 +365,17 @@ bool test_verify_06(void) {
 int test_meshlink_verify(void) {
 	const struct CMUnitTest blackbox_verify_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_verify_01, NULL, NULL,
-		(void *)&test_case_verify_01_state),
+		                (void *)&test_case_verify_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_verify_02, NULL, NULL,
-		(void *)&test_case_verify_02_state),
+		                (void *)&test_case_verify_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_verify_03, NULL, NULL,
-		(void *)&test_case_verify_03_state),
+		                (void *)&test_case_verify_03_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_verify_04, NULL, NULL,
-		(void *)&test_case_verify_04_state),
+		                (void *)&test_case_verify_04_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_verify_05, NULL, NULL,
-		(void *)&test_case_verify_05_state),
+		                (void *)&test_case_verify_05_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_verify_06, NULL, NULL,
-		(void *)&test_case_verify_06_state)
+		                (void *)&test_case_verify_06_state)
 	};
 
 	total_tests += sizeof(blackbox_verify_tests) / sizeof(blackbox_verify_tests[0]);

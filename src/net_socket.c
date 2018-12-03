@@ -642,7 +642,7 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 
 /// Delayed close of a filedescriptor.
 static void tarpit(int fd) {
-	static int pits[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+	static int pits[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 	static int next_pit = 0;
 
 	if(pits[next_pit] != -1) {

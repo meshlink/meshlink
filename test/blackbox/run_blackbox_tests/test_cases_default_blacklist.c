@@ -187,9 +187,9 @@ static bool test_steps_mesh_default_blacklist_02(void) {
 int test_meshlink_default_blacklist(void) {
 	const struct CMUnitTest blackbox_default_blacklist_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_default_blacklist_01, NULL, NULL,
-		(void *)&test_mesh_default_blacklist_01_state),
+		                (void *)&test_mesh_default_blacklist_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_default_blacklist_02, NULL, NULL,
-		(void *)&test_mesh_default_blacklist_02_state)
+		                (void *)&test_mesh_default_blacklist_02_state)
 	};
 
 	total_tests += sizeof(blackbox_default_blacklist_tests) / sizeof(blackbox_default_blacklist_tests[0]);

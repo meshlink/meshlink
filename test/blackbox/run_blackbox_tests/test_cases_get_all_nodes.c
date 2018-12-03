@@ -168,11 +168,11 @@ static bool test_get_all_nodes_03(void) {
 int test_meshlink_get_all_nodes(void) {
 	const struct CMUnitTest blackbox_get_all_nodes[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_get_all_nodes_01, NULL, NULL,
-		(void *)&test_case_get_all_nodes_01_state),
+		                (void *)&test_case_get_all_nodes_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_get_all_nodes_02, NULL, NULL,
-		(void *)&test_case_get_all_nodes_02_state),
+		                (void *)&test_case_get_all_nodes_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_get_all_nodes_03, NULL, NULL,
-		(void *)&test_case_get_all_nodes_03_state)
+		                (void *)&test_case_get_all_nodes_03_state)
 	};
 	total_tests += sizeof(blackbox_get_all_nodes) / sizeof(blackbox_get_all_nodes[0]);
 
