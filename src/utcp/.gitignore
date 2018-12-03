@@ -1,0 +1,7 @@
+.*
+!.astylerc
+!.gitignore
+*~
+*.o
+/test
+/selftest

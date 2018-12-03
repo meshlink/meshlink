@@ -350,13 +350,12 @@ char *invite_in_container(const char *inviter, const char *invitee) {
 
 /* Run the node_sim_<nodename> program inside the 'node''s container */
 void node_sim_in_container(const char *node, const char *device_class, const char *invite_url) {
-	char node_sim_command[200 + (invite_url) ? strlen(invite_url) : 0];
+	char node_sim_command[2000];
 
 	assert(snprintf(node_sim_command, sizeof(node_sim_command),
 	                "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/node_sim_%s %s %s %s "
 	                "1>&2 2>> node_sim_%s.log", node, node, device_class,
 	                (invite_url) ? invite_url : "", node) >= 0);
-	PRINT_TEST_CASE_MSG("%s\n", node_sim_command);
 	run_in_container(node_sim_command, node, true);
 	PRINT_TEST_CASE_MSG("node_sim_%s started in Container\n", node);
 }
@@ -364,13 +363,12 @@ void node_sim_in_container(const char *node, const char *device_class, const cha
 /* Run the node_sim_<nodename> program inside the 'node''s container with event handling capable */
 void node_sim_in_container_event(const char *node, const char *device_class,
                                  const char *invite_url, const char *clientId, const char *import) {
-	char node_sim_command[1000];
+	char node_sim_command[2000];
 
 	assert(snprintf(node_sim_command, sizeof(node_sim_command),
 	                "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/node_sim_%s %s %s %s %s %s "
 	                "1>&2 2>> node_sim_%s.log", node, node, device_class,
 	                clientId, import, (invite_url) ? invite_url : "", node) >= 0);
-	PRINT_TEST_CASE_MSG("%s\n", node_sim_command);
 	run_in_container(node_sim_command, node, true);
 	PRINT_TEST_CASE_MSG("node_sim_%s(Client Id :%s) started in Container with event handling\n",
 	                    node, clientId);
