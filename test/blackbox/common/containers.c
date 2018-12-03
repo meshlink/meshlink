@@ -350,28 +350,42 @@ char *invite_in_container(const char *inviter, const char *invitee) {
 
 /* Run the node_sim_<nodename> program inside the 'node''s container */
 void node_sim_in_container(const char *node, const char *device_class, const char *invite_url) {
-	char node_sim_command[2000];
+	char *node_sim_command;
+	size_t node_sim_command_len;
 
-	assert(snprintf(node_sim_command, sizeof(node_sim_command),
+	node_sim_command_len = 500 + (invite_url ? strlen(invite_url) : 0);
+	node_sim_command = calloc(1, node_sim_command_len);
+	assert(node_sim_command);
+	assert(snprintf(node_sim_command, node_sim_command_len,
 	                "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/node_sim_%s %s %s %s "
 	                "1>&2 2>> node_sim_%s.log", node, node, device_class,
 	                (invite_url) ? invite_url : "", node) >= 0);
 	run_in_container(node_sim_command, node, true);
 	PRINT_TEST_CASE_MSG("node_sim_%s started in Container\n", node);
+
+	free(node_sim_command);
 }
 
 /* Run the node_sim_<nodename> program inside the 'node''s container with event handling capable */
 void node_sim_in_container_event(const char *node, const char *device_class,
                                  const char *invite_url, const char *clientId, const char *import) {
-	char node_sim_command[2000];
+	char *node_sim_command;
+	size_t node_sim_command_len;
 
-	assert(snprintf(node_sim_command, sizeof(node_sim_command),
+	PRINT_TEST_CASE_MSG("Before launch\n");
+	node_sim_command_len = 500 + (invite_url ? strlen(invite_url) : 0);
+	node_sim_command = calloc(1, node_sim_command_len);
+	assert(node_sim_command);
+	PRINT_TEST_CASE_MSG("Before launch\n");
+	assert(snprintf(node_sim_command, node_sim_command_len,
 	                "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/node_sim_%s %s %s %s %s %s "
 	                "1>&2 2>> node_sim_%s.log", node, node, device_class,
 	                clientId, import, (invite_url) ? invite_url : "", node) >= 0);
 	run_in_container(node_sim_command, node, true);
 	PRINT_TEST_CASE_MSG("node_sim_%s(Client Id :%s) started in Container with event handling\n",
 	                    node, clientId);
+
+  free(node_sim_command);
 }
 
 /* Run the node_step.sh script inside the 'node''s container to send the 'sig' signal to the
