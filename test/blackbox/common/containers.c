@@ -385,7 +385,7 @@ void node_sim_in_container_event(const char *node, const char *device_class,
 	PRINT_TEST_CASE_MSG("node_sim_%s(Client Id :%s) started in Container with event handling\n",
 	                    node, clientId);
 
-  free(node_sim_command);
+	free(node_sim_command);
 }
 
 /* Run the node_step.sh script inside the 'node''s container to send the 'sig' signal to the

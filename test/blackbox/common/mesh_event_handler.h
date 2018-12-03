@@ -1,6 +1,6 @@
 /*
     mesh_event_handler.h
-    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,9 +36,6 @@
 #include <time.h>
 #include <stdint.h>
 
-/// Maximum length of the mesh event payload
-#define PAYLOAD_MAX_SIZE 1000
-
 /// mesh events
 // TODO: Add more mesh event if required.
 typedef enum {
@@ -57,6 +54,9 @@ typedef enum {
 	NODE_STARTED,
 	NODE_RESTARTED,
 	NODE_JOINED,
+	NODE_JOINED1,
+	NODE_JOINED2,
+	NODE_JOINED3,
 	PORT_NO,
 	ERR_NETWORK,
 	MESH_DATA_VERIFED,
@@ -73,11 +73,11 @@ typedef enum {
 } mesh_event_t;
 
 /// mesh event UDP packet
-typedef struct mesh_event_payload {
-	uint32_t      client_id;
+typedef struct  mesh_event_payload {
+	uint16_t      client_id;
 	mesh_event_t  mesh_event;
-	uint16_t      payload_length;
-	uint8_t       payload[PAYLOAD_MAX_SIZE];
+	uint8_t       payload_length;
+	void          *payload;
 } mesh_event_payload_t;
 
 /// callback for handling the mesh event
@@ -85,7 +85,7 @@ typedef struct mesh_event_payload {
  *
  *  @param mesh_event_packet    packet containing client-id, mesh event & payload (if any).
  */
-typedef void (*mesh_event_callback_t)(mesh_event_payload_t mesh_event_packet);
+typedef bool (*mesh_event_callback_t)(mesh_event_payload_t mesh_event_packet);
 
 /// Creates an UDP server for listening mesh events.
 /** This function creates an UDP socket, binds it with given interface address and returns a NULL
@@ -136,6 +136,4 @@ extern bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payloa
  *  @return                  void
  */
 extern void mesh_event_sock_connect(const char *server_address);
-
-bool wait_for_event_only(mesh_event_callback_t callback, int t, mesh_event_t event);
 #endif // _MESH_EVENT_HANDLER_H_
