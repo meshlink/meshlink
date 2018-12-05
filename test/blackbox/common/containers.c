@@ -137,7 +137,6 @@ char *run_in_container(const char *cmd, const char *container_name, bool daemoni
 			free(output);
 			output = NULL;
 		}
-
 		assert(pclose(attach_fp) != -1);
 	}
 
@@ -372,11 +371,9 @@ void node_sim_in_container_event(const char *node, const char *device_class,
 	char *node_sim_command;
 	size_t node_sim_command_len;
 
-	PRINT_TEST_CASE_MSG("Before launch\n");
 	node_sim_command_len = 500 + (invite_url ? strlen(invite_url) : 0);
 	node_sim_command = calloc(1, node_sim_command_len);
 	assert(node_sim_command);
-	PRINT_TEST_CASE_MSG("Before launch\n");
 	assert(snprintf(node_sim_command, node_sim_command_len,
 	                "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/node_sim_%s %s %s %s %s %s "
 	                "1>&2 2>> node_sim_%s.log", node, node, device_class,

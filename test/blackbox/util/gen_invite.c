@@ -17,31 +17,40 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 #include <stdio.h>
-#include <stdlib.h>
 #include <assert.h>
+#include <stdlib.h>
 #include "../../../src/meshlink.h"
 #include "../common/test_step.h"
-#include "../common/common_handlers.h"
 
 #define CMD_LINE_ARG_NODENAME   1
 #define CMD_LINE_ARG_INVITEE    2
 
-int main(int argc, char *argv[]) {
+void logger_cb(meshlink_handle_t *mesh, meshlink_log_level_t level,
+                              const char *text) {
+	(void)mesh;
+	(void)level;
 
+	fprintf(stderr, "meshlink>> %s\n", text);
+}
+
+int main(int argc, char *argv[]) {
+	char *invite = NULL;
+
+	/* Start mesh, generate an invite and print out the invite */
 	/* Set up logging for Meshlink */
-	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, meshlink_callback_logger);
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, logger_cb);
 
 	/* Create meshlink instance */
-	meshlink_handle_t *mesh = meshlink_open(argv[1], argv[1], "node_sim", DEV_CLASS_BACKBONE);
+	meshlink_handle_t *mesh = meshlink_open("testconf", argv[1], "node_sim", DEV_CLASS_STATIONARY);
 	assert(mesh);
-	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);
 
+	/* Set up logging for Meshlink with the newly acquired Mesh Handle */
+	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, logger_cb);
+	meshlink_enable_discovery(mesh, false);
 	assert(meshlink_start(mesh));
-	char *invitation = meshlink_invite(mesh, argv[2]);
-	assert(invitation);
-	printf("%s\n", invitation);
-
-	meshlink_close(mesh);
+	invite = meshlink_invite(mesh, argv[2]);
+	printf("%s\n", invite);
+	//execute_close();
 
 	return EXIT_SUCCESS;
 }

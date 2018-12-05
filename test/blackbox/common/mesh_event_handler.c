@@ -1,6 +1,6 @@
 /*
     mesh_event_handler.c -- handling of mesh events API
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 #include "mesh_event_handler.h"
 
 #define SERVER_LISTEN_PORT "9000" /* Port number that is binded with mesh event server socket */
+#define UDP_BUFF_MAX 2000
 
 // TODO: Implement mesh event handling with reentrancy .
 static struct sockaddr_in server_addr;
@@ -44,44 +45,63 @@ static int server_fd = -1;
 static pthread_t event_receive_thread, event_handle_thread;
 static meshlink_queue_t event_queue;
 static bool event_receive_thread_running, event_handle_thread_running;
-static struct sync_flag sync_event = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
+static struct cond_flag sync_event = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 
-static void reset_sync_flag(struct sync_flag *s) {
+static void set_cond_flag(struct cond_flag *s, bool flag) {
 	pthread_mutex_lock(&s->mutex);
-	s->flag = false;
+	s->flag = flag;
 	pthread_mutex_unlock(&s->mutex);
 }
 
+static bool wait_cond_flag(struct cond_flag *s, int seconds) {
+	struct timespec timeout;
+	clock_gettime(CLOCK_REALTIME, &timeout);
+	timeout.tv_sec += seconds;
+
+	pthread_mutex_lock(&s->mutex);
+	while(!s->flag)
+		if(!pthread_cond_timedwait(&s->cond, &s->mutex, &timeout) || errno != EINTR) {
+			break;
+		}
+  pthread_mutex_unlock(&s->mutex);
+
+	return s->flag;
+}
+
+// event_receive_handler running in a separate thread queues all the events received from the UDP port
 static void *event_receive_handler(void *arg) {
-	ssize_t recv_ret;
-	mesh_event_payload_t mesh_event_rec_packet;
+	size_t recv_ret;
+	char udp_buff[UDP_BUFF_MAX];
 	struct sockaddr client;
 	socklen_t soc_len;
 
 	while(event_receive_thread_running) {
-		recv_ret = recvfrom(server_fd, &mesh_event_rec_packet, sizeof(mesh_event_rec_packet), 0, &client, &soc_len);
-		assert(recv_ret == sizeof(mesh_event_rec_packet));
+		recv_ret = recvfrom(server_fd, udp_buff, sizeof(udp_buff), 0, &client, &soc_len);
+		assert(recv_ret >= sizeof(mesh_event_payload_t));
+
 		// Push received mesh event data into the event_queue
-		mesh_event_payload_t *data = malloc(sizeof(mesh_event_rec_packet));
+		mesh_event_payload_t *data = malloc(sizeof(mesh_event_payload_t));
 		assert(data);
-		memcpy(data, &mesh_event_rec_packet, sizeof(mesh_event_rec_packet));
+		memcpy(data, udp_buff, sizeof(mesh_event_payload_t));
 
 		// Also receive if there is any payload
-
-		if(mesh_event_rec_packet.payload_length) {
-			void *payload_data = malloc(mesh_event_rec_packet.payload_length);
+		if(data->payload_length) {
+			void *payload_data = malloc(data->payload_length);
 			assert(payload_data);
-			size_t payload_size = recvfrom(server_fd, payload_data, mesh_event_rec_packet.payload_length, 0, &client, &soc_len);
-			assert(payload_size == mesh_event_rec_packet.payload_length);
+			memcpy(payload_data, udp_buff + (int)sizeof(mesh_event_payload_t), data->payload_length);
 			data->payload = payload_data;
+		} else {
+      data->payload = NULL;
 		}
 
+		// Push the event into the event queue
 		assert(meshlink_queue_push(&event_queue, data));
 	}
-
 	return NULL;
 }
 
+// `event_handler' runs in a separate thread which invokes the event handle callback with
+// event packet as argument returns from the thread when the callback returns `true' or timeout
 static void *event_handler(void *argv) {
 	bool callback_return = false;
 	void *data;
@@ -89,17 +109,22 @@ static void *event_handler(void *argv) {
 	mesh_event_callback_t callback = (mesh_event_callback_t)argv;
 
 	while(event_handle_thread_running) {
+
+    // Pops the event if found in the event queue
 		while((data = meshlink_queue_pop(&event_queue)) != NULL) {
 			memcpy(&mesh_event_rec_packet, data, sizeof(mesh_event_payload_t));
 			free(data);
+
+			// Invokes the callback with the popped event packet
 			callback_return = callback(mesh_event_rec_packet);
 
 			if(mesh_event_rec_packet.payload_length) {
 				free(mesh_event_rec_packet.payload);
 			}
 
+			// Return or Close the event handle thread if callback returns true
 			if(callback_return) {
-				set_sync_flag(&sync_event);
+				set_cond_flag(&sync_event, true);
 				event_handle_thread_running = false;
 				break;
 			}
@@ -154,6 +179,7 @@ void mesh_event_sock_connect(const char *import) {
 	*port = '\0';
 	port++;
 
+	memset(&server_addr, 0, sizeof(server_addr));
 	server_addr.sin_family      = AF_INET;
 	server_addr.sin_addr.s_addr = inet_addr(ip);
 	server_addr.sin_port        = htons(atoi(port));
@@ -173,25 +199,23 @@ bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payload, size
 		return false;
 	}
 
-	mesh_event_payload_t *mesh_event_send_packet = calloc(1, sizeof(mesh_event_payload_t));
-	assert(mesh_event_send_packet);
-	ssize_t send_size = sizeof(mesh_event_payload_t);
+	ssize_t send_size = sizeof(mesh_event_payload_t) + payload_length;
+	char *send_packet = malloc(send_size);
+	assert(send_packet);
+	mesh_event_payload_t mesh_event_send_packet;
 
-	mesh_event_send_packet->client_id   = client_id;
-	mesh_event_send_packet->mesh_event  = event;
+	mesh_event_send_packet.client_id   = client_id;
+	mesh_event_send_packet.mesh_event  = event;
+	mesh_event_send_packet.payload_length = payload_length;
+	mesh_event_send_packet.payload = NULL;
+  memcpy(send_packet, &mesh_event_send_packet, sizeof(mesh_event_send_packet));
 
 	if(payload_length) {
-		mesh_event_send_packet->payload_length = payload_length;
-		send_size = send_size + payload_length;
-		mesh_event_send_packet = realloc(mesh_event_send_packet, send_size);
-		assert(mesh_event_send_packet);
-		memcpy(mesh_event_send_packet + sizeof(mesh_event_payload_t), payload, payload_length);
-	} else {
-		mesh_event_send_packet->payload_length = 0;
+		memcpy(send_packet + sizeof(mesh_event_send_packet), payload, payload_length);
 	}
 
-	ssize_t send_ret = sendto(client_fd, mesh_event_send_packet, send_size, 0, (const struct sockaddr *) &server_addr, sizeof(server_addr));
-	free(mesh_event_send_packet);
+	ssize_t send_ret = sendto(client_fd, send_packet, send_size, 0, (const struct sockaddr *) &server_addr, sizeof(server_addr));
+	free(send_packet);
 
 	if(send_ret < 0) {
 		perror("sendto status");
@@ -214,10 +238,9 @@ bool wait_for_event(mesh_event_callback_t callback, int seconds) {
 		event_handle_thread_running = true;
 	}
 
-	reset_sync_flag(&sync_event);
+	set_cond_flag(&sync_event, false);
 	assert(!pthread_create(&event_handle_thread, NULL, event_handler, (void *)callback));
-	bool wait_ret = wait_sync_flag(&sync_event, seconds);
-
+	bool wait_ret = wait_cond_flag(&sync_event, seconds);
 	event_handle_thread_running = false;
 	pthread_cancel(event_handle_thread);
 

@@ -1,6 +1,6 @@
 /*
     mesh_event_handler.h
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -74,11 +74,17 @@ typedef enum {
 
 /// mesh event UDP packet
 typedef struct  mesh_event_payload {
-	uint16_t      client_id;
-	mesh_event_t  mesh_event;
-	uint8_t       payload_length;
 	void          *payload;
+	mesh_event_t  mesh_event;
+	uint16_t      client_id;
+	uint8_t       payload_length;
 } mesh_event_payload_t;
+
+struct cond_flag {
+	pthread_mutex_t mutex;
+	pthread_cond_t cond;
+	bool flag;
+};
 
 /// callback for handling the mesh event
 /** mesh event callback called from wait_for_event() if the mesh event UDP server gets a mesh event.
@@ -136,4 +142,6 @@ extern bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payloa
  *  @return                  void
  */
 extern void mesh_event_sock_connect(const char *server_address);
+
+extern void mesh_event_destroy(void);
 #endif // _MESH_EVENT_HANDLER_H_

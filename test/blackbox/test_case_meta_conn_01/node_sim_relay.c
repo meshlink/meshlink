@@ -54,4 +54,5 @@ int main(int argc, char *argv[]) {
 	}
 
 	execute_close();
+  meshlink_destroy(argv[1]);
 }
