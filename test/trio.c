@@ -12,6 +12,8 @@
 #include "utils.h"
 
 static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	(void)mesh;
+
 	static struct timeval tv0;
 	struct timeval tv;
 
@@ -32,6 +34,9 @@ static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const ch
 static bool received = false;
 
 static void receive_cb(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
+	(void)mesh;
+	(void)source;
+
 	fprintf(stderr, "RECEIVED SOMETHING\n");
 
 	if(len == 5 && !memcmp(data, "Hello", 5)) {
@@ -39,7 +44,7 @@ static void receive_cb(meshlink_handle_t *mesh, meshlink_node_t *source, const v
 	}
 }
 
-int main(int argc, char *argv[]) {
+int main() {
 	// Create three instances.
 
 	const char *name[3] = {"foo", "bar", "baz"};
@@ -53,6 +58,8 @@ int main(int argc, char *argv[]) {
 
 		mesh[i] = meshlink_open(path, name[i], "trio", DEV_CLASS_BACKBONE);
 		assert(mesh[i]);
+
+		meshlink_add_address(mesh[i], "localhost");
 
 		data[i] = meshlink_export(mesh[i]);
 		assert(data[i]);
@@ -76,7 +83,7 @@ int main(int argc, char *argv[]) {
 	// start the nodes
 
 	for(int i = 0; i < 3; i++) {
-		meshlink_start(mesh[i]);
+		assert(meshlink_start(mesh[i]));
 	}
 
 	// the nodes should now learn about each other
@@ -117,7 +124,7 @@ int main(int argc, char *argv[]) {
 	meshlink_set_log_cb(mesh[1], MESHLINK_DEBUG, log_cb);
 
 	for(int i = 1; i < 3; i++) {
-		meshlink_start(mesh[i]);
+		assert(meshlink_start(mesh[i]));
 	}
 
 	assert(meshlink_get_node(mesh[1], name[2]));

@@ -2,7 +2,7 @@
     node_sim.c -- Implementation of Node Simulation for Meshlink Testing
                     for meta connection test case 01 - re-connection of
                     two nodes when relay node goes down
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 	execute_start();
 
 	if(client_id != -1) {
-		if(!mesh_event_sock_send(client_id, NODE_STARTED, NULL, 0)) {
+		while(!mesh_event_sock_send(client_id, NODE_STARTED, NULL, 0)) {
 			fprintf(stderr, "Trying to resend mesh event\n");
 			sleep(1);
 		}
@@ -64,4 +64,5 @@ int main(int argc, char *argv[]) {
 	}
 
 	execute_close();
+  meshlink_destroy(argv[1]);
 }

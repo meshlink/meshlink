@@ -2,7 +2,7 @@
 #    build_container.sh -- Script to populate an LXC Container with the files
 #		           required to run a Meshlink Node Simulation.
 #			   Designed to run on unprivileged Containers.
-#    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+#    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by

@@ -60,12 +60,19 @@ typedef enum packet_type_t {
 
 typedef struct outgoing_t {
 	char *name;
-	int timeout;
 	struct splay_tree_t *config_tree;
+	int timeout;
+	enum {
+		OUTGOING_START,
+		OUTGOING_CANONICAL,
+		OUTGOING_RECENT,
+		OUTGOING_KNOWN,
+		OUTGOING_END,
+		OUTGOING_NO_KNOWN_ADDRESSES,
+	} state;
 	struct config_t *cfg;
-	struct addrinfo *ai; // addresses from config files
+	struct addrinfo *ai;
 	struct addrinfo *aip;
-	struct addrinfo *nai; // addresses known via other online nodes (use free_known_addresses())
 	timeout_t ev;
 	struct meshlink_handle *mesh;
 } outgoing_t;

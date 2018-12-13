@@ -8,12 +8,14 @@
 volatile bool baz_reachable = false;
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
+
 	if(!strcmp(node->name, "baz")) {
 		baz_reachable = reachable;
 	}
 }
 
-int main(int argc, char *argv[]) {
+int main() {
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("invite_join_conf.1", "foo", "invite-join", DEV_CLASS_BACKBONE);
@@ -30,12 +32,20 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	meshlink_handle_t *mesh3 = meshlink_open("invite_join_conf.3", "quux", "invite-join", DEV_CLASS_BACKBONE);
+
+	if(!mesh3) {
+		fprintf(stderr, "Could not initialize configuration for quux\n");
+		return 1;
+	}
+
 	// Disable local discovery.
 
 	meshlink_enable_discovery(mesh1, false);
 	meshlink_enable_discovery(mesh2, false);
+	meshlink_enable_discovery(mesh3, false);
 
-	// Start the first instance and have it generate an invitation.
+	// Start the first instance and have it generate invitations.
 
 	meshlink_set_node_status_cb(mesh1, status_cb);
 
@@ -45,21 +55,28 @@ int main(int argc, char *argv[]) {
 	}
 
 	meshlink_add_address(mesh1, "localhost");
-	char *url = meshlink_invite(mesh1, "baz");
+	char *baz_url = meshlink_invite(mesh1, "baz");
 
-	if(!url) {
+	if(!baz_url) {
 		fprintf(stderr, "Foo could not generate an invitation for baz\n");
+		return 1;
+	}
+
+	char *quux_url = meshlink_invite(mesh1, "quux");
+
+	if(!quux_url) {
+		fprintf(stderr, "Foo could not generate an invitation for quux\n");
 		return 1;
 	}
 
 	// Have the second instance join the first.
 
-	if(!meshlink_join(mesh2, url)) {
+	if(!meshlink_join(mesh2, baz_url)) {
 		fprintf(stderr, "Baz could not join foo's mesh\n");
 		return 1;
 	}
 
-	free(url);
+	free(baz_url);
 
 	if(!meshlink_start(mesh2)) {
 		fprintf(stderr, "Baz could not start\n");
@@ -92,6 +109,17 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "UDP communication with baz not possible after 10 seconds\n");
 		return 1;
 	}
+
+	// Check that nodes cannot join with expired invitations
+
+	meshlink_set_invitation_timeout(mesh1, 0);
+
+	if(meshlink_join(mesh3, quux_url)) {
+		fprintf(stderr, "Quux could join foo's mesh using an outdated invitation\n");
+		return 1;
+	}
+
+	free(quux_url);
 
 	// Clean up.
 

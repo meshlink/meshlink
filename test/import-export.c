@@ -8,12 +8,14 @@
 volatile bool bar_reachable = false;
 
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
+
 	if(!strcmp(node->name, "bar")) {
 		bar_reachable = reachable;
 	}
 }
 
-int main(int argc, char *argv[]) {
+int main() {
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("import_export_conf.1", "foo", "import-export", DEV_CLASS_BACKBONE);

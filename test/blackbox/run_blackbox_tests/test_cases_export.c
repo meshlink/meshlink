@@ -1,6 +1,6 @@
 /*
     test_cases_export.c -- Execution of specific meshlink black box test cases
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -101,9 +101,9 @@ static bool test_export_02(void) {
 int test_meshlink_export(void) {
 	const struct CMUnitTest blackbox_export_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_export_01, NULL, NULL,
-		(void *)&test_case_export_01_state),
+		                (void *)&test_case_export_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_export_02, NULL, NULL,
-		(void *)&test_case_export_02_state)
+		                (void *)&test_case_export_02_state)
 	};
 
 	total_tests += sizeof(blackbox_export_tests) / sizeof(blackbox_export_tests[0]);

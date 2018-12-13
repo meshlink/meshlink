@@ -3,6 +3,8 @@
 #include "../src/meshlink.h"
 
 void handle_recv_data(meshlink_handle_t *mesh, meshlink_node_t *source, void *data, size_t len) {
+	(void)mesh;
+
 	printf("Received %zu bytes from %s: %s\n", len, source->name, (char *)data);
 }
 

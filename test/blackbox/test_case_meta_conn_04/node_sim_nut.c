@@ -2,7 +2,7 @@
     node_sim.c -- Implementation of Node Simulation for Meshlink Testing
                     for meta connection test case 01 - re-connection of
                     two nodes when relay node goes down
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -118,10 +118,11 @@ int main(int argc, char *argv[]) {
 
 	fprintf(stderr, "Connected with Peer\n");
 
-	if(!mesh_event_sock_send(clientId, META_CONN_SUCCESSFUL, "Connected with Peer", 30)) {
+	if(!mesh_event_sock_send(clientId, META_CONN_SUCCESSFUL, NULL, 0)) {
 		fprintf(stderr, "Trying to resend mesh event\n");
 		sleep(1);
 	}
 
 	execute_close();
+  meshlink_destroy(argv[1]);
 }

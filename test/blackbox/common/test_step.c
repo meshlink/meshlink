@@ -1,6 +1,6 @@
 /*
     test_step.c -- Handlers for executing test steps during node simulation
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@ meshlink_handle_t *execute_open(char *node_name, char *dev_class) {
 	/* Create meshlink instance */
 	mesh_handle = meshlink_open("testconf", node_name, "node_sim", atoi(dev_class));
 	fprintf(stderr, "meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
+	meshlink_enable_discovery(mesh_handle, false);
 	PRINT_TEST_CASE_MSG("meshlink_open status: %s\n", meshlink_strerror(meshlink_errno));
 	assert(mesh_handle);
 
@@ -51,7 +52,7 @@ meshlink_handle_t *execute_open(char *node_name, char *dev_class) {
 }
 
 char *execute_invite(char *invitee) {
-	char *invite_url = meshlink_invite(mesh_handle, invitee);
+	char *invite_url = meshlink_invite_ex(mesh_handle, invitee, MESHLINK_INVITE_LOCAL | MESHLINK_INVITE_NUMERIC);
 
 	PRINT_TEST_CASE_MSG("meshlink_invite status: %s\n", meshlink_strerror(meshlink_errno));
 	assert(invite_url);
@@ -62,15 +63,7 @@ char *execute_invite(char *invitee) {
 void execute_join(char *invite_url) {
 	bool join_status;
 
-	/* The inviting node may take a moment to open its listening port
-	    This sleep() prevents meshlink_join() from failing when the listening port is not open */
-	/* TO DO: Replace this with code that actually checks for the port being open, if possible */
-	PRINT_TEST_CASE_MSG("Sleeping 1 sec to allow inviting node to start listening...\n");
-	sleep(1);
-
-	PRINT_TEST_CASE_MSG("About to join with mesh_handle = %p, invite_url = %s\n", mesh_handle, invite_url);
 	join_status = meshlink_join(mesh_handle, invite_url);
-	PRINT_TEST_CASE_MSG("meshlink_join status: %s\n", meshlink_strerror(meshlink_errno));
 	assert(join_status);
 }
 

@@ -1,6 +1,6 @@
 /*
     test_cases_invite.c -- Execution of specific meshlink black box test cases
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -137,7 +137,7 @@ static bool test_invite_03(void) {
 
 	meshlink_close(mesh_handle);
 	meshlink_destroy("inviteconf");
-  return true;
+	return true;
 }
 
 /* Execute invite Test Case # 4 - Functionality test*/
@@ -185,16 +185,16 @@ static bool test_invite_04(void) {
 int test_meshlink_invite(void) {
 	const struct CMUnitTest blackbox_invite_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_invite_01, NULL, NULL,
-		(void *)&test_case_invite_01_state),
+		                (void *)&test_case_invite_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_invite_02, NULL, NULL,
-		(void *)&test_case_invite_02_state),
+		                (void *)&test_case_invite_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_invite_03, NULL, NULL,
-		(void *)&test_case_invite_03_state),
+		                (void *)&test_case_invite_03_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_invite_04, NULL, NULL,
-		(void *)&test_case_invite_04_state)
+		                (void *)&test_case_invite_04_state)
 	};
 
 	total_tests += sizeof(blackbox_invite_tests) / sizeof(blackbox_invite_tests[0]);
 
-	return cmocka_run_group_tests(blackbox_invite_tests , NULL , NULL);
+	return cmocka_run_group_tests(blackbox_invite_tests, NULL, NULL);
 }

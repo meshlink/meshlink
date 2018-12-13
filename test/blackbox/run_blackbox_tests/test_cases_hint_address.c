@@ -1,6 +1,6 @@
 /*
     test_cases_hint_address.c -- Execution of specific meshlink black box test cases
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -129,10 +129,10 @@ bool test_steps_hint_address_01(void) {
 int test_meshlink_hint_address(void) {
 	const struct CMUnitTest blackbox_hint_address_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_hint_address_01, NULL, NULL,
-		(void *)&test_case_hint_address_01_state)
+		                (void *)&test_case_hint_address_01_state)
 	};
 
 	total_tests += sizeof(blackbox_hint_address_tests) / sizeof(blackbox_hint_address_tests[0]);
 
-	return cmocka_run_group_tests(blackbox_hint_address_tests , NULL , NULL);
+	return cmocka_run_group_tests(blackbox_hint_address_tests, NULL, NULL);
 }

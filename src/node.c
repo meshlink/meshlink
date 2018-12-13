@@ -65,6 +65,8 @@ node_t *new_node(void) {
 void free_node(node_t *n) {
 	n->status.destroyed = true;
 
+	utcp_exit(n->utcp);
+
 	if(n->edge_tree) {
 		free_edge_tree(n->edge_tree);
 	}
@@ -79,8 +81,6 @@ void free_node(node_t *n) {
 	}
 
 	free(n->name);
-
-	utcp_exit(n->utcp);
 
 	free(n);
 }

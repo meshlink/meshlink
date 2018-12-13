@@ -5,7 +5,6 @@ AC_INIT([MeshLink], [0.1])
 AM_INIT_AUTOMAKE([std-options subdir-objects nostdinc silent-rules -Wall])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_SUBDIRS([catta])
 AM_SILENT_RULES([yes])
 
 # Enable GNU extensions.
@@ -69,9 +68,7 @@ AS_IF([test "x$enable_hardening" != "xno"],
        AX_CHECK_LINK_FLAG([-Wl,--nxcompat], [LDFLAGS="$LDFLAGS -Wl,--nxcompat"])
        ;;
      *)
-       AX_CHECK_COMPILE_FLAG([-fPIE], [CPPFLAGS="$CPPFLAGS -fPIE"])
        AX_CHECK_COMPILE_FLAG([-fPIC], [CPPFLAGS="$CPPFLAGS -fPIC"])
-       AX_CHECK_LINK_FLAG([-pie], [LDFLAGS="$LDFLAGS -pie"])
        ;;
    esac
    AX_CHECK_LINK_FLAG([-Wl,-z,relro], [LDFLAGS="$LDFLAGS -Wl,-z,relro"])
@@ -79,12 +76,25 @@ AS_IF([test "x$enable_hardening" != "xno"],
   ]
 );
 
+dnl Allow building without Catta
+AC_ARG_ENABLE([catta], AS_HELP_STRING([--disable-catta], [disable linking with the Catta library]))
+AS_IF([test "x$enable_catta" != "xno"],
+  AC_DEFINE(HAVE_CATTA, 1, [Link with Catta])
+  AC_CONFIG_SUBDIRS([catta])
+)
+AM_CONDITIONAL(CATTA, test "x$enable_catta" != "xno")
+
 dnl UTCP debug flags
 AC_ARG_ENABLE([utcp_debug], AS_HELP_STRING([--enable-utcp-debug], [compile utcp with debug output]))
 AS_IF([test "x$enable_utcp_debug" = "xyes"],
   [AX_CHECK_COMPILE_FLAG([-DUTCP_DEBUG], [CPPFLAGS="$CPPFLAGS -DUTCP_DEBUG"])
   ]
 );
+
+dnl Blackbox test suite
+PKG_CHECK_MODULES([CMOCKA], [cmocka >= 1.1.0], [cmocka=true], [cmocka=false])
+PKG_CHECK_MODULES([LXC], [lxc >= 2.0.0], [lxc=true], [lxc=false])
+AM_CONDITIONAL(BLACKBOX_TESTS, test "$cmocka" = true -a "$lxc" = true)
 
 dnl Install test binaries
 AC_ARG_ENABLE([install_tests],
@@ -133,17 +143,27 @@ AC_CHECK_DECLS([freeaddrinfo, gai_strerror, getaddrinfo, getnameinfo],
 
 AC_CACHE_SAVE
 
-AC_CONFIG_FILES([Makefile \
-		src/Makefile \
-		doc/Makefile \
-		test/Makefile \
-		test/blackbox/Makefile \
-		test/blackbox/run_blackbox_tests/Makefile \
-		test/blackbox/test_case_meta_conn_01/Makefile \
-		test/blackbox/test_case_meta_conn_02/Makefile \
-		test/blackbox/test_case_meta_conn_03/Makefile \
-		test/blackbox/test_case_meta_conn_04/Makefile \
-		test/blackbox/test_case_meta_conn_05/Makefile \
-		examples/Makefile])
+AC_CONFIG_FILES([
+	 Makefile
+	 src/Makefile
+	 doc/Makefile
+	 test/Makefile
+	 test/blackbox/Makefile
+	 test/blackbox/run_blackbox_tests/Makefile
+	 test/blackbox/test_case_channel_conn_01/Makefile
+	 test/blackbox/test_case_channel_conn_02/Makefile
+	 test/blackbox/test_case_channel_conn_03/Makefile
+	 test/blackbox/test_case_channel_conn_04/Makefile
+	 test/blackbox/test_case_channel_conn_05/Makefile
+	 test/blackbox/test_case_channel_conn_06/Makefile
+	 test/blackbox/test_case_channel_conn_07/Makefile
+	 test/blackbox/test_case_channel_conn_08/Makefile
+	 test/blackbox/test_case_meta_conn_01/Makefile
+	 test/blackbox/test_case_meta_conn_02/Makefile
+	 test/blackbox/test_case_meta_conn_03/Makefile
+	 test/blackbox/test_case_meta_conn_04/Makefile
+	 test/blackbox/test_case_meta_conn_05/Makefile
+	 examples/Makefile
+])
 
 AC_OUTPUT

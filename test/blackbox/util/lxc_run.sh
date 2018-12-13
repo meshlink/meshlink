@@ -1,7 +1,7 @@
 #!/bin/sh
 #    lxc_run.sh - Script to run a command inside an LXC Container
 #		  Designed to work on unprivileged Containers
-#    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+#    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -22,5 +22,5 @@ cmd=${1}
 containername=${2}
 
 # Run command inside Container by attaching to the Container and sending it the command
-echo "${cmd}" | lxc-attach -n ${containername} -- 
+echo "${cmd}" | lxc-attach -n ${containername} --
 exit $?

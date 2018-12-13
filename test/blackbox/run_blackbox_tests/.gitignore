@@ -3,3 +3,7 @@
 *.layout
 bin
 obj
+*.o
+run_blackbox_tests
+Makefile
+Makefile.in

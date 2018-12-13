@@ -57,7 +57,7 @@ void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report)
 
 	if(c->edge) {
 		if(report) {
-			send_del_edge(mesh, mesh->everyone, c->edge);
+			send_del_edge(mesh, mesh->everyone, c->edge, 0);
 		}
 
 		edge_del(mesh, c->edge);
@@ -74,7 +74,7 @@ void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report)
 			e = lookup_edge(c->node, mesh->self);
 
 			if(e) {
-				send_del_edge(mesh, mesh->everyone, e);
+				send_del_edge(mesh, mesh->everyone, e, 0);
 				edge_del(mesh, e);
 			}
 		}

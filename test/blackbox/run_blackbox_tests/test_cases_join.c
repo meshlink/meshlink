@@ -1,6 +1,6 @@
 /*
     test_cases_join.c -- Execution of specific meshlink black box test cases
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ static bool join_status;
 
 /* status callback */
 static void status_callback(meshlink_handle_t *mesh, meshlink_node_t *source, bool reach) {
-  (void)mesh;
+	(void)mesh;
 
 	if(!strcmp(source->name, "relay")) {
 		join_status = reach;
@@ -99,9 +99,9 @@ static bool test_meshlink_join_01(void) {
 	meshlink_set_node_status_cb(mesh1, status_callback);
 
 	// Inviting nut
-  meshlink_start(mesh2);
-  char *invitation = meshlink_invite(mesh2, "nut");
-  assert(invitation);
+	meshlink_start(mesh2);
+	char *invitation = meshlink_invite(mesh2, "nut");
+	assert(invitation);
 
 	// Joining Node-Under-Test with relay
 	bool ret = meshlink_join(mesh1, invitation);
@@ -189,15 +189,15 @@ static bool test_meshlink_join_03(void) {
 int test_meshlink_join(void) {
 	const struct CMUnitTest blackbox_join_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_meshlink_join_01, NULL, NULL,
-		(void *)&test_case_join_01_state),
+		                (void *)&test_case_join_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_meshlink_join_02, NULL, NULL,
-		(void *)&test_case_join_02_state),
+		                (void *)&test_case_join_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_meshlink_join_03, NULL, NULL,
-		(void *)&test_case_join_03_state)
+		                (void *)&test_case_join_03_state)
 	};
 	total_tests += sizeof(blackbox_join_tests) / sizeof(blackbox_join_tests[0]);
 
-	int failed = cmocka_run_group_tests(blackbox_join_tests , NULL , NULL);
+	int failed = cmocka_run_group_tests(blackbox_join_tests, NULL, NULL);
 
 	return failed;
 }
