@@ -57,9 +57,7 @@ typedef enum packet_type_t {
 #include "list.h"
 
 typedef struct outgoing_t {
-	char *name;
-	struct splay_tree_t *config_tree;
-	int timeout;
+	struct node_t *node;
 	enum {
 		OUTGOING_START,
 		OUTGOING_CANONICAL,
@@ -68,11 +66,10 @@ typedef struct outgoing_t {
 		OUTGOING_END,
 		OUTGOING_NO_KNOWN_ADDRESSES,
 	} state;
-	struct config_t *cfg;
+	int timeout;
+	timeout_t ev;
 	struct addrinfo *ai;
 	struct addrinfo *aip;
-	timeout_t ev;
-	struct meshlink_handle *mesh;
 } outgoing_t;
 
 extern int maxoutbufsize;
@@ -85,6 +82,9 @@ extern bool do_prune;
 /* Yes, very strange placement indeed, but otherwise the typedefs get all tangled up */
 #include "connection.h"
 #include "node.h"
+
+extern void init_outgoings(struct meshlink_handle *mesh);
+extern void exit_outgoings(struct meshlink_handle *mesh);
 
 extern void retry_outgoing(struct meshlink_handle *mesh, outgoing_t *);
 extern void handle_incoming_vpn_data(struct event_loop_t *loop, void *, int);
@@ -102,13 +102,14 @@ extern void load_all_nodes(struct meshlink_handle *mesh);
 extern bool setup_myself_reloadable(struct meshlink_handle *mesh);
 extern bool setup_network(struct meshlink_handle *mesh);
 extern void setup_outgoing_connection(struct meshlink_handle *mesh, struct outgoing_t *);
-extern void try_outgoing_connections(struct meshlink_handle *mesh);
 extern void close_network_connections(struct meshlink_handle *mesh);
 extern int main_loop(struct meshlink_handle *mesh);
 extern void terminate_connection(struct meshlink_handle *mesh, struct connection_t *, bool);
-extern bool node_read_ecdsa_public_key(struct meshlink_handle *mesh, struct node_t *);
+extern bool node_read_public_key(struct meshlink_handle *mesh, struct node_t *);
+extern bool node_read_full(struct meshlink_handle *mesh, struct node_t *);
 extern bool read_ecdsa_public_key(struct meshlink_handle *mesh, struct connection_t *);
 extern bool read_ecdsa_private_key(struct meshlink_handle *mesh);
+extern bool node_write_config(struct meshlink_handle *mesh, struct node_t *);
 extern void send_mtu_probe(struct meshlink_handle *mesh, struct node_t *);
 extern void handle_meta_connection_data(struct meshlink_handle *mesh, struct connection_t *);
 extern void retry(struct meshlink_handle *mesh);

@@ -4,9 +4,9 @@
 #define AF_UNKNOWN 255
 
 #ifdef SA_LEN
-#define SALEN(s) SA_LEN(&s)
+#define SALEN(s) SA_LEN(&(s))
 #else
-#define SALEN(s) (s.sa_family==AF_INET?sizeof(struct sockaddr_in):sizeof(struct sockaddr_in6))
+#define SALEN(s) ((s).sa_family==AF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6))
 #endif
 
 struct sockaddr_unknown {

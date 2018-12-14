@@ -2,8 +2,8 @@
 #define MESHLINK_CONF_H
 
 /*
-    conf.h -- header for conf.c
-    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
+    econf.h -- header for econf.c
+    Copyright (C) 2018 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,34 +20,32 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "list.h"
-#include "meshlink_internal.h"
-#include "splay_tree.h"
+struct meshlink_handle;
 
 typedef struct config_t {
-	char *variable;
-	char *value;
-	int line;
+	const uint8_t *buf;
+	size_t len;
 } config_t;
 
-extern void init_configuration(struct splay_tree_t **);
-extern void exit_configuration(struct splay_tree_t **);
-extern config_t *new_config(void) __attribute__((__malloc__));
-extern void free_config(config_t *);
-extern void config_add(struct splay_tree_t *, config_t *);
-extern config_t *lookup_config(struct splay_tree_t *, char *);
-extern config_t *lookup_config_next(struct splay_tree_t *, const config_t *);
-extern bool get_config_bool(const config_t *, bool *);
-extern bool get_config_int(const config_t *, int *);
-extern bool set_config_int(config_t *, int);
-extern bool get_config_string(const config_t *, char **);
-extern bool set_config_string(config_t *, const char *);
-extern bool get_config_address(const config_t *, struct addrinfo **);
+//extern bool config_read_file(struct meshlink_handle *mesh, FILE *f, struct config_t *);
+//extern bool config_write_file(struct meshlink_handle *mesh, FILE *f, const struct config_t *);
+extern void config_free(struct config_t *config);
 
-extern bool read_server_config(struct meshlink_handle *mesh);
-extern bool read_host_config(struct meshlink_handle *mesh, struct splay_tree_t *, const char *);
-extern bool write_host_config(struct meshlink_handle *mesh, const struct splay_tree_t *, const char *);
-extern bool modify_config_file(struct meshlink_handle *mesh, const char *name, const char *key, const char *value, int trim);
-extern bool append_config_file(struct meshlink_handle *mesh, const char *name, const char *key, const char *value);
+extern bool config_init(struct meshlink_handle *mesh);
+extern bool config_destroy(const char *confbase);
+
+extern bool main_config_exists(struct meshlink_handle *mesh);
+extern bool main_config_lock(struct meshlink_handle *mesh);
+extern void main_config_unlock(struct meshlink_handle *mesh);
+extern bool main_config_read(struct meshlink_handle *mesh, struct config_t *);
+extern bool main_config_write(struct meshlink_handle *mesh, const struct config_t *);
+
+extern bool config_exists(struct meshlink_handle *mesh, const char *name);
+extern bool config_read(struct meshlink_handle *mesh, const char *name, struct config_t *);
+extern bool config_write(struct meshlink_handle *mesh, const char *name, const struct config_t *);
+
+extern bool invitation_read(struct meshlink_handle *mesh, const char *name, struct config_t *);
+extern bool invitation_write(struct meshlink_handle *mesh, const char *name, const struct config_t *);
+extern size_t invitation_purge_old(struct meshlink_handle *mesh, time_t deadline);
 
 #endif

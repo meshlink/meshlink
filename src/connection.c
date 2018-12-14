@@ -70,10 +70,6 @@ void free_connection(connection_t *c) {
 
 	free(c->name);
 
-	if(c->config_tree) {
-		exit_configuration(&c->config_tree);
-	}
-
 	free(c);
 }
 

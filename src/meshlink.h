@@ -165,6 +165,27 @@ extern meshlink_open_params_t *meshlink_open_params_init(const char *confbase, c
  */
 extern void meshlink_open_params_free(meshlink_open_params_t *params);
 
+/// Set the network namespace MeshLink should use.
+/** This function changes the open parameters to use the given netns filedescriptor.
+ *
+ *  @param params   A pointer to a meshlink_open_params_t which must have been created earlier with meshlink_open_params_init().
+ *  @param netns    A filedescriptor that must point to a valid network namespace, or -1 to have MeshLink use the same namespace as the calling thread.
+ *
+ *  @return         This function will return true if the open parameters have been succesfully updated, false otherwise.
+ */
+extern bool meshlink_open_params_set_netns(meshlink_open_params_t *params, int netns);
+
+/// Set the encryption key MeshLink should use for local storage.
+/** This function changes the open parameters to use the given key for encrypting MeshLink's own configuration files.
+ *
+ *  @param params   A pointer to a meshlink_open_params_t which must have been created earlier with meshlink_open_params_init().
+ *  @param key      A pointer to a key, or NULL in case no encryption should be used.
+ *  @param keylen   The length of the given key, or 0 in case no encryption should be used.
+ *
+ *  @return         This function will return true if the open parameters have been succesfully updated, false otherwise.
+ */
+extern bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const void *key, size_t keylen);
+
 /// Open or create a MeshLink instance.
 /** This function opens or creates a MeshLink instance.
  *  All parameters needed by MeshLink are passed via a meshlink_open_params_t struct,
@@ -213,6 +234,37 @@ extern meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params)
  *                  The pointer is valid until meshlink_close() is called.
  */
 extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char *appname, dev_class_t devclass);
+
+/// Open or create a MeshLink instance that uses encrypted storage.
+/** This function opens or creates a MeshLink instance.
+ *  The state is stored in the configuration directory passed in the variable @a confbase @a.
+ *  If the configuration directory does not exist yet, for example when it is the first time
+ *  this instance is opened, the configuration directory will be automatically created and initialized.
+ *  However, the parent directory should already exist, otherwise an error will be returned.
+ *
+ *  The name given should be a unique identifier for this instance.
+ *
+ *  This function returns a pointer to a struct meshlink_handle that will be allocated by MeshLink.
+ *  When the application does no longer need to use this handle, it must call meshlink_close() to
+ *  free its resources.
+ *
+ *  This function does not start any network I/O yet. The application should
+ *  first set callbacks, and then call meshlink_start().
+ *
+ *  @param confbase The directory in which MeshLink will store its configuration files.
+ *                  After the function returns, the application is free to overwrite or free @a confbase @a.
+ *  @param name     The name which this instance of the application will use in the mesh.
+ *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *  @param appname  The application name which will be used in the mesh.
+ *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *  @param devclass The device class which will be used in the mesh.
+ *  @param key      A pointer to a key used to encrypt storage.
+ *  @param keylen   The length of the key in bytes.
+ *
+ *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink, or NULL in case of an error.
+ *                  The pointer is valid until meshlink_close() is called.
+ */
+extern meshlink_handle_t *meshlink_open_encrypted(const char *confbase, const char *name, const char *appname, dev_class_t devclass, const void *key, size_t keylen);
 
 /// Create Sub-Mesh.
 /** This function causes MeshLink to open a new Sub-Mesh network

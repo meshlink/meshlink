@@ -54,6 +54,12 @@ ecdsa_t *ecdsa_set_base64_public_key(const char *p) {
 	return ecdsa;
 }
 
+ecdsa_t *ecdsa_set_public_key(const void *p) {
+	ecdsa_t *ecdsa = xzalloc(sizeof(*ecdsa));
+	memcpy(ecdsa->public, p, sizeof ecdsa->public);
+	return ecdsa;
+}
+
 char *ecdsa_get_base64_public_key(ecdsa_t *ecdsa) {
 	char *base64 = xmalloc(44);
 	b64encode(ecdsa->public, base64, sizeof ecdsa->public);
@@ -61,10 +67,24 @@ char *ecdsa_get_base64_public_key(ecdsa_t *ecdsa) {
 	return base64;
 }
 
+const void *ecdsa_get_public_key(ecdsa_t *ecdsa) {
+	return ecdsa->public;
+}
+
+ecdsa_t *ecdsa_set_private_key(const void *p) {
+	ecdsa_t *ecdsa = xzalloc(sizeof(*ecdsa));
+	memcpy(ecdsa->private, p, sizeof(*ecdsa));
+	return ecdsa;
+}
+
+const void *ecdsa_get_private_key(ecdsa_t *ecdsa) {
+	return ecdsa->private;
+}
+
 // Read PEM ECDSA keys
 
 ecdsa_t *ecdsa_read_pem_public_key(FILE *fp) {
-	ecdsa_t *ecdsa = xzalloc(sizeof * ecdsa);
+	ecdsa_t *ecdsa = xzalloc(sizeof(*ecdsa));
 
 	if(fread(ecdsa->public, sizeof ecdsa->public, 1, fp) == 1) {
 		return ecdsa;

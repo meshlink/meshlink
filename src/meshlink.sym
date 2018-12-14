@@ -42,6 +42,7 @@ meshlink_invite_ex
 meshlink_join
 meshlink_main_loop
 meshlink_open
+meshlink_open_encrypted
 meshlink_open_ex
 meshlink_open_params_free
 meshlink_open_params_init

@@ -135,6 +135,7 @@ char *sockaddr2hostname(const sockaddr_t *sa) {
 
 	if(err) {
 		logger(NULL, MESHLINK_ERROR, "Error while looking up hostname: %s", err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
+		abort();
 	}
 
 	xasprintf(&str, "%s port %s", address, port);
@@ -228,6 +229,23 @@ void sockaddrcpy(sockaddr_t *a, const sockaddr_t *b) {
 	}
 }
 
+void sockaddrcpy_setport(sockaddr_t *a, const sockaddr_t *b, uint16_t port) {
+	sockaddrcpy(a, b);
+
+	switch(b->sa.sa_family) {
+	case AF_INET:
+		a->in.sin_port = port;
+		break;
+
+	case AF_INET6:
+		a->in6.sin6_port = port;
+		break;
+
+	default:
+		break;
+	}
+}
+
 void sockaddrfree(sockaddr_t *a) {
 	if(a->sa.sa_family == AF_UNKNOWN) {
 		free(a->unknown.address);
@@ -240,4 +258,66 @@ void sockaddrunmap(sockaddr_t *sa) {
 		sa->in.sin_addr.s_addr = ((uint32_t *) & sa->in6.sin6_addr)[3];
 		sa->in.sin_family = AF_INET;
 	}
+}
+
+void packmsg_add_sockaddr(packmsg_output_t *out, const sockaddr_t *sa) {
+	switch(sa->sa.sa_family) {
+	case AF_INET: {
+		uint8_t buf[6];
+		memcpy(buf + 0, &sa->in.sin_port, 2);
+		memcpy(buf + 2, &sa->in.sin_addr, 4);
+		packmsg_add_ext(out, 4, buf, sizeof(buf));
+		break;
+	}
+
+	case AF_INET6: {
+		uint8_t buf[18];
+		memcpy(buf + 0, &sa->in6.sin6_port, 2);
+		memcpy(buf + 2, &sa->in6.sin6_addr, 16);
+		packmsg_add_ext(out, 6, buf, sizeof(buf));
+		break;
+	}
+
+	default:
+		packmsg_output_invalidate(out);
+		break;
+	}
+}
+
+sockaddr_t packmsg_get_sockaddr(packmsg_input_t *in) {
+	sockaddr_t sa = {0};
+
+	int8_t type;
+	const void *data;
+	uint32_t len = packmsg_get_ext_raw(in, &type, &data);
+
+	switch(type) {
+	case 4:
+		if(len != 6) {
+			packmsg_input_invalidate(in);
+			return sa;
+		}
+
+		sa.sa.sa_family = AF_INET;
+		memcpy(&sa.in.sin_port, (uint8_t *)data + 0, 2);
+		memcpy(&sa.in.sin_addr, (uint8_t *)data + 2, 4);
+		break;
+
+	case 6:
+		if(len != 18) {
+			packmsg_input_invalidate(in);
+			return sa;
+		}
+
+		sa.sa.sa_family = AF_INET6;
+		memcpy(&sa.in6.sin6_port, (uint8_t *)data + 0, 2);
+		memcpy(&sa.in6.sin6_addr, (uint8_t *)data + 2, 16);
+		break;
+
+	default:
+		packmsg_input_invalidate(in);
+		return sa;
+	}
+
+	return sa;
 }

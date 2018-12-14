@@ -100,3 +100,58 @@ bool chacha_poly1305_decrypt(chacha_poly1305_ctx_t *ctx, uint64_t seqnr, const v
 
 	return true;
 }
+
+bool chacha_poly1305_encrypt_iv96(chacha_poly1305_ctx_t *ctx, const uint8_t *seqbuf, const void *indata, size_t inlen, void *outdata, size_t *outlen) {
+	const uint8_t one[4] = { 1, 0, 0, 0 };	/* NB little-endian */
+	uint8_t poly_key[POLY1305_KEYLEN];
+
+	/*
+	 * Run ChaCha20 once to generate the Poly1305 key. The IV is the
+	 * packet sequence number.
+	 */
+	memset(poly_key, 0, sizeof(poly_key));
+	chacha_ivsetup_96(&ctx->main_ctx, seqbuf, NULL);
+	chacha_encrypt_bytes(&ctx->main_ctx, poly_key, poly_key, sizeof(poly_key));
+
+	/* Set Chacha's block counter to 1 */
+	chacha_ivsetup_96(&ctx->main_ctx, seqbuf, one);
+
+	chacha_encrypt_bytes(&ctx->main_ctx, indata, outdata, inlen);
+	poly1305_auth((uint8_t *)outdata + inlen, outdata, inlen, poly_key);
+
+	if (outlen)
+		*outlen = inlen + POLY1305_TAGLEN;
+
+	return true;
+}
+
+bool chacha_poly1305_decrypt_iv96(chacha_poly1305_ctx_t *ctx, const uint8_t *seqbuf, const void *indata, size_t inlen, void *outdata, size_t *outlen) {
+	const uint8_t one[4] = { 1, 0, 0, 0 };	/* NB little-endian */
+	uint8_t expected_tag[POLY1305_TAGLEN], poly_key[POLY1305_KEYLEN];
+
+	/*
+	 * Run ChaCha20 once to generate the Poly1305 key. The IV is the
+	 * packet sequence number.
+	 */
+	memset(poly_key, 0, sizeof(poly_key));
+	chacha_ivsetup_96(&ctx->main_ctx, seqbuf, NULL);
+	chacha_encrypt_bytes(&ctx->main_ctx, poly_key, poly_key, sizeof(poly_key));
+
+	/* Set Chacha's block counter to 1 */
+	chacha_ivsetup_96(&ctx->main_ctx, seqbuf, one);
+
+	/* Check tag before anything else */
+	inlen -= POLY1305_TAGLEN;
+	const uint8_t *tag = (const uint8_t *)indata + inlen;
+
+	poly1305_auth(expected_tag, indata, inlen, poly_key);
+	if (memcmp(expected_tag, tag, POLY1305_TAGLEN))
+		return false;
+
+	chacha_encrypt_bytes(&ctx->main_ctx, indata, outdata, inlen);
+
+	if (outlen)
+		*outlen = inlen;
+
+	return true;
+}
