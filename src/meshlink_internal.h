@@ -41,6 +41,9 @@ static const char meshlink_invitation_label[] = "MeshLink invitation";
 static const char meshlink_tcp_label[] = "MeshLink TCP";
 static const char meshlink_udp_label[] = "MeshLink UDP";
 
+#define MESHLINK_CONFIG_VERSION 1
+#define MESHLINK_INVITATION_VERSION 1
+
 struct CattaServer;
 struct CattaSServiceBrowser;
 struct CattaSimplePoll;
@@ -68,6 +71,9 @@ struct meshlink_open_params {
 	dev_class_t devclass;
 
 	int netns;
+
+	const void *key;
+	size_t keylen;
 };
 
 /// A handle for an instance of MeshLink.
@@ -76,7 +82,7 @@ struct meshlink_handle {
 	void *priv;
 
 	char *appname;
-	dev_class_t devclass;
+	int32_t devclass;
 
 	char *confbase;
 	FILE *conffile;
@@ -99,7 +105,6 @@ struct meshlink_handle {
 
 	struct node_t *self;
 
-	struct splay_tree_t *config;
 	struct splay_tree_t *edges;
 	struct splay_tree_t *nodes;
 
@@ -135,6 +140,7 @@ struct meshlink_handle {
 
 	hash_t *node_udp_cache;
 	struct connection_t *everyone;
+	struct ecdsa *private_key;
 	struct ecdsa *invitation_key;
 	int invitation_timeout;
 
@@ -161,6 +167,7 @@ struct meshlink_handle {
 	char *catta_servicetype;
 
 	int netns;
+	void *config_key;
 };
 
 /// A handle for a MeshLink node.

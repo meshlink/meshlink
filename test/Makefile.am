@@ -5,6 +5,7 @@ TESTS = \
 	channels-fork.test \
 	channels-cornercases.test \
 	duplicate.test \
+	encrypted.test \
 	import-export.test \
 	invite-join.test \
 	sign-verify.test \
@@ -27,6 +28,7 @@ check_PROGRAMS = \
 	channels-cornercases \
 	duplicate \
 	echo-fork \
+	encrypted \
 	import-export \
 	invite-join \
 	sign-verify \
@@ -56,6 +58,9 @@ duplicate_LDADD = ../src/libmeshlink.la
 
 echo_fork_SOURCES = echo-fork.c
 echo_fork_LDADD = ../src/libmeshlink.la
+
+encrypted_SOURCES = encrypted.c
+encrypted_LDADD = ../src/libmeshlink.la
 
 import_export_SOURCES = import-export.c
 import_export_LDADD = ../src/libmeshlink.la

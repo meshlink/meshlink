@@ -12,4 +12,7 @@ extern bool chacha_poly1305_set_key(chacha_poly1305_ctx_t *ctx, const void *key)
 extern bool chacha_poly1305_encrypt(chacha_poly1305_ctx_t *ctx, uint64_t seqnr, const void *indata, size_t inlen, void *outdata, size_t *outlen);
 extern bool chacha_poly1305_decrypt(chacha_poly1305_ctx_t *ctx, uint64_t seqnr, const void *indata, size_t inlen, void *outdata, size_t *outlen);
 
+extern bool chacha_poly1305_encrypt_iv96(chacha_poly1305_ctx_t *ctx, const uint8_t *seqbuf, const void *indata, size_t inlen, void *outdata, size_t *outlen);
+extern bool chacha_poly1305_decrypt_iv96(chacha_poly1305_ctx_t *ctx, const uint8_t *seqbuf, const void *indata, size_t inlen, void *outdata, size_t *outlen);
+
 #endif //CHACHA_POLY1305_H

@@ -1,0 +1,6 @@
+Master key is a public/private keypair (RSA? We don't really care.)
+
+File format:
+<encrypted chacha-poly1305 key>
+<configuration-data>
+

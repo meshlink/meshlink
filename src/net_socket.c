@@ -381,6 +381,38 @@ static struct addrinfo *get_known_addresses(node_t *n) {
 	return ai;
 }
 
+// Build a list of recently seen addresses.
+static struct addrinfo *get_recent_addresses(node_t *n) {
+	struct addrinfo *ai = NULL;
+	struct addrinfo *aip;
+
+	for(int i = 0; i < 5; i++) {
+		if(!n->recent[i].sa.sa_family) {
+			break;
+		}
+
+		// Create a new struct addrinfo, and put it at the end of the list.
+		struct addrinfo *nai = xzalloc(sizeof(*nai) + SALEN(n->recent[i].sa));
+
+		if(!ai) {
+			ai = nai;
+		} else {
+			aip->ai_next = nai;
+		}
+
+		aip = nai;
+
+		nai->ai_family = n->recent[i].sa.sa_family;
+		nai->ai_socktype = SOCK_STREAM;
+		nai->ai_protocol = IPPROTO_TCP;
+		nai->ai_addrlen = SALEN(n->recent[i].sa);
+		nai->ai_addr = (struct sockaddr *)(nai + 1);
+		memcpy(nai->ai_addr, &n->recent[i], nai->ai_addrlen);
+	}
+
+	return ai;
+}
+
 // Free struct addrinfo list from get_known_addresses().
 static void free_known_addresses(struct addrinfo *ai) {
 	for(struct addrinfo *aip = ai, *next; aip; aip = next) {
@@ -389,62 +421,30 @@ static void free_known_addresses(struct addrinfo *ai) {
 	}
 }
 
-static bool get_recent(meshlink_handle_t *mesh, outgoing_t *outgoing) {
-	node_t *n = lookup_node(mesh, outgoing->name);
-
-	if(!n) {
+static struct addrinfo *get_canonical_address(node_t *n) {
+	if(!n->canonical_address) {
 		return false;
 	}
 
-	outgoing->ai = get_known_addresses(n);
-	outgoing->aip = outgoing->ai;
-	return outgoing->aip;
-}
+	char *address = xstrdup(n->canonical_address);
+	char *port = strchr(address, ' ');
 
-static bool get_next_ai(meshlink_handle_t *mesh, outgoing_t *outgoing) {
-	if(!outgoing->ai) {
-		char *address = NULL;
-
-		if(get_config_string(outgoing->cfg, &address)) {
-			char *port;
-			char *space = strchr(address, ' ');
-
-			if(space) {
-				port = xstrdup(space + 1);
-				*space = 0;
-			} else {
-				if(!get_config_string(lookup_config(outgoing->config_tree, "Port"), &port)) {
-					logger(mesh, MESHLINK_ERROR, "No Port known for %s", outgoing->name);
-					return false;
-				}
-			}
-
-			outgoing->ai = str2addrinfo(address, port, SOCK_STREAM);
-			free(port);
-			free(address);
-		}
-
-		outgoing->aip = outgoing->ai;
-	} else {
-		outgoing->aip = outgoing->aip->ai_next;
+	if(!port) {
+		free(address);
+		return false;
 	}
 
-	return outgoing->aip;
-}
+	*port++ = 0;
 
-static bool get_next_cfg(meshlink_handle_t *mesh, outgoing_t *outgoing, char *variable) {
-	(void)mesh;
+	struct addrinfo *ai = str2addrinfo(address, port, SOCK_STREAM);
+	free(address);
 
-	if(!outgoing->cfg) {
-		outgoing->cfg = lookup_config(outgoing->config_tree, variable);
-	} else {
-		outgoing->cfg = lookup_config_next(outgoing->config_tree, outgoing->cfg);
-	}
-
-	return outgoing->cfg;
+	return ai;
 }
 
 static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgoing) {
+	(void)mesh;
+
 	bool start = false;
 
 	if(outgoing->state == OUTGOING_START) {
@@ -453,48 +453,56 @@ static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgo
 	}
 
 	if(outgoing->state == OUTGOING_CANONICAL) {
-		while(outgoing->aip || get_next_cfg(mesh, outgoing, "CanonicalAddress")) {
-			if(get_next_ai(mesh, outgoing)) {
-				return true;
-			} else {
-				freeaddrinfo(outgoing->ai);
-				outgoing->ai = NULL;
-				outgoing->aip = NULL;
-			}
-		}
-
-		outgoing->state = OUTGOING_RECENT;
-	}
-
-	if(outgoing->state == OUTGOING_RECENT) {
-		while(outgoing->aip || get_next_cfg(mesh, outgoing, "Address")) {
-			if(get_next_ai(mesh, outgoing)) {
-				return true;
-			} else {
-				freeaddrinfo(outgoing->ai);
-				outgoing->ai = NULL;
-				outgoing->aip = NULL;
-			}
-		}
-
-		outgoing->state = OUTGOING_KNOWN;
-	}
-
-	if(outgoing->state == OUTGOING_KNOWN) {
 		if(!outgoing->aip) {
-			get_recent(mesh, outgoing);
+			outgoing->ai = get_canonical_address(outgoing->node);
+			outgoing->aip = outgoing->ai;
 		} else {
 			outgoing->aip = outgoing->aip->ai_next;
 		}
 
 		if(outgoing->aip) {
 			return true;
-		} else {
-			free_known_addresses(outgoing->ai);
-			outgoing->ai = NULL;
-			outgoing->aip = NULL;
 		}
 
+		freeaddrinfo(outgoing->ai);
+		outgoing->ai = NULL;
+		outgoing->aip = NULL;
+		outgoing->state = OUTGOING_RECENT;
+	}
+
+	if(outgoing->state == OUTGOING_RECENT) {
+		if(!outgoing->aip) {
+			outgoing->ai = get_recent_addresses(outgoing->node);
+			outgoing->aip = outgoing->ai;
+		} else {
+			outgoing->aip = outgoing->aip->ai_next;
+		}
+
+		if(outgoing->aip) {
+			return true;
+		}
+
+		free_known_addresses(outgoing->ai);
+		outgoing->ai = NULL;
+		outgoing->aip = NULL;
+		outgoing->state = OUTGOING_KNOWN;
+	}
+
+	if(outgoing->state == OUTGOING_KNOWN) {
+		if(!outgoing->aip) {
+			outgoing->ai = get_known_addresses(outgoing->node);
+			outgoing->aip = outgoing->ai;
+		} else {
+			outgoing->aip = outgoing->aip->ai_next;
+		}
+
+		if(outgoing->aip) {
+			return true;
+		}
+
+		free_known_addresses(outgoing->ai);
+		outgoing->ai = NULL;
+		outgoing->aip = NULL;
 		outgoing->state = OUTGOING_END;
 	}
 
@@ -513,9 +521,9 @@ begin:
 
 	if(!get_next_outgoing_address(mesh, outgoing)) {
 		if(outgoing->state == OUTGOING_NO_KNOWN_ADDRESSES) {
-			logger(mesh, MESHLINK_ERROR, "No known addresses for %s", outgoing->name);
+			logger(mesh, MESHLINK_ERROR, "No known addresses for %s", outgoing->node->name);
 		} else {
-			logger(mesh, MESHLINK_ERROR, "Could not set up a meta connection to %s", outgoing->name);
+			logger(mesh, MESHLINK_ERROR, "Could not set up a meta connection to %s", outgoing->node->name);
 			retry_outgoing(mesh, outgoing);
 		}
 
@@ -529,7 +537,7 @@ begin:
 
 	char *hostname = sockaddr2hostname(&c->address);
 
-	logger(mesh, MESHLINK_INFO, "Trying to connect to %s at %s", outgoing->name, hostname);
+	logger(mesh, MESHLINK_INFO, "Trying to connect to %s at %s", outgoing->node->name, hostname);
 
 	if(!mesh->proxytype) {
 		c->socket = socket(c->address.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
@@ -582,7 +590,7 @@ begin:
 	}
 
 	if(result == -1 && !sockinprogress(sockerrno)) {
-		logger(mesh, MESHLINK_ERROR, "Could not connect to %s: %s", outgoing->name, sockstrerror(sockerrno));
+		logger(mesh, MESHLINK_ERROR, "Could not connect to %s: %s", outgoing->node->name, sockstrerror(sockerrno));
 		free_connection(c);
 
 		goto begin;
@@ -591,8 +599,7 @@ begin:
 	/* Now that there is a working socket, fill in the rest and register this connection. */
 
 	c->status.connecting = true;
-	c->name = xstrdup(outgoing->name);
-	c->outcompression = mesh->self->connection->outcompression;
+	c->name = xstrdup(outgoing->node->name);
 	c->last_ping_time = mesh->loop.now.tv_sec;
 
 	connection_add(mesh, c);
@@ -603,37 +610,27 @@ begin:
 }
 
 void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
-	bool blacklisted = false;
 	timeout_del(&mesh->loop, &outgoing->ev);
 
-	node_t *n = lookup_node(mesh, outgoing->name);
+	if(outgoing->node->connection) {
+		logger(mesh, MESHLINK_INFO, "Already connected to %s", outgoing->node->name);
 
-	if(n && n->connection) {
-		logger(mesh, MESHLINK_INFO, "Already connected to %s", outgoing->name);
-
-		n->connection->outgoing = outgoing;
+		outgoing->node->connection->outgoing = outgoing;
 		return;
 	}
 
 
 	if(outgoing->ai) {
-		if(outgoing->state == OUTGOING_KNOWN) {
+		if(outgoing->state == OUTGOING_RECENT || outgoing->state == OUTGOING_KNOWN) {
 			free_known_addresses(outgoing->ai);
 		} else {
 			freeaddrinfo(outgoing->ai);
 		}
 	}
 
-	outgoing->cfg = NULL;
-
-	exit_configuration(&outgoing->config_tree); // discard old configuration if present
-	init_configuration(&outgoing->config_tree);
-	read_host_config(mesh, outgoing->config_tree, outgoing->name);
-	get_config_bool(lookup_config(outgoing->config_tree, "blacklisted"), &blacklisted);
-
 	outgoing->state = OUTGOING_START;
 
-	if(blacklisted) {
+	if(outgoing->node->status.blacklisted) {
 		return;
 	}
 
@@ -704,7 +701,6 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 
 	c = new_connection();
 	c->name = xstrdup("<unknown>");
-	c->outcompression = mesh->self->connection->outcompression;
 
 	c->address = sa;
 	c->socket = fd;
@@ -725,88 +721,28 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 }
 
 static void free_outgoing(outgoing_t *outgoing) {
-	meshlink_handle_t *mesh = outgoing->mesh;
+	meshlink_handle_t *mesh = outgoing->node->mesh;
 
 	timeout_del(&mesh->loop, &outgoing->ev);
 
 	if(outgoing->ai) {
-		if(outgoing->state == OUTGOING_KNOWN) {
+		if(outgoing->state == OUTGOING_RECENT || outgoing->state == OUTGOING_KNOWN) {
 			free_known_addresses(outgoing->ai);
 		} else {
 			freeaddrinfo(outgoing->ai);
 		}
 	}
 
-	if(outgoing->config_tree) {
-		exit_configuration(&outgoing->config_tree);
-	}
-
-	if(outgoing->name) {
-		free(outgoing->name);
-	}
-
 	free(outgoing);
 }
 
-void try_outgoing_connections(meshlink_handle_t *mesh) {
-	/* If there is no outgoing list yet, create one. Otherwise, mark all outgoings as deleted. */
+void init_outgoings(meshlink_handle_t *mesh) {
+	mesh->outgoings = list_alloc((list_action_t)free_outgoing);
+}
 
-	if(!mesh->outgoings) {
-		mesh->outgoings = list_alloc((list_action_t)free_outgoing);
-	} else {
-		for list_each(outgoing_t, outgoing, mesh->outgoings) {
-			outgoing->timeout = -1;
-		}
+void exit_outgoings(meshlink_handle_t *mesh) {
+	if(mesh->outgoings) {
+		list_delete_list(mesh->outgoings);
+		mesh->outgoings = NULL;
 	}
-
-	/* Make sure there is one outgoing_t in the list for each ConnectTo. */
-
-	// TODO: Drop support for ConnectTo since AutoConnect is now always on?
-	for(config_t *cfg = lookup_config(mesh->config, "ConnectTo"); cfg; cfg = lookup_config_next(mesh->config, cfg)) {
-		char *name;
-		get_config_string(cfg, &name);
-
-		if(!check_id(name)) {
-			logger(mesh, MESHLINK_ERROR,
-			       "Invalid name for outgoing connection in line %d",
-			       cfg->line);
-			free(name);
-			continue;
-		}
-
-		bool found = false;
-
-		for list_each(outgoing_t, outgoing, mesh->outgoings) {
-			if(!strcmp(outgoing->name, name)) {
-				found = true;
-				outgoing->timeout = 0;
-				break;
-			}
-		}
-
-		if(!found) {
-			outgoing_t *outgoing = xzalloc(sizeof(*outgoing));
-			outgoing->mesh = mesh;
-			outgoing->name = name;
-			list_insert_tail(mesh->outgoings, outgoing);
-			setup_outgoing_connection(mesh, outgoing);
-		}
-	}
-
-	/* Terminate any connections whose outgoing_t is to be deleted. */
-
-	for list_each(connection_t, c, mesh->connections) {
-		if(c->outgoing && c->outgoing->timeout == -1) {
-			c->outgoing = NULL;
-			logger(mesh, MESHLINK_INFO, "No more outgoing connection to %s", c->name);
-			terminate_connection(mesh, c, c->status.active);
-		}
-	}
-
-	/* Delete outgoing_ts for which there is no ConnectTo. */
-
-	for list_each(outgoing_t, outgoing, mesh->outgoings)
-		if(outgoing->timeout == -1) {
-			list_delete_node(mesh->outgoings, node);
-		}
 }

@@ -91,9 +91,10 @@ bool pong_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	/* Successful connection, reset timeout if this is an outgoing connection. */
 
+	// TODO: completely remove this outgoing, let the autoconnect algorithm handle it
 	if(c->outgoing) {
 		c->outgoing->timeout = 0;
-		c->outgoing->cfg = NULL;
+		c->outgoing->state = OUTGOING_START;
 
 		if(c->outgoing->ai) {
 			freeaddrinfo(c->outgoing->ai);

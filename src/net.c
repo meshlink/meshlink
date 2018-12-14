@@ -402,7 +402,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			splay_tree_t *nodes = splay_alloc_tree(node_compare_devclass_asc_lsc_desc, NULL);
 
 			for splay_each(node_t, n, mesh->nodes) {
-				logger(mesh, MESHLINK_DEBUG, "* n->devclass = %d", n->devclass);
+				logger(mesh, MESHLINK_DEBUG, "* %s->devclass = %d", n->name, n->devclass);
 
 				if(n != mesh->self && n->devclass <= mesh->devclass && !n->connection && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout)) {
 					splay_insert(nodes, n);
@@ -410,10 +410,10 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			}
 
 			if(nodes->head) {
-				logger(mesh, MESHLINK_DEBUG, "* found best one for initial connect");
-
 				//timeout = 0;
 				connect_to = (node_t *)nodes->head->data;
+
+				logger(mesh, MESHLINK_DEBUG, "* found best one for initial connect: %s", connect_to->name);
 			} else {
 				logger(mesh, MESHLINK_DEBUG, "* could not find node for initial connect");
 			}
@@ -427,7 +427,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		if(!connect_to && min_connects <= cur_connects && cur_connects < max_connects) {
 			unsigned int connects = 0;
 
-			for(unsigned int devclass = 0; devclass <= mesh->devclass; ++devclass) {
+			for(int32_t devclass = 0; devclass <= mesh->devclass; ++devclass) {
 				for list_each(connection_t, c, mesh->connections) {
 					if(c->status.active && c->node && c->node->devclass == devclass) {
 						connects += 1;
@@ -494,7 +494,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			bool found = false;
 
 			for list_each(outgoing_t, outgoing, mesh->outgoings) {
-				if(!strcmp(outgoing->name, connect_to->name)) {
+				if(outgoing->node == connect_to) {
 					found = true;
 					break;
 				}
@@ -503,8 +503,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			if(!found) {
 				logger(mesh, MESHLINK_DEBUG, "Autoconnecting to %s", connect_to->name);
 				outgoing_t *outgoing = xzalloc(sizeof(outgoing_t));
-				outgoing->mesh = mesh;
-				outgoing->name = xstrdup(connect_to->name);
+				outgoing->node = connect_to;
 				list_insert_tail(mesh->outgoings, outgoing);
 				setup_outgoing_connection(mesh, outgoing);
 			} else {
@@ -518,7 +517,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		if(min_connects < cur_connects /*&& cur_connects <= max_connects*/) {
 			unsigned int connects = 0;
 
-			for(unsigned int devclass = 0; devclass <= mesh->devclass; ++devclass) {
+			for(int32_t devclass = 0; devclass <= mesh->devclass; ++devclass) {
 				for list_each(connection_t, c, mesh->connections) {
 					if(c->status.active && c->node && c->node->devclass == devclass) {
 						connects += 1;

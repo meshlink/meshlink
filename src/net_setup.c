@@ -27,257 +27,205 @@
 #include "meshlink_internal.h"
 #include "net.h"
 #include "netutl.h"
+#include "packmsg.h"
 #include "protocol.h"
 #include "route.h"
 #include "utils.h"
 #include "xalloc.h"
 #include "submesh.h"
 
-bool node_read_ecdsa_public_key(meshlink_handle_t *mesh, node_t *n) {
-	if(ecdsa_active(n->ecdsa)) {
-		return true;
+/// Helper function to start parsing a host config file
+static bool node_get_config(meshlink_handle_t *mesh, node_t *n, config_t *config, packmsg_input_t *in) {
+	if(!config_read(mesh, n->name, config)) {
+		return false;
 	}
 
-	splay_tree_t *config_tree;
-	char *p;
+	in->ptr = config->buf;
+	in->len = config->len;
 
-	init_configuration(&config_tree);
+	uint32_t version = packmsg_get_uint32(in);
 
-	if(!read_host_config(mesh, config_tree, n->name)) {
-		goto exit;
+	if(version != MESHLINK_CONFIG_VERSION) {
+		config_free(config);
+		return false;
 	}
 
-	/* First, check for simple ECDSAPublicKey statement */
+	const char *name;
+	uint32_t len = packmsg_get_str_raw(in, &name);
 
-	if(get_config_string(lookup_config(config_tree, "ECDSAPublicKey"), &p)) {
-		n->ecdsa = ecdsa_set_base64_public_key(p);
-		free(p);
+	if(len != strlen(n->name) || strncmp(name, n->name, len)) {
+		config_free(config);
+		return false;
 	}
 
-exit:
-	exit_configuration(&config_tree);
-	return n->ecdsa;
+	return true;
 }
 
-bool read_ecdsa_public_key(meshlink_handle_t *mesh, connection_t *c) {
-	if(ecdsa_active(c->ecdsa)) {
-		return true;
+/// Read device class, blacklist status and submesh from a host config file. Used at startup when reading all host config files.
+bool node_read_partial(meshlink_handle_t *mesh, node_t *n) {
+	config_t config;
+	packmsg_input_t in;
+
+	if(!node_get_config(mesh, n, &config, &in)) {
+		return false;
 	}
 
-	char *p;
+	char *submesh_name = packmsg_get_str_dup(&in);
 
-	if(!c->config_tree) {
-		init_configuration(&c->config_tree);
+	if(!strcmp(submesh_name, CORE_MESH)) {
+		free(submesh_name);
+		n->submesh = NULL;
+	} else {
+		n->submesh = lookup_or_create_submesh(mesh, submesh_name);
+		free(submesh_name);
 
-		if(!read_host_config(mesh, c->config_tree, c->name)) {
+		if(!n->submesh) {
+			config_free(&config);
 			return false;
 		}
 	}
 
-	/* First, check for simple ECDSAPublicKey statement */
+	int32_t devclass = packmsg_get_int32(&in);
+	bool blacklisted = packmsg_get_bool(&in);
+	config_free(&config);
 
-	if(get_config_string(lookup_config(c->config_tree, "ECDSAPublicKey"), &p)) {
-		c->ecdsa = ecdsa_set_base64_public_key(p);
-		free(p);
-		return c->ecdsa;
-	}
-
-	return false;
-}
-
-bool read_ecdsa_private_key(meshlink_handle_t *mesh) {
-	FILE *fp;
-	char filename[PATH_MAX];
-
-	snprintf(filename, PATH_MAX, "%s" SLASH "ecdsa_key.priv", mesh->confbase);
-	fp = fopen(filename, "rb");
-
-	if(!fp) {
-		logger(mesh, MESHLINK_ERROR, "Error reading ECDSA private key file: %s", strerror(errno));
+	if(!packmsg_input_ok(&in) || devclass < 0 || devclass > _DEV_CLASS_MAX) {
 		return false;
 	}
 
-	mesh->self->connection->ecdsa = ecdsa_read_pem_private_key(fp);
-	fclose(fp);
-
-	if(!mesh->self->connection->ecdsa) {
-		logger(mesh, MESHLINK_ERROR, "Reading ECDSA private key file failed: %s", strerror(errno));
-	}
-
-	return mesh->self->connection->ecdsa;
+	n->devclass = devclass;
+	n->status.blacklisted = blacklisted;
+	return true;
 }
 
-static bool read_invitation_key(meshlink_handle_t *mesh) {
-	FILE *fp;
-	char filename[PATH_MAX];
-
-	if(mesh->invitation_key) {
-		ecdsa_free(mesh->invitation_key);
-		mesh->invitation_key = NULL;
+/// Read the public key from a host config file. Used whenever we need to start an SPTPS session.
+bool node_read_public_key(meshlink_handle_t *mesh, node_t *n) {
+	if(ecdsa_active(n->ecdsa)) {
+		return true;
 	}
 
-	snprintf(filename, PATH_MAX, "%s" SLASH "invitations" SLASH "ecdsa_key.priv", mesh->confbase);
+	config_t config;
+	packmsg_input_t in;
 
-	fp = fopen(filename, "rb");
-
-	if(fp) {
-		mesh->invitation_key = ecdsa_read_pem_private_key(fp);
-		fclose(fp);
-
-		if(!mesh->invitation_key) {
-			logger(mesh, MESHLINK_ERROR, "Reading ECDSA private key file `%s' failed: %s", filename, strerror(errno));
-		}
+	if(!node_get_config(mesh, n, &config, &in)) {
+		return false;
 	}
 
-	return mesh->invitation_key;
+	packmsg_skip_element(&in); /* submesh */
+	packmsg_get_int32(&in); /* devclass */
+	packmsg_get_bool(&in); /* blacklisted */
+
+	const void *key;
+	uint32_t len = packmsg_get_bin_raw(&in, &key);
+
+	if(len != 32) {
+		config_free(&config);
+		return false;
+	}
+
+	n->ecdsa = ecdsa_set_public_key(key);
+	config_free(&config);
+	return true;
 }
 
-bool node_read_devclass(meshlink_handle_t *mesh, node_t *n) {
-
-	splay_tree_t *config_tree;
-	char *p;
-
-	init_configuration(&config_tree);
-
-	if(!read_host_config(mesh, config_tree, n->name)) {
-		goto exit;
+/// Read the full host config file. Used whenever we need to start an SPTPS session.
+bool node_read_full(meshlink_handle_t *mesh, node_t *n) {
+	if(n->canonical_address) {
+		return true;
 	}
 
-	if(get_config_string(lookup_config(config_tree, "DeviceClass"), &p)) {
-		n->devclass = atoi(p);
-		free(p);
+	config_t config;
+	packmsg_input_t in;
+
+	if(!node_get_config(mesh, n, &config, &in)) {
+		return false;
 	}
 
-	if((int)n->devclass < 0 || n->devclass > _DEV_CLASS_MAX) {
-		n->devclass = _DEV_CLASS_MAX;
-	}
+	char *submesh_name = packmsg_get_str_dup(&in);
 
-exit:
-	exit_configuration(&config_tree);
-	return n->devclass != 0;
-}
-
-bool node_read_submesh(meshlink_handle_t *mesh, node_t *n) {
-
-	splay_tree_t *config_tree;
-	char *p;
-
-	init_configuration(&config_tree);
-
-	if(!read_host_config(mesh, config_tree, n->name)) {
-		goto exit;
-	}
-
-	if(get_config_string(lookup_config(config_tree, "SubMesh"), &p)) {
+	if(!strcmp(submesh_name, CORE_MESH)) {
+		free(submesh_name);
 		n->submesh = NULL;
-
-		for list_each(submesh_t, s, mesh->submeshes) {
-			if(!strcmp(p, s->name)) {
-				n->submesh = s;
-				break;
-			}
-		}
+	} else {
+		n->submesh = lookup_or_create_submesh(mesh, submesh_name);
+		free(submesh_name);
 
 		if(!n->submesh) {
-			n->submesh = (submesh_t *)meshlink_submesh_open(mesh, p);
+			return false;
 		}
-
-		free(p);
 	}
 
-exit:
-	exit_configuration(&config_tree);
-	return n->submesh != NULL;
-}
+	packmsg_get_int32(&in); /* devclass */
+	packmsg_get_bool(&in); /* blacklisted */
+	const void *key;
+	uint32_t len = packmsg_get_bin_raw(&in, &key); /* public key */
 
-bool node_read_blacklist_status(meshlink_handle_t *mesh, node_t *n) {
-
-	splay_tree_t *config_tree;
-	bool blacklist_status;
-
-	init_configuration(&config_tree);
-
-	if(!read_host_config(mesh, config_tree, n->name)) {
-		goto exit;
-	}
-
-	if(get_config_bool(lookup_config(config_tree, "blacklisted"), &blacklist_status)) {
-		n->status.blacklisted = blacklist_status;
-	}
-
-exit:
-	exit_configuration(&config_tree);
-	return n->status.blacklisted;
-}
-
-bool node_write_devclass(meshlink_handle_t *mesh, node_t *n) {
-
-	if((int)n->devclass < 0 || n->devclass > _DEV_CLASS_MAX) {
+	if(len != 32) {
 		return false;
 	}
 
-	bool result = false;
-
-	splay_tree_t *config_tree;
-	init_configuration(&config_tree);
-
-	// ignore read errors; in case the file does not exist we will create it
-	read_host_config(mesh, config_tree, n->name);
-
-	config_t *cnf = lookup_config(config_tree, "DeviceClass");
-
-	if(!cnf) {
-		cnf = new_config();
-		cnf->variable = xstrdup("DeviceClass");
-		config_add(config_tree, cnf);
+	if(!ecdsa_active(n->ecdsa)) {
+		n->ecdsa = ecdsa_set_public_key(key);
 	}
 
-	set_config_int(cnf, n->devclass);
+	n->canonical_address = packmsg_get_str_dup(&in);
 
-	if(!write_host_config(mesh, config_tree, n->name)) {
-		goto fail;
+	uint32_t count = packmsg_get_array(&in);
+
+	if(count > 5) {
+		count = 5;
 	}
 
-	result = true;
+	for(uint32_t i = 0; i < count; i++) {
+		n->recent[i] = packmsg_get_sockaddr(&in);
+	}
 
-fail:
-	exit_configuration(&config_tree);
-	return result;
+	config_free(&config);
+
+	return packmsg_done(&in);
 }
 
-bool node_write_submesh(meshlink_handle_t *mesh, node_t *n) {
+bool node_write_config(meshlink_handle_t *mesh, node_t *n) {
+	uint8_t buf[4096];
+	packmsg_output_t out = {buf, sizeof(buf)};
 
-	if(!n->submesh) {
+	packmsg_add_uint32(&out, MESHLINK_CONFIG_VERSION);
+	packmsg_add_str(&out, n->name);
+	packmsg_add_str(&out, n->submesh ? n->submesh->name : CORE_MESH);
+	packmsg_add_int32(&out, n->devclass);
+	assert(n->devclass != 3);
+	packmsg_add_bool(&out, n->status.blacklisted);
+
+	if(ecdsa_active(n->ecdsa)) {
+		packmsg_add_bin(&out, ecdsa_get_public_key(n->ecdsa), 32);
+	} else {
+		packmsg_add_bin(&out, "", 0);
+	}
+
+	packmsg_add_str(&out, n->canonical_address ? n->canonical_address : "");
+
+	uint32_t count = 0;
+
+	for(uint32_t i = 0; i < 5; i++) {
+		if(n->recent[i].sa.sa_family) {
+			count++;
+		} else {
+			break;
+		}
+	}
+
+	packmsg_add_array(&out, count);
+
+	for(uint32_t i = 0; i < count; i++) {
+		packmsg_add_sockaddr(&out, &n->recent[i]);
+	}
+
+	if(!packmsg_output_ok(&out)) {
 		return false;
 	}
 
-	bool result = false;
-
-	splay_tree_t *config_tree;
-	init_configuration(&config_tree);
-
-	// ignore read errors; in case the file does not exist we will create it
-	read_host_config(mesh, config_tree, n->name);
-
-	config_t *cnf = lookup_config(config_tree, "SubMesh");
-
-	if(!cnf) {
-		cnf = new_config();
-		cnf->variable = xstrdup("SubMesh");
-		config_add(config_tree, cnf);
-	}
-
-	set_config_string(cnf, n->submesh->name);
-
-	if(!write_host_config(mesh, config_tree, n->name)) {
-		goto fail;
-	}
-
-	result = true;
-
-fail:
-	exit_configuration(&config_tree);
-	return result;
+	config_t config = {buf, packmsg_output_size(&out, buf)};
+	return config_write(mesh, n->name, &config);
 }
 
 void load_all_nodes(meshlink_handle_t *mesh) {
@@ -301,52 +249,16 @@ void load_all_nodes(meshlink_handle_t *mesh) {
 		node_t *n = lookup_node(mesh, ent->d_name);
 
 		if(n) {
-			if(n == mesh->self && !n->submesh) {
-				node_read_submesh(mesh, n);
-			}
-
 			continue;
 		}
 
 		n = new_node();
 		n->name = xstrdup(ent->d_name);
-		node_read_devclass(mesh, n);
-		node_read_submesh(mesh, n);
-		node_read_blacklist_status(mesh, n);
+		node_read_partial(mesh, n);
 		node_add(mesh, n);
 	}
 
 	closedir(dir);
-}
-
-
-char *get_name(meshlink_handle_t *mesh) {
-	char *name = NULL;
-
-	get_config_string(lookup_config(mesh->config, "Name"), &name);
-
-	if(!name) {
-		return NULL;
-	}
-
-	if(!check_id(name)) {
-		logger(mesh, MESHLINK_ERROR, "Invalid name for mesh->self!");
-		free(name);
-		return NULL;
-	}
-
-	return name;
-}
-
-bool setup_myself_reloadable(meshlink_handle_t *mesh) {
-	mesh->localdiscovery = true;
-	keylifetime = 3600; // TODO: check if this can be removed as well
-	mesh->maxtimeout = 900;
-	mesh->self->options |= OPTION_PMTU_DISCOVERY;
-
-	read_invitation_key(mesh);
-
-	return true;
 }
 
 /*
@@ -443,67 +355,12 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
   Configure node_t mesh->self and set up the local sockets (listen only)
 */
 bool setup_myself(meshlink_handle_t *mesh) {
-	char *name;
-	char *address = NULL;
+	/* Set some defaults */
 
-	if(!(name = get_name(mesh))) {
-		logger(mesh, MESHLINK_ERROR, "Name for MeshLink instance required!");
-		return false;
-	}
-
-	mesh->self = new_node();
-	mesh->self->connection = new_connection();
-	mesh->self->name = name;
-	mesh->self->devclass = mesh->devclass;
-	mesh->self->connection->name = xstrdup(name);
-	read_host_config(mesh, mesh->config, name);
-
-	if(!get_config_string(lookup_config(mesh->config, "Port"), &mesh->myport)) {
-		int port = check_port(mesh);
-
-		if(port == 0) {
-			return false;
-		}
-
-		xasprintf(&mesh->myport, "%d", port);
-	}
-
-	mesh->self->connection->options = 0;
-	mesh->self->connection->protocol_major = PROT_MAJOR;
-	mesh->self->connection->protocol_minor = PROT_MINOR;
-
-	mesh->self->options |= PROT_MINOR << 24;
-
-	if(!read_ecdsa_private_key(mesh)) {
-		return false;
-	}
-
-	/* Ensure mesh->myport is numeric */
-
-	if(!atoi(mesh->myport)) {
-		struct addrinfo *ai = str2addrinfo("localhost", mesh->myport, SOCK_DGRAM);
-		sockaddr_t sa;
-
-		if(!ai || !ai->ai_addr) {
-			return false;
-		}
-
-		free(mesh->myport);
-		memcpy(&sa, ai->ai_addr, ai->ai_addrlen);
-		sockaddr2str(&sa, NULL, &mesh->myport);
-	}
-
-	/* Check some options */
-
-	if(!setup_myself_reloadable(mesh)) {
-		return false;
-	}
-
-	/* Compression */
-
-	// TODO: drop compression in the packet layer?
-	mesh->self->incompression = 0;
-	mesh->self->connection->outcompression = 0;
+	mesh->localdiscovery = true;
+	keylifetime = 3600; // TODO: check if this can be removed as well
+	mesh->maxtimeout = 900;
+	mesh->self->options |= OPTION_PMTU_DISCOVERY;
 
 	/* Done */
 
@@ -512,7 +369,6 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	mesh->self->status.reachable = true;
 	mesh->self->last_state_change = mesh->loop.now.tv_sec;
 
-	node_write_devclass(mesh, mesh->self);
 	node_add(mesh, mesh->self);
 
 	graph(mesh);
@@ -523,7 +379,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	mesh->listen_sockets = 0;
 
-	if(!add_listen_address(mesh, address, NULL)) {
+	if(!add_listen_address(mesh, NULL, NULL)) {
 		if(strcmp(mesh->myport, "0")) {
 			logger(mesh, MESHLINK_INFO, "Could not bind to port %s, asking OS to choose one for us", mesh->myport);
 			free(mesh->myport);
@@ -533,7 +389,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 				return false;
 			}
 
-			if(!add_listen_address(mesh, address, NULL)) {
+			if(!add_listen_address(mesh, NULL, NULL)) {
 				return false;
 			}
 		} else {
@@ -585,15 +441,6 @@ void close_network_connections(meshlink_handle_t *mesh) {
 			c->outgoing = NULL;
 			terminate_connection(mesh, c, false);
 		}
-	}
-
-	if(mesh->outgoings) {
-		list_delete_list(mesh->outgoings);
-	}
-
-	if(mesh->self && mesh->self->connection) {
-		terminate_connection(mesh, mesh->self->connection, false);
-		free_connection(mesh->self->connection);
 	}
 
 	for(int i = 0; i < mesh->listen_sockets; i++) {

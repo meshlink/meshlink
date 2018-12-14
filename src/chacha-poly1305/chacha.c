@@ -79,6 +79,14 @@ void chacha_ivsetup(chacha_ctx *x, const uint8_t *iv, const uint8_t *counter)
 	x->input[15] = U8TO32_LITTLE(iv + 4);
 }
 
+void chacha_ivsetup_96(chacha_ctx *x, const uint8_t *iv, const uint8_t *counter)
+{
+	x->input[12] = counter == NULL ? 0 : U8TO32_LITTLE(counter + 0);
+	x->input[13] = U8TO32_LITTLE(iv + 0);
+	x->input[14] = U8TO32_LITTLE(iv + 4);
+	x->input[15] = U8TO32_LITTLE(iv + 8);
+}
+
 void
 chacha_encrypt_bytes(chacha_ctx *x, const uint8_t *m, uint8_t *c, uint32_t bytes)
 {
