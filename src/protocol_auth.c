@@ -30,6 +30,7 @@
 #include "net.h"
 #include "netutl.h"
 #include "node.h"
+#include "packmsg.h"
 #include "prf.h"
 #include "protocol.h"
 #include "sptps.h"
@@ -143,51 +144,34 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 }
 
 bool send_id(meshlink_handle_t *mesh, connection_t *c) {
-
-	int minor = mesh->self->connection->protocol_minor;
-
 	if(mesh->proxytype && c->outgoing)
 		if(!send_proxyrequest(mesh, c)) {
 			return false;
 		}
 
-	return send_request(mesh, c, "%d %s %d.%d %s", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor, mesh->appname);
+	return send_request(mesh, c, "%d %s %d.%d %s", ID, mesh->self->name, PROT_MAJOR, PROT_MINOR, mesh->appname);
 }
 
 static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data, uint16_t len) {
-	(void)len;
-
-	if(strchr(data, '\n')) {
+	if(len != 32) {
 		logger(mesh, MESHLINK_ERROR, "Received invalid key from invited node %s!\n", c->name);
 		return false;
 	}
 
-	// Create a new host config file
-	char filename[PATH_MAX];
-	snprintf(filename, sizeof(filename), "%s" SLASH "hosts" SLASH "%s", mesh->confbase, c->name);
-
-	if(!access(filename, F_OK)) {
-		logger(mesh, MESHLINK_ERROR, "Host config file for %s already exists!\n", c->name);
-		return false;
-	}
-
-	FILE *f = fopen(filename, "w");
-
-	if(!f) {
-		logger(mesh, MESHLINK_ERROR, "Error trying to create %s: %s\n", filename, strerror(errno));
-		return false;
-	}
-
-	fprintf(f, "ECDSAPublicKey = %s\n", (const char *)data);
-	fclose(f);
+	// Create a new node
+	node_t *n = new_node();
+	n->name = xstrdup(c->name);
+	n->devclass = DEV_CLASS_UNKNOWN;
+	n->ecdsa = ecdsa_set_public_key(data);
+	n->status.dirty = true;
+	node_add(mesh, n);
+	// TODO: immediately write the config file?
 
 	logger(mesh, MESHLINK_INFO, "Key succesfully received from %s", c->name);
 
 	//TODO: callback to application to inform of an accepted invitation
 
-	sptps_send_record(&c->sptps, 2, data, 0);
-
-	load_all_nodes(mesh);
+	sptps_send_record(&c->sptps, 1, "", 0);
 
 	return true;
 }
@@ -219,86 +203,21 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	b64encode_urlsafe(hash, cookie, 18);
 	free(fingerprint);
 
-	char filename[PATH_MAX], usedname[PATH_MAX];
-	snprintf(filename, sizeof(filename), "%s" SLASH "invitations" SLASH "%s", mesh->confbase, cookie);
-	snprintf(usedname, sizeof(usedname), "%s" SLASH "invitations" SLASH "%s.used", mesh->confbase, cookie);
+	config_t config;
 
-	// Atomically rename the invitation file
-	if(rename(filename, usedname)) {
-		if(errno == ENOENT) {
-			logger(mesh, MESHLINK_ERROR, "Peer %s tried to use non-existing invitation %s\n", c->name, cookie);
-		} else {
-			logger(mesh, MESHLINK_ERROR, "Error trying to rename invitation %s\n", cookie);
-		}
-
-		return false;
-	}
-
-	// Open the renamed file
-	FILE *f = fopen(usedname, "r");
-
-	if(!f) {
-		logger(mesh, MESHLINK_ERROR, "Error trying to open invitation %s\n", cookie);
-		unlink(usedname);
-		return false;
-	}
-
-	// Check the timestamp
-	struct stat st;
-
-	if(fstat(fileno(f), &st)) {
-		logger(mesh, MESHLINK_ERROR, "Could not stat invitation file %s\n", usedname);
-		fclose(f);
-		unlink(usedname);
-		return false;
-	}
-
-	if(time(NULL) > st.st_mtime + mesh->invitation_timeout) {
-		logger(mesh, MESHLINK_ERROR, "Peer %s tried to use an outdated invitation file %s\n", c->name, usedname);
-		fclose(f);
-		unlink(usedname);
+	if(!invitation_read(mesh, cookie, &config)) {
+		logger(mesh, MESHLINK_ERROR, "Error while trying to read invitation file\n");
 		return false;
 	}
 
 	// Read the new node's Name from the file
-	char buf[1024];
-	fgets(buf, sizeof(buf), f);
-
-	if(*buf) {
-		buf[strlen(buf) - 1] = 0;
-	}
-
-	len = strcspn(buf, " \t=");
-	char *name = buf + len;
-	name += strspn(name, " \t");
-
-	if(*name == '=') {
-		name++;
-		name += strspn(name, " \t");
-	}
-
-	buf[len] = 0;
-
-	if(!*buf || !*name || strcasecmp(buf, "Name") || !check_id(name)) {
-		logger(mesh, MESHLINK_ERROR, "Invalid invitation file %s\n", cookie);
-		fclose(f);
-		return false;
-	}
-
+	packmsg_input_t in = {config.buf, config.len};
+	packmsg_get_uint32(&in); // skip version
 	free(c->name);
-	c->name = xstrdup(name);
+	c->name = packmsg_get_str_dup(&in);
 
 	// Send the node the contents of the invitation file
-	rewind(f);
-	size_t result;
-
-	while((result = fread(buf, 1, sizeof(buf), f))) {
-		sptps_send_record(&c->sptps, 0, buf, result);
-	}
-
-	sptps_send_record(&c->sptps, 1, buf, 0);
-	fclose(f);
-	unlink(usedname);
+	sptps_send_record(&c->sptps, 0, config.buf, config.len);
 
 	c->status.invitation_used = true;
 
@@ -372,37 +291,32 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	/* Check if version matches */
 
-	if(c->protocol_major != mesh->self->connection->protocol_major) {
+	if(c->protocol_major != PROT_MAJOR) {
 		logger(mesh, MESHLINK_ERROR, "Peer %s uses incompatible version %d.%d",
 		       c->name, c->protocol_major, c->protocol_minor);
 		return false;
 	}
 
-	if(!c->config_tree) {
-		init_configuration(&c->config_tree);
+	/* Check if we know this node */
 
-		if(!read_host_config(mesh, c->config_tree, c->name)) {
-			logger(mesh, MESHLINK_ERROR, "Peer %s has unknown identity", c->name);
-			return false;
-		}
+	node_t *n = lookup_node(mesh, c->name);
+
+	if(!n) {
+		logger(mesh, MESHLINK_ERROR, "Peer %s has unknown identity", c->name);
+		return false;
 	}
 
-	bool blacklisted = false;
-	get_config_bool(lookup_config(c->config_tree, "blacklisted"), &blacklisted);
-
-	if(blacklisted) {
+	if(n->status.blacklisted) {
 		logger(mesh, MESHLINK_EPEER, "Peer %s is blacklisted", c->name);
 		return false;
 	}
 
-	read_ecdsa_public_key(mesh, c);
+	node_read_public_key(mesh, n);
 
-	if(!ecdsa_active(c->ecdsa)) {
+	if(!ecdsa_active(n->ecdsa)) {
 		logger(mesh, MESHLINK_ERROR, "No key known for peer %s", c->name);
 
-		node_t *n = lookup_node(mesh, c->name);
-
-		if(n && n->status.reachable && !n->status.waitingforkey) {
+		if(n->status.reachable && !n->status.waitingforkey) {
 			logger(mesh, MESHLINK_INFO, "Requesting key from peer %s", c->name);
 			send_req_key(mesh, n);
 		}
@@ -427,7 +341,11 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		snprintf(label, sizeof(label), "%s %s %s", meshlink_tcp_label, c->name, mesh->self->name);
 	}
 
-	return sptps_start(&c->sptps, c, c->outgoing, false, mesh->self->connection->ecdsa, c->ecdsa, label, sizeof(label) - 1, send_meta_sptps, receive_meta_sptps);
+	char buf1[1024], buf2[1024];
+	bin2hex((uint8_t *)mesh->private_key + 64, buf1, 32);
+	bin2hex((uint8_t *)n->ecdsa + 64, buf2, 32);
+	logger(mesh, MESHLINK_DEBUG, "Connection to %s mykey %s hiskey %s", c->name, buf1, buf2);
+	return sptps_start(&c->sptps, c, c->outgoing, false, mesh->private_key, n->ecdsa, label, sizeof(label) - 1, send_meta_sptps, receive_meta_sptps);
 }
 
 bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
@@ -453,7 +371,6 @@ static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
 
 bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char hisport[MAX_STRING_SIZE];
-	char *hisaddress;
 	int devclass;
 	uint32_t options;
 	node_t *n;
@@ -498,7 +415,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	}
 
 	n->devclass = devclass;
-	node_write_devclass(mesh, n);
+	n->status.dirty = true;
 
 	n->last_successfull_connection = time(NULL);
 
@@ -530,9 +447,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	c->edge = new_edge();
 	c->edge->from = mesh->self;
 	c->edge->to = n;
-	sockaddr2str(&c->address, &hisaddress, NULL);
-	c->edge->address = str2sockaddr(hisaddress, hisport);
-	free(hisaddress);
+	sockaddrcpy_setport(&c->edge->address, &c->address, atoi(hisport));
 	c->edge->weight = dev_class_traits[devclass].edge_weight;
 	c->edge->connection = c;
 	c->edge->options = c->options;

@@ -33,8 +33,6 @@
 #include "utils.h"
 #include "xalloc.h"
 
-extern bool node_write_devclass(meshlink_handle_t *mesh, node_t *n);
-
 bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e, int contradictions) {
 	bool x;
 	char *address, *port;
@@ -100,8 +98,10 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	if(!from) {
 		from = new_node();
+		from->status.dirty = true;
 		from->status.blacklisted = mesh->default_blacklist;
 		from->name = xstrdup(from_name);
+		from->devclass = from_devclass;
 		node_add(mesh, from);
 	}
 
@@ -110,17 +110,15 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	}
 
 	from->devclass = from_devclass;
-	node_write_devclass(mesh, from);
 
 	if(!to) {
 		to = new_node();
+		to->status.dirty = true;
 		to->status.blacklisted = mesh->default_blacklist;
 		to->name = xstrdup(to_name);
+		to->devclass = to_devclass;
 		node_add(mesh, to);
 	}
-
-	to->devclass = to_devclass;
-	node_write_devclass(mesh, to);
 
 	/* Convert addresses */
 

@@ -38,7 +38,8 @@ typedef struct node_status_t {
 	unsigned int blacklisted: 1;            /* 1 if the node is blacklist so we never want to speak with him anymore */
 	unsigned int destroyed: 1;              /* 1 if the node is being destroyed, deallocate channels when any callback is triggered */
 	unsigned int duplicate: 1;              /* 1 if the node is duplicate, ie. multiple nodes using the same Name are online */
-	unsigned int unused: 20;
+	unsigned int dirty: 1;                  /* 1 if the configuration of the node is dirty and needs to be written out */
+	unsigned int unused: 19;
 } node_status_t;
 
 typedef struct node_t {
@@ -46,7 +47,7 @@ typedef struct node_t {
 	void *priv;
 
 	uint32_t options;                       /* options turned on for this node */
-	dev_class_t devclass;
+	int32_t devclass;
 
 	struct meshlink_handle *mesh;           /* The mesh this node belongs to */
 
@@ -68,7 +69,7 @@ typedef struct node_t {
 	struct edge_t *prevedge;                /* nearest node from him to us */
 	struct node_t *via;                     /* next hop for UDP packets */
 
-	struct splay_tree_t *edge_tree;                /* Edges with this node as one of the endpoints */
+	struct splay_tree_t *edge_tree;         /* Edges with this node as one of the endpoints */
 
 	struct connection_t *connection;        /* Connection associated with this node (if a direct connection exists) */
 	time_t last_connect_try;
@@ -86,16 +87,19 @@ typedef struct node_t {
 	uint64_t in_bytes;
 	uint64_t out_packets;
 	uint64_t out_bytes;
+
+	char *canonical_address;                /* The canonical address of this node, if known */
+	sockaddr_t recent[5];                   /* Recently seen addresses */
 } node_t;
 
 extern void init_nodes(struct meshlink_handle *mesh);
 extern void exit_nodes(struct meshlink_handle *mesh);
 extern node_t *new_node(void) __attribute__((__malloc__));
-extern void free_node(node_t *);
-extern void node_add(struct meshlink_handle *mesh, node_t *);
-extern void node_del(struct meshlink_handle *mesh, node_t *);
-extern node_t *lookup_node(struct meshlink_handle *mesh, const char *);
-extern node_t *lookup_node_udp(struct meshlink_handle *mesh, const sockaddr_t *);
-extern void update_node_udp(struct meshlink_handle *mesh, node_t *, const sockaddr_t *);
+extern void free_node(node_t *n);
+extern void node_add(struct meshlink_handle *mesh, node_t *n);
+extern void node_del(struct meshlink_handle *mesh, node_t *n);
+extern node_t *lookup_node(struct meshlink_handle *mesh, const char *name);
+extern node_t *lookup_node_udp(struct meshlink_handle *mesh, const sockaddr_t *sa);
+extern void update_node_udp(struct meshlink_handle *mesh, node_t *n, const sockaddr_t *sa);
 
 #endif

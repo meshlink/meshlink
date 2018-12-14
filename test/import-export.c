@@ -7,6 +7,24 @@
 
 volatile bool bar_reachable = false;
 
+void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	static struct timeval tv0;
+	struct timeval tv;
+
+	if(tv0.tv_sec == 0) {
+		gettimeofday(&tv0, NULL);
+	}
+
+	gettimeofday(&tv, NULL);
+	fprintf(stderr, "%u.%.03u ", (unsigned int)(tv.tv_sec - tv0.tv_sec), (unsigned int)tv.tv_usec / 1000);
+
+	if(mesh) {
+		fprintf(stderr, "(%s) ", mesh->name);
+	}
+
+	fprintf(stderr, "[%d] %s\n", level, text);
+}
+
 void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 	(void)mesh;
 
@@ -16,12 +34,14 @@ void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 }
 
 int main() {
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
+
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("import_export_conf.1", "foo", "import-export", DEV_CLASS_BACKBONE);
 
 	if(!mesh1) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
+		fprintf(stderr, "Could not initialize configuration for foo: %s\n", meshlink_strerror(meshlink_errno));
 		return 1;
 	}
 
@@ -31,6 +51,9 @@ int main() {
 		fprintf(stderr, "Could not initialize configuration for bar\n");
 		return 1;
 	}
+
+	meshlink_set_log_cb(mesh1, MESHLINK_DEBUG, log_cb);
+	meshlink_set_log_cb(mesh2, MESHLINK_DEBUG, log_cb);
 
 	// Disable local discovery
 
@@ -48,6 +71,8 @@ int main() {
 		fprintf(stderr, "Foo could not export its configuration\n");
 		return 1;
 	}
+
+	fprintf(stderr, "Foo export data:\n%s\n", data);
 
 	if(!meshlink_import(mesh2, data)) {
 		fprintf(stderr, "Bar could not import foo's configuration\n");

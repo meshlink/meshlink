@@ -80,7 +80,7 @@ static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data
 }
 
 bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
-	if(!node_read_ecdsa_public_key(mesh, to)) {
+	if(!node_read_public_key(mesh, to)) {
 		logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s", to->name);
 		send_request(mesh, to->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY);
 		return true;
@@ -97,7 +97,7 @@ bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 	to->status.waitingforkey = true;
 	to->last_req_key = mesh->loop.now.tv_sec;
 	to->incompression = mesh->self->incompression;
-	return sptps_start(&to->sptps, to, true, true, mesh->self->connection->ecdsa, to->ecdsa, label, sizeof(label) - 1, send_initial_sptps_data, receive_sptps_record);
+	return sptps_start(&to->sptps, to, true, true, mesh->private_key, to->ecdsa, label, sizeof(label) - 1, send_initial_sptps_data, receive_sptps_record);
 }
 
 /* REQ_KEY is overloaded to allow arbitrary requests to be routed between two nodes. */
@@ -107,14 +107,14 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 
 	switch(reqno) {
 	case REQ_PUBKEY: {
-		char *pubkey = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
+		char *pubkey = ecdsa_get_base64_public_key(mesh->private_key);
 		send_request(mesh, from->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, from->name, ANS_PUBKEY, pubkey);
 		free(pubkey);
 		return true;
 	}
 
 	case ANS_PUBKEY: {
-		if(node_read_ecdsa_public_key(mesh, from)) {
+		if(node_read_public_key(mesh, from)) {
 			logger(mesh, MESHLINK_WARNING, "Got ANS_PUBKEY from %s even though we already have his pubkey", from->name);
 			return true;
 		}
@@ -127,12 +127,12 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		}
 
 		logger(mesh, MESHLINK_INFO, "Learned ECDSA public key from %s", from->name);
-		append_config_file(mesh, from->name, "ECDSAPublicKey", pubkey);
+		from->status.dirty = true;
 		return true;
 	}
 
 	case REQ_KEY: {
-		if(!node_read_ecdsa_public_key(mesh, from)) {
+		if(!node_read_public_key(mesh, from)) {
 			logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s", from->name);
 			send_request(mesh, from->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, from->name, REQ_PUBKEY);
 			return true;
@@ -161,7 +161,7 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		from->status.validkey = false;
 		from->status.waitingforkey = true;
 		from->last_req_key = mesh->loop.now.tv_sec;
-		sptps_start(&from->sptps, from, false, true, mesh->self->connection->ecdsa, from->ecdsa, label, sizeof(label) - 1, send_sptps_data, receive_sptps_record);
+		sptps_start(&from->sptps, from, false, true, mesh->private_key, from->ecdsa, label, sizeof(label) - 1, send_sptps_data, receive_sptps_record);
 		sptps_receive_data(&from->sptps, buf, len);
 		return true;
 	}

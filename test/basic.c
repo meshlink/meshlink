@@ -5,7 +5,27 @@
 
 #include "meshlink.h"
 
+void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	static struct timeval tv0;
+	struct timeval tv;
+
+	if(tv0.tv_sec == 0) {
+		gettimeofday(&tv0, NULL);
+	}
+
+	gettimeofday(&tv, NULL);
+	fprintf(stderr, "%u.%.03u ", (unsigned int)(tv.tv_sec - tv0.tv_sec), (unsigned int)tv.tv_usec / 1000);
+
+	if(mesh) {
+		fprintf(stderr, "(%s) ", mesh->name);
+	}
+
+	fprintf(stderr, "[%d] %s\n", level, text);
+}
+
 int main() {
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
+
 	// Open a new meshlink instance.
 
 	meshlink_handle_t *mesh = meshlink_open("basic_conf", "foo", "basic", DEV_CLASS_BACKBONE);
@@ -14,6 +34,8 @@ int main() {
 		fprintf(stderr, "Could not initialize configuration for foo\n");
 		return 1;
 	}
+
+	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, log_cb);
 
 	// Check that our own node exists.
 
@@ -59,6 +81,8 @@ int main() {
 		fprintf(stderr, "Could not open configuration for foo a second time\n");
 		return 1;
 	}
+
+	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, log_cb);
 
 	if(meshlink_get_node(mesh, "bar")) {
 		fprintf(stderr, "Foo knows about bar, it shouldn't\n");
