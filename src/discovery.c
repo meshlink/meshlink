@@ -140,17 +140,16 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 	// asserts
 	assert(mesh != NULL);
 
-	pthread_mutex_lock(&(mesh->mesh_mutex));
-
 	switch(state) {
-	case CATTA_SERVER_RUNNING: {
+	case CATTA_SERVER_RUNNING:
+
 		/* The serve has startup successfully and registered its host
 		 * name on the network, so it's time to create our services */
 		if(!mesh->catta_group) {
 			discovery_create_services(mesh);
 		}
-	}
-	break;
+
+		break;
 
 	case CATTA_SERVER_COLLISION: {
 		// asserts
@@ -160,18 +159,16 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 		/* A host name collision happened. Let's pick a new name for the server */
 		char hostname[17];
 		generate_rand_string(hostname, sizeof(hostname));
-
-		logger(mesh, MESHLINK_WARNING, "Catta host name collision, retrying with '%s'\n", hostname);
 		int result = catta_server_set_host_name(mesh->catta_server, hostname);
 
 		if(result < 0) {
-			logger(mesh, MESHLINK_ERROR, "Catta failed to set new host name: %s\n", catta_strerror(result));
 			catta_simple_poll_quit(mesh->catta_poll);
 		}
 	}
 	break;
 
-	case CATTA_SERVER_REGISTERING: {
+	case CATTA_SERVER_REGISTERING:
+
 		/* Let's drop our registered services. When the server is back
 		 * in CATTA_SERVER_RUNNING state we will register them
 		 * again with the new host name. */
@@ -179,30 +176,27 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 			catta_s_entry_group_reset(mesh->catta_group);
 			mesh->catta_group = NULL;
 		}
-	}
-	break;
 
-	case CATTA_SERVER_FAILURE: {
+		break;
+
+	case CATTA_SERVER_FAILURE:
 		// asserts
 		assert(mesh->catta_server != NULL);
 		assert(mesh->catta_poll != NULL);
 
 		/* Terminate on failure */
-		logger(mesh, MESHLINK_ERROR, "Catta server failure: %s\n", catta_strerror(catta_server_errno(mesh->catta_server)));
 		catta_simple_poll_quit(mesh->catta_poll);
-	}
-	break;
+		break;
 
 	case CATTA_SERVER_INVALID:
 		break;
 	}
-
-	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
 static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfIndex interface_, CattaProtocol protocol, CattaResolverEvent event, const char *name, const char *type, const char *domain, const char *host_name, const CattaAddress *address, uint16_t port, CattaStringList *txt, CattaLookupResultFlags flags, void *userdata) {
 	(void)interface_;
 	(void)protocol;
+	(void)flags;
 	meshlink_handle_t *mesh = userdata;
 
 	// asserts
@@ -210,19 +204,14 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 	assert(mesh != NULL);
 	assert(mesh->catta_server != NULL);
 
-	pthread_mutex_lock(&(mesh->mesh_mutex));
-
 	/* Called whenever a service has been resolved successfully or timed out */
 	switch(event) {
-	case CATTA_RESOLVER_FAILURE: {
+	case CATTA_RESOLVER_FAILURE:
 		// asserts
 		assert(name != NULL);
 		assert(type != NULL);
 		assert(domain != NULL);
-
-		logger(mesh, MESHLINK_WARNING, "(Resolver) Failed to resolve service '%s' of type '%s' in domain '%s': %s\n", name, type, domain, catta_strerror(catta_server_errno(mesh->catta_server)));
-	}
-	break;
+		break;
 
 	case CATTA_RESOLVER_FOUND: {
 		// asserts
@@ -233,29 +222,6 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 		assert(address != NULL);
 		assert(txt != NULL);
 
-		char straddr[CATTA_ADDRESS_STR_MAX], *strtxt;
-
-		logger(mesh, MESHLINK_DEBUG, "(Resolver) Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
-
-		catta_address_snprint(straddr, sizeof(straddr), address);
-		strtxt = catta_string_list_to_string(txt);
-		logger(mesh, MESHLINK_DEBUG,
-		       "\t%s:%u (%s)\n"
-		       "\tTXT=%s\n"
-		       "\tcookie is %u\n"
-		       "\tis_local: %i\n"
-		       "\twide_area: %i\n"
-		       "\tmulticast: %i\n"
-		       "\tcached: %i\n",
-		       host_name, port, straddr,
-		       strtxt,
-		       catta_string_list_get_service_cookie(txt),
-		       !!(flags & CATTA_LOOKUP_RESULT_LOCAL),
-		       !!(flags & CATTA_LOOKUP_RESULT_WIDE_AREA),
-		       !!(flags & CATTA_LOOKUP_RESULT_MULTICAST),
-		       !!(flags & CATTA_LOOKUP_RESULT_CACHED));
-		catta_free(strtxt);
-
 		// retrieve fingerprint
 		CattaStringList *node_name_li = catta_string_list_find(txt, MESHLINK_MDNS_NAME_KEY);
 		CattaStringList *node_fp_li = catta_string_list_find(txt, MESHLINK_MDNS_FINGERPRINT_KEY);
@@ -265,6 +231,8 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 			char *node_fp = (char *)catta_string_list_get_text(node_fp_li) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY);
 
 			if(node_name[0] == '=' && node_fp[0] == '=') {
+				pthread_mutex_lock(&(mesh->mesh_mutex));
+
 				node_name += 1;
 				node_fp += 1;
 
@@ -304,19 +272,15 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 				} else {
 					logger(mesh, MESHLINK_WARNING, "Node %s is not part of the mesh network.\n", node_name);
 				}
-			} else {
-				logger(mesh, MESHLINK_WARNING, "TXT records invalid.\n");
+
+				pthread_mutex_unlock(&(mesh->mesh_mutex));
 			}
-		} else {
-			logger(mesh, MESHLINK_WARNING, "TXT records missing.\n");
 		}
 	}
 	break;
 	}
 
 	catta_s_service_resolver_free(resolver);
-
-	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
 static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfIndex interface_, CattaProtocol protocol, CattaBrowserEvent event, const char *name, const char *type, const char *domain, CattaLookupResultFlags flags, void *userdata) {
@@ -329,52 +293,21 @@ static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfInde
 	assert(mesh->catta_server != NULL);
 	assert(mesh->catta_poll != NULL);
 
-	pthread_mutex_lock(&(mesh->mesh_mutex));
-
 	/* Called whenever a new services becomes available on the LAN or is removed from the LAN */
 	switch(event) {
-	case CATTA_BROWSER_FAILURE: {
-		logger(mesh, MESHLINK_ERROR, "(Browser) %s\n", catta_strerror(catta_server_errno(mesh->catta_server)));
+	case CATTA_BROWSER_FAILURE:
 		catta_simple_poll_quit(mesh->catta_poll);
-	}
-	break;
+		break;
 
-	case CATTA_BROWSER_NEW: {
-		// asserts
-		assert(name != NULL);
-		assert(type != NULL);
-		assert(domain != NULL);
+	case CATTA_BROWSER_NEW:
+		catta_s_service_resolver_new(mesh->catta_server, interface_, protocol, name, type, domain, CATTA_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh);
+		break;
 
-		logger(mesh, MESHLINK_DEBUG, "(Browser) NEW: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
-
-		/* We ignore the returned resolver object. In the callback
-		   function we free it. Ifthe server is terminated before
-		   the callback function is called the server will free
-		   the resolver for us. */
-		if(!(catta_s_service_resolver_new(mesh->catta_server, interface_, protocol, name, type, domain, CATTA_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh))) {
-			logger(mesh, MESHLINK_DEBUG, "Failed to resolve service '%s': %s\n", name, catta_strerror(catta_server_errno(mesh->catta_server)));
-		}
-	}
-	break;
-
-	case CATTA_BROWSER_REMOVE: {
-		// asserts
-		assert(name != NULL);
-		assert(type != NULL);
-		assert(domain != NULL);
-
-		logger(mesh, MESHLINK_DEBUG, "(Browser) REMOVE: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
-	}
-	break;
-
+	case CATTA_BROWSER_REMOVE:
 	case CATTA_BROWSER_ALL_FOR_NOW:
-	case CATTA_BROWSER_CACHE_EXHAUSTED: {
-		logger(mesh, MESHLINK_DEBUG, "(Browser) %s\n", event == CATTA_BROWSER_CACHE_EXHAUSTED ? "CACHE_EXHAUSTED" : "ALL_FOR_NOW");
+	case CATTA_BROWSER_CACHE_EXHAUSTED:
+		break;
 	}
-	break;
-	}
-
-	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
 static void *discovery_loop(void *userdata) {
