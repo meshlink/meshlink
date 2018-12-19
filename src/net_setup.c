@@ -111,6 +111,63 @@ bool node_read_public_key(meshlink_handle_t *mesh, node_t *n) {
 	return true;
 }
 
+/// Fill in node details from a config blob.
+bool node_read_from_config(meshlink_handle_t *mesh, node_t *n, const config_t *config) {
+	if(n->canonical_address) {
+		return true;
+	}
+
+	packmsg_input_t in = {config->buf, config->len};
+	uint32_t version = packmsg_get_uint32(&in);
+
+	if(version != MESHLINK_CONFIG_VERSION) {
+		return false;
+	}
+
+	char *name = packmsg_get_str_dup(&in);
+
+	if(!name) {
+		return false;
+	}
+
+	if(n->name) {
+		if(strcmp(n->name, name)) {
+			free(name);
+			return false;
+		}
+
+		free(name);
+	} else {
+		n->name = name;
+	}
+
+	n->devclass = packmsg_get_int32(&in);
+	n->status.blacklisted = packmsg_get_bool(&in);
+	const void *key;
+	uint32_t len = packmsg_get_bin_raw(&in, &key);
+
+	if(len != 32) {
+		return false;
+	}
+
+	if(!ecdsa_active(n->ecdsa)) {
+		n->ecdsa = ecdsa_set_public_key(key);
+	}
+
+	n->canonical_address = packmsg_get_str_dup(&in);
+	uint32_t count = packmsg_get_array(&in);
+
+	if(count > 5) {
+		count = 5;
+	}
+
+	for(uint32_t i = 0; i < count; i++) {
+		n->recent[i] = packmsg_get_sockaddr(&in);
+	}
+
+	return packmsg_done(&in);
+}
+
 /// Read the full host config file. Used whenever we need to start an SPTPS session.
 bool node_read_full(meshlink_handle_t *mesh, node_t *n) {
 	if(n->canonical_address) {
@@ -196,37 +253,21 @@ bool node_write_config(meshlink_handle_t *mesh, node_t *n) {
 	return config_write(mesh, n->name, &config);
 }
 
-void load_all_nodes(meshlink_handle_t *mesh) {
-	DIR *dir;
-	struct dirent *ent;
-	char dname[PATH_MAX];
-
-	snprintf(dname, PATH_MAX, "%s" SLASH "hosts", mesh->confbase);
-	dir = opendir(dname);
-
-	if(!dir) {
-		logger(mesh, MESHLINK_ERROR, "Could not open %s: %s", dname, strerror(errno));
+static void load_node(meshlink_handle_t *mesh, const char *name) {
+	if(!check_id(name)) {
 		return;
 	}
 
-	while((ent = readdir(dir))) {
-		if(!check_id(ent->d_name)) {
-			continue;
-		}
+	node_t *n = lookup_node(mesh, name);
 
-		node_t *n = lookup_node(mesh, ent->d_name);
-
-		if(n) {
-			continue;
-		}
-
-		n = new_node();
-		n->name = xstrdup(ent->d_name);
-		node_read_devclass(mesh, n);
-		node_add(mesh, n);
+	if(n) {
+		return;
 	}
 
-	closedir(dir);
+	n = new_node();
+	n->name = xstrdup(name);
+	node_read_devclass(mesh, n);
+	node_add(mesh, n);
 }
 
 /*
@@ -341,7 +382,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	graph(mesh);
 
-	load_all_nodes(mesh);
+	config_scan_all(mesh, load_node);
 
 	/* Open sockets */
 

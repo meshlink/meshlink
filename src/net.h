@@ -109,6 +109,7 @@ extern int main_loop(struct meshlink_handle *mesh);
 extern void terminate_connection(struct meshlink_handle *mesh, struct connection_t *, bool);
 extern bool node_read_public_key(struct meshlink_handle *mesh, struct node_t *);
 extern bool node_read_full(struct meshlink_handle *mesh, struct node_t *);
+extern bool node_read_from_config(struct meshlink_handle *mesh, struct node_t *, const config_t *config);
 extern bool read_ecdsa_public_key(struct meshlink_handle *mesh, struct connection_t *);
 extern bool read_ecdsa_private_key(struct meshlink_handle *mesh);
 extern bool node_write_config(struct meshlink_handle *mesh, struct node_t *);
