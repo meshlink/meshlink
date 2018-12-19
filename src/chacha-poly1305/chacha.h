@@ -19,6 +19,7 @@ struct chacha_ctx {
 
 void chacha_keysetup(struct chacha_ctx *x, const uint8_t *k, uint32_t kbits);
 void chacha_ivsetup(struct chacha_ctx *x, const uint8_t *iv, const uint8_t *ctr);
+void chacha_ivsetup_96(struct chacha_ctx *x, const uint8_t *iv, const uint8_t *ctr);
 void chacha_encrypt_bytes(struct chacha_ctx *x, const uint8_t *m, uint8_t * c, uint32_t bytes);
 
 #endif /* CHACHA_H */
