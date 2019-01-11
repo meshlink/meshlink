@@ -25,5 +25,4 @@ astyle:
 		src/ed25519/e*.[ch] \
 		examples/*.[ch] \
 		examples/*.cc \
-		`find test -name '*.[ch]'` \
-		test/blackbox/run_blackbox_tests/*.[ch]
+		`find test -name '*.[ch]'`

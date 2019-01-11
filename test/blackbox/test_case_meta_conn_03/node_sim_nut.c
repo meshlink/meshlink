@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
 
 	sleep(1);
 	fprintf(stderr, "Connected with Peer\n");
-	mesh_event_sock_send(client_id, META_CONN_SUCCESSFUL, NULL, 0);
+	mesh_event_sock_send(client_id, META_CONN_SUCCESSFUL, "Connected with Peer", 30);
 
 	conn_status = false;
 	fprintf(stderr, "Waiting 120 sec for peer to be re-connected\n");
@@ -114,14 +114,13 @@ int main(int argc, char *argv[]) {
 
 	if(result) {
 		fprintf(stderr, "Re-connected with Peer\n");
-		mesh_event_sock_send(client_id, META_RECONN_SUCCESSFUL, NULL, 0);
+		mesh_event_sock_send(client_id, META_RECONN_SUCCESSFUL, "Peer", 30);
 	} else {
 		fprintf(stderr, "Failed to reconnect with Peer\n");
-		mesh_event_sock_send(client_id, META_RECONN_FAILURE, NULL, 0);
+		mesh_event_sock_send(client_id, META_RECONN_FAILURE, "Peer", 30);
 	}
 
 	execute_close();
-  meshlink_destroy(argv[1]);
 
 	return 0;
 }

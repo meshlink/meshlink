@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 	execute_start();
 
 	if(client_id != -1) {
-		while(!mesh_event_sock_send(client_id, NODE_STARTED, NULL, 0)) {
+		if(!mesh_event_sock_send(client_id, NODE_STARTED, NULL, 0)) {
 			fprintf(stderr, "Trying to resend mesh event\n");
 			sleep(1);
 		}
@@ -64,5 +64,4 @@ int main(int argc, char *argv[]) {
 	}
 
 	execute_close();
-  meshlink_destroy(argv[1]);
 }

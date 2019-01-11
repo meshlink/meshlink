@@ -1,7 +1,7 @@
 This is the README file for the MeshLink library. Installation instructions may
 be found in the INSTALL file.
 
-MeshLink is Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+MeshLink is Copyright (C) 2014-2018 Guus Sliepen <guus@meshlink.io>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,20 +25,7 @@ In order to compile MeshLink, you will need a GNU C compiler environment.
 
 The following libraries are used by default, but can be disabled if necessary:
 
-- zlib (http://www.gzip.org/zlib/)
-
-On Linux: libtoolize must be installed
-On MacOSx: automake, autoconf, and libtool (glibtoolize) must be installed
-
-Build Steps
------------
-git submodule init
-git submodule update
-autoreconf -fsi
-./configure
-make
-sudo make install
-
+- Catta (https://github.com/meshlink/catta)
 
 Features
 --------

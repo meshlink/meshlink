@@ -1,0 +1,116 @@
+# License obligations
+
+The source code of the MeshLink library itself is licensed under the GNU
+General Public License version 2 or later (see the file COPYING for the
+complete license). However, the MeshLink library depends on other libraries as
+well, which each have their own license. This document summarizes your
+obligations when you are releasing binaries that link with the MeshLink library
+and any dependent libraries, for both open source and closed source software.
+
+Please note that this document is not to be interpreted as a license itself.
+
+## List of libraries that MeshLink depends on
+
+* Catta (LGPL version 2.1)
+* Ed25519 (zlib license)
+* Chacha20-Poly1305 (public domain)
+
+## Obligations for closed source software
+
+With closed source software, we mean any software that is distributed only in
+binary form. Note that there is no distinction between software that is sold,
+rented out, or is gratis. You are not allowed to distribute closed source
+software linked to the MeshLink library unless you have obtained a commercial
+license for the MeshLink library. If you do distribute closed source software
+linked to MeshLink without a commercial license, you are violating
+international copyright law. In this case, please contact the MeshLink
+author(s) as soon as possible in order to remedy this situation.
+
+If you do have a commercial license for the MeshLink library, then apart from
+the obligations set out in the commercial license, you are also obligated to
+follow the rules set out in the licenses of the libraries MeshLink depends on.
+In short, these are:
+
+* Unless you have compiled MeshLink without support for Catta, you must make
+  the source code of Catta, with any modifications that you made to the Catta
+  library itself, available on request to anyone who has received a copy of
+  your closed source software, under the terms of the GNU Lesser General Public
+  License version 2.1 or later.
+* Unless you have compiled MeshLink without support for Catta, you must give
+  prominent notice with each copy of your software that your software is using
+  Catta, and that the Catta library itself is covered under the terms of the
+  GNU Lesser General Public License version 2.1.
+
+Apart from these obligations, you are strongly recommended to mention the other
+libraries that MeshLink is depending on, as well as mention the MeshLink
+library itself:
+
+* Attribute Orson Peters as the author of the Ed25519 library.
+* Attribute Daniel J. Bernstein as the author of the Chacha20-Poly1305 library.
+* Attribute Guus Sliepen as the author of the MeshLink library.
+
+## Obligations for open source software
+
+With open source software, we mean any software that is distributed in source
+form, or is distributed in binary form with the exact source code used to
+compile the binary form made publicly available, or with this source code
+made available on request. Note that there is no distinction between software
+that is sold, rented out, or is gratis.
+
+If your software itself does not contain any copies or excerpts of the source
+code of MeshLink, you are free to distribute that software under any license
+you want. However, as soon as you distribute any binaries that are linked with
+MeshLink, then the resulting binaries can only be distributed under the terms
+of the GNU General Public License version 2 or later. In practice, this is not
+a problem since if you make the source code available publicly, you are
+fulfilling the obligations of the GPL, unless your software has a software
+license that is incompatible with the GPL. Please check the following website
+to find out if your open source software is compatible with MeshLink:
+
+https://www.gnu.org/licenses/license-list.en.html#SoftwareLicenses
+
+Apart from the obligations for the MeshLink library, set out in the GPL, you
+are also obligated to follow the rules set out in the licenses of the libraries
+MeshLink depends on. In short, these are:
+
+* Unless you have compiled MeshLink without support for Catta, you must make
+  the source code of Catta, with any modifications that you made to the Catta
+  library itself, available on request to anyone who has received a copy of
+  your closed source software, under the terms of the GNU Lesser General Public
+  License version 2.1 or later.
+* Unless you have compiled MeshLink without support for Catta, you must give
+  prominent notice with each copy of your software that your software is using
+  Catta, and that the Catta library itself is covered under the terms of the
+  GNU Lesser General Public License version 2.1.
+
+Apart from these obligations, you are strongly recommended to mention the other
+libraries that MeshLink is depending on, as well as mention the MeshLink
+library itself:
+
+* Attribute Orson Peters as the author of the Ed25519 library.
+* Attribute Daniel J. Bernstein as the author of the Chacha20-Poly1305 library.
+* Attribute Guus Sliepen as the author of the MeshLink library.
+
+## Recommended attribution text
+
+Attribution for the libraries your software depends on should be added to any
+written, printed or electronic documentation that comes with your software, as
+well as displayed in any about dialogs, splash screens, and any other forms of
+display that contain credits, license information and/or attribution. The
+recommended text to display is:
+
+    This software makes use of the following libraries:
+
+    - MeshLink, copyright © 2014-2018 Guus Sliepen,
+      licensed under the GPL version 2 or later¹
+    - Catta, copyright © 2004-2018 the Avahi Developers and others,
+      licensed under the LGPL version 2.1 or later²
+    - Chacha20-Poly1305, by Daniel J. Bernstein, public domain
+    - Ed25519, copyright © 2015 Orson Peters, licensed under the zlib license
+
+¹) omit the "licensed under" text if you have a commercial license  
+²) omit this is you compiled MeshLink without support for Catta
+
+The full text of the licenses of all libraries used should be included in the
+documentation, and should be included in any forms or displays that contain
+license information.

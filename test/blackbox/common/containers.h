@@ -23,7 +23,7 @@
 
 #include <lxc/lxccontainer.h>
 
-#define DAEMON_ARGV_LEN 2000
+#define DAEMON_ARGV_LEN 200
 #define CONTAINER_SHUTDOWN_TIMEOUT 5
 
 extern char *lxc_path;

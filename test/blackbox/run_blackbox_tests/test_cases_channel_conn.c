@@ -105,7 +105,7 @@ static bool node_reachable;
 static bool node_unreachable;
 
 /* Callback function for handling channel connection test cases mesh events */
-static bool channel_conn_cb(mesh_event_payload_t payload) {
+static void channel_conn_cb(mesh_event_payload_t payload) {
 	switch(payload.mesh_event) {
 	case NODE_JOINED            :
 		joined = true;
@@ -139,7 +139,7 @@ static bool channel_conn_cb(mesh_event_payload_t payload) {
 		PRINT_TEST_CASE_MSG("Undefined event occurred\n");
 	}
 
-	return true;
+	return;
 }
 
 /* Execute channel connections Test Case # 1 - simulate a temporary network
@@ -205,13 +205,10 @@ static bool test_steps_channel_conn_01(void) {
 	// Wait for peer node to receive data via channel from NUT
 
 	wait_for_event(channel_conn_cb, 60);
-
-	mesh_event_destroy();
-	free(invite_nut);
-	free(import);
-
 	assert_int_equal(channel_received, true);
 
+	free(invite_nut);
+	free(import);
 	return true;
 }
 
@@ -278,13 +275,10 @@ static bool test_steps_channel_conn_02(void) {
 	// Wait for peer node to send the event about the channel error occurred with length = 0
 
 	wait_for_event(channel_conn_cb, 90);
-
-	mesh_event_destroy();
-	free(invite_nut);
-	free(import);
-
 	assert_int_equal(received_error, true);
 
+	free(invite_nut);
+	free(import);
 	return true;
 }
 
@@ -362,13 +356,10 @@ static bool test_steps_channel_conn_03(void) {
 	// Wait for data to be received at peer via channel from NUT after restoring n/w
 
 	wait_for_event(channel_conn_cb, 90);
-
-	mesh_event_destroy();
-	free(invite_nut);
-	free(import);
-
 	assert_int_equal(channel_received, true);
 
+	free(invite_nut);
+	free(import);
 	return true;
 }
 
@@ -423,12 +414,6 @@ static bool test_steps_channel_conn_04(void) {
 	// After 1 min the channel between NUT and peer should result in error
 
 	wait_for_event(channel_conn_cb, 10);
-
-
-	mesh_event_destroy();
-	free(invite_nut);
-	free(import);
-
 	assert_int_equal(received_error, true);
 
 	return true;
@@ -500,14 +485,11 @@ static bool test_steps_channel_conn_05(void) {
 	// Wait for peer to get data from NUT node via channel after restoring network in < 60 secs
 
 	wait_for_event(channel_conn_cb, 60);
-
-	mesh_event_destroy();
-	free(invite_peer);
-	free(invite_nut);
-	free(import);
-
 	assert_int_equal(channel_received, true);
 
+	free(invite_nut);
+	free(invite_peer);
+	free(import);
 	return true;
 }
 
@@ -578,14 +560,11 @@ static bool test_steps_channel_conn_06(void) {
 	// Wait for channel to receive error and receive the event
 
 	wait_for_event(channel_conn_cb, 90);
-
-	mesh_event_destroy();
-	free(invite_peer);
-	free(invite_nut);
-	free(import);
-
 	assert_int_equal(received_error, true);
 
+	free(invite_nut);
+	free(invite_peer);
+	free(import);
 	return true;
 }
 
@@ -667,14 +646,11 @@ static bool test_steps_channel_conn_07(void) {
 	// Wait for peer node to receive data via channel without any error
 
 	wait_for_event(channel_conn_cb, 90);
-
-	mesh_event_destroy();
-	free(invite_peer);
-	free(invite_nut);
-	free(import);
-
 	assert_int_equal(channel_received, true);
 
+	free(invite_nut);
+	free(invite_peer);
+	free(import);
 	return true;
 }
 
@@ -740,14 +716,11 @@ static bool test_steps_channel_conn_08(void) {
 	// Wait for peer to receive channel error
 
 	wait_for_event(channel_conn_cb, 10);
-
-	mesh_event_destroy();
-	free(invite_peer);
-	free(invite_nut);
-	free(import);
-
 	assert_int_equal(received_error, true);
 
+	free(invite_nut);
+	free(invite_peer);
+	free(import);
 	return true;
 }
 
@@ -772,7 +745,7 @@ static int black_box_group_teardown(void **state) {
 int test_meshlink_channel_conn(void) {
 	const struct CMUnitTest blackbox_group0_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_01, setup_test, teardown_test,
-		                (void *)&test_case_channel_conn_01_state),/*
+		                (void *)&test_case_channel_conn_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_02, setup_test, teardown_test,
 		                (void *)&test_case_channel_conn_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_03, setup_test, teardown_test,
@@ -786,7 +759,7 @@ int test_meshlink_channel_conn(void) {
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_07, setup_test, teardown_test,
 		                (void *)&test_case_channel_conn_07_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_08, setup_test, teardown_test,
-		                (void *)&test_case_channel_conn_08_state)*/
+		                (void *)&test_case_channel_conn_08_state)
 	};
 	total_tests += sizeof(blackbox_group0_tests) / sizeof(blackbox_group0_tests[0]);
 
