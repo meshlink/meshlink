@@ -96,6 +96,10 @@ PKG_CHECK_MODULES([CMOCKA], [cmocka >= 1.1.0], [cmocka=true], [cmocka=false])
 PKG_CHECK_MODULES([LXC], [lxc >= 2.0.0], [lxc=true], [lxc=false])
 AM_CONDITIONAL(BLACKBOX_TESTS, test "$cmocka" = true -a "$lxc" = true)
 
+dnl Additional example code
+PKG_CHECK_MODULES([NCURSES], [ncurses >= 5], [curses=true], [curses=false])
+AM_CONDITIONAL(CURSES, test "$curses" = true)
+
 dnl Install test binaries
 AC_ARG_ENABLE([install_tests],
   [AS_HELP_STRING([--enable-install-tests], [include test binaries in installation])],
