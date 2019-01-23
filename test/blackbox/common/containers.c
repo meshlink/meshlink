@@ -69,38 +69,51 @@ void rename_container(const char *old_name, const char *new_name) {
 	assert(rename_status == 0);
 }
 
+char *run_in_container(const char *cmd, const char *container_name, bool daemonize) {
+	char container_find_name[100];
+	struct lxc_container *container;
+
+	assert(cmd);
+	assert(container_name);
+	assert(snprintf(container_find_name, sizeof(container_find_name), "%s_%s",
+	                state_ptr->test_case_name, container_name) >= 0);
+	assert(container = find_container(container_find_name));
+
+	return run_in_container_ex(cmd, container, daemonize);
+}
+
+char *execute_in_container(const char *cmd, const char *container_name, bool daemonize) {
+	struct lxc_container *container;
+
+	assert(cmd);
+	assert(container_name);
+	assert(container = find_container(container_name));
+
+	return run_in_container_ex(cmd, container, daemonize);
+}
+
 /* Run 'cmd' inside the Container created for 'node' and return the first line of the output
     or NULL if there is no output - useful when, for example, a meshlink invite is generated
     by a node running inside a Container
     'cmd' is run as a daemon if 'daemonize' is true - this mode is useful for running node
     simulations in Containers
     The caller is responsible for freeing the returned string */
-char *run_in_container(const char *cmd, const char *node, bool daemonize) {
-	char attach_command[400];
-	char *attach_argv[4];
-	char container_find_name[100];
-	struct lxc_container *container;
-	FILE *attach_fp;
+char *run_in_container_ex(const char *cmd, struct lxc_container *container, bool daemonize) {
 	char *output = NULL;
-	size_t output_len;
-	int i;
-
-	assert(snprintf(container_find_name, sizeof(container_find_name), "%s_%s",
-	                state_ptr->test_case_name, node) >= 0);
-	assert(container = find_container(container_find_name));
+	size_t output_len = 0;
 
 	/* Run the command within the Container, either as a daemon or foreground process */
 	/* TO DO: Perform this operation using the LXC API - currently does not work using the API
 	    Need to determine why it doesn't work, and make it work */
 	if(daemonize) {
-		for(i = 0; i < 3; i++) {
-			assert(attach_argv[i] = malloc(DAEMON_ARGV_LEN));
-		}
+		char run_script_path[100];
+		char *attach_argv[4];
 
-		assert(snprintf(attach_argv[0], DAEMON_ARGV_LEN, "%s/" LXC_UTIL_REL_PATH "/" LXC_RUN_SCRIPT,
+		assert(snprintf(run_script_path, sizeof(run_script_path), "%s/" LXC_UTIL_REL_PATH "/" LXC_RUN_SCRIPT,
 		                meshlink_root_path) >= 0);
-		strncpy(attach_argv[1], cmd, DAEMON_ARGV_LEN);
-		strncpy(attach_argv[2], container->name, DAEMON_ARGV_LEN);
+		attach_argv[0] = run_script_path;
+		attach_argv[1] = (char *)cmd;
+		attach_argv[2] = container->name;
 		attach_argv[3] = NULL;
 
 		/* To daemonize, create a child process and detach it from its parent (this program) */
@@ -108,19 +121,24 @@ char *run_in_container(const char *cmd, const char *node, bool daemonize) {
 			assert(daemon(1, 0) != -1);    // Detach from the parent process
 			assert(execv(attach_argv[0], attach_argv) != -1);   // Run exec() in the child process
 		}
-
-		for(i = 0; i < 3; i++) {
-			free(attach_argv[i]);
-		}
 	} else {
-		assert(snprintf(attach_command, sizeof(attach_command),
+		char *attach_command;
+		size_t attach_command_len;
+		int i;
+		attach_command_len = strlen(meshlink_root_path) + strlen(LXC_UTIL_REL_PATH) + strlen(LXC_RUN_SCRIPT) + strlen(cmd) + strlen(container->name) + 10;
+		attach_command = malloc(attach_command_len);
+		assert(attach_command);
+
+		assert(snprintf(attach_command, attach_command_len,
 		                "%s/" LXC_UTIL_REL_PATH "/" LXC_RUN_SCRIPT " \"%s\" %s", meshlink_root_path, cmd,
 		                container->name) >= 0);
+		FILE *attach_fp;
 		assert(attach_fp = popen(attach_command, "r"));
+		free(attach_command);
 		/* If the command has an output, strip out any trailing carriage returns or newlines and
 		    return it, otherwise return NULL */
-		assert(output = malloc(100));
-		output_len = sizeof(output);
+		output = NULL;
+		output_len = 0;
 
 		if(getline(&output, &output_len, attach_fp) != -1) {
 			i = strlen(output) - 1;
@@ -143,16 +161,29 @@ char *run_in_container(const char *cmd, const char *node, bool daemonize) {
 
 /* Wait for a starting Container to obtain an IP Address, then save that IP for future use */
 void container_wait_ip(int node) {
-	char container_name[100], lxcls_command[200];
-	struct lxc_container *test_container;
+	char container_name[100];
 	char *ip;
-	size_t ip_len;
-	int i;
-	bool ip_found;
-	FILE *lxcls_fp;
 
 	assert(snprintf(container_name, sizeof(container_name), "%s_%s", state_ptr->test_case_name,
 	                state_ptr->node_names[node]) >= 0);
+	ip = container_wait_ip_ex(container_name);
+
+	strncpy(container_ips[node], ip, sizeof(container_ips[node])); // Save the IP for future use
+	PRINT_TEST_CASE_MSG("Node '%s' has IP Address %s\n", state_ptr->node_names[node],
+	                    container_ips[node]);
+	free(ip);
+}
+
+char *container_wait_ip_ex(const char *container_name) {
+	struct lxc_container *test_container;
+	char  lxcls_command[200];
+	char *ip;
+	size_t ip_len;
+	bool ip_found;
+	int i;
+	int timeout;
+	FILE *lxcls_fp;
+
 	assert(test_container = find_container(container_name));
 	assert(snprintf(lxcls_command, sizeof(lxcls_command),
 	                "lxc-ls -f | grep %s | tr -s ' ' | cut -d ' ' -f 5", test_container->name) >= 0);
@@ -160,8 +191,9 @@ void container_wait_ip(int node) {
 	assert(ip = malloc(20));
 	ip_len = sizeof(ip);
 	ip_found = false;
+	timeout = 60;
 
-	while(!ip_found) {
+	while(!ip_found && timeout) {
 		assert(lxcls_fp = popen(lxcls_command, "r"));   // Run command
 		assert(getline((char **)&ip, &ip_len, lxcls_fp) != -1); // Read its output
 		/* Strip newlines and carriage returns from output */
@@ -175,13 +207,13 @@ void container_wait_ip(int node) {
 		ip_found = (strcmp(ip, "-") != 0);  // If the output is not "-", IP has been acquired
 		assert(pclose(lxcls_fp) != -1);
 		sleep(1);
+		timeout--;
 	}
 
-	strncpy(container_ips[node], ip, sizeof(container_ips[node])); // Save the IP for future use
-	PRINT_TEST_CASE_MSG("Node '%s' has IP Address %s\n", state_ptr->node_names[node],
-	                    container_ips[node]);
+	// Fail if IP cannot be read
+	assert(timeout);
 
-	free(ip);
+	return ip;
 }
 
 /* Create all required test containers */
@@ -189,7 +221,7 @@ void create_containers(const char *node_names[], int num_nodes) {
 	int i;
 	char container_name[100];
 	int create_status, snapshot_status, snap_restore_status;
-	struct lxc_container *first_container;
+	struct lxc_container *first_container = NULL;
 
 	for(i = 0; i < num_nodes; i++) {
 		assert(snprintf(container_name, sizeof(container_name), "run_%s", node_names[i]) >= 0);
@@ -209,6 +241,7 @@ void create_containers(const char *node_names[], int num_nodes) {
 			        first_container->error_num, first_container->error_string);
 			assert(snapshot_status != -1);
 		} else {
+			assert(first_container);
 			snap_restore_status = first_container->snapshot_restore(first_container, "snap0",
 			                      container_name);
 			fprintf(stderr, "Snapshot restore to Container '%s' status: %d - %s\n", container_name,
@@ -346,28 +379,41 @@ char *invite_in_container(const char *inviter, const char *invitee) {
 
 /* Run the node_sim_<nodename> program inside the 'node''s container */
 void node_sim_in_container(const char *node, const char *device_class, const char *invite_url) {
-	char node_sim_command[200];
+	char *node_sim_command;
+	size_t node_sim_command_len;
 
-	assert(snprintf(node_sim_command, sizeof(node_sim_command),
+	node_sim_command_len = 500 + (invite_url ? strlen(invite_url) : 0);
+	node_sim_command = calloc(1, node_sim_command_len);
+	assert(node_sim_command);
+	assert(snprintf(node_sim_command, node_sim_command_len,
 	                "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/node_sim_%s %s %s %s "
 	                "1>&2 2>> node_sim_%s.log", node, node, device_class,
 	                (invite_url) ? invite_url : "", node) >= 0);
 	run_in_container(node_sim_command, node, true);
 	PRINT_TEST_CASE_MSG("node_sim_%s started in Container\n", node);
+
+	free(node_sim_command);
 }
 
 /* Run the node_sim_<nodename> program inside the 'node''s container with event handling capable */
 void node_sim_in_container_event(const char *node, const char *device_class,
                                  const char *invite_url, const char *clientId, const char *import) {
-	char node_sim_command[200];
+	char *node_sim_command;
+	size_t node_sim_command_len;
 
-	assert(snprintf(node_sim_command, sizeof(node_sim_command),
+	assert(node && device_class && clientId && import);
+	node_sim_command_len = 500 + (invite_url ? strlen(invite_url) : 0);
+	node_sim_command = calloc(1, node_sim_command_len);
+	assert(node_sim_command);
+	assert(snprintf(node_sim_command, node_sim_command_len,
 	                "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/node_sim_%s %s %s %s %s %s "
 	                "1>&2 2>> node_sim_%s.log", node, node, device_class,
 	                clientId, import, (invite_url) ? invite_url : "", node) >= 0);
 	run_in_container(node_sim_command, node, true);
-	PRINT_TEST_CASE_MSG("node_sim_%s(Client Id :%s) started in Container with event handling\n",
-	                    node, clientId);
+	PRINT_TEST_CASE_MSG("node_sim_%s(Client Id :%s) started in Container with event handling\n%s\n",
+	                    node, clientId, node_sim_command);
+
+	free(node_sim_command);
 }
 
 /* Run the node_step.sh script inside the 'node''s container to send the 'sig' signal to the
@@ -452,6 +498,41 @@ void change_ip(int node) {
 	                    container_ips[node]);
 }
 
+char **get_container_interface_ips(const char *container_name, const char *interface_name) {
+	char **ips;
+	struct lxc_container *container = find_container(container_name);
+	assert(container);
+
+	char **interfaces = container->get_interfaces(container);
+	assert(interfaces);
+
+	int i;
+	ips = NULL;
+
+	for(i = 0; interfaces[i]; i++) {
+		if(!strcasecmp(interfaces[i], interface_name)) {
+			ips = container->get_ips(container, interface_name, "inet", 0);
+			assert(ips);
+			break;
+		}
+	}
+
+	free(interfaces);
+
+	return ips;
+}
+
+/* Install an app in a container */
+void install_in_container(const char *node, const char *app) {
+	char install_cmd[100];
+
+	assert(snprintf(install_cmd, sizeof(install_cmd),
+	                "apt-get install %s -y >> /dev/null", app) >= 0);
+	char *ret = run_in_container(install_cmd, node, false);
+	// TODO: Check in container whether app has installed or not with a timeout
+	sleep(10);
+}
+
 /* Return container's IP address */
 char *get_container_ip(const char *node_name) {
 	char *ip;
@@ -474,17 +555,6 @@ char *get_container_ip(const char *node_name) {
 	strncpy(ip, container_ips[node], n);
 
 	return ip;
-}
-
-/* Install an app in a container */
-void install_in_container(const char *node, const char *app) {
-	char install_cmd[100];
-
-	assert(snprintf(install_cmd, sizeof(install_cmd),
-	                "apt-get install %s -y >> /dev/null", app) >= 0);
-	char *ret = run_in_container(install_cmd, node, false);
-	// TODO: Check in container whether app has installed or not with a timeout
-	sleep(10);
 }
 
 /* Simulate a network failure by adding NAT rule in the container with it's IP address */
@@ -511,7 +581,7 @@ void accept_port_rule(const char *node, const char *chain, const char *protocol,
 
 	assert(port >= 0 && port < 65536);
 	assert(!strcmp(chain, "INPUT") || !strcmp(chain, "FORWARD") || !strcmp(chain, "OUTPUT"));
-	assert(!strcmp(protocol, "all") || !strcmp(protocol, "tcp") || !strcmp(protocol, "udp"));
+	assert(!strcmp(protocol, "all") || !strcmp(protocol, "tcp") || !strcmp(protocol, "udp") || !strcmp(protocol, "icmp"));
 	assert(snprintf(block_cmd, sizeof(block_cmd), "iptables -A %s -p %s --dport %d -j ACCEPT", chain, protocol, port) >= 0);
 	run_in_container(block_cmd, node, false);
 }
@@ -531,6 +601,134 @@ void unblock_node_ip(const char *node) {
 
 	assert(snprintf(unblock_cmd, sizeof(unblock_cmd), "iptables -D FORWARD -p all -s %s -j DROP", node_ip) >= 0);
 	run_in_container(unblock_cmd, node, false);
+}
+
+char *block_icmp(const char *container_name) {
+	char block_cmd[500];
+	assert(container_name);
+	assert(snprintf(block_cmd, sizeof(block_cmd), "iptables -A FORWARD -p icmp -j DROP") >= 0);
+	return execute_in_container(block_cmd, container_name, false);
+}
+
+char *unblock_icmp(const char *container_name) {
+	char block_cmd[500];
+	assert(container_name);
+	assert(snprintf(block_cmd, sizeof(block_cmd), "iptables -D FORWARD -p icmp -j DROP") >= 0);
+	return execute_in_container(block_cmd, container_name, false);
+}
+
+char *change_container_mtu(const char *container_name, const char *interface_name, int mtu) {
+	char cmd[500];
+	assert(container_name);
+	assert(snprintf(cmd, sizeof(cmd), "ifconfig %s mtu %d", interface_name, mtu) >= 0);
+	return execute_in_container(cmd, container_name, false);
+}
+
+char *flush_conntrack(const char *container_name) {
+	assert(container_name);
+
+	return execute_in_container("conntrack -F", container_name, false);
+}
+
+void flush_nat_rules(const char *container_name, const char *chain) {
+	char *ret;
+	char flush_cmd[500];
+
+	assert(container_name);
+	assert(snprintf(flush_cmd, sizeof(flush_cmd), "iptables -F %s", chain ? chain : "") >= 0);
+	ret = execute_in_container("iptables -F", container_name, false);
+	assert(ret == NULL);
+}
+
+void add_full_cone_nat_rules(const char *container_name, const char *pub_interface, const char *priv_interface_listen_address) {
+	char nat_cmd[500];
+	char *ret;
+
+	char **pub_interface_ips = get_container_interface_ips(container_name, pub_interface);
+	assert(pub_interface_ips[0]);
+	char *pub_interface_ip = pub_interface_ips[0];
+
+	assert(snprintf(nat_cmd, sizeof(nat_cmd),
+	                "%s/" LXC_UTIL_REL_PATH "/" LXC_NAT_FULL_CONE " %s %s %s %s >/dev/null",
+	                meshlink_root_path, container_name, pub_interface, pub_interface_ip, priv_interface_listen_address) >= 0);
+	assert(system(nat_cmd) == 0);
+	free(pub_interface_ips);
+}
+
+/* Create a NAT and a bridge, bridge connected to NAT and containers to be NATed can be switched
+    to the NAT bridge from lxcbr0 */
+void nat_create(const char *nat_name, const char *nat_bridge, int nat_type) {
+	char build_command[200];
+	assert(snprintf(build_command, sizeof(build_command),
+	                "%s/" LXC_UTIL_REL_PATH "/" LXC_NAT_BUILD " %s %s %s >/dev/stderr",
+	                meshlink_root_path, nat_name, nat_bridge, meshlink_root_path) >= 0);
+	assert(system(build_command) == 0);
+}
+
+void nat_destroy(const char *nat_name) {
+	char build_command[200];
+	assert(snprintf(build_command, sizeof(build_command),
+	                "%s/" LXC_UTIL_REL_PATH "/" LXC_NAT_DESTROY " %s +x >/dev/null",
+	                meshlink_root_path, nat_name) >= 0);
+	assert(system(build_command) == 0);
+}
+
+/* Switches a container from current bridge to a new bridge */
+void container_switch_bridge(const char *container_name, char *lxc_conf_path, const char *current_bridge, const char *new_bridge) {
+	char config_path[500];
+	char buffer[500];
+	struct lxc_container *container;
+	char *lxc_path_temp;
+	char *ip;
+
+	PRINT_TEST_CASE_MSG("Switiching container %s from bridge '%s' to bridge '%s'", container_name, current_bridge, new_bridge);
+	lxc_path_temp = lxc_path;
+	lxc_path = lxc_conf_path;
+	container = find_container(container_name);
+	assert(container);
+	lxc_path = lxc_path_temp;
+	assert(snprintf(config_path, sizeof(config_path), "%s/%s/config", lxc_conf_path, container_name) >= 0);
+	FILE *fp = fopen(config_path, "r");
+	assert(fp);
+	FILE *fp_temp = fopen(".temp_file", "w");
+	assert(fp_temp);
+
+	char search_str[500];
+	int net_no;
+
+	while((fgets(buffer, sizeof(buffer), fp)) != NULL) {
+		if(sscanf(buffer, "lxc.net.%d.link", &net_no) == 1) {
+			char *ptr;
+			int len;
+
+			if((ptr = strstr(buffer, current_bridge)) != NULL) {
+				len = strlen(current_bridge);
+
+				if(((*(ptr - 1) == ' ') || (*(ptr - 1) == '\t') || (*(ptr - 1) == '=')) && ((ptr[len] == '\n') || (ptr[len] == '\t') || (ptr[len] == '\0') || (ptr[len] == ' '))) {
+					sprintf(buffer, "lxc.net.%d.link = %s\n", net_no, new_bridge);
+				}
+			}
+		}
+
+		fputs(buffer, fp_temp);
+	}
+
+	fclose(fp_temp);
+	fclose(fp);
+	remove(config_path);
+	rename(".temp_file", config_path);
+
+	/* Restart the Container after building it and wait for it to acquire an IP */
+	char cmd[200];
+	int sys_ret;
+	assert(snprintf(cmd, sizeof(cmd), "lxc-stop %s", container_name) >= 0);
+	sys_ret = system(cmd);
+	assert(snprintf(cmd, sizeof(cmd), "lxc-start %s", container_name) >= 0);
+	sys_ret = system(cmd);
+	assert(sys_ret == 0);
+	ip = container_wait_ip_ex(container_name);
+	PRINT_TEST_CASE_MSG("Obtained IP address: %s for container %s after switching bridge", ip, container_name);
+	free(ip);
 }
 
 /* Takes bridgeName as input parameter and creates a bridge */
@@ -890,4 +1088,30 @@ void outgoing_firewall_ipv6(const char *packetType, int portNumber) {
 	assert(system("ip6tables -A OUTPUT -j DROP") == 0);
 	PRINT_TEST_CASE_MSG("Firewall for outgoing requests added on IPv6");
 	assert(system("ip6tables -L") == 0);
+}
+
+void bridge_add(const char *bridge_name) {
+	char cmd[500];
+
+	assert(bridge_name);
+	assert(snprintf(cmd, sizeof(cmd), "brctl addbr %s", bridge_name) >= 0);
+	assert(system(cmd) == 0);
+	assert(snprintf(cmd, sizeof(cmd), "ifconfig %s up", bridge_name) >= 0);
+	assert(system(cmd) == 0);
+}
+
+void bridge_delete(const char *bridge_name) {
+	char cmd[500];
+
+	assert(bridge_name);
+	assert(snprintf(cmd, sizeof(cmd), "brctl delbr %s", bridge_name) >= 0);
+	assert(system(cmd) == 0);
+}
+
+void bridge_add_interface(const char *bridge_name, const char *interface_name) {
+	char cmd[500];
+
+	assert(bridge_name || interface_name);
+	assert(snprintf(cmd, sizeof(cmd), "brctl addif %s %s", bridge_name, interface_name) >= 0);
+	assert(system(cmd) == 0);
 }
