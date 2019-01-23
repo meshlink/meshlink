@@ -3,3 +3,5 @@ node_sim_peer
 node_sim_nut
 node_sim_relay
 interfaces
+Makefile
+Makefile.in

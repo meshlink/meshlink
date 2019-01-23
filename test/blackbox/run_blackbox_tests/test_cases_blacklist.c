@@ -211,11 +211,11 @@ bool test_steps_mesh_blacklist_03(void) {
 int test_meshlink_blacklist(void) {
 	const struct CMUnitTest blackbox_blacklist_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_blacklist_01, NULL, NULL,
-		                (void *)&test_mesh_blacklist_01_state),
+		(void *)&test_mesh_blacklist_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_blacklist_02, NULL, NULL,
-		                (void *)&test_mesh_blacklist_02_state),
+		(void *)&test_mesh_blacklist_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_blacklist_03, NULL, NULL,
-		                (void *)&test_mesh_blacklist_03_state)
+		(void *)&test_mesh_blacklist_03_state)
 	};
 
 	total_tests += sizeof(blackbox_blacklist_tests) / sizeof(blackbox_blacklist_tests[0]);

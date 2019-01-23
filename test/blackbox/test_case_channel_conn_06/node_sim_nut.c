@@ -71,7 +71,6 @@ static void send_event(mesh_event_t event) {
 
 static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
                            bool reachable) {
-	fprintf(stderr, "\n\n\n NODE STATUS CB : %s is %d\n\n\n\n", node->name, reachable);
 
 	if(!strcasecmp(node->name, "peer") && reachable) {
 		set_sync_flag(&peer_reachable, true);
@@ -88,7 +87,6 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 }
 
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
-	fprintf(stderr, "\n\n\n LEN = %u & DATA = %s in RECV CB\n\n\n\n", len, (char *)dat);
 
 	if(len == 0) {
 		set_sync_flag(&channel_closed, true);
@@ -151,18 +149,14 @@ int main(int argc, char *argv[]) {
 
 	assert(wait_sync_flag(&channel_opened, 10));
 	send_event(CHANNEL_OPENED);
-	fprintf(stderr, "\n\n\nChannel opened, Waiting for SIGUSR1\n\n\n\n");
 	assert(wait_sync_flag(&sigusr_received, 10));
 
-	fprintf(stderr, "\n\n\nChannel sending, got SIGUSR1\n\n\n\n");
 	sleep(40);
 	assert(meshlink_channel_send(mesh, channel, "after", 6) >= 0);
 
-	fprintf(stderr, "\n\n\nWaiting for close\n\n\n\n");
 
 	assert(wait_sync_flag(&channel_closed, 140));
 
-	fprintf(stderr, "\n\n\nCHANNEL CLOSED\n\n\n\n");
 
 	// All test steps executed - wait for signals to stop/start or close the mesh
 	while(test_running) {

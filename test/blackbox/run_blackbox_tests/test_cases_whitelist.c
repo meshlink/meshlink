@@ -310,11 +310,11 @@ static bool test_steps_mesh_whitelist_03(void) {
 int test_meshlink_whitelist(void) {
 	const struct CMUnitTest blackbox_whitelist_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_whitelist_01, NULL, NULL,
-		                (void *)&test_mesh_whitelist_01_state),
+		(void *)&test_mesh_whitelist_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_whitelist_02, NULL, NULL,
-		                (void *)&test_mesh_whitelist_02_state),
+		(void *)&test_mesh_whitelist_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_whitelist_03, NULL, NULL,
-		                (void *)&test_mesh_whitelist_03_state)
+		(void *)&test_mesh_whitelist_03_state)
 	};
 
 	total_tests += sizeof(blackbox_whitelist_tests) / sizeof(blackbox_whitelist_tests[0]);

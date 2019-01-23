@@ -247,9 +247,9 @@ static bool test_steps_set_channel_accept_cb_02(void) {
 int test_meshlink_set_channel_accept_cb(void) {
 	const struct CMUnitTest blackbox_channel_set_accept_cb_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_set_channel_accept_cb_01, NULL, NULL,
-		                (void *)&test_case_channel_set_accept_cb_01_state),
+		(void *)&test_case_channel_set_accept_cb_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_set_channel_accept_cb_02, NULL, NULL,
-		                (void *)&test_case_channel_set_accept_cb_02_state)
+		(void *)&test_case_channel_set_accept_cb_02_state)
 	};
 
 	total_tests += sizeof(blackbox_channel_set_accept_cb_tests) / sizeof(blackbox_channel_set_accept_cb_tests[0]);

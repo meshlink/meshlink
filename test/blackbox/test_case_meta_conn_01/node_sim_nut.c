@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	execute_open(argv[1], argv[2]);
-	meshlink_set_log_cb(mesh_handle, MESHLINK_INFO, callback_logger);
+	meshlink_set_log_cb(mesh_handle, MESHLINK_DEBUG, callback_logger);
 
 	if(argv[5]) {
 		execute_join(argv[5]);
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	fprintf(stderr, "Connected with Peer\n");
-	assert(mesh_event_sock_send(client_id, META_CONN_SUCCESSFUL, "Connected with Peer", 30));
+	assert(mesh_event_sock_send(client_id, META_CONN_SUCCESSFUL, NULL, 0));
 
 	/* Connectivity of peer */
 	while(conn_status) {
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	fprintf(stderr, "Closed connection with Peer\n");
-	assert(mesh_event_sock_send(client_id, META_CONN_CLOSED, "Connection closed with Peer", 30));
+	assert(mesh_event_sock_send(client_id, META_CONN_CLOSED, NULL, 0));
 
 	/* Connectivity of peer */
 	while(!conn_status) {
@@ -123,9 +123,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	fprintf(stderr, "Connected with Peer\n");
-	assert(mesh_event_sock_send(client_id, META_RECONN_SUCCESSFUL, "Reconnected with Peer", 30));
+	assert(mesh_event_sock_send(client_id, META_RECONN_SUCCESSFUL, NULL, 0));
 
 	execute_close();
-
+	meshlink_destroy(argv[1]);
 	return 0;
 }

@@ -17,6 +17,7 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 #include <stdio.h>
+#include <assert.h>
 #include <stdlib.h>
 #include "../../../src/meshlink.h"
 #include "../common/test_step.h"
@@ -24,15 +25,32 @@
 #define CMD_LINE_ARG_NODENAME   1
 #define CMD_LINE_ARG_INVITEE    2
 
+void logger_cb(meshlink_handle_t *mesh, meshlink_log_level_t level,
+               const char *text) {
+	(void)mesh;
+	(void)level;
+
+	fprintf(stderr, "meshlink>> %s\n", text);
+}
+
 int main(int argc, char *argv[]) {
 	char *invite = NULL;
 
 	/* Start mesh, generate an invite and print out the invite */
-	execute_open(argv[CMD_LINE_ARG_NODENAME], "1");
-	execute_start();
-	invite = execute_invite(argv[CMD_LINE_ARG_INVITEE]);
+	/* Set up logging for Meshlink */
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, logger_cb);
+
+	/* Create meshlink instance */
+	meshlink_handle_t *mesh = meshlink_open("testconf", argv[1], "node_sim", DEV_CLASS_STATIONARY);
+	assert(mesh);
+
+	/* Set up logging for Meshlink with the newly acquired Mesh Handle */
+	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, logger_cb);
+	meshlink_enable_discovery(mesh, false);
+	assert(meshlink_start(mesh));
+	invite = meshlink_invite_ex(mesh, argv[2], MESHLINK_INVITE_LOCAL | MESHLINK_INVITE_NUMERIC);
 	printf("%s\n", invite);
-	//execute_close();
+	meshlink_close(mesh);
 
 	return EXIT_SUCCESS;
 }

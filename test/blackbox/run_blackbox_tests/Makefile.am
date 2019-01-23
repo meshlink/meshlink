@@ -45,8 +45,9 @@ run_blackbox_tests_SOURCES = \
 	test_cases_channel_close.c \
 	test_cases_channel_send.c \
 	test_cases_channel_shutdown.c \
-	test_cases_channel_conn.c
+	test_cases_channel_conn.c \
+	test_cases_get_all_nodes_by_dev_class.c
 
-run_blackbox_tests_LDADD = ../../../src/libmeshlink.la $(LXC_LIBS) $(CMOCKA_LIBS)
+run_blackbox_tests_LDADD = ../../../src/libmeshlink.la $(LXC_LIBS) $(CMOCKA_LIBS) ../../utils.c
 run_blackbox_tests_CFLAGS = -D_GNU_SOURCE $(LXC_CFLAGS) $(CMOCKA_CFLAGS)
 

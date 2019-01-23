@@ -115,9 +115,9 @@ static bool test_steps_mesh_start_02(void) {
 int test_meshlink_start(void) {
 	const struct CMUnitTest blackbox_start_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_start_01, NULL, NULL,
-		                (void *)&test_mesh_start_01_state),
+		(void *)&test_mesh_start_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_start_02, NULL, NULL,
-		                (void *)&test_mesh_start_02_state)
+		(void *)&test_mesh_start_02_state)
 
 	};
 

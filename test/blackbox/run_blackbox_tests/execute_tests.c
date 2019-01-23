@@ -35,7 +35,6 @@ int setup_test(void **state) {
 
 	for(i = 0; i < state_ptr->num_nodes; i++) {
 		meta_conn_status[i] = false;
-		node_reachable_status[i] = false;
 	}
 
 	setup_containers(state);

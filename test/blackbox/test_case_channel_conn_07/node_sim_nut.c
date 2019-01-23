@@ -105,7 +105,7 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 }
 
 int main(int argc, char *argv[]) {
-	struct timeval main_loop_wait = { 2, 0 };
+	struct timeval main_loop_wait = { 5, 0 };
 	struct timespec timeout = {0};
 	int i;
 
@@ -166,6 +166,7 @@ int main(int argc, char *argv[]) {
 
 	while(test_running) {
 		select(1, NULL, NULL, NULL, &main_loop_wait);
+		assert(meshlink_channel_send(mesh, channel, "ping", 6) >= 0);
 	}
 
 	meshlink_close(mesh);
