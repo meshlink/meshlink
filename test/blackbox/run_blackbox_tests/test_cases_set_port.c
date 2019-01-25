@@ -112,8 +112,9 @@ static bool test_set_port_02(void) {
 	// meshlink_set_port called using NULL as mesh handle
 
 	bool ret = meshlink_set_port(NULL, 8000);
-
+	assert_int_equal(meshlink_errno, 0);
 	assert_int_equal(ret, false);
+
 	return false;
 }
 
@@ -139,10 +140,10 @@ static bool test_set_port_03(void) {
 	mesh_handle = meshlink_open("getportconf", "nut", "test", 1);
 	assert(mesh_handle);
 	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-	assert(meshlink_start(mesh_handle));
 
 	// Setting port after starting NUT
 	bool ret = meshlink_set_port(mesh_handle, 50000);
+	assert_int_equal(meshlink_errno, 0);
 	assert_int_equal(ret, false);
 
 	// Clean up

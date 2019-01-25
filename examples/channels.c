@@ -288,7 +288,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	meshlink_set_node_status_cb(mesh, node_status);
-	meshlink_set_log_cb(mesh, MESHLINK_INFO, log_message);
+	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, log_message);
 
 	// Set the channel accept callback. This implicitly turns on channels for all nodes.
 	// This replaces the call to meshlink_set_receive_cb().

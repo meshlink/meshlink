@@ -98,7 +98,7 @@ static void test_case_mesh_get_node_by_dev_class_01(void **state) {
     node member parameter when called and return accordingly.
 */
 static bool test_steps_mesh_get_node_by_dev_class_01(void) {
-  meshlink_node_t **nodes;
+	meshlink_node_t **nodes;
 	size_t nnodes = 0, i;
 
 	/* Create meshlink instance for NUT */
@@ -154,28 +154,24 @@ static bool test_steps_mesh_get_node_by_dev_class_01(void) {
 	free(export);
 	free(exp_nut);
 
-	meshlink_start(mesh_nut);
-	meshlink_start(mesh_peer1);
-	meshlink_start(mesh_relay1);
-	meshlink_start(mesh_relay2);
-	meshlink_start(mesh_relay3);
-
 	nodes = meshlink_get_all_nodes_by_dev_class(mesh_nut, DEV_CLASS_STATIONARY, NULL, &nnodes);
 	assert_int_not_equal(nodes, NULL);
 	assert_int_equal(nnodes, 2);
+
 	for(i = 0; i < nnodes; i++) {
-    if(strcasecmp(nodes[i]->name, "nut") && strcasecmp(nodes[i]->name, "peer1")) {
-      fail();
-    }
+		if(strcasecmp(nodes[i]->name, "nut") && strcasecmp(nodes[i]->name, "peer1")) {
+			fail();
+		}
 	}
 
 	nodes = meshlink_get_all_nodes_by_dev_class(mesh_nut, DEV_CLASS_BACKBONE, nodes, &nnodes);
 	assert_int_not_equal(nodes, NULL);
 	assert_int_equal(nnodes, 3);
+
 	for(i = 0; i < nnodes; i++) {
-    if(strcasecmp(nodes[i]->name, "relay1") && strcasecmp(nodes[i]->name, "relay2") && strcasecmp(nodes[i]->name, "relay3")) {
-      fail();
-    }
+		if(strcasecmp(nodes[i]->name, "relay1") && strcasecmp(nodes[i]->name, "relay2") && strcasecmp(nodes[i]->name, "relay3")) {
+			fail();
+		}
 	}
 
 	nodes = meshlink_get_all_nodes_by_dev_class(mesh_nut, DEV_CLASS_PORTABLE, nodes, &nnodes);
@@ -210,9 +206,9 @@ static void test_case_mesh_get_node_by_dev_class_02(void **state) {
     meshlink_errno.
 */
 static bool test_steps_mesh_get_node_by_dev_class_02(void) {
-  meshlink_node_t **nodes;
+	meshlink_node_t **nodes;
 	size_t nnodes = 0;
-  int i;
+	int i;
 	meshlink_destroy("getnodeconf.1");
 
 	/* Create meshlink instance for NUT */
@@ -298,7 +294,7 @@ static bool test_steps_mesh_get_node_dev_class_02(void) {
 	node = meshlink_get_self(mesh_nut);
 	assert(node);
 
-	dev_class_t dev_class = meshlink_get_node_dev_class(NULL, node);
+	int dev_class = meshlink_get_node_dev_class(NULL, node);
 	assert_int_equal(dev_class, -1);
 	assert_int_not_equal(meshlink_errno, 0);
 
@@ -319,6 +315,7 @@ static int black_box_setup_test_case(void **state) {
 	meshlink_destroy("getnodeconf.4");
 	meshlink_destroy("getnodeconf.5");
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
+	meshlink_errno = MESHLINK_OK;
 
 	return 0;
 }
@@ -326,13 +323,13 @@ static int black_box_setup_test_case(void **state) {
 int test_meshlink_get_all_node_by_device_class(void) {
 	const struct CMUnitTest blackbox_get_node_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_node_by_dev_class_01, black_box_setup_test_case, black_box_setup_test_case,
-		                (void *)&test_mesh_get_node_by_dev_class_01_state),
+		(void *)&test_mesh_get_node_by_dev_class_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_node_by_dev_class_02, NULL, NULL,
-		                (void *)&test_mesh_get_node_by_dev_class_02_state),
+		(void *)&test_mesh_get_node_by_dev_class_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_node_dev_class_01, NULL, NULL,
-		                (void *)&test_mesh_get_node_01_state),
+		(void *)&test_mesh_get_node_01_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_mesh_get_node_dev_class_02, NULL, NULL,
-		                (void *)&test_mesh_get_node_02_state),
+		(void *)&test_mesh_get_node_02_state),
 	};
 
 	total_tests += sizeof(blackbox_get_node_tests) / sizeof(blackbox_get_node_tests[0]);

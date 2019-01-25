@@ -1,6 +1,6 @@
 /*
     test_cases.c -- Execution of specific meshlink black box test cases
-    Copyright (C) 2017  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -336,6 +336,7 @@ static bool test_steps_meta_conn_03(void) {
 
 	PRINT_TEST_CASE_MSG("Changing IP address of PEER container\n");
 	change_ip(1);
+	sleep(3);
 	node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
 	wait_for_event(meta_conn03_cb, 5);
 	PRINT_TEST_CASE_MSG("Waiting for peer to be re-connected\n");
