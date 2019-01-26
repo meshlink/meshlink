@@ -120,4 +120,21 @@ struct devtool_node_status {
  */
 extern void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, devtool_node_status_t *status);
 
+/// Open a MeshLink instance in a given network namespace.
+/** This function opens MeshLink in the given network namespace.
+ *
+ *  @param confbase The directory in which MeshLink will store its configuration files.
+ *                  After the function returns, the application is free to overwrite or free @a confbase @a.
+ *  @param name     The name which this instance of the application will use in the mesh.
+ *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *  @param appname  The application name which will be used in the mesh.
+ *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *  @param devclass The device class which will be used in the mesh.
+ *  @param netns    A filedescriptor that represents the network namespace.
+ *
+ *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink, or NULL in case of an error.
+ *                  The pointer is valid until meshlink_close() is called.
+ */
+extern meshlink_handle_t *devtool_open_in_netns(const char *confbase, const char *name, const char *appname, dev_class_t devclass, int netns);
+
 #endif

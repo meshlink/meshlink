@@ -279,3 +279,20 @@ void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, dev
 
 	pthread_mutex_unlock(&mesh->mesh_mutex);
 }
+
+meshlink_handle_t *devtool_open_in_netns(const char *confbase, const char *name, const char *appname, dev_class_t devclass, int netns) {
+	meshlink_open_params_t *params = meshlink_open_params_init(confbase, name, appname, devclass);
+	params->netns = dup(netns);
+	meshlink_handle_t *handle;
+
+	if(params->netns == -1) {
+		handle = NULL;
+		meshlink_errno = MESHLINK_EINVAL;
+	} else {
+		handle = meshlink_open_ex(params);
+	}
+
+	meshlink_open_params_free(params);
+
+	return handle;
+}

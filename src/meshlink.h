@@ -51,6 +51,9 @@ typedef struct meshlink_node meshlink_node_t;
 /// A handle for a MeshLink channel.
 typedef struct meshlink_channel meshlink_channel_t;
 
+/// A struct containing all parameters used for opening a mesh.
+typedef struct meshlink_open_params meshlink_open_params_t;
+
 /// Code of most recent error encountered.
 typedef enum {
 	MESHLINK_OK,        ///< Everything is fine
@@ -116,6 +119,10 @@ struct meshlink_channel {
 	void *priv;                       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
 };
 
+struct meshlink_open_params {
+	/* This is an opaque struct, all parameters must be set using the corresponding meshlink_open_params_*() functions. */
+};
+
 #endif // MESHLINK_INTERNAL_H
 
 /// Get the text for the given MeshLink error code.
@@ -128,6 +135,51 @@ struct meshlink_channel {
  *                  This function will always return a valid pointer, even if an invalid error code has been passed.
  */
 extern const char *meshlink_strerror(meshlink_errno_t err);
+
+/// Create a new meshlink_open_params_t struct.
+/** This function allocates and initializes a new meshlink_open_params_t struct that can be passed to meshlink_open_ex().
+ *  The resulting struct may be reused for multiple calls to meshlink_open_ex().
+ *  After the last use, the application must free this struct using meshlink_open_params_free().
+ *
+ *  @param confbase The directory in which MeshLink will store its configuration files.
+ *                  After the function returns, the application is free to overwrite or free @a confbase @a.
+ *  @param name     The name which this instance of the application will use in the mesh.
+ *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *  @param appname  The application name which will be used in the mesh.
+ *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *  @param devclass The device class which will be used in the mesh.
+ *
+ *  @return         A pointer to a meshlink_open_params_t which can be passed to meshlink_open_ex(), or NULL in case of an error.
+ *                  The pointer is valid until meshlink_open_params_free() is called.
+ */
+extern meshlink_open_params_t *meshlink_open_params_init(const char *confbase, const char *name, const char *appname, dev_class_t devclass);
+
+/// Free a meshlink_open_params_t struct.
+/** This function frees a meshlink_open_params_t struct and all resources associated with it.
+ *
+ *  @param params   A pointer to a meshlink_open_params_t which must have been created earlier with meshlink_open_params_init().
+ */
+extern void meshlink_open_params_free(meshlink_open_params_t *params);
+
+/// Open or create a MeshLink instance.
+/** This function opens or creates a MeshLink instance.
+ *  All parameters needed by MeshLink are passed via a meshlink_open_params_t struct,
+ *  which must have been initialized earlier by the application.
+ *
+ *  This function returns a pointer to a struct meshlink_handle that will be allocated by MeshLink.
+ *  When the application does no longer need to use this handle, it must call meshlink_close() to
+ *  free its resources.
+ *
+ *  This function does not start any network I/O yet. The application should
+ *  first set callbacks, and then call meshlink_start().
+ *
+ *  @param params   A pointer to a meshlink_open_params_t which must be filled in by the application.
+ *                  After the function returns, the application is free to reuse or free @a params @a.
+ *
+ *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink, or NULL in case of an error.
+ *                  The pointer is valid until meshlink_close() is called.
+ */
+extern meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params);
 
 /// Open or create a MeshLink instance.
 /** This function opens or creates a MeshLink instance.

@@ -57,6 +57,15 @@ typedef enum proxytype_t {
 	PROXY_HTTP,
 } proxytype_t;
 
+struct meshlink_open_params {
+	char *confbase;
+	char *appname;
+	char *name;
+	dev_class_t devclass;
+
+	int netns;
+};
+
 /// A handle for an instance of MeshLink.
 struct meshlink_handle {
 	char *name;
@@ -145,6 +154,8 @@ struct meshlink_handle {
 	struct CattaSimplePoll *catta_poll;
 	struct CattaSEntryGroup *catta_group;
 	char *catta_servicetype;
+
+	int netns;
 };
 
 /// A handle for a MeshLink node.

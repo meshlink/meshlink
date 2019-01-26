@@ -203,10 +203,46 @@ static void set_timeout(int sock, int timeout) {
 	setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 }
 
+struct socket_in_netns_params {
+	int domain;
+	int type;
+	int protocol;
+	int netns;
+	int fd;
+};
+
+static void *socket_in_netns_thread(void *arg) {
+	struct socket_in_netns_params *params = arg;
+
+	if(setns(params->netns, CLONE_NEWNET) == -1) {
+		meshlink_errno = MESHLINK_EINVAL;
+	} else {
+		params->fd = socket(params->domain, params->type, params->protocol);
+	}
+
+	return NULL;
+}
+
+static int socket_in_netns(int domain, int type, int protocol, int netns) {
+	if(netns == -1) {
+		return socket(domain, type, protocol);
+	}
+
+	struct socket_in_netns_params params = {domain, type, protocol, netns, -1};
+
+	pthread_t thr;
+
+	if(pthread_create(&thr, NULL, socket_in_netns_thread, &params) == 0) {
+		pthread_join(thr, NULL);
+	}
+
+	return params.fd;
+}
+
 // Find out what local address a socket would use if we connect to the given address.
 // We do this using connect() on a UDP socket, so the kernel has to resolve the address
 // of both endpoints, but this will actually not send any UDP packet.
-static bool getlocaladdrname(char *destaddr, char *host, socklen_t hostlen) {
+static bool getlocaladdrname(char *destaddr, char *host, socklen_t hostlen, int netns) {
 	struct addrinfo *rai = NULL;
 	const struct addrinfo hint = {
 		.ai_family = AF_UNSPEC,
@@ -218,7 +254,7 @@ static bool getlocaladdrname(char *destaddr, char *host, socklen_t hostlen) {
 		return false;
 	}
 
-	int sock = socket(rai->ai_family, rai->ai_socktype, rai->ai_protocol);
+	int sock = socket_in_netns(rai->ai_family, rai->ai_socktype, rai->ai_protocol, netns);
 
 	if(sock == -1) {
 		freeaddrinfo(rai);
@@ -267,7 +303,7 @@ char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int fami
 			continue;
 		}
 
-		int s = socket(aip->ai_family, aip->ai_socktype, aip->ai_protocol);
+		int s = socket_in_netns(aip->ai_family, aip->ai_socktype, aip->ai_protocol, mesh->netns);
 
 		if(s >= 0) {
 			set_timeout(s, 5000);
@@ -329,9 +365,9 @@ char *meshlink_get_local_address_for_family(meshlink_handle_t *mesh, int family)
 	bool success = false;
 
 	if(family == AF_INET) {
-		success = getlocaladdrname("93.184.216.34", localaddr, sizeof(localaddr));
+		success = getlocaladdrname("93.184.216.34", localaddr, sizeof(localaddr), mesh->netns);
 	} else if(family == AF_INET6) {
-		success = getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", localaddr, sizeof(localaddr));
+		success = getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", localaddr, sizeof(localaddr), mesh->netns);
 	}
 
 	if(!success) {
@@ -1070,14 +1106,14 @@ static void add_local_addresses(meshlink_handle_t *mesh) {
 
 	// IPv4 example.org
 
-	if(getlocaladdrname("93.184.216.34", host, sizeof(host))) {
+	if(getlocaladdrname("93.184.216.34", host, sizeof(host), mesh->netns)) {
 		snprintf(entry, sizeof(entry), "%s %s", host, mesh->myport);
 		append_config_file(mesh, mesh->name, "Address", entry);
 	}
 
 	// IPv6 example.org
 
-	if(getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", host, sizeof(host))) {
+	if(getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", host, sizeof(host), mesh->netns)) {
 		snprintf(entry, sizeof(entry), "%s %s", host, mesh->myport);
 		append_config_file(mesh, mesh->name, "Address", entry);
 	}
@@ -1133,12 +1169,19 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	return true;
 }
 
-meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
-	// Validate arguments provided by the application
-	bool usingname = false;
+static void *setup_network_in_netns_thread(void *arg) {
+	meshlink_handle_t *mesh = arg;
 
-	logger(NULL, MESHLINK_DEBUG, "meshlink_open called\n");
+	if(setns(mesh->netns, CLONE_NEWNET) != 0) {
+		return NULL;
+	}
 
+	bool success = setup_network(mesh);
+	add_local_addresses(mesh);
+	return success ? arg : NULL;
+}
+
+meshlink_open_params_t *meshlink_open_params_init(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
 	if(!confbase || !*confbase) {
 		logger(NULL, MESHLINK_ERROR, "No confbase given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
@@ -1161,13 +1204,10 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 		logger(NULL, MESHLINK_ERROR, "No name given!\n");
 		//return NULL;
 	} else { //check name only if there is a name != NULL
-
 		if(!check_id(name)) {
 			logger(NULL, MESHLINK_ERROR, "Invalid name given!\n");
 			meshlink_errno = MESHLINK_EINVAL;
 			return NULL;
-		} else {
-			usingname = true;
 		}
 	}
 
@@ -1177,15 +1217,96 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 		return NULL;
 	}
 
+	meshlink_open_params_t *params = xzalloc(sizeof * params);
+
+	params->confbase = xstrdup(confbase);
+	params->name = xstrdup(name);
+	params->appname = xstrdup(appname);
+	params->devclass = devclass;
+	params->netns = -1;
+
+	return params;
+}
+
+void meshlink_open_params_free(meshlink_open_params_t *params) {
+	if(!params) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	free(params->confbase);
+	free(params->name);
+	free(params->appname);
+
+	free(params);
+}
+
+meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
+	/* Create a temporary struct on the stack, to avoid allocating and freeing one. */
+	meshlink_open_params_t params = {NULL};
+
+	params.confbase = (char *)confbase;
+	params.name = (char *)name;
+	params.appname = (char *)appname;
+	params.devclass = devclass;
+	params.netns = -1;
+
+	return meshlink_open_ex(&params);
+}
+meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
+	// Validate arguments provided by the application
+	bool usingname = false;
+
+	logger(NULL, MESHLINK_DEBUG, "meshlink_open called\n");
+
+	if(!params->confbase || !*params->confbase) {
+		logger(NULL, MESHLINK_ERROR, "No confbase given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(!params->appname || !*params->appname) {
+		logger(NULL, MESHLINK_ERROR, "No appname given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(strchr(params->appname, ' ')) {
+		logger(NULL, MESHLINK_ERROR, "Invalid appname given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(!params->name || !*params->name) {
+		logger(NULL, MESHLINK_ERROR, "No name given!\n");
+		//return NULL;
+	} else { //check name only if there is a name != NULL
+
+		if(!check_id(params->name)) {
+			logger(NULL, MESHLINK_ERROR, "Invalid name given!\n");
+			meshlink_errno = MESHLINK_EINVAL;
+			return NULL;
+		} else {
+			usingname = true;
+		}
+	}
+
+	if((int)params->devclass < 0 || params->devclass > _DEV_CLASS_MAX) {
+		logger(NULL, MESHLINK_ERROR, "Invalid devclass given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
 	meshlink_handle_t *mesh = xzalloc(sizeof(meshlink_handle_t));
-	mesh->confbase = xstrdup(confbase);
-	mesh->appname = xstrdup(appname);
-	mesh->devclass = devclass;
+	mesh->confbase = xstrdup(params->confbase);
+	mesh->appname = xstrdup(params->appname);
+	mesh->devclass = params->devclass;
 	mesh->discovery = true;
 	mesh->invitation_timeout = 604800; // 1 week
+	mesh->netns = params->netns;
 
 	if(usingname) {
-		mesh->name = xstrdup(name);
+		mesh->name = xstrdup(params->name);
 	}
 
 	// initialize mutex
@@ -1203,7 +1324,7 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	// Check whether meshlink.conf already exists
 
 	char filename[PATH_MAX];
-	snprintf(filename, sizeof(filename), "%s" SLASH "meshlink.conf", confbase);
+	snprintf(filename, sizeof(filename), "%s" SLASH "meshlink.conf", params->confbase);
 
 	if(access(filename, R_OK)) {
 		if(errno == ENOENT) {
@@ -1268,13 +1389,25 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 	// Setup up everything
 	// TODO: we should not open listening sockets yet
 
-	if(!setup_network(mesh)) {
+	bool success = false;
+
+	if(mesh->netns != -1) {
+		pthread_t thr;
+
+		if(pthread_create(&thr, NULL, setup_network_in_netns_thread, mesh) == 0) {
+			void *retval = NULL;
+			success = pthread_join(thr, &retval) == 0 && retval;
+		}
+	} else {
+		success = setup_network(mesh);
+		add_local_addresses(mesh);
+	}
+
+	if(!success) {
 		meshlink_close(mesh);
 		meshlink_errno = MESHLINK_ENETWORK;
 		return NULL;
 	}
-
-	add_local_addresses(mesh);
 
 	idle_set(&mesh->loop, idle, mesh);
 
@@ -1284,6 +1417,12 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 
 static void *meshlink_main_loop(void *arg) {
 	meshlink_handle_t *mesh = arg;
+
+	if(mesh->netns != -1) {
+		if(setns(mesh->netns, CLONE_NEWNET) != 0) {
+			return NULL;
+		}
+	}
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
@@ -1451,6 +1590,10 @@ void meshlink_close(meshlink_handle_t *mesh) {
 #endif
 
 	ecdsa_free(mesh->invitation_key);
+
+	if(mesh->netns != -1) {
+		close(mesh->netns);
+	}
 
 	free(mesh->name);
 	free(mesh->appname);
@@ -2245,7 +2388,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 
 		if(ai) {
 			for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
-				mesh->sock = socket(aip->ai_family, aip->ai_socktype, aip->ai_protocol);
+				mesh->sock = socket_in_netns(aip->ai_family, aip->ai_socktype, aip->ai_protocol, mesh->netns);
 
 				if(mesh->sock == -1) {
 					logger(mesh, MESHLINK_DEBUG, "Could not open socket: %s\n", strerror(errno));
