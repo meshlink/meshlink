@@ -197,7 +197,7 @@ static bool test_steps_channel_set_poll_cb_02(void) {
 
 	/* Setting poll cb with NULL as mesh handler */
 	meshlink_set_channel_poll_cb(NULL, channel, poll_cb);
-	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
+	assert_int_not_equal(meshlink_errno, 0);
 
 	meshlink_close(mesh_handle);
 	meshlink_destroy("channelpollconf3");

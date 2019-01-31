@@ -117,7 +117,7 @@ static bool meta_conn01_conn;
 static bool meta_conn01_closed;
 static bool meta_conn01_reconn;
 
-static void meta_conn01_cb(mesh_event_payload_t payload) {
+static bool meta_conn01_cb(mesh_event_payload_t payload) {
 	char event_node_name[][10] = {"RELAY", "PEER", "NUT"};
 	fprintf(stderr, "%s : ", event_node_name[payload.client_id]);
 
@@ -138,6 +138,8 @@ static void meta_conn01_cb(mesh_event_payload_t payload) {
 		meta_conn01_reconn = true;
 		break;
 	}
+
+	return true;
 }
 
 /* Execute Meta-connections Test Case # 1 - re-connection to peer after disconnection when
@@ -159,7 +161,6 @@ static void test_case_meta_conn_01(void **state) {
 */
 static bool test_steps_meta_conn_01(void) {
 	char *invite_peer, *invite_nut;
-	bool result = false;
 	int i;
 	char *import;
 
@@ -188,10 +189,11 @@ static bool test_steps_meta_conn_01(void) {
 	PRINT_TEST_CASE_MSG("Waiting for peer to be re-connected\n");
 	wait_for_event(meta_conn01_cb, 60);
 
-	assert_int_equal(meta_conn01_reconn, true);
-
+	mesh_event_destroy();
 	free(invite_peer);
 	free(invite_nut);
+
+	assert_int_equal(meta_conn01_reconn, true);
 
 	return true;
 }
@@ -199,7 +201,7 @@ static bool test_steps_meta_conn_01(void) {
 
 static bool meta_conn02_conn;
 
-static void meta_conn02_cb(mesh_event_payload_t payload) {
+static bool meta_conn02_cb(mesh_event_payload_t payload) {
 	char event_node_name[][10] = {"RELAY", "PEER", "NUT"};
 	fprintf(stderr, "%s : ", event_node_name[payload.client_id]);
 
@@ -214,9 +216,7 @@ static void meta_conn02_cb(mesh_event_payload_t payload) {
 		break;
 	}
 
-	if(payload.payload_length) {
-		fprintf(stderr, " %s\n", (char *)payload.payload);
-	}
+	return true;
 }
 /* Execute Meta-connections Test Case # 2 - re-connection to peer via third node
     after changing IP of NUT and peer */
@@ -235,7 +235,6 @@ static void test_case_meta_conn_02(void **state) {
 */
 static bool test_steps_meta_conn_02(void) {
 	char *invite_peer, *invite_nut;
-	bool result = false;
 	int i;
 	char *import;
 
@@ -260,23 +259,21 @@ static bool test_steps_meta_conn_02(void) {
 	wait_for_event(meta_conn02_cb, 5);
 
 	PRINT_TEST_CASE_MSG("Waiting for peer to be connected with NUT\n");
+	wait_for_event(meta_conn02_cb, 60);
 
-	if(!wait_for_event(meta_conn02_cb, 60)) {
-		return false;
-	}
-
-	result = meta_conn02_conn;
-
+	mesh_event_destroy();
 	free(invite_peer);
 	free(invite_nut);
 
-	return result;
+	assert_int_equal(meta_conn02_conn, true);
+
+	return true;
 }
 
 static bool meta_conn03_result;
 static bool meta_conn03_conn;
 
-static void meta_conn03_cb(mesh_event_payload_t payload) {
+static bool meta_conn03_cb(mesh_event_payload_t payload) {
 	char event_node_name[][10] = {"RELAY", "PEER", "NUT"};
 	fprintf(stderr, "%s : ", event_node_name[payload.client_id]);
 
@@ -300,6 +297,8 @@ static void meta_conn03_cb(mesh_event_payload_t payload) {
 		meta_conn03_result = true;
 		break;
 	}
+
+	return true;
 }
 /* Execute Meta-connections Test Case # 3 - re-connection to peer via third node
     after changing IP of peer */
@@ -318,7 +317,6 @@ static void test_case_meta_conn_03(void **state) {
 */
 static bool test_steps_meta_conn_03(void) {
 	char *invite_peer, *invite_nut;
-	bool result = false;
 	int i;
 	char *import;
 
@@ -338,21 +336,25 @@ static bool test_steps_meta_conn_03(void) {
 
 	PRINT_TEST_CASE_MSG("Changing IP address of PEER container\n");
 	change_ip(1);
+	sleep(3);
 	node_sim_in_container_event("peer", "1", NULL, PEER_ID, import);
 	wait_for_event(meta_conn03_cb, 5);
 	PRINT_TEST_CASE_MSG("Waiting for peer to be re-connected\n");
 	wait_for_event(meta_conn03_cb, 5);
-	result = meta_conn03_result;
+
+	mesh_event_destroy();
 	free(invite_peer);
 	free(invite_nut);
 
-	return result;
+	assert_int_equal(meta_conn03_result, true);
+
+	return true;
 }
 
 static char *invite_peer = NULL;
 static bool meta_conn04 = false;
 
-static void meta_conn04_cb(mesh_event_payload_t payload) {
+static bool meta_conn04_cb(mesh_event_payload_t payload) {
 	char event_node_name[][10] = {"PEER", "NUT"};
 	fprintf(stderr, "%s : ", event_node_name[payload.client_id]);
 
@@ -371,7 +373,12 @@ static void meta_conn04_cb(mesh_event_payload_t payload) {
 	case NODE_STARTED           :
 		fprintf(stderr, "Node started\n");
 		break;
+
+	default                     :
+		fprintf(stderr, "Undefined mesh event\n");
 	}
+
+	return true;
 }
 
 /* Execute Meta-connections Test Case # 4 - re-connection to peer after changing IP of
@@ -391,7 +398,6 @@ static void test_case_meta_conn_04(void **state) {
     NUT is first disconnected from peer then automatically re-connected to peer
 */
 static bool test_steps_meta_conn_04(void) {
-	bool result = false;
 	char *import;
 
 	import = mesh_event_sock_create(eth_if_name);
@@ -401,18 +407,15 @@ static bool test_steps_meta_conn_04(void) {
 	PRINT_TEST_CASE_MSG("Waiting for NUT to generate invitation to PEER\n");
 	wait_for_event(meta_conn04_cb, 5);
 
-	if(!invite_peer) {
-		return false;
-	}
+	assert(invite_peer);
 
 	PRINT_TEST_CASE_MSG("Running PEER node in the container\n");
+	fprintf(stderr, "inv: %s\n", invite_peer);
 	node_sim_in_container_event("peer", "1", invite_peer, "0", import);
 	wait_for_event(meta_conn04_cb, 5);
 	PRINT_TEST_CASE_MSG("Waiting for peer to be connected with NUT\n");
 
-	if(!wait_for_event(meta_conn04_cb, 60)) {
-		return false;
-	}
+	assert(wait_for_event(meta_conn04_cb, 60));
 
 	PRINT_TEST_CASE_MSG("Changing IP address of NUT container\n");
 	change_ip(1);
@@ -426,18 +429,21 @@ static bool test_steps_meta_conn_04(void) {
 
 	PRINT_TEST_CASE_MSG("Waiting for peer to be re-connected\n");
 	wait_for_event(meta_conn04_cb, 5);
-	result = meta_conn04;
 
+	mesh_event_destroy();
 	free(invite_peer);
 	free(import);
-	return result;
+
+	assert_int_equal(meta_conn04, true);
+
+	return true;
 }
 
 static char *invitation = NULL;
 
 static bool meta_conn05 = false;
 
-static void meta_conn05_cb(mesh_event_payload_t payload) {
+static bool meta_conn05_cb(mesh_event_payload_t payload) {
 	char event_node_name[][10] = {"PEER", "NUT"};
 	fprintf(stderr, "%s : ", event_node_name[payload.client_id]);
 
@@ -455,6 +461,8 @@ static void meta_conn05_cb(mesh_event_payload_t payload) {
 		fprintf(stderr, "Node started\n");
 		break;
 	}
+
+	return true;
 }
 
 /* Execute Meta-connections Test Case # 5 - re-connection to peer after changing IP of peer */
@@ -472,7 +480,6 @@ static void test_case_meta_conn_05(void **state) {
     NUT is first disconnected from peer then automatically re-connected to peer
 */
 static bool test_steps_meta_conn_05(void) {
-	bool result = false;
 	char *import;
 
 	import = mesh_event_sock_create(eth_if_name);
@@ -481,16 +488,12 @@ static bool test_steps_meta_conn_05(void) {
 
 	wait_for_event(meta_conn05_cb, 5);
 
-	if(!invitation) {
-		return false;
-	}
+	assert(invitation);
 
 	node_sim_in_container_event("peer", "1", invitation, "0", import);
 	wait_for_event(meta_conn05_cb, 5);
 
-	if(!wait_for_event(meta_conn05_cb, 5)) {
-		return false;
-	}
+	assert(wait_for_event(meta_conn05_cb, 5));
 
 	change_ip(0);
 	meta_conn05 = false;
@@ -498,11 +501,14 @@ static bool test_steps_meta_conn_05(void) {
 	wait_for_event(meta_conn05_cb, 5);
 	PRINT_TEST_CASE_MSG("Waiting for peer to be re-connected\n");
 	wait_for_event(meta_conn05_cb, 5);
-	result = meta_conn05;
 
+	mesh_event_destroy();
 	free(invitation);
 	free(import);
-	return result;
+
+	assert_int_equal(meta_conn05, true);
+
+	return true;
 }
 
 int test_meta_conn(void) {

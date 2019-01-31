@@ -64,7 +64,7 @@ static void send_event(mesh_event_t event) {
 	}
 
 	assert(attempts < 5);
-
+	fprintf(stderr, "SENT EVENT\n");
 	return;
 }
 
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
 	assert(wait_sync_flag(&channel_opened, 10));
 	send_event(CHANNEL_OPENED);
 
-	assert(wait_sync_flag(&sigusr_received, 10));
+	assert(wait_sync_flag(&sigusr_received, 30));
 
 	sleep(10);
 

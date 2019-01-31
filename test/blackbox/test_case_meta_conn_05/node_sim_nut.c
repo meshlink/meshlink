@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
 
 	fprintf(stderr, "Connected with Peer\n");
 
-	if(!mesh_event_sock_send(clientId, META_CONN_SUCCESSFUL, "Connected with Peer", 30)) {
+	if(!mesh_event_sock_send(clientId, META_CONN_SUCCESSFUL, NULL, 0)) {
 		fprintf(stderr, "Trying to resend mesh event\n");
 		sleep(1);
 	}
@@ -135,10 +135,11 @@ int main(int argc, char *argv[]) {
 
 	fprintf(stderr, "Re-connected with Peer\n");
 
-	if(!mesh_event_sock_send(clientId, META_CONN_SUCCESSFUL, "Connected with Peer", 30)) {
+	if(!mesh_event_sock_send(clientId, META_CONN_SUCCESSFUL, NULL, 0)) {
 		fprintf(stderr, "Trying to resend mesh event\n");
 		sleep(1);
 	}
 
 	execute_close();
+	meshlink_destroy(argv[1]);
 }

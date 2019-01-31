@@ -25,6 +25,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include "common_handlers.h"
+#include "containers.h"
 #include "tcpdump.h"
 
 pid_t tcpdump_start(char *interface) {
@@ -32,7 +33,7 @@ pid_t tcpdump_start(char *interface) {
 	char *argv[] = { "tcpdump", "-i", interface, NULL };
 	// child process have a pipe to the parent process when parent process terminates SIGPIPE kills the tcpdump
 	int pipes[2];
-	pipe(pipes);
+	assert(pipe(pipes) != -1);
 	PRINT_TEST_CASE_MSG("\x1b[32mLaunching TCP Dump ..\x1b[0m\n");
 
 	if((tcpdump_pid = fork()) == 0) {

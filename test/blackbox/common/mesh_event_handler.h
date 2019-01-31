@@ -36,9 +36,6 @@
 #include <time.h>
 #include <stdint.h>
 
-/// Maximum length of the mesh event payload
-#define PAYLOAD_MAX_SIZE 1000
-
 /// mesh events
 // TODO: Add more mesh event if required.
 typedef enum {
@@ -55,10 +52,17 @@ typedef enum {
 	META_RECONN_FAILURE,
 	MESH_DATA_RECEIVED,
 	NODE_STARTED,
+	NODE_LEFT,
 	NODE_RESTARTED,
 	NODE_JOINED,
+	NODE_JOINED1,
+	NODE_JOINED2,
+	NODE_JOINED3,
 	PORT_NO,
+	OPTIMAL_PMTU_PEER,
+	OPTIMAL_PMTU_RELAY,
 	ERR_NETWORK,
+	SIG_ABORT,
 	MESH_DATA_VERIFED,
 	CHANNEL_OPENED,
 	CHANNEL_REQ_RECIEVED,
@@ -73,19 +77,25 @@ typedef enum {
 } mesh_event_t;
 
 /// mesh event UDP packet
-typedef struct mesh_event_payload {
-	uint32_t      client_id;
+typedef struct  mesh_event_payload {
+	void          *payload;
 	mesh_event_t  mesh_event;
-	uint16_t      payload_length;
-	uint8_t       payload[PAYLOAD_MAX_SIZE];
+	uint16_t      client_id;
+	uint32_t       payload_length;
 } mesh_event_payload_t;
+
+struct cond_flag {
+	pthread_mutex_t mutex;
+	pthread_cond_t cond;
+	bool flag;
+};
 
 /// callback for handling the mesh event
 /** mesh event callback called from wait_for_event() if the mesh event UDP server gets a mesh event.
  *
  *  @param mesh_event_packet    packet containing client-id, mesh event & payload (if any).
  */
-typedef void (*mesh_event_callback_t)(mesh_event_payload_t mesh_event_packet);
+typedef bool (*mesh_event_callback_t)(mesh_event_payload_t mesh_event_packet);
 
 /// Creates an UDP server for listening mesh events.
 /** This function creates an UDP socket, binds it with given interface address and returns a NULL
@@ -124,7 +134,7 @@ extern bool wait_for_event(mesh_event_callback_t callback, int timeout);
  *
  *  @return                  This function returns true on success else returns false.
  */
-extern bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payload, size_t payload_length);
+extern bool mesh_event_sock_send(int client_id, mesh_event_t event, const void *payload, size_t payload_length);
 
 /// Imports the server address, saves it and opens an UDP client socket.
 /** This function creates an UDP socket, binds it with given interface address and returns a NULL
@@ -137,5 +147,8 @@ extern bool mesh_event_sock_send(int client_id, mesh_event_t event, void *payloa
  */
 extern void mesh_event_sock_connect(const char *server_address);
 
-bool wait_for_event_only(mesh_event_callback_t callback, int t, mesh_event_t event);
+extern void mesh_event_destroy(void);
+
+extern void mesh_events_flush(void);
+
 #endif // _MESH_EVENT_HANDLER_H_

@@ -30,6 +30,9 @@
 #define LXC_RUN_SCRIPT "lxc_run.sh"
 #define LXC_COPY_SCRIPT "lxc_copy_file.sh"
 #define LXC_BUILD_SCRIPT "build_container.sh"
+#define LXC_NAT_BUILD "nat.sh"
+#define LXC_NAT_FULL_CONE "full_cone.sh"
+#define LXC_NAT_DESTROY "nat_destroy.sh"
 
 typedef struct black_box_state {
 	char *test_case_name;

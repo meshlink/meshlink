@@ -61,7 +61,6 @@ static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel,
 }
 
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
-	fprintf(stderr, "\n\n\n LEN = %u & DATA = %s in RECV CB\n\n\n\n", len, (char *)dat);
 
 	if(len == 0) {
 		assert(mesh_event_sock_send(client_id, ERR_NETWORK, NULL, 0));
