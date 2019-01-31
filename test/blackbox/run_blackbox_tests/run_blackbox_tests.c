@@ -65,6 +65,7 @@
 #include "test_optimal_pmtu.h"
 
 #include "test_cases_channel_conn.h"
+#include "test_cases_get_all_nodes_by_dev_class.h"
 
 #include "../common/containers.h"
 #include "../common/common_handlers.h"
@@ -95,6 +96,7 @@ int main(int argc, char *argv[]) {
 	failed_tests += test_meshlink_export();
 	failed_tests += test_meshlink_get_fingerprint();
 	failed_tests += test_meshlink_get_all_nodes();
+	failed_tests += test_meshlink_get_all_node_by_device_class();
 	failed_tests += test_meshlink_set_port();
 	failed_tests += test_meshlink_sign();
 	failed_tests += test_meshlink_verify();
