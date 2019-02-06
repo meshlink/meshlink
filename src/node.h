@@ -24,6 +24,7 @@
 #include "sockaddr.h"
 #include "sptps.h"
 #include "utcp/utcp.h"
+#include "submesh.h"
 
 typedef struct node_status_t {
 	unsigned int unused_active: 1;          /* 1 if active (not used for nodes) */
@@ -49,6 +50,7 @@ typedef struct node_t {
 	dev_class_t devclass;
 
 	struct meshlink_handle *mesh;           /* The mesh this node belongs to */
+	struct submesh_t *submesh;		/* Nodes Sub-Mesh Handle*/
 
 	int sock;                               /* Socket to use for outgoing UDP packets */
 	sockaddr_t address;                     /* his real (internet) ip to send UDP packets to */

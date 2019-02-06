@@ -37,6 +37,7 @@ typedef struct {
 #include "meshlink_internal.h"
 #include "netutl.h"
 #include "node.h"
+#include "submesh.h"
 #include "protocol.h"
 #include "route.h"
 #include "sockaddr.h"
@@ -1413,6 +1414,37 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 
 	logger(NULL, MESHLINK_DEBUG, "meshlink_open returning\n");
 	return mesh;
+}
+
+meshlink_submesh_t *meshlink_submesh_open(meshlink_handle_t  *mesh, const char *submesh) {
+	meshlink_submesh_t *s = NULL;
+	if(!mesh) {
+		logger(NULL, MESHLINK_ERROR, "No mesh handle given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(!submesh || !*submesh) {
+		logger(NULL, MESHLINK_ERROR, "No submesh name given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	s = (meshlink_submesh_t *)lookup_submesh(mesh, submesh);
+
+	if (s) {
+		logger(NULL, MESHLINK_ERROR, "SubMesh Already exists!\n");
+		meshlink_errno = MESHLINK_EEXIST;
+		return NULL;
+	}
+
+	s = (meshlink_submesh_t *)new_submesh();
+	s->name = xstrdup(submesh);
+
+	submesh_add(mesh, (submesh_t *)s);
+
+	meshlink_errno = MESHLINK_OK;
+	return s;
 }
 
 static void *meshlink_main_loop(void *arg) {
