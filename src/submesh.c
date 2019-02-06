@@ -67,12 +67,12 @@ void submesh_del(meshlink_handle_t *mesh, submesh_t *s) {
 submesh_t *lookup_submesh(struct meshlink_handle *mesh, const char *submesh_name) {
 	submesh_t *submesh = NULL;
 
-	if ( !mesh->submeshes ) {
+	if(!mesh->submeshes) {
 		return NULL;
 	}
 
 	for list_each(submesh_t, s, mesh->submeshes) {
-		if ( !strcmp(submesh_name, s->name) ) {
+		if(!strcmp(submesh_name, s->name)) {
 			submesh = s;
 			break;
 		}

@@ -26,7 +26,7 @@ typedef struct submesh_t {
 	char *name;                             /* name of this Sub-Mesh */
 	void *priv;
 
-	struct meshlink_handle *mesh;   		/* the mesh this submesh belongs to */
+	struct meshlink_handle *mesh;                   /* the mesh this submesh belongs to */
 } submesh_t;
 
 extern void init_submeshes(struct meshlink_handle *mesh);

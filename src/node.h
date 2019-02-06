@@ -50,7 +50,7 @@ typedef struct node_t {
 	dev_class_t devclass;
 
 	struct meshlink_handle *mesh;           /* The mesh this node belongs to */
-	struct submesh_t *submesh;		/* Nodes Sub-Mesh Handle*/
+	struct submesh_t *submesh;              /* Nodes Sub-Mesh Handle*/
 
 	int sock;                               /* Socket to use for outgoing UDP packets */
 	sockaddr_t address;                     /* his real (internet) ip to send UDP packets to */

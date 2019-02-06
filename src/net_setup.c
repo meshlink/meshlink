@@ -31,6 +31,7 @@
 #include "route.h"
 #include "utils.h"
 #include "xalloc.h"
+#include "submesh.h"
 
 bool node_read_ecdsa_public_key(meshlink_handle_t *mesh, node_t *n) {
 	if(ecdsa_active(n->ecdsa)) {
@@ -156,6 +157,39 @@ exit:
 	return n->devclass != 0;
 }
 
+bool node_read_submesh(meshlink_handle_t *mesh, node_t *n) {
+
+	splay_tree_t *config_tree;
+	char *p;
+
+	init_configuration(&config_tree);
+
+	if(!read_host_config(mesh, config_tree, n->name)) {
+		goto exit;
+	}
+
+	if(get_config_string(lookup_config(config_tree, "SubMesh"), &p)) {
+		n->submesh = NULL;
+
+		for list_each(submesh_t, s, mesh->submeshes) {
+			if(!strcmp(p, s->name)) {
+				n->submesh = s;
+				break;
+			}
+		}
+
+		if(!n->submesh) {
+			n->submesh = (submesh_t *)meshlink_submesh_open(mesh, p);
+		}
+
+		free(p);
+	}
+
+exit:
+	exit_configuration(&config_tree);
+	return n->submesh != NULL;
+}
+
 bool node_write_devclass(meshlink_handle_t *mesh, node_t *n) {
 
 	if((int)n->devclass < 0 || n->devclass > _DEV_CLASS_MAX) {
@@ -191,6 +225,41 @@ fail:
 	return result;
 }
 
+bool node_write_submesh(meshlink_handle_t *mesh, node_t *n) {
+
+	if(!n->submesh) {
+		return false;
+	}
+
+	bool result = false;
+
+	splay_tree_t *config_tree;
+	init_configuration(&config_tree);
+
+	// ignore read errors; in case the file does not exist we will create it
+	read_host_config(mesh, config_tree, n->name);
+
+	config_t *cnf = lookup_config(config_tree, "SubMesh");
+
+	if(!cnf) {
+		cnf = new_config();
+		cnf->variable = xstrdup("SubMesh");
+		config_add(config_tree, cnf);
+	}
+
+	set_config_string(cnf, n->submesh->name);
+
+	if(!write_host_config(mesh, config_tree, n->name)) {
+		goto fail;
+	}
+
+	result = true;
+
+fail:
+	exit_configuration(&config_tree);
+	return result;
+}
+
 void load_all_nodes(meshlink_handle_t *mesh) {
 	DIR *dir;
 	struct dirent *ent;
@@ -212,12 +281,17 @@ void load_all_nodes(meshlink_handle_t *mesh) {
 		node_t *n = lookup_node(mesh, ent->d_name);
 
 		if(n) {
+			if(n == mesh->self && !n->submesh) {
+				node_read_submesh(mesh, n);
+			}
+
 			continue;
 		}
 
 		n = new_node();
 		n->name = xstrdup(ent->d_name);
 		node_read_devclass(mesh, n);
+		node_read_submesh(mesh, n);
 		node_add(mesh, n);
 	}
 
@@ -463,6 +537,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 */
 bool setup_network(meshlink_handle_t *mesh) {
 	init_connections(mesh);
+	init_submeshes(mesh);
 	init_nodes(mesh);
 	init_edges(mesh);
 	init_requests(mesh);

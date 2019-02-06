@@ -49,7 +49,7 @@ static void parse_command(meshlink::mesh *mesh, char *buf) {
 			return;
 		}
 
-		invitation = mesh->invite(arg);
+		invitation = mesh->invite(NULL, arg);
 
 		if(!invitation) {
 			fprintf(stderr, "Could not invite '%s': %s\n", arg, meshlink::strerror());
