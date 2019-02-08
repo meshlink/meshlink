@@ -55,14 +55,14 @@ int main() {
 	}
 
 	meshlink_add_address(mesh1, "localhost");
-	char *baz_url = meshlink_invite(mesh1, "baz");
+	char *baz_url = meshlink_invite(mesh1, NULL, "baz");
 
 	if(!baz_url) {
 		fprintf(stderr, "Foo could not generate an invitation for baz\n");
 		return 1;
 	}
 
-	char *quux_url = meshlink_invite(mesh1, "quux");
+	char *quux_url = meshlink_invite(mesh1, NULL, "quux");
 
 	if(!quux_url) {
 		fprintf(stderr, "Foo could not generate an invitation for quux\n");

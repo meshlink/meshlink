@@ -100,7 +100,7 @@ static bool test_meshlink_join_01(void) {
 
 	// Inviting nut
 	meshlink_start(mesh2);
-	char *invitation = meshlink_invite(mesh2, "nut");
+	char *invitation = meshlink_invite(mesh2, NULL, "nut");
 	assert(invitation);
 
 	// Joining Node-Under-Test with relay
@@ -141,7 +141,7 @@ static bool test_meshlink_join_02(void) {
 	assert(mesh1 != NULL);
 	meshlink_set_log_cb(mesh1, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-	char *invitation = meshlink_invite(mesh1, "nodex");
+	char *invitation = meshlink_invite(mesh1, NULL, "nodex");
 
 	/* meshlink_join called with NULL as mesh handle and with valid invitation */
 	bool ret = meshlink_join(NULL, invitation);

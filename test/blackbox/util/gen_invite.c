@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, logger_cb);
 	meshlink_enable_discovery(mesh, false);
 	assert(meshlink_start(mesh));
-	invite = meshlink_invite_ex(mesh, argv[2], MESHLINK_INVITE_LOCAL | MESHLINK_INVITE_NUMERIC);
+	invite = meshlink_invite_ex(mesh, NULL, argv[2], MESHLINK_INVITE_LOCAL | MESHLINK_INVITE_NUMERIC);
 	printf("%s\n", invite);
 	meshlink_close(mesh);
 

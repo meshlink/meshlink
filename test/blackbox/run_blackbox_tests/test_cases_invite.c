@@ -82,7 +82,7 @@ static bool test_invite_01(void) {
 	assert(mesh_handle);
 	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-	char *invitation = meshlink_invite(mesh_handle, "new");
+	char *invitation = meshlink_invite(mesh_handle, NULL, "new");
 	assert_int_equal(invitation, NULL);
 
 	free(invitation);
@@ -104,7 +104,7 @@ static void test_case_invite_02(void **state) {
 */
 static bool test_invite_02(void) {
 	// Trying to generate INVITATION by passing NULL as mesh link handle
-	char *invitation = meshlink_invite(NULL, "nut");
+	char *invitation = meshlink_invite(NULL, NULL, "nut");
 	assert_int_equal(invitation, NULL);
 
 	return true;
@@ -132,7 +132,7 @@ static bool test_invite_03(void) {
 	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	// Trying to generate INVITATION by passing NULL as mesh link handle
-	char *invitation = meshlink_invite(mesh_handle, NULL);
+	char *invitation = meshlink_invite(mesh_handle, NULL, NULL);
 	assert_int_equal(invitation, NULL);
 
 	meshlink_close(mesh_handle);
@@ -165,12 +165,12 @@ static bool test_invite_04(void) {
 
 	char *hostname1 = "127.1.1.1";
 	bool ret = meshlink_add_address(mesh_handle, hostname1);
-	char *invitation = meshlink_invite(mesh_handle, "foo");
+	char *invitation = meshlink_invite(mesh_handle, NULL, "foo");
 	assert_int_not_equal(strstr(invitation, hostname1), NULL);
 
 	char *hostname2 = "127.1.2.3";
 	ret = meshlink_add_address(mesh_handle, hostname2);
-	invitation = meshlink_invite(mesh_handle, "bar");
+	invitation = meshlink_invite(mesh_handle, NULL, "bar");
 
 	// Verify we have both the added addresses
 	assert_int_not_equal(strstr(invitation, hostname1), NULL);
