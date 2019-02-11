@@ -20,10 +20,14 @@ bool wait_sync_flag(struct sync_flag *s, int seconds) {
 	clock_gettime(CLOCK_REALTIME, &timeout);
 	timeout.tv_sec += seconds;
 
+	pthread_mutex_lock(&s->mutex);
+
 	while(!s->flag)
 		if(!pthread_cond_timedwait(&s->cond, &s->mutex, &timeout) || errno != EINTR) {
 			break;
 		}
+
+	pthread_mutex_unlock(&s->mutex);
 
 	return s->flag;
 }

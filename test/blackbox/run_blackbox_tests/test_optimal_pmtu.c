@@ -21,22 +21,14 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include <assert.h>
-#include "execute_tests.h"
-#include "test_cases.h"
-#include "pthread.h"
+#include <pthread.h>
 #include "../common/containers.h"
 #include "../common/test_step.h"
 #include "../common/common_handlers.h"
-#include "../common/mesh_event_handler.h"
+#include "../common/network_namespace_framework.h"
+#include "../../utils.h"
+#include "../test_case_optimal_pmtu_01/test_case_optimal_pmtu.h"
 #include "test_optimal_pmtu.h"
-
-#define RELAY_ID "0"
-#define PEER_ID  "1"
-#define NUT_ID   "2"
-#define PEER_NAT "peer_nat"
-#define NUT_NAT "nut_nat"
-
-#pragma pack(1)
 
 static void test_case_optimal_pmtu_01(void **state);
 static bool test_steps_optimal_pmtu_01(void);
@@ -52,280 +44,68 @@ static void test_case_optimal_pmtu_06(void **state);
 static bool test_steps_optimal_pmtu_06(void);
 static void test_case_optimal_pmtu_07(void **state);
 static bool test_steps_optimal_pmtu_07(void);
-static void tcpdump_in_container(const char *cmd, const char *container_name);
 
-static char *test_optimal_pmtu_1_nodes[] = { "relay", "peer", "nut" };
-static black_box_state_t test_pmtu_state_01 = {
-	.test_case_name =  "test_case_optimal_pmtu_01",
-	.node_names =  test_optimal_pmtu_1_nodes,
-	.num_nodes =  3,
-};
+extern void *node_sim_relay_01(void *arg);
+extern void *node_sim_peer_01(void *arg);
+extern void *node_sim_nut_01(void *arg);
+extern pmtu_attr_t node_pmtu[2];
 
-static black_box_state_t test_pmtu_state_02 = {
-	.test_case_name =  "test_case_optimal_pmtu_02",
-	.node_names =  test_optimal_pmtu_1_nodes,
-	.num_nodes =  3,
-};
+typedef bool (*test_step_func_t)(void);
+static int setup_test(void **state);
+bool test_pmtu_relay_running = true;
+bool test_pmtu_peer_running = true;
+bool test_pmtu_nut_running = true;
+bool ping_channel_enable_07 = false;
 
-static black_box_state_t test_pmtu_state_03 = {
-	.test_case_name =  "test_case_optimal_pmtu_03",
-	.node_names =  test_optimal_pmtu_1_nodes,
-	.num_nodes =  3,
-};
+struct sync_flag test_pmtu_nut_closed = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
+static netns_state_t *test_pmtu_state;
 
-static black_box_state_t test_pmtu_state_04 = {
-	.test_case_name =  "test_case_optimal_pmtu_04",
-	.node_names =  test_optimal_pmtu_1_nodes,
-	.num_nodes =  3,
-};
+static int setup_test(void **state) {
+	netns_create_topology(test_pmtu_state);
+	fprintf(stderr, "\nCreated topology\n");
 
-static black_box_state_t test_pmtu_state_05 = {
-	.test_case_name =  "test_case_optimal_pmtu_05",
-	.node_names =  test_optimal_pmtu_1_nodes,
-	.num_nodes =  3,
-};
-
-static black_box_state_t test_pmtu_state_06 = {
-	.test_case_name =  "test_case_optimal_pmtu_06",
-	.node_names =  test_optimal_pmtu_1_nodes,
-	.num_nodes =  3,
-};
-
-static black_box_state_t test_pmtu_state_07 = {
-	.test_case_name =  "test_case_optimal_pmtu_07",
-	.node_names =  test_optimal_pmtu_1_nodes,
-	.num_nodes =  3,
-};
-
-static pmtu_attr_t node_pmtu_peer;
-static pmtu_attr_t node_pmtu_relay;
-static char *import = NULL;
-
-
-static void tcpdump_in_container(const char *cmd, const char *container_name) {
-	execute_in_container(cmd, container_name, true);
-}
-
-static int setup_pmtu_test_case(void **state) {
-	char *ret_str;
-	char container_name[200];
-
-	PRINT_TEST_CASE_MSG("\n\n======================================================================\n\n\n");
-
-	fprintf(stderr, "Setting up Containers\n");
-	state_ptr = (black_box_state_t *)(*state);
-
-	// Setup containers for test cases
-	setup_containers(state);
-
-	// Switch bridges of test containers from lxcbr0 to it's respective NAT bridges
-	assert(snprintf(container_name, sizeof(container_name), "%s_%s", state_ptr->test_case_name, "nut") >= 0);
-	container_switch_bridge(container_name, lxc_path, lxc_bridge, "nut_nat_bridge");
-	assert(snprintf(container_name, sizeof(container_name), "%s_%s", state_ptr->test_case_name, "peer") >= 0);
-	container_switch_bridge(container_name, lxc_path, lxc_bridge, "peer_nat_bridge");
-
-	// Flush iptable filter rules if there are any
-	flush_nat_rules(NUT_NAT, "-t filter");
-	flush_nat_rules(PEER_NAT, "-t filter");
-
-	// Reset the MTU size of NAT's public interface to 1500 bytes
-	assert(change_container_mtu(NUT_NAT, PUB_INTERFACE, 1500) == NULL);
-	assert(change_container_mtu(PEER_NAT, PUB_INTERFACE, 1500) == NULL);
-
-	// Flush all the pushed data in the meshlink event handler receive queue
-	mesh_events_flush();
+	test_pmtu_relay_running = true;
+	test_pmtu_peer_running = true;
+	test_pmtu_nut_running = true;
+	ping_channel_enable_07 = false;
+	memset(node_pmtu, 2, sizeof(node_pmtu[0]));
+	set_sync_flag(&test_pmtu_nut_closed, false);
+	meshlink_destroy("nut");
+	meshlink_destroy("peer");
+	meshlink_destroy("relay");
 
 	return EXIT_SUCCESS;
 }
 
-static int teardown_pmtu_test_case(void **state) {
+static int teardown_test(void **state) {
+	meshlink_destroy("nut");
+	meshlink_destroy("peer");
+	meshlink_destroy("relay");
+	netns_destroy_topology(test_pmtu_state);
 
-	// Reset the MTU size of NAT's public interface to 1500 bytes
-	change_container_mtu(NUT_NAT, PUB_INTERFACE, 1500);
-	change_container_mtu(PEER_NAT, PUB_INTERFACE, 1500);
+	return EXIT_SUCCESS;
+}
 
-	// Flush iptable filter rules if there are any
-	flush_nat_rules(NUT_NAT, "-t filter");
-	flush_nat_rules(PEER_NAT, "-t filter");
+static void execute_test(test_step_func_t step_func, void **state) {
 
-	black_box_state_t *test_state = (black_box_state_t *)(*state);
-	int i;
+	fprintf(stderr, "\n\x1b[32mRunning Test\x1b[0m\n");
+	bool test_result = step_func();
 
-	// Send SIG_TERM to all the running nodes
-	for(i = 0; i < test_state->num_nodes; i++) {
-		/* Shut down node */
-		node_step_in_container(test_state->node_names[i], "SIGTERM");
+	if(!test_result) {
+		fail();
 	}
-
-	return teardown_test(state);
 }
 
-// Print the calculated values of MTU parameters obtained from the node
-static void print_mtu_calc(pmtu_attr_t node_pmtu) {
-	fprintf(stderr, "MTU size : %d\n", node_pmtu.mtu_size);
-	fprintf(stderr, "Probes took for calculating PMTU discovery : %d\n", node_pmtu.mtu_discovery.probes);
-	fprintf(stderr, "Probes total length took for calculating PMTU discovery : %d\n", node_pmtu.mtu_discovery.probes_total_len);
-	fprintf(stderr, "Time took for calculating PMTU discovery : %lu\n", node_pmtu.mtu_discovery.time);
-	fprintf(stderr, "Total MTU ping probes : %d\n", node_pmtu.mtu_ping.probes);
-	fprintf(stderr, "Total MTU ping probes length : %d\n", node_pmtu.mtu_ping.probes_total_len);
-	float avg = 0;
+static void *gen_inv(void *arg) {
+	mesh_invite_arg_t *mesh_invite_arg = (mesh_invite_arg_t *)arg;
+	meshlink_handle_t *mesh;
+	mesh = meshlink_open(mesh_invite_arg->mesh_arg->node_name , mesh_invite_arg->mesh_arg->confbase, mesh_invite_arg->mesh_arg->app_name, mesh_invite_arg->mesh_arg->dev_class);
+	assert(mesh);
 
-	if(node_pmtu.mtu_ping.probes) {
-		avg = (float)node_pmtu.mtu_ping.time / (float)node_pmtu.mtu_ping.probes;
-	}
-
-	fprintf(stderr, "Average MTU ping probes ping time : %f\n", avg);
-	fprintf(stderr, "Total probes received %d\n", node_pmtu.mtu_recv_probes.probes);
-	fprintf(stderr, "Total probes sent %d\n", node_pmtu.mtu_sent_probes.probes);
-}
-
-static int black_box_pmtu_group_setup(void **state) {
-	const char *nodes[] = { "relay", "peer", "nut" };
-	int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
-
-	/*
-	                        ------------
-	    ____________________|  lxcbr0  |_____________________
-	   |eth0                ------------                    |eth0
-	 -------------               |                  --------------
-	// NUT NAT  //               |                 //  Peer NAT //
-	 ------------           -------------           --------------
-	       |eth1            |           |                   |eth1
-	       |                |   relay   |                   |
-	-------------------     |           |        --------------------
-	|  nut_nat_bridge |     -------------        |  peer_nat_bridge |
-	-------------------                          --------------------
-	       |                                                |
-	---------------                                ------------------
-	|             |                                |                |
-	|     NUT     |                                |      peer      |
-	|             |                                |                |
-	---------------                                ------------------
-	*/
-
-	PRINT_TEST_CASE_MSG("Creating Containers\n");
-
-	// Create Node-Under-Test(NUT) and Peer node's containers
-
-	destroy_containers();
-	create_containers(nodes, num_nodes);
-
-	// Create NAT containers for NUT and peer nodes
-
-	nat_create(NUT_NAT, lxc_path, FULLCONE_NAT);
-	nat_create(PEER_NAT, lxc_path, FULLCONE_NAT);
-
-	tcpdump_in_container("tcpdump udp -i any > tcpdump.log", NUT_NAT);
-
-	/*char cmd[200];
-	assert(snprintf(cmd, sizeof(cmd),
-	                "%s/" LXC_UTIL_REL_PATH "/log_drops.sh %s",
-	                meshlink_root_path, NUT_NAT) >= 0);
-	assert(system(cmd) == 0);*/
-
-	// Switch the Node-under-test node and peer node containers to the respective bridge
-	// i.e making the node to sit behind the NAT's private network interface
-
-	container_switch_bridge("run_nut", lxc_path, lxc_bridge, "nut_nat_bridge");
-	container_switch_bridge("run_peer", lxc_path, lxc_bridge, "peer_nat_bridge");
-
-	// Open mesh event handling UDP socket
-	import = mesh_event_sock_create(eth_if_name);
-	assert(import);
-
-	return 0;
-}
-
-static int black_box_pmtu_group_teardown(void **state) {
-	PRINT_TEST_CASE_MSG("Destroying Containers\n");
-	destroy_containers();
-	nat_destroy(NUT_NAT);
-	nat_destroy(PEER_NAT);
-
-	mesh_event_destroy();
-
-	return 0;
-}
-
-static bool mtu_calc_peer = false;
-static bool mtu_calc_relay = false;
-
-// Common event handler callback for all the test cases
-static bool event_mtu_handle_cb(mesh_event_payload_t payload) {
-	char event_node_name[][10] = {"RELAY", "PEER", "NUT"};
-	fprintf(stderr, " %s : ", event_node_name[payload.client_id]);
-	char *name;
-	uint32_t payload_length = payload.payload_length;
-	uint32_t node_pmtu_calc_size = sizeof(pmtu_attr_t);
-
-	switch(payload.mesh_event) {
-	case META_CONN_CLOSED   :
-		name = (char *)payload.payload;
-		fprintf(stderr, "NUT closed connection with %s\n", name);
-		break;
-
-	case META_CONN_SUCCESSFUL   :
-		name = (char *)payload.payload;
-		fprintf(stderr, "NUT made connection with %s\n", name);
-		break;
-
-	case NODE_JOINED  :
-		name = (char *)payload.payload;
-		fprintf(stderr, "Node %s joined with NUT\n", name);
-		break;
-
-	case NODE_LEFT  :
-		name = (char *)payload.payload;
-		fprintf(stderr, "Node %s the left mesh\n", name);
-		break;
-
-	case ERR_NETWORK            :
-		name = (char *)payload.payload;
-		fprintf(stderr, "NUT closed channel with %s\n", name);
-		break;
-
-	case NODE_STARTED           :
-		fprintf(stderr, "%s node started\n", event_node_name[payload.client_id]);
-		break;
-
-	case CHANNEL_OPENED         :
-		fprintf(stderr, "Channel opened\n");
-		break;
-
-	case OPTIMAL_PMTU_PEER      :
-		assert(payload.payload);
-		fprintf(stderr, "Obtained peer MTU values from NUT\n");
-		memcpy(&node_pmtu_peer, payload.payload, payload_length);
-		fprintf(stderr, "NUT and peer PMTU handling in 120 seconds with ICMP unblocked\n");
-		print_mtu_calc(node_pmtu_peer);
-		mtu_calc_peer = true;
-
-		if(mtu_calc_peer && mtu_calc_relay) {
-			return true;
-		}
-
-		break;
-
-	case OPTIMAL_PMTU_RELAY      :
-		assert(payload.payload);
-		//assert(payload_length != node_pmtu_calc_size);
-		fprintf(stderr, "Obtained relay MTU values from NUT\n");
-		memcpy(&node_pmtu_relay, payload.payload, payload_length);
-		fprintf(stderr, "NUT and peer PMTU handling in 120 seconds with ICMP unblocked\n");
-		print_mtu_calc(node_pmtu_relay);
-		mtu_calc_relay = true;
-
-		if(mtu_calc_peer && mtu_calc_relay) {
-			return true;
-		}
-
-		break;
-
-	default :
-		fprintf(stderr, "UNDEFINED EVENT RECEIVED (%d)\n", payload.mesh_event);
-	}
-
-	return false;
+	char *invitation = meshlink_invite(mesh, NULL, mesh_invite_arg->invitee_name);
+	assert(invitation);
+	mesh_invite_arg->invite_str = invitation;
+	meshlink_close(mesh);
 }
 
 /* Test Steps for optimal PMTU discovery Test Case # 1 -
@@ -333,12 +113,13 @@ static bool event_mtu_handle_cb(mesh_event_payload_t payload) {
     network topology */
 static void test_case_optimal_pmtu_01(void **state) {
 	execute_test(test_steps_optimal_pmtu_01, state);
+	return;
 }
 
 /* Test Steps for optimal PMTU discovery Test Case # 1 - Success case
 
     Test Steps:
-    1. Create NAT setup and run each node instances in discrete containers.
+    1. Create NAT setup and run each node instances in discrete namespace.
     2. Open a channel from NUT to peer and hence triggering Peer to peer connection
     3. Send the analyzed MTU parameters mesh event information to test driver
     Expected Result:
@@ -346,33 +127,43 @@ static void test_case_optimal_pmtu_01(void **state) {
       the expected range
 */
 static bool test_steps_optimal_pmtu_01(void) {
-	char *invite_peer, *invite_nut;
+	mesh_arg_t relay_arg = {.node_name = "relay", .confbase = "relay", .app_name = "relay", .dev_class = 0 };
+	mesh_arg_t peer_arg = {.node_name = "peer", .confbase = "peer", .app_name = "peer", .dev_class = 1 };
+	mesh_arg_t nut_arg = {.node_name = "nut", .confbase = "nut", .app_name = "nut", .dev_class = 1 };
 
-	mtu_calc_peer = false;
-	mtu_calc_relay = false;
-	memset(&node_pmtu_peer, 0, sizeof(node_pmtu_peer));
-	memset(&node_pmtu_relay, 0, sizeof(node_pmtu_relay));
 
-	// Invite peer and nut nodes by relay node
-	invite_peer = invite_in_container("relay", "peer");
-	assert(invite_peer);
-	invite_nut = invite_in_container("relay", NUT_NODE_NAME);
-	assert(invite_nut);
+	mesh_invite_arg_t relay_nut_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "nut" };
+	netns_thread_t netns_relay_nut_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_nut_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_nut_invite);
+	sleep(1);
+	assert(relay_nut_invite_arg.invite_str);
+	nut_arg.join_invitation = relay_nut_invite_arg.invite_str;
 
-	// Launch NUT, relay and peer nodes in discrete containers
-	node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
-	node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
-	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	mesh_invite_arg_t relay_peer_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "peer" };
+	netns_thread_t netns_relay_peer_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_peer_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_peer_invite);
+	sleep(1);
+	assert(relay_peer_invite_arg.invite_str);
+	peer_arg.join_invitation = relay_peer_invite_arg.invite_str;
 
-	// Wait for test case events
-	bool ret = wait_for_event(event_mtu_handle_cb, PING_TRACK_TIMEOUT + 100);
-	assert_int_equal(ret && mtu_calc_peer && mtu_calc_relay, true);
+	netns_thread_t netns_relay_handle = {.namespace_name = "relay", .netns_thread = node_sim_pmtu_relay_01, .arg = &relay_arg};
+	run_node_in_namespace_thread(&netns_relay_handle);
 
-	// Verify the obtained values
-	assert_in_range(node_pmtu_peer.mtu_size, 1450, 1501);
-	assert_in_range(node_pmtu_peer.mtu_discovery.probes, 38, 42);
-	assert_in_range(node_pmtu_relay.mtu_size, 1450, 1501);
-	assert_in_range(node_pmtu_relay.mtu_discovery.probes, 38, 42);
+	netns_thread_t netns_peer_handle = {.namespace_name = "peer", .netns_thread = node_sim_pmtu_peer_01, .arg = &peer_arg};
+	run_node_in_namespace_thread(&netns_peer_handle);
+
+	netns_thread_t netns_nut_handle = {.namespace_name = "nut", .netns_thread = node_sim_pmtu_nut_01, .arg = &nut_arg};
+	run_node_in_namespace_thread(&netns_nut_handle);
+
+	assert(wait_sync_flag(&test_pmtu_nut_closed, 300));
+	test_pmtu_relay_running = false;
+	test_pmtu_peer_running = false;
+
+	sleep(1);
+	assert_in_range(node_pmtu[NODE_PMTU_PEER].mtu_size, 1450, 1501);
+	assert_in_range(node_pmtu[NODE_PMTU_PEER].mtu_discovery.probes, 120, 160);
+	assert_in_range(node_pmtu[NODE_PMTU_RELAY].mtu_size, 1450, 1501);
+	assert_in_range(node_pmtu[NODE_PMTU_RELAY].mtu_discovery.probes, 120, 160);
 
 	return true;
 }
@@ -382,12 +173,12 @@ static bool test_steps_optimal_pmtu_01(void) {
     network topology */
 static void test_case_optimal_pmtu_02(void **state) {
 	execute_test(test_steps_optimal_pmtu_02, state);
+	return;
 }
 
 /* Test Steps for optimal PMTU discovery Test Case # 2 -
-
     Test Steps:
-    1. Create NAT setup and run each node instances in discrete containers,
+    1. Create NAT setup and run each node instances in discrete namespace,
     2. Block ICMP protocol at NUT's NAT
     3. Open a channel from NUT to peer and hence triggering Peer to peer connection
     4. Send the analyzed MTU parameters mesh event information to test driver
@@ -396,30 +187,46 @@ static void test_case_optimal_pmtu_02(void **state) {
       the expected range
 */
 static bool test_steps_optimal_pmtu_02(void) {
-	char *invite_peer, *invite_nut;
+	mesh_arg_t relay_arg = {.node_name = "relay", .confbase = "relay", .app_name = "relay", .dev_class = 0 };
+	mesh_arg_t peer_arg = {.node_name = "peer", .confbase = "peer", .app_name = "peer", .dev_class = 1 };
+	mesh_arg_t nut_arg = {.node_name = "nut", .confbase = "nut", .app_name = "nut", .dev_class = 1 };
 
-	mtu_calc_peer = false;
-	mtu_calc_relay = false;
-	memset(&node_pmtu_peer, 0, sizeof(node_pmtu_peer));
-	memset(&node_pmtu_relay, 0, sizeof(node_pmtu_relay));
+	assert(system("ip netns exec peer_nat iptables -A FORWARD -p icmp -j DROP") == 0);
+	assert(system("ip netns exec nut_nat iptables -A FORWARD -p icmp -j DROP") == 0);
 
-	block_icmp(NUT_NAT);
+	mesh_invite_arg_t relay_nut_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "nut" };
+	netns_thread_t netns_relay_nut_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_nut_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_nut_invite);
+	sleep(1);
+	assert(relay_nut_invite_arg.invite_str);
+	nut_arg.join_invitation = relay_nut_invite_arg.invite_str;
 
-	invite_peer = invite_in_container("relay", "peer");
-	assert(invite_peer);
-	invite_nut = invite_in_container("relay", NUT_NODE_NAME);
-	assert(invite_nut);
-	node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
-	node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
-	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	mesh_invite_arg_t relay_peer_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "peer" };
+	netns_thread_t netns_relay_peer_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_peer_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_peer_invite);
+	sleep(1);
+	assert(relay_peer_invite_arg.invite_str);
+	peer_arg.join_invitation = relay_peer_invite_arg.invite_str;
 
-	bool ret = wait_for_event(event_mtu_handle_cb, PING_TRACK_TIMEOUT + 100);
-	assert_int_equal(ret && mtu_calc_peer && mtu_calc_relay, true);
+	netns_thread_t netns_relay_handle = {.namespace_name = "relay", .netns_thread = node_sim_pmtu_relay_01, .arg = &relay_arg};
+	run_node_in_namespace_thread(&netns_relay_handle);
 
-	assert_in_range(node_pmtu_peer.mtu_size, 1450, 1501);
-	assert_in_range(node_pmtu_peer.mtu_discovery.probes, 38, 42);
-	assert_in_range(node_pmtu_relay.mtu_size, 1450, 1501);
-	assert_in_range(node_pmtu_relay.mtu_discovery.probes, 38, 42);
+	netns_thread_t netns_peer_handle = {.namespace_name = "peer", .netns_thread = node_sim_pmtu_peer_01, .arg = &peer_arg};
+	run_node_in_namespace_thread(&netns_peer_handle);
+
+	netns_thread_t netns_nut_handle = {.namespace_name = "nut", .netns_thread = node_sim_pmtu_nut_01, .arg = &nut_arg};
+	run_node_in_namespace_thread(&netns_nut_handle);
+
+	assert(wait_sync_flag(&test_pmtu_nut_closed, 300));
+	test_pmtu_relay_running = false;
+	test_pmtu_peer_running = false;
+
+	sleep(1);
+	assert_in_range(node_pmtu[NODE_PMTU_PEER].mtu_size, 1450, 1501);
+	assert_in_range(node_pmtu[NODE_PMTU_PEER].mtu_discovery.probes, 120, 160);
+	assert_in_range(node_pmtu[NODE_PMTU_RELAY].mtu_size, 1450, 1501);
+	assert_in_range(node_pmtu[NODE_PMTU_RELAY].mtu_discovery.probes, 120, 160);
+
 	return true;
 }
 
@@ -428,12 +235,12 @@ static bool test_steps_optimal_pmtu_02(void) {
     network topology */
 static void test_case_optimal_pmtu_03(void **state) {
 	execute_test(test_steps_optimal_pmtu_03, state);
+	return;
 }
 
 /* Test Steps for optimal PMTU discovery Test Case # 3 -
-
     Test Steps:
-    1. Create NAT setup and run each node instances in discrete containers,
+    1. Create NAT setup and run each node instances in discrete namespace,
     2. Change the MTU size of NUT's NAT to 1250
     3. Open a channel from NUT to peer and hence triggering Peer to peer connection
     4. Send the analyzed MTU parameters mesh event information to test driver
@@ -442,44 +249,57 @@ static void test_case_optimal_pmtu_03(void **state) {
       the expected range
 */
 static bool test_steps_optimal_pmtu_03(void) {
-	char *invite_peer, *invite_nut;
+	mesh_arg_t relay_arg = {.node_name = "relay", .confbase = "relay", .app_name = "relay", .dev_class = 0 };
+	mesh_arg_t peer_arg = {.node_name = "peer", .confbase = "peer", .app_name = "peer", .dev_class = 1 };
+	mesh_arg_t nut_arg = {.node_name = "nut", .confbase = "nut", .app_name = "nut", .dev_class = 1 };
 
-	mtu_calc_peer = false;
-	mtu_calc_relay = false;
-	memset(&node_pmtu_peer, 0, sizeof(node_pmtu_peer));
-	memset(&node_pmtu_relay, 0, sizeof(node_pmtu_relay));
+	assert(system("ip netns exec nut_nat ifconfig eth_nut mtu 1250") == 0);
 
-	change_container_mtu(NUT_NAT, "eth0", 1250);
+	mesh_invite_arg_t relay_nut_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "nut" };
+	netns_thread_t netns_relay_nut_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_nut_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_nut_invite);
+	sleep(1);
+	assert(relay_nut_invite_arg.invite_str);
+	nut_arg.join_invitation = relay_nut_invite_arg.invite_str;
 
-	invite_peer = invite_in_container("relay", "peer");
-	assert(invite_peer);
-	invite_nut = invite_in_container("relay", NUT_NODE_NAME);
-	assert(invite_nut);
-	node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
-	node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
-	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	mesh_invite_arg_t relay_peer_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "peer" };
+	netns_thread_t netns_relay_peer_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_peer_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_peer_invite);
+	sleep(1);
+	assert(relay_peer_invite_arg.invite_str);
+	peer_arg.join_invitation = relay_peer_invite_arg.invite_str;
 
-	bool ret = wait_for_event(event_mtu_handle_cb, PING_TRACK_TIMEOUT + 100);
-	assert_int_equal(ret && mtu_calc_peer && mtu_calc_relay, true);
+	netns_thread_t netns_relay_handle = {.namespace_name = "relay", .netns_thread = node_sim_pmtu_relay_01, .arg = &relay_arg};
+	run_node_in_namespace_thread(&netns_relay_handle);
 
-	assert_in_range(node_pmtu_relay.mtu_size, 1200, 1250);
-	assert_in_range(node_pmtu_peer.mtu_size, 1200, 1250);
-	assert_in_range(node_pmtu_peer.mtu_discovery.probes, 38, 42);
-	assert_in_range(node_pmtu_relay.mtu_size, 1450, 1501);
-	assert_in_range(node_pmtu_relay.mtu_discovery.probes, 38, 42);
+	netns_thread_t netns_peer_handle = {.namespace_name = "peer", .netns_thread = node_sim_pmtu_peer_01, .arg = &peer_arg};
+	run_node_in_namespace_thread(&netns_peer_handle);
+
+	netns_thread_t netns_nut_handle = {.namespace_name = "nut", .netns_thread = node_sim_pmtu_nut_01, .arg = &nut_arg};
+	run_node_in_namespace_thread(&netns_nut_handle);
+
+	assert(wait_sync_flag(&test_pmtu_nut_closed, 300));
+	test_pmtu_relay_running = false;
+	test_pmtu_peer_running = false;
+
+	sleep(1);
+	assert_in_range(node_pmtu[NODE_PMTU_PEER].mtu_size, 1200, 1250);
+	assert_in_range(node_pmtu[NODE_PMTU_RELAY].mtu_size, 1200, 1250);
+
 	return true;
 }
+
 /* Test Steps for optimal PMTU discovery Test Case # 4 -
     Validating NUT MTU parameters with MTU size of NAT = 1000 under designed
     network topology */
 static void test_case_optimal_pmtu_04(void **state) {
 	execute_test(test_steps_optimal_pmtu_04, state);
+	return;
 }
 
 /* Test Steps for optimal PMTU discovery Test Case # 4 -
-
     Test Steps:
-    1. Create NAT setup and run each node instances in discrete containers,
+    1. Create NAT setup and run each node instances in discrete namespace,
     2. Change the MTU size of NUT's NAT to 1000
     3. Open a channel from NUT to peer and hence triggering Peer to peer connection
     4. Send the analyzed MTU parameters mesh event information to test driver
@@ -488,44 +308,57 @@ static void test_case_optimal_pmtu_04(void **state) {
       the expected range
 */
 static bool test_steps_optimal_pmtu_04(void) {
-	char *invite_peer, *invite_nut;
+	mesh_arg_t relay_arg = {.node_name = "relay", .confbase = "relay", .app_name = "relay", .dev_class = 0 };
+	mesh_arg_t peer_arg = {.node_name = "peer", .confbase = "peer", .app_name = "peer", .dev_class = 1 };
+	mesh_arg_t nut_arg = {.node_name = "nut", .confbase = "nut", .app_name = "nut", .dev_class = 1 };
 
-	mtu_calc_peer = false;
-	mtu_calc_relay = false;
-	memset(&node_pmtu_peer, 0, sizeof(node_pmtu_peer));
-	memset(&node_pmtu_relay, 0, sizeof(node_pmtu_relay));
+	assert(system("ip netns exec nut_nat ifconfig eth_nut mtu 1000") == 0);
 
-	change_container_mtu(NUT_NAT, "eth0", 1000);
+	mesh_invite_arg_t relay_nut_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "nut" };
+	netns_thread_t netns_relay_nut_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_nut_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_nut_invite);
+	sleep(1);
+	assert(relay_nut_invite_arg.invite_str);
+	nut_arg.join_invitation = relay_nut_invite_arg.invite_str;
 
-	invite_peer = invite_in_container("relay", "peer");
-	assert(invite_peer);
-	invite_nut = invite_in_container("relay", NUT_NODE_NAME);
-	assert(invite_nut);
-	node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
-	node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
-	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	mesh_invite_arg_t relay_peer_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "peer" };
+	netns_thread_t netns_relay_peer_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_peer_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_peer_invite);
+	sleep(1);
+	assert(relay_peer_invite_arg.invite_str);
+	peer_arg.join_invitation = relay_peer_invite_arg.invite_str;
 
-	bool ret = wait_for_event(event_mtu_handle_cb, PING_TRACK_TIMEOUT + 100);
-	assert_int_equal(ret && mtu_calc_peer && mtu_calc_relay, true);
+	netns_thread_t netns_relay_handle = {.namespace_name = "relay", .netns_thread = node_sim_pmtu_relay_01, .arg = &relay_arg};
+	run_node_in_namespace_thread(&netns_relay_handle);
 
-	assert_in_range(node_pmtu_relay.mtu_size, 925, 1000);
-	assert_in_range(node_pmtu_peer.mtu_size, 925, 1000);
-	assert_in_range(node_pmtu_peer.mtu_discovery.probes, 38, 42);
-	assert_in_range(node_pmtu_relay.mtu_size, 1450, 1501);
-	assert_in_range(node_pmtu_relay.mtu_discovery.probes, 38, 42);
+	netns_thread_t netns_peer_handle = {.namespace_name = "peer", .netns_thread = node_sim_pmtu_peer_01, .arg = &peer_arg};
+	run_node_in_namespace_thread(&netns_peer_handle);
+
+	netns_thread_t netns_nut_handle = {.namespace_name = "nut", .netns_thread = node_sim_pmtu_nut_01, .arg = &nut_arg};
+	run_node_in_namespace_thread(&netns_nut_handle);
+
+	assert(wait_sync_flag(&test_pmtu_nut_closed, 300));
+	test_pmtu_relay_running = false;
+	test_pmtu_peer_running = false;
+
+	sleep(1);
+	assert_in_range(node_pmtu[NODE_PMTU_PEER].mtu_size, 925, 1000);
+	assert_in_range(node_pmtu[NODE_PMTU_RELAY].mtu_size, 925, 1000);
+
 	return true;
 }
+
 /* Test Steps for optimal PMTU discovery Test Case # 5 -
     Validating NUT MTU parameters with MTU size of NAT = 800 under designed
     network topology */
 static void test_case_optimal_pmtu_05(void **state) {
 	execute_test(test_steps_optimal_pmtu_05, state);
+	return;
 }
 
 /* Test Steps for optimal PMTU discovery Test Case # 5 -
-
     Test Steps:
-    1. Create NAT setup and run each node instances in discrete containers,
+    1. Create NAT setup and run each node instances in discrete namespace,
     2. Change the MTU size of NUT's NAT to 800
     3. Open a channel from NUT to peer and hence triggering Peer to peer connection
     4. Send the analyzed MTU parameters mesh event information to test driver
@@ -534,31 +367,43 @@ static void test_case_optimal_pmtu_05(void **state) {
       the expected range
 */
 static bool test_steps_optimal_pmtu_05(void) {
-	char *invite_peer, *invite_nut;
+	mesh_arg_t relay_arg = {.node_name = "relay", .confbase = "relay", .app_name = "relay", .dev_class = 0 };
+	mesh_arg_t peer_arg = {.node_name = "peer", .confbase = "peer", .app_name = "peer", .dev_class = 1 };
+	mesh_arg_t nut_arg = {.node_name = "nut", .confbase = "nut", .app_name = "nut", .dev_class = 1 };
 
-	mtu_calc_peer = false;
-	mtu_calc_relay = false;
-	memset(&node_pmtu_peer, 0, sizeof(node_pmtu_peer));
-	memset(&node_pmtu_relay, 0, sizeof(node_pmtu_relay));
+	assert(system("ip netns exec nut_nat ifconfig eth_nut mtu 750") == 0);
 
-	change_container_mtu(NUT_NAT, "eth0", 800);
+	mesh_invite_arg_t relay_nut_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "nut" };
+	netns_thread_t netns_relay_nut_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_nut_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_nut_invite);
+	sleep(1);
+	assert(relay_nut_invite_arg.invite_str);
+	nut_arg.join_invitation = relay_nut_invite_arg.invite_str;
 
-	invite_peer = invite_in_container("relay", "peer");
-	assert(invite_peer);
-	invite_nut = invite_in_container("relay", NUT_NODE_NAME);
-	assert(invite_nut);
-	node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
-	node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
-	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	mesh_invite_arg_t relay_peer_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "peer" };
+	netns_thread_t netns_relay_peer_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_peer_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_peer_invite);
+	sleep(1);
+	assert(relay_peer_invite_arg.invite_str);
+	peer_arg.join_invitation = relay_peer_invite_arg.invite_str;
 
-	bool ret = wait_for_event(event_mtu_handle_cb, PING_TRACK_TIMEOUT + 100);
-	assert_int_equal(ret && mtu_calc_peer && mtu_calc_relay, true);
+	netns_thread_t netns_relay_handle = {.namespace_name = "relay", .netns_thread = node_sim_pmtu_relay_01, .arg = &relay_arg};
+	run_node_in_namespace_thread(&netns_relay_handle);
 
-	assert_in_range(node_pmtu_relay.mtu_size, 750, 800);
-	assert_in_range(node_pmtu_peer.mtu_size, 750, 800);
-	//assert_in_range(node_pmtu_peer.mtu_discovery.probes, 38, 42);
-	//assert_in_range(node_pmtu_relay.mtu_size, 1450, 1501);
-	//assert_in_range(node_pmtu_relay.mtu_discovery.probes, 38, 42);
+	netns_thread_t netns_peer_handle = {.namespace_name = "peer", .netns_thread = node_sim_pmtu_peer_01, .arg = &peer_arg};
+	run_node_in_namespace_thread(&netns_peer_handle);
+
+	netns_thread_t netns_nut_handle = {.namespace_name = "nut", .netns_thread = node_sim_pmtu_nut_01, .arg = &nut_arg};
+	run_node_in_namespace_thread(&netns_nut_handle);
+
+	assert(wait_sync_flag(&test_pmtu_nut_closed, 300));
+	test_pmtu_relay_running = false;
+	test_pmtu_peer_running = false;
+
+	sleep(1);
+	assert_in_range(node_pmtu[NODE_PMTU_PEER].mtu_size, 700, 750);
+	assert_in_range(node_pmtu[NODE_PMTU_RELAY].mtu_size, 700, 750);
+
 	return true;
 }
 
@@ -566,34 +411,27 @@ static bool test_steps_optimal_pmtu_05(void) {
     Flushing the tracked connections via NUT NAT for every 60 seconds */
 static void test_case_optimal_pmtu_06(void **state) {
 	execute_test(test_steps_optimal_pmtu_06, state);
+	return;
 }
 
+static bool run_conntrack;
 static pthread_t pmtu_test_case_conntrack_thread;
-static void *conntrcak_flush(void *timeout) {
-	int thread_timeout = *((int *)timeout);
-	time_t thread_end_time = time(NULL) + thread_timeout;
+static void *conntrack_flush(void *arg) {
+	// flushes mappings for every 60 seconds
 
-	while(thread_end_time > time(NULL)) {
-		sleep(90);
-		flush_conntrack(NUT_NAT);
-		flush_conntrack(PEER_NAT);
+	while(run_conntrack) {
+		sleep(100);
+		assert(system("ip netns exec nut_nat conntrack -F") == 0);
+		assert(system("ip netns exec peer_nat conntrack -F") == 0);
 	}
 
-}
-
-static int teardown_conntrack_test_case(void **state) {
-
-	// Close the conntrack thread
-	pthread_cancel(pmtu_test_case_conntrack_thread);
-	// Close all the test cases
-	return teardown_pmtu_test_case(state);
+	pthread_exit(NULL);
 }
 
 /* Test Steps for optimal PMTU discovery Test Case # 6 -
-
     Test Steps:
     1. Create NAT setup and Launch conntrack thread which flushes the tracked connections for every 90 seconds
-    2. Run each node instances in discrete containers,
+    2. Run each node instances in discrete namespace,
     3. Open a channel from NUT to peer and hence triggering Peer to peer connection
     4. Send the analyzed MTU parameters mesh event information to test driver
     Expected Result:
@@ -601,47 +439,49 @@ static int teardown_conntrack_test_case(void **state) {
       the expected range
 */
 static bool test_steps_optimal_pmtu_06(void) {
-	char *invite_peer, *invite_nut;
-	float ping_avg;
+	mesh_arg_t relay_arg = {.node_name = "relay", .confbase = "relay", .app_name = "relay", .dev_class = 0 };
+	mesh_arg_t peer_arg = {.node_name = "peer", .confbase = "peer", .app_name = "peer", .dev_class = 1 };
+	mesh_arg_t nut_arg = {.node_name = "nut", .confbase = "nut", .app_name = "nut", .dev_class = 1 };
 
-	mtu_calc_peer = false;
-	mtu_calc_relay = false;
-	memset(&node_pmtu_peer, 0, sizeof(node_pmtu_peer));
-	memset(&node_pmtu_relay, 0, sizeof(node_pmtu_relay));
+	run_conntrack = true;
+	assert(!pthread_create(&pmtu_test_case_conntrack_thread, NULL, conntrack_flush, NULL));
 
-	int thread_timeout = PING_TRACK_TIMEOUT + 30;
-	assert(!pthread_create(&pmtu_test_case_conntrack_thread, NULL, conntrcak_flush, &thread_timeout));
-	invite_peer = invite_in_container("relay", "peer");
-	assert(invite_peer);
-	invite_nut = invite_in_container("relay", NUT_NODE_NAME);
-	assert(invite_nut);
-	node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
-	node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
-	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	mesh_invite_arg_t relay_nut_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "nut" };
+	netns_thread_t netns_relay_nut_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_nut_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_nut_invite);
+	sleep(1);
+	assert(relay_nut_invite_arg.invite_str);
+	nut_arg.join_invitation = relay_nut_invite_arg.invite_str;
 
-	bool ret = wait_for_event(event_mtu_handle_cb, PING_TRACK_TIMEOUT + 100);
-	assert_int_equal(ret && mtu_calc_peer && mtu_calc_relay, true);
+	mesh_invite_arg_t relay_peer_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "peer" };
+	netns_thread_t netns_relay_peer_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_peer_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_peer_invite);
+	sleep(1);
+	assert(relay_peer_invite_arg.invite_str);
+	peer_arg.join_invitation = relay_peer_invite_arg.invite_str;
 
-	assert_in_range(node_pmtu_relay.mtu_size, 1440, 1500);
-	assert_in_range(node_pmtu_peer.mtu_size, 1440, 1500);
-	assert_in_range(node_pmtu_peer.mtu_ping.probes, 38, 42);
-	assert_in_range(node_pmtu_relay.mtu_ping.probes, 38, 42);
+	netns_thread_t netns_relay_handle = {.namespace_name = "relay", .netns_thread = node_sim_pmtu_relay_01, .arg = &relay_arg};
+	run_node_in_namespace_thread(&netns_relay_handle);
 
-	ping_avg = 0;
+	netns_thread_t netns_peer_handle = {.namespace_name = "peer", .netns_thread = node_sim_pmtu_peer_01, .arg = &peer_arg};
+	run_node_in_namespace_thread(&netns_peer_handle);
 
-	if(node_pmtu_peer.mtu_ping.probes) {
-		ping_avg = ping_avg = node_pmtu_peer.mtu_ping.time / node_pmtu_peer.mtu_ping.probes;
-	}
+	netns_thread_t netns_nut_handle = {.namespace_name = "nut", .netns_thread = node_sim_pmtu_nut_01, .arg = &nut_arg};
+	run_node_in_namespace_thread(&netns_nut_handle);
 
-	assert_in_range(ping_avg, 15.0, 20.0);
+	assert(wait_sync_flag(&test_pmtu_nut_closed, 300));
+	test_pmtu_relay_running = false;
+	test_pmtu_peer_running = false;
+	run_conntrack = false;
+	pthread_join(pmtu_test_case_conntrack_thread, NULL);
 
-	ping_avg = 0;
+	sleep(1);
 
-	if(node_pmtu_relay.mtu_ping.probes) {
-		ping_avg = ping_avg = node_pmtu_relay.mtu_ping.time / node_pmtu_relay.mtu_ping.probes;
-	}
+	assert_in_range(node_pmtu[NODE_PMTU_PEER].mtu_size, 1440, 1500);
+	assert_in_range(node_pmtu[NODE_PMTU_RELAY].mtu_size, 1440, 1500);
+	assert_in_range(node_pmtu[NODE_PMTU_PEER].mtu_ping.probes, 38, 42);
+	assert_in_range(node_pmtu[NODE_PMTU_RELAY].mtu_ping.probes, 38, 42);
 
-	assert_in_range(ping_avg, 15.0, 20.0);
 	return true;
 }
 
@@ -650,12 +490,12 @@ static bool test_steps_optimal_pmtu_06(void) {
     */
 static void test_case_optimal_pmtu_07(void **state) {
 	execute_test(test_steps_optimal_pmtu_07, state);
+	return;
 }
 
 /* Test Steps for optimal PMTU discovery Test Case # 7 -
-
     Test Steps:
-    1. Create NAT setup and run each node instances in discrete containers.
+    1. Create NAT setup and run each node instances in discrete namespace.
     2. Open a channel from NUT to peer and hence triggering Peer to peer connection
     3. Send data periodically via channel from NUT to peer node.
     4. Send the analyzed MTU parameters mesh event information to test driver
@@ -664,50 +504,133 @@ static void test_case_optimal_pmtu_07(void **state) {
       the expected range
 */
 static bool test_steps_optimal_pmtu_07(void) {
-	char *invite_peer, *invite_nut;
+	mesh_arg_t relay_arg = {.node_name = "relay", .confbase = "relay", .app_name = "relay", .dev_class = 0 };
+	mesh_arg_t peer_arg = {.node_name = "peer", .confbase = "peer", .app_name = "peer", .dev_class = 1 };
+	mesh_arg_t nut_arg = {.node_name = "nut", .confbase = "nut", .app_name = "nut", .dev_class = 1 };
 
-	mtu_calc_peer = false;
-	mtu_calc_relay = false;
-	memset(&node_pmtu_peer, 0, sizeof(node_pmtu_peer));
-	memset(&node_pmtu_relay, 0, sizeof(node_pmtu_relay));
-	invite_peer = invite_in_container("relay", "peer");
-	assert(invite_peer);
-	invite_nut = invite_in_container("relay", NUT_NODE_NAME);
-	assert(invite_nut);
-	node_sim_in_container_event("relay", "1", NULL, RELAY_ID, import);
-	node_sim_in_container_event("peer", "1", invite_peer, PEER_ID, import);
-	node_sim_in_container_event("nut", "1", invite_nut, NUT_ID, import);
+	ping_channel_enable_07 = true;
 
-	bool ret = wait_for_event(event_mtu_handle_cb, PING_TRACK_TIMEOUT + 100);
-	assert_int_equal(ret && mtu_calc_peer && mtu_calc_relay, true);
+	mesh_invite_arg_t relay_nut_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "nut" };
+	netns_thread_t netns_relay_nut_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_nut_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_nut_invite);
+	sleep(1);
+	assert(relay_nut_invite_arg.invite_str);
+	nut_arg.join_invitation = relay_nut_invite_arg.invite_str;
 
-	assert_in_range(node_pmtu_peer.mtu_size, 1450, 1501);
-	assert_in_range(node_pmtu_peer.mtu_discovery.probes, 38, 42);
-	assert_in_range(node_pmtu_relay.mtu_size, 1450, 1501);
-	assert_in_range(node_pmtu_relay.mtu_discovery.probes, 38, 42);
+	mesh_invite_arg_t relay_peer_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "peer" };
+	netns_thread_t netns_relay_peer_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_peer_invite_arg};
+	run_node_in_namespace_thread(&netns_relay_peer_invite);
+	sleep(1);
+	assert(relay_peer_invite_arg.invite_str);
+	peer_arg.join_invitation = relay_peer_invite_arg.invite_str;
+
+	netns_thread_t netns_relay_handle = {.namespace_name = "relay", .netns_thread = node_sim_pmtu_relay_01, .arg = &relay_arg};
+	run_node_in_namespace_thread(&netns_relay_handle);
+
+	netns_thread_t netns_peer_handle = {.namespace_name = "peer", .netns_thread = node_sim_pmtu_peer_01, .arg = &peer_arg};
+	run_node_in_namespace_thread(&netns_peer_handle);
+
+	netns_thread_t netns_nut_handle = {.namespace_name = "nut", .netns_thread = node_sim_pmtu_nut_01, .arg = &nut_arg};
+	run_node_in_namespace_thread(&netns_nut_handle);
+
+	assert(wait_sync_flag(&test_pmtu_nut_closed, 300));
+	test_pmtu_relay_running = false;
+	test_pmtu_peer_running = false;
+
+	sleep(1);
+	assert_in_range(node_pmtu[NODE_PMTU_PEER].mtu_size, 1450, 1501);
+	assert_in_range(node_pmtu[NODE_PMTU_PEER].mtu_discovery.probes, 120, 160);
+	assert_in_range(node_pmtu[NODE_PMTU_RELAY].mtu_size, 1450, 1501);
+	assert_in_range(node_pmtu[NODE_PMTU_RELAY].mtu_discovery.probes, 120, 160);
 
 	return true;
 }
 
 // Optimal PMTU test case driver
+
 int test_optimal_pmtu(void) {
+	interface_t nut_ifs[] = { { .if_peer = "nut_nat", .fetch_ip_netns_name = "nut_nat" } };
+	namespace_t nut = {
+		.name = "nut",
+		.type = HOST,
+		.interfaces = nut_ifs,
+		.interfaces_no = 1,
+	};
+
+	interface_t peer_ifs[] = { { .if_peer = "peer_nat", .fetch_ip_netns_name = "peer_nat" } };
+	namespace_t peer = {
+		.name = "peer",
+		.type = HOST,
+		.interfaces = peer_ifs,
+		.interfaces_no = 1,
+	};
+
+	interface_t relay_ifs[] = { { .if_peer = "wan_bridge" } };
+	namespace_t relay = {
+		.name = "relay",
+		.type = HOST,
+		.interfaces = relay_ifs,
+		.interfaces_no = 1,
+	};
+
+	netns_fullcone_handle_t nut_nat_fullcone = { .snat_to_source = "wan_bridge", .dnat_to_destination = "nut" };
+	netns_fullcone_handle_t *nut_nat_args[] = { &nut_nat_fullcone, NULL };
+	interface_t nut_nat_ifs[] = { { .if_peer = "nut", .fetch_ip_netns_name = "nut_nat" }, { .if_peer = "wan_bridge" } };
+	namespace_t nut_nat = {
+		.name = "nut_nat",
+		.type = FULL_CONE,
+		.nat_arg = nut_nat_args,
+		.static_config_net_addr = "192.168.1.0/24",
+		.interfaces = nut_nat_ifs,
+		.interfaces_no = 2,
+	};
+
+	netns_fullcone_handle_t peer_nat_fullcone = { .snat_to_source = "wan_bridge", .dnat_to_destination = "peer" };
+	netns_fullcone_handle_t *peer_nat_args[] = { &peer_nat_fullcone, NULL };
+	interface_t peer_nat_ifs[] = { { .if_peer = "peer", .fetch_ip_netns_name = "peer_nat" }, { .if_peer = "wan_bridge" } };
+	namespace_t peer_nat = {
+		.name = "peer_nat",
+		.type = FULL_CONE,
+		.nat_arg = peer_nat_args,
+		.static_config_net_addr = "192.168.1.0/24",
+		.interfaces = peer_nat_ifs,
+		.interfaces_no = 2,
+	};
+
+	interface_t wan_ifs[] = { { .if_peer = "peer_nat" }, { .if_peer = "nut_nat" }, { .if_peer = "relay" } };
+	namespace_t wan_bridge = {
+		.name = "wan_bridge",
+		.type = BRIDGE,
+		.interfaces = wan_ifs,
+		.interfaces_no = 3,
+	};
+
+	namespace_t test_optimal_pmtu_1_nodes[] = { nut_nat, peer_nat, wan_bridge, nut, peer, relay };
+
+	netns_state_t test_pmtu_nodes = {
+		.test_case_name =  "test_case_optimal_pmtu",
+		.namespaces =  test_optimal_pmtu_1_nodes,
+		.num_namespaces = 6,
+	};
+	test_pmtu_state = &test_pmtu_nodes;
+
 	const struct CMUnitTest blackbox_group0_tests[] = {
-		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_01, setup_pmtu_test_case, teardown_pmtu_test_case,
-		                (void *)&test_pmtu_state_01),
-		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_02, setup_pmtu_test_case, teardown_pmtu_test_case,
-		                (void *)&test_pmtu_state_02),
-		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_03, setup_pmtu_test_case, teardown_pmtu_test_case,
-		                (void *)&test_pmtu_state_03),
-		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_04, setup_pmtu_test_case, teardown_pmtu_test_case,
-		                (void *)&test_pmtu_state_04),
-		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_05, setup_pmtu_test_case, teardown_pmtu_test_case,
-		                (void *)&test_pmtu_state_05),
-		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_06, setup_pmtu_test_case, teardown_pmtu_test_case,
-		                (void *)&test_pmtu_state_06),
-		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_07, setup_pmtu_test_case, teardown_pmtu_test_case,
-		                (void *)&test_pmtu_state_07),
+		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_01, setup_test, teardown_test,
+		(void *)&test_pmtu_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_02, setup_test, teardown_test,
+		(void *)&test_pmtu_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_03, setup_test, teardown_test,
+		(void *)&test_pmtu_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_04, setup_test, teardown_test,
+		(void *)&test_pmtu_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_05, setup_test, teardown_test,
+		(void *)&test_pmtu_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_06, setup_test, teardown_test,
+		(void *)&test_pmtu_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_07, setup_test, teardown_test,
+		(void *)&test_pmtu_state),
 	};
 	total_tests += sizeof(blackbox_group0_tests) / sizeof(blackbox_group0_tests[0]);
 
-	return cmocka_run_group_tests(blackbox_group0_tests, black_box_pmtu_group_setup, NULL);
+	return cmocka_run_group_tests(blackbox_group0_tests, NULL, NULL);
 }

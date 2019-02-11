@@ -20,7 +20,7 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "meshlink.h"
+#include "meshlink_internal.h"
 
 typedef struct submesh_t {
 	char *name;                             /* name of this Sub-Mesh */

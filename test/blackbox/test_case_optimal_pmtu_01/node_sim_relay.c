@@ -1,8 +1,6 @@
 /*
     node_sim_relay.c -- Implementation of Node Simulation for Meshlink Testing
-                    for meta connection test case 01 - re-connection of
-                    two nodes when relay node goes down
-    Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2019  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,36 +18,38 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+#include <assert.h>
+#include <signal.h>
+#include <time.h>
 #include "../common/common_handlers.h"
 #include "../common/test_step.h"
-#include "../common/mesh_event_handler.h"
+#include "../common/network_namespace_framework.h"
+#include "../../utils.h"
+#include "../run_blackbox_tests/test_optimal_pmtu.h"
 
-#define CMD_LINE_ARG_NODENAME   1
-#define CMD_LINE_ARG_DEVCLASS   2
-#define CMD_LINE_ARG_CLIENTID   3
-#define CMD_LINE_ARG_IMPORTSTR  4
-#define CMD_LINE_ARG_INVITEURL  5
+extern bool test_pmtu_relay_running;
 
-int main(int argc, char *argv[]) {
+void *node_sim_pmtu_relay_01(void *arg) {
+	mesh_arg_t *mesh_arg = (mesh_arg_t *)arg;
 	struct timeval main_loop_wait = { 5, 0 };
-
-	// Setup required signals
-
-	setup_signals();
 
 	// Run relay node instance
 
-	meshlink_handle_t *mesh = meshlink_open("testconf", argv[CMD_LINE_ARG_NODENAME],
-	                                        "test_channel_conn", atoi(argv[CMD_LINE_ARG_DEVCLASS]));
+
+	meshlink_handle_t *mesh;
+	mesh = meshlink_open(mesh_arg->node_name , mesh_arg->confbase, mesh_arg->app_name, mesh_arg->dev_class);
 	assert(mesh);
-	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);
+
+	//meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);
 	meshlink_enable_discovery(mesh, false);
 
 	meshlink_start(mesh);
 	//send_event(NODE_STARTED);
 
 	/* All test steps executed - wait for signals to stop/start or close the mesh */
-	while(test_running) {
+	while(test_pmtu_relay_running) {
 		select(1, NULL, NULL, NULL, &main_loop_wait);
 	}
 

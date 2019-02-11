@@ -22,8 +22,6 @@
 
 #include <stdbool.h>
 
-#pragma pack(1)
-
 extern int test_optimal_pmtu(void);
 extern int total_tests;
 extern char *lxc_path;
@@ -47,8 +45,8 @@ typedef struct pmtu_attr {
 	int mtu_size;
 } pmtu_attr_t;
 
-#define NODE_PMTU_RELAY 0
-#define NODE_PMTU_PEER 1
+#define NODE_PMTU_RELAY 1
+#define NODE_PMTU_PEER 2
 
 #define find_node_index(i, node_name) if(!strcasecmp(node_name, "peer")) {          \
 		i = NODE_PMTU_PEER;                        \
@@ -58,6 +56,7 @@ typedef struct pmtu_attr {
 		abort();                                    \
 	}
 
-#define PING_TRACK_TIMEOUT 500
+#define PING_TRACK_TIMEOUT 100
+#define CHANNEL_PORT 1234
 
 #endif // TEST_CASES_OPTIMAL_PMTU_H

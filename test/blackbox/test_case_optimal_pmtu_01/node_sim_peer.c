@@ -24,35 +24,20 @@
 #include <pthread.h>
 #include <assert.h>
 #include <signal.h>
+#include <time.h>
 #include "../common/common_handlers.h"
 #include "../common/test_step.h"
-#include "../common/mesh_event_handler.h"
+#include "../common/network_namespace_framework.h"
 #include "../../utils.h"
+#include "../run_blackbox_tests/test_optimal_pmtu.h"
 
-#define CMD_LINE_ARG_NODENAME   1
-#define CMD_LINE_ARG_DEVCLASS   2
-#define CMD_LINE_ARG_CLIENTID   3
-#define CMD_LINE_ARG_IMPORTSTR  4
-#define CMD_LINE_ARG_INVITEURL  5
-#define CHANNEL_PORT 1234
+extern bool test_pmtu_peer_running;
 
 static struct sync_flag nut_reachable = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 static struct sync_flag channel_opened = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len);
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len);
-
-static int client_id = -1;
-
-static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
-                           bool reachable) {
-	if(!strcasecmp(node->name, "nut") && reachable) {
-		//set_sync_flag(&nut_reachable, true);
-		mesh_event_sock_send(client_id, reachable ? NODE_JOINED : NODE_LEFT, node->name, 100);
-	}
-
-	return;
-}
 
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len) {
 	(void)dat;
@@ -80,7 +65,8 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 /* channel receive callback */
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
 	if(len == 0) {
-		mesh_event_sock_send(client_id, ERR_NETWORK, channel->node->name, 100);
+		// channel closed
+		fail();
 		return;
 	}
 
@@ -95,35 +81,34 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 	return;
 }
 
-int main(int argc, char *argv[]) {
-	struct timeval main_loop_wait = { 2, 0 };
+static void log_message(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	(void)mesh;
 
-	// Import mesh event handler
-
-	if((argv[CMD_LINE_ARG_CLIENTID]) && (argv[CMD_LINE_ARG_IMPORTSTR])) {
-		client_id = atoi(argv[CMD_LINE_ARG_CLIENTID]);
-		mesh_event_sock_connect(argv[CMD_LINE_ARG_IMPORTSTR]);
+	if(level == MESHLINK_INFO) {
+		fprintf(stderr, "\x1b[34m peer:\x1b[0m %s\n", text);
 	}
+}
 
-	// Setup required signals
+void *node_sim_pmtu_peer_01(void *arg) {
+	mesh_arg_t *mesh_arg = (mesh_arg_t *)arg;
+	struct timeval main_loop_wait = { 5, 0 };
 
-	setup_signals();
+	// Run relay node instance
 
-	// Run peer node instance
 
-	meshlink_handle_t *mesh = meshlink_open("testconf", argv[CMD_LINE_ARG_NODENAME],
-	                                        "test_channel_conn", atoi(argv[CMD_LINE_ARG_DEVCLASS]));
+	meshlink_handle_t *mesh;
+	mesh = meshlink_open(mesh_arg->node_name , mesh_arg->confbase, mesh_arg->app_name, mesh_arg->dev_class);
 	assert(mesh);
-	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);
-	meshlink_set_channel_accept_cb(mesh, channel_accept);
-	meshlink_enable_discovery(mesh, false);
 
-	if(argv[CMD_LINE_ARG_INVITEURL]) {
+	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, log_message);
+	meshlink_set_channel_accept_cb(mesh, channel_accept);
+
+	if(mesh_arg->join_invitation) {
 		int attempts;
 		bool join_ret;
 
 		for(attempts = 0; attempts < 10; attempts++) {
-			join_ret = meshlink_join(mesh, argv[CMD_LINE_ARG_INVITEURL]);
+			join_ret = meshlink_join(mesh, mesh_arg->join_invitation);
 
 			if(join_ret) {
 				break;
@@ -138,26 +123,14 @@ int main(int argc, char *argv[]) {
 	}
 
 	assert(meshlink_start(mesh));
-	mesh_event_sock_send(client_id, NODE_STARTED, NULL, 0);
-
-	//assert(wait_sync_flag(&nut_reachable, 10));
-
-	/*meshlink_node_t *nut_node = meshlink_get_node(mesh, "nut");
-	assert(nut_node);
-	meshlink_channel_t *channel = meshlink_channel_open(mesh, nut_node, CHANNEL_PORT,
-	                              channel_receive_cb, NULL, 0);
-	meshlink_set_channel_poll_cb(mesh, channel, poll_cb);
-
-	assert(wait_sync_flag(&channel_opened, 20));
-	mesh_event_sock_send(client_id, NODE_STARTED, NULL, 0);*/
 
 	// All test steps executed - wait for signals to stop/start or close the mesh
 
-	while(test_running) {
+	while(test_pmtu_peer_running) {
 		select(1, NULL, NULL, NULL, &main_loop_wait);
 	}
 
 	meshlink_close(mesh);
 
-	return EXIT_SUCCESS;
+	return NULL;
 }
