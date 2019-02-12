@@ -190,6 +190,26 @@ exit:
 	return n->submesh != NULL;
 }
 
+bool node_read_blacklist_status(meshlink_handle_t *mesh, node_t *n) {
+
+	splay_tree_t *config_tree;
+	bool blacklist_status;
+
+	init_configuration(&config_tree);
+
+	if(!read_host_config(mesh, config_tree, n->name)) {
+		goto exit;
+	}
+
+	if(get_config_bool(lookup_config(config_tree, "blacklisted"), &blacklist_status)) {
+		n->status.blacklisted = blacklist_status;
+	}
+
+exit:
+	exit_configuration(&config_tree);
+	return n->status.blacklisted;
+}
+
 bool node_write_devclass(meshlink_handle_t *mesh, node_t *n) {
 
 	if((int)n->devclass < 0 || n->devclass > _DEV_CLASS_MAX) {
@@ -292,6 +312,7 @@ void load_all_nodes(meshlink_handle_t *mesh) {
 		n->name = xstrdup(ent->d_name);
 		node_read_devclass(mesh, n);
 		node_read_submesh(mesh, n);
+		node_read_blacklist_status(mesh, n);
 		node_add(mesh, n);
 	}
 
