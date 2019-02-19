@@ -3,7 +3,7 @@
 
 /*
     meshlink.h -- MeshLink API
-    Copyright (C) 2014-2018 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2019 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -125,10 +125,6 @@ struct meshlink_submesh {
 struct meshlink_channel {
 	struct meshlink_node *const node; ///< Pointer to the peer of this channel.
 	void *priv;                       ///< Private pointer which may be set freely by the application, and is never used or modified by MeshLink.
-};
-
-struct meshlink_open_params {
-	/* This is an opaque struct, all parameters must be set using the corresponding meshlink_open_params_*() functions. */
 };
 
 #endif // MESHLINK_INTERNAL_H
