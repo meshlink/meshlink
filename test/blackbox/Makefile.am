@@ -13,15 +13,7 @@ SUBDIRS = \
 	test_case_meta_conn_02 \
 	test_case_meta_conn_03 \
 	test_case_meta_conn_04 \
-	test_case_meta_conn_05 \
-	test_case_optimal_pmtu_01 \
-	test_case_optimal_pmtu_02 \
-	test_case_optimal_pmtu_03 \
-	test_case_optimal_pmtu_04 \
-	test_case_optimal_pmtu_05 \
-	test_case_optimal_pmtu_06 \
-	test_case_optimal_pmtu_07 
-
+	test_case_meta_conn_05
 
 gen_invite_SOURCES = util/gen_invite.c common/common_handlers.c common/test_step.c common/mesh_event_handler.c
 gen_invite_LDADD = ../../src/libmeshlink.la
