@@ -39,7 +39,7 @@ void *node_sim_pmtu_relay_01(void *arg) {
 
 
 	meshlink_handle_t *mesh;
-	mesh = meshlink_open(mesh_arg->node_name , mesh_arg->confbase, mesh_arg->app_name, mesh_arg->dev_class);
+	mesh = meshlink_open(mesh_arg->node_name, mesh_arg->confbase, mesh_arg->app_name, mesh_arg->dev_class);
 	assert(mesh);
 
 	//meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);

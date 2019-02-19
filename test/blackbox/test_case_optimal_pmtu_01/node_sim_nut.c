@@ -240,7 +240,7 @@ void *node_sim_pmtu_nut_01(void *arg) {
 	// Run relay node instance
 
 	meshlink_handle_t *mesh;
-	mesh = meshlink_open(mesh_arg->node_name , mesh_arg->confbase, mesh_arg->app_name, mesh_arg->dev_class);
+	mesh = meshlink_open(mesh_arg->node_name, mesh_arg->confbase, mesh_arg->app_name, mesh_arg->dev_class);
 	assert(mesh);
 	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_logger);
 	meshlink_set_node_status_cb(mesh, node_status_cb);

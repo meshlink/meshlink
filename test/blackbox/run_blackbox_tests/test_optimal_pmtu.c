@@ -99,7 +99,7 @@ static void execute_test(test_step_func_t step_func, void **state) {
 static void *gen_inv(void *arg) {
 	mesh_invite_arg_t *mesh_invite_arg = (mesh_invite_arg_t *)arg;
 	meshlink_handle_t *mesh;
-	mesh = meshlink_open(mesh_invite_arg->mesh_arg->node_name , mesh_invite_arg->mesh_arg->confbase, mesh_invite_arg->mesh_arg->app_name, mesh_invite_arg->mesh_arg->dev_class);
+	mesh = meshlink_open(mesh_invite_arg->mesh_arg->node_name, mesh_invite_arg->mesh_arg->confbase, mesh_invite_arg->mesh_arg->app_name, mesh_invite_arg->mesh_arg->dev_class);
 	assert(mesh);
 
 	char *invitation = meshlink_invite(mesh, NULL, mesh_invite_arg->invitee_name);
@@ -616,19 +616,19 @@ int test_optimal_pmtu(void) {
 
 	const struct CMUnitTest blackbox_group0_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_01, setup_test, teardown_test,
-		(void *)&test_pmtu_state),
+		                (void *)&test_pmtu_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_02, setup_test, teardown_test,
-		(void *)&test_pmtu_state),
+		                (void *)&test_pmtu_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_03, setup_test, teardown_test,
-		(void *)&test_pmtu_state),
+		                (void *)&test_pmtu_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_04, setup_test, teardown_test,
-		(void *)&test_pmtu_state),
+		                (void *)&test_pmtu_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_05, setup_test, teardown_test,
-		(void *)&test_pmtu_state),
+		                (void *)&test_pmtu_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_06, setup_test, teardown_test,
-		(void *)&test_pmtu_state),
+		                (void *)&test_pmtu_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_optimal_pmtu_07, setup_test, teardown_test,
-		(void *)&test_pmtu_state),
+		                (void *)&test_pmtu_state),
 	};
 	total_tests += sizeof(blackbox_group0_tests) / sizeof(blackbox_group0_tests[0]);
 
