@@ -5,7 +5,6 @@
 #include <sys/time.h>
 
 #include "../src/meshlink.h"
-#include "../src/node.h"
 
 volatile bool bar_reachable = false;
 volatile bool bar_responded = false;
