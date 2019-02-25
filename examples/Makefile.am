@@ -1,4 +1,4 @@
-noinst_PROGRAMS = meshlinkapp chat chatpp manynodes channels monitor
+noinst_PROGRAMS = meshlinkapp chat chatpp manynodes channels monitor groupchat
 
 AM_CPPFLAGS = $(PTHREAD_CFLAGS) -I${top_srcdir}/src -iquote. -Wall
 AM_LDFLAGS = $(PTHREAD_LIBS)
@@ -22,3 +22,6 @@ if CURSES
 monitor_SOURCES = monitor.c
 monitor_LDADD = ${top_builddir}/src/libmeshlink.la $(NCURSES_LIBS) -lm
 endif
+
+groupchat_SOURCES = groupchat.c
+groupchat_LDADD = ${top_builddir}/src/libmeshlink.la
