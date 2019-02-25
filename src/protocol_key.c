@@ -32,7 +32,7 @@
 #include "xalloc.h"
 
 void send_key_changed(meshlink_handle_t *mesh) {
-	send_request(mesh, mesh->everyone, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
+	send_request(mesh, mesh->everyone, NULL, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
 
 	/* Force key exchange for connections using SPTPS */
 
@@ -64,7 +64,7 @@ bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request
 
 	/* Tell the others */
 
-	forward_request(mesh, c, request);
+	forward_request(mesh, c, NULL, request);
 
 	return true;
 }
@@ -76,13 +76,13 @@ static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data
 	to->sptps.send_data = send_sptps_data;
 	char buf[len * 4 / 3 + 5];
 	b64encode(data, buf, len);
-	return send_request(mesh, to->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_KEY, buf);
+	return send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_KEY, buf);
 }
 
 bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 	if(!node_read_ecdsa_public_key(mesh, to)) {
 		logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s", to->name);
-		send_request(mesh, to->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY);
+		send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %d", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY);
 		return true;
 	}
 
@@ -108,7 +108,12 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 	switch(reqno) {
 	case REQ_PUBKEY: {
 		char *pubkey = ecdsa_get_base64_public_key(mesh->self->connection->ecdsa);
-		send_request(mesh, from->nexthop->connection, "%d %s %s %d %s", REQ_KEY, mesh->self->name, from->name, ANS_PUBKEY, pubkey);
+
+		if(!from->nexthop || !from->nexthop->connection) {
+			return false;
+		}
+
+		send_request(mesh, from->nexthop->connection, NULL, "%d %s %s %d %s", REQ_KEY, mesh->self->name, from->name, ANS_PUBKEY, pubkey);
 		free(pubkey);
 		return true;
 	}
@@ -134,7 +139,7 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 	case REQ_KEY: {
 		if(!node_read_ecdsa_public_key(mesh, from)) {
 			logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s", from->name);
-			send_request(mesh, from->nexthop->connection, "%d %s %s %d", REQ_KEY, mesh->self->name, from->name, REQ_PUBKEY);
+			send_request(mesh, from->nexthop->connection, NULL, "%d %s %s %d", REQ_KEY, mesh->self->name, from->name, REQ_PUBKEY);
 			return true;
 		}
 
@@ -239,7 +244,7 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			return true;
 		}
 
-		send_request(mesh, to->nexthop->connection, "%s", request);
+		send_request(mesh, to->nexthop->connection, NULL, "%s", request);
 	}
 
 	return true;
@@ -301,13 +306,13 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			char *address, *port;
 			logger(mesh, MESHLINK_DEBUG, "Appending reflexive UDP address to ANS_KEY from %s to %s", from->name, to->name);
 			sockaddr2str(&from->address, &address, &port);
-			send_request(mesh, to->nexthop->connection, "%s %s %s", request, address, port);
+			send_request(mesh, to->nexthop->connection, NULL, "%s %s %s", request, address, port);
 			free(address);
 			free(port);
 			return true;
 		}
 
-		return send_request(mesh, to->nexthop->connection, "%s", request);
+		return send_request(mesh, to->nexthop->connection, NULL, "%s", request);
 	}
 
 	/* Don't use key material until every check has passed. */

@@ -52,6 +52,7 @@ typedef struct connection_status_t {
 #include "edge.h"
 #include "net.h"
 #include "node.h"
+#include "submesh.h"
 
 typedef struct connection_t {
 	char *name;                     /* name he claims to have */
@@ -71,6 +72,7 @@ typedef struct connection_t {
 
 	ecdsa_t *ecdsa;                 /* his public ECDSA key */
 	sptps_t sptps;
+	struct submesh_t *submesh;              /* his submesh handle if available in invitation file */
 
 	int incompression;
 	int outcompression;

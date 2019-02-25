@@ -48,7 +48,7 @@ static bool send_proxyrequest(meshlink_handle_t *mesh, connection_t *c) {
 		char *port;
 
 		sockaddr2str(&c->address, &host, &port);
-		send_request(mesh, c, "CONNECT %s:%s HTTP/1.1\r\n\r", host, port);
+		send_request(mesh, c, NULL, "CONNECT %s:%s HTTP/1.1\r\n\r", host, port);
 		free(host);
 		free(port);
 		return true;
@@ -151,7 +151,7 @@ bool send_id(meshlink_handle_t *mesh, connection_t *c) {
 			return false;
 		}
 
-	return send_request(mesh, c, "%d %s %d.%d %s", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor, mesh->appname);
+	return send_request(mesh, c, NULL, "%d %s %d.%d %s", ID, mesh->self->connection->name, mesh->self->connection->protocol_major, minor, mesh->appname);
 }
 
 static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data, uint16_t len) {
@@ -179,6 +179,11 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 	}
 
 	fprintf(f, "ECDSAPublicKey = %s\n", (const char *)data);
+
+	if(c->submesh) {
+		fprintf(f, "SubMesh = %s\n", c->submesh->name);
+	}
+
 	fclose(f);
 
 	logger(mesh, MESHLINK_INFO, "Key succesfully received from %s", c->name);
@@ -288,6 +293,38 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	free(c->name);
 	c->name = xstrdup(name);
 
+	// Check if the file contains Sub-Mesh information
+	buf[0] = 0;
+	fgets(buf, sizeof(buf), f);
+
+	if(*buf) {
+		buf[strlen(buf) - 1] = 0;
+	}
+
+	if(!strncmp(buf, "SubMesh", 7)) {
+		len = strcspn(buf, " \t=");
+		char *submesh_name = buf + len;
+		submesh_name += strspn(submesh_name, " \t");
+
+		if(*submesh_name == '=') {
+			submesh_name++;
+			submesh_name += strspn(submesh_name, " \t");
+		}
+
+		if(!check_id(submesh_name)) {
+			logger(mesh, MESHLINK_ERROR, "Invalid invitation file %s\n", cookie);
+			fclose(f);
+			return false;
+		}
+
+		c->submesh = NULL;
+		c->submesh = lookup_or_create_submesh(mesh, submesh_name);
+
+		if(!c->submesh) {
+			return false;
+		}
+	}
+
 	// Send the node the contents of the invitation file
 	rewind(f);
 	size_t result;
@@ -336,7 +373,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			return false;
 		}
 
-		if(!send_request(mesh, c, "%d %s", ACK, mykey)) {
+		if(!send_request(mesh, c, NULL, "%d %s", ACK, mykey)) {
 			return false;
 		}
 
@@ -438,7 +475,7 @@ bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
 		c->options |= OPTION_PMTU_DISCOVERY;
 	}
 
-	return send_request(mesh, c, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
+	return send_request(mesh, c, NULL, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
 }
 
 static void send_everything(meshlink_handle_t *mesh, connection_t *c) {

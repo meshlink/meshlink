@@ -54,6 +54,8 @@ __thread meshlink_errno_t meshlink_errno;
 meshlink_log_cb_t global_log_cb;
 meshlink_log_level_t global_log_level;
 
+typedef bool (*search_node_by_condition_t)(const node_t *, const void *);
+
 //TODO: this can go away completely
 const var_t variables[] = {
 	/* Server configuration */
@@ -1433,20 +1435,13 @@ meshlink_submesh_t *meshlink_submesh_open(meshlink_handle_t  *mesh, const char *
 		return NULL;
 	}
 
-	s = (meshlink_submesh_t *)lookup_submesh(mesh, submesh);
+	//lock mesh->nodes
+	pthread_mutex_lock(&(mesh->mesh_mutex));
 
-	if(s) {
-		logger(NULL, MESHLINK_ERROR, "SubMesh Already exists!\n");
-		meshlink_errno = MESHLINK_EEXIST;
-		return NULL;
-	}
+	s = (meshlink_submesh_t *)create_submesh(mesh, submesh);
 
-	s = (meshlink_submesh_t *)new_submesh();
-	s->name = xstrdup(submesh);
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
 
-	submesh_add(mesh, (submesh_t *)s);
-
-	meshlink_errno = MESHLINK_OK;
 	return s;
 }
 
@@ -1889,12 +1884,7 @@ meshlink_node_t **meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_
 	return result;
 }
 
-meshlink_node_t **meshlink_get_all_nodes_by_dev_class(meshlink_handle_t *mesh, dev_class_t devclass, meshlink_node_t **nodes, size_t *nmemb) {
-	if(!mesh || ((int)devclass < 0) || (devclass > _DEV_CLASS_MAX) || !nmemb) {
-		meshlink_errno = MESHLINK_EINVAL;
-		return NULL;
-	}
-
+static meshlink_node_t **meshlink_get_all_nodes_by_condition(meshlink_handle_t *mesh, const void *condition, meshlink_node_t **nodes, size_t *nmemb, search_node_by_condition_t search_node) {
 	meshlink_node_t **result;
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
@@ -1902,7 +1892,7 @@ meshlink_node_t **meshlink_get_all_nodes_by_dev_class(meshlink_handle_t *mesh, d
 	*nmemb = 0;
 
 	for splay_each(node_t, n, mesh->nodes) {
-		if(n->devclass == devclass) {
+		if(true == search_node(n, condition)) {
 			*nmemb = *nmemb + 1;
 		}
 	}
@@ -1919,7 +1909,7 @@ meshlink_node_t **meshlink_get_all_nodes_by_dev_class(meshlink_handle_t *mesh, d
 		meshlink_node_t **p = result;
 
 		for splay_each(node_t, n, mesh->nodes) {
-			if(n->devclass == devclass) {
+			if(true == search_node(n, condition)) {
 				*p++ = (meshlink_node_t *)n;
 			}
 		}
@@ -1932,6 +1922,42 @@ meshlink_node_t **meshlink_get_all_nodes_by_dev_class(meshlink_handle_t *mesh, d
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 
 	return result;
+}
+
+static bool search_node_by_dev_class(const node_t *node, const void *condition) {
+	dev_class_t *devclass = (dev_class_t *)condition;
+
+	if(*devclass == node->devclass) {
+		return true;
+	}
+
+	return false;
+}
+
+static bool search_node_by_submesh(const node_t *node, const void *condition) {
+	if(condition == node->submesh) {
+		return true;
+	}
+
+	return false;
+}
+
+meshlink_node_t **meshlink_get_all_nodes_by_dev_class(meshlink_handle_t *mesh, dev_class_t devclass, meshlink_node_t **nodes, size_t *nmemb) {
+	if(!mesh || ((int)devclass < 0) || (devclass > _DEV_CLASS_MAX) || !nmemb) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	return meshlink_get_all_nodes_by_condition(mesh, &devclass, nodes, nmemb, search_node_by_dev_class);
+}
+
+meshlink_node_t **meshlink_get_all_nodes_by_submesh(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, meshlink_node_t **nodes, size_t *nmemb) {
+	if(!mesh || !submesh || !nmemb) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	return meshlink_get_all_nodes_by_condition(mesh, submesh, nodes, nmemb, search_node_by_submesh);
 }
 
 dev_class_t meshlink_get_node_dev_class(meshlink_handle_t *mesh, meshlink_node_t *node) {
@@ -1949,6 +1975,21 @@ dev_class_t meshlink_get_node_dev_class(meshlink_handle_t *mesh, meshlink_node_t
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 
 	return devclass;
+}
+
+meshlink_submesh_t *meshlink_get_node_submesh(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	if(!mesh || !node) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	node_t *n = (node_t *)node;
+
+	meshlink_submesh_t *s;
+
+	s = (meshlink_submesh_t *)n->submesh;
+
+	return s;
 }
 
 bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len, void *signature, size_t *siglen) {
@@ -2274,6 +2315,8 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 			meshlink_errno = MESHLINK_EINVAL;
 			return NULL;
 		}
+	} else {
+		s = (meshlink_submesh_t *)mesh->self->submesh;
 	}
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));

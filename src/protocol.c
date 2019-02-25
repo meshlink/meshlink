@@ -27,6 +27,7 @@
 #include "protocol.h"
 #include "utils.h"
 #include "xalloc.h"
+#include "submesh.h"
 
 /* Jumptable for the request handlers */
 
@@ -65,10 +66,14 @@ bool check_id(const char *id) {
 /* Generic request routines - takes care of logging and error
    detection as well */
 
-bool send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, ...) {
+bool send_request(meshlink_handle_t *mesh, connection_t *c, submesh_t *s, const char *format, ...) {
 	va_list args;
 	char request[MAXBUFSIZE];
 	int len;
+
+	if(!c) {
+		return false;
+	}
 
 	/* Use vsnprintf instead of vxasprintf: faster, no memory
 	   fragmentation, cleanup is automatic, and there is a limit on the
@@ -88,22 +93,34 @@ bool send_request(meshlink_handle_t *mesh, connection_t *c, const char *format, 
 	request[len++] = '\n';
 
 	if(c == mesh->everyone) {
-		broadcast_meta(mesh, NULL, request, len);
+
+		if(s) {
+			broadcast_submesh_meta(mesh, NULL, s, request, len);
+		} else {
+			broadcast_meta(mesh, NULL, request, len);
+		}
+
 		return true;
 	} else {
 		return send_meta(mesh, c, request, len);
 	}
 }
 
-void forward_request(meshlink_handle_t *mesh, connection_t *from, const char *request) {
+void forward_request(meshlink_handle_t *mesh, connection_t *from, submesh_t *s, const char *request) {
 	logger(mesh, MESHLINK_DEBUG, "Forwarding %s from %s: %s", request_name[atoi(request)], from->name, request);
 
 	// Create a temporary newline-terminated copy of the request
 	int len = strlen(request);
 	char tmp[len + 1];
+
 	memcpy(tmp, request, len);
 	tmp[len] = '\n';
-	broadcast_meta(mesh, from, tmp, sizeof(tmp));
+
+	if(s) {
+		broadcast_submesh_meta(mesh, from, s, tmp, sizeof(tmp));
+	} else {
+		broadcast_meta(mesh, from, tmp, sizeof(tmp));
+	}
 }
 
 bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *request) {

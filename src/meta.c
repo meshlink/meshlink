@@ -68,6 +68,16 @@ void broadcast_meta(meshlink_handle_t *mesh, connection_t *from, const char *buf
 		}
 }
 
+void broadcast_submesh_meta(meshlink_handle_t *mesh, connection_t *from, submesh_t *s,
+                            const char *buffer, int length) {
+	for list_each(connection_t, c, mesh->connections)
+		if(c != from && c->status.active) {
+			if(c->node && submesh_allows_node(s, c->node)) {
+				send_meta(mesh, c, buffer, length);
+			}
+		}
+}
+
 bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t length) {
 	connection_t *c = handle;
 	meshlink_handle_t *mesh = c->mesh;

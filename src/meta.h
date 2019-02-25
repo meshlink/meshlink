@@ -26,6 +26,8 @@ extern bool send_meta(struct meshlink_handle *mesh, struct connection_t *, const
 extern bool send_meta_sptps(void *, uint8_t, const void *, size_t);
 extern bool receive_meta_sptps(void *, uint8_t, const void *, uint16_t);
 extern void broadcast_meta(struct meshlink_handle *mesh, struct connection_t *, const char *, int);
+extern void broadcast_submesh_meta(struct meshlink_handle *mesh, connection_t *from, submesh_t *s,
+                                   const char *buffer, int length);
 extern bool receive_meta(struct meshlink_handle *mesh, struct connection_t *);
 
 #endif

@@ -1,6 +1,6 @@
 /*
-    node.c -- node tree management
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>,
+    submesh.c -- submesh management
+    Copyright (C) 2019 Guus Sliepen <guus@meshlink.io>,
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include "splay_tree.h"
 #include "utils.h"
 #include "xalloc.h"
+#include "protocol.h"
 
 void init_submeshes(meshlink_handle_t *mesh) {
 	mesh->submeshes = list_alloc((list_action_t)free_submesh);
@@ -55,6 +56,73 @@ void free_submesh(submesh_t *s) {
 	free(s);
 }
 
+static submesh_t *submesh_new(meshlink_handle_t *mesh, const char *submesh) {
+	submesh_t *s = NULL;
+
+	s = new_submesh();
+	s->name = xstrdup(submesh);
+
+	submesh_add(mesh, (submesh_t *)s);
+	return s;
+}
+
+submesh_t *create_submesh(meshlink_handle_t *mesh, const char *submesh) {
+	submesh_t *s = NULL;
+
+	if(0 == strcmp(submesh, CORE_MESH)) {
+		logger(NULL, MESHLINK_ERROR, "Cannot create submesh handle for core mesh!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(!check_id(submesh)) {
+		logger(NULL, MESHLINK_ERROR, "Invalid SubMesh Id!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	s = lookup_submesh(mesh, submesh);
+
+	if(s) {
+		logger(NULL, MESHLINK_ERROR, "SubMesh Already exists!\n");
+		meshlink_errno = MESHLINK_EEXIST;
+		return NULL;
+	}
+
+	s = submesh_new(mesh, submesh);
+
+	meshlink_errno = MESHLINK_OK;
+	return s;
+}
+
+submesh_t *lookup_or_create_submesh(meshlink_handle_t *mesh, const char *submesh) {
+	submesh_t *s = NULL;
+
+	if(0 == strcmp(submesh, CORE_MESH)) {
+		logger(NULL, MESHLINK_ERROR, "Cannot create submesh handle for core mesh!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(!check_id(submesh)) {
+		logger(NULL, MESHLINK_ERROR, "Invalid SubMesh Id!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	s = lookup_submesh(mesh, submesh);
+
+	if(s) {
+		meshlink_errno = MESHLINK_OK;
+		return s;
+	}
+
+	s = submesh_new(mesh, submesh);
+
+	meshlink_errno = MESHLINK_OK;
+	return s;
+}
+
 void submesh_add(meshlink_handle_t *mesh, submesh_t *s) {
 	s->mesh = mesh;
 	list_insert_tail(mesh->submeshes, (void *)s);
@@ -79,4 +147,12 @@ submesh_t *lookup_submesh(struct meshlink_handle *mesh, const char *submesh_name
 	}
 
 	return submesh;
+}
+
+bool submesh_allows_node(const submesh_t *submesh, const node_t *node) {
+	if(!node->submesh || !submesh || submesh == node->submesh) {
+		return true;
+	} else {
+		return false;
+	}
 }
