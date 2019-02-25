@@ -120,6 +120,20 @@ struct devtool_node_status {
  */
 extern void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, devtool_node_status_t *status);
 
+/// Get the list of all submeshes of a meshlink instance.
+/** This function returns an array of submesh handles.
+ *  These pointers are the same pointers that are present in the submeshes list
+ *  in mesh handle.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param submeshes    A pointer to an array of submesh handles if any allocated previously.
+ *  @param nmemb        A pointer to a size_t variable that has
+ *                      to be provided by the caller.
+ *                      The contents of this variable will be changed to indicate
+ *                      the number if array elements.
+ */
+extern meshlink_submesh_t **devtool_get_all_submeshes(meshlink_handle_t *mesh, meshlink_submesh_t **submeshes, size_t *nmemb);
+
 /// Open a MeshLink instance in a given network namespace.
 /** This function opens MeshLink in the given network namespace.
  *
