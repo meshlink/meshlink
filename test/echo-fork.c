@@ -53,8 +53,10 @@ void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const 
 		return;
 	}
 
+	int ret_val;
+	(void)ret_val;
 	// Write data to stdout.
-	write(1, data, len);
+	ret_val = write(1, data, len);
 }
 
 bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {

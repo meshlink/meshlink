@@ -1,4 +1,4 @@
-#define _GNU_SOURCE
+#define _GNU_SOURCE 1
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -75,6 +75,8 @@ void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
 }
 
 int main1(int rfd, int wfd) {
+	int ret_val;
+	(void)ret_val;
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	meshlink_handle_t *mesh1 = meshlink_open("channels_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
@@ -96,13 +98,13 @@ int main1(int rfd, int wfd) {
 	}
 
 	size_t len = strlen(data);
-	write(wfd, &len, sizeof(len));
-	write(wfd, data, len);
+	ret_val = write(wfd, &len, sizeof(len));
+	ret_val = write(wfd, data, len);
 	free(data);
 
-	read(rfd, &len, sizeof(len));
+	ret_val = read(rfd, &len, sizeof(len));
 	char indata[len + 1];
-	read(rfd, indata, len);
+	ret_val = read(rfd, indata, len);
 	indata[len] = 0;
 
 	fprintf(stderr, "Foo exchanged data\n");
@@ -166,6 +168,8 @@ int main1(int rfd, int wfd) {
 
 
 int main2(int rfd, int wfd) {
+	int ret_val;
+	(void)ret_val;
 	sleep(1);
 
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
@@ -198,9 +202,9 @@ int main2(int rfd, int wfd) {
 
 	free(data);
 
-	read(rfd, &len, sizeof(len));
+	ret_val = read(rfd, &len, sizeof(len));
 	char indata[len + 1];
-	read(rfd, indata, len);
+	ret_val = read(rfd, indata, len);
 	indata[len] = 0;
 
 	fprintf(stderr, "Bar exchanged data\n");
@@ -225,10 +229,12 @@ int main2(int rfd, int wfd) {
 
 
 int main() {
+	int ret_val;
+	(void)ret_val;
 	int fda[2], fdb[2];
 
-	pipe2(fda, 0);
-	pipe2(fdb, 0);
+	ret_val = pipe2(fda, 0);
+	ret_val = pipe2(fdb, 0);
 
 	if(fork()) {
 		return main1(fda[0], fdb[1]);

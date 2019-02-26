@@ -1,4 +1,4 @@
-#define _GNU_SOURCE
+#define _GNU_SOURCE 1
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,11 +38,13 @@ void open_meshlink_pair(meshlink_handle_t **pa, meshlink_handle_t **pb, const ch
 	*pa = *pb = NULL;
 
 	char *a_name, *b_name;
+	int ret_val;
+	(void)ret_val;
 
-	asprintf(&a_name, "%s_conf.1", prefix);
+	ret_val = asprintf(&a_name, "%s_conf.1", prefix);
 	assert(a_name);
 
-	asprintf(&b_name, "%s_conf.2", prefix);
+	ret_val = asprintf(&b_name, "%s_conf.2", prefix);
 	assert(b_name);
 
 	meshlink_handle_t *a = meshlink_open(a_name, "a", prefix, DEV_CLASS_BACKBONE);
@@ -104,17 +106,19 @@ void stop_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b) {
 }
 
 void close_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b, const char *prefix) {
+	int ret_val;
+	(void)ret_val;
 	meshlink_close(a);
 	meshlink_close(b);
 
 	if(prefix) {
 		char *a_name, *b_name;
 
-		asprintf(&a_name, "%s_conf.1", prefix);
+		ret_val = asprintf(&a_name, "%s_conf.1", prefix);
 		assert(a_name);
 		assert(meshlink_destroy(a_name));
 
-		asprintf(&b_name, "%s_conf.2", prefix);
+		ret_val = asprintf(&b_name, "%s_conf.2", prefix);
 		assert(b_name);
 		assert(meshlink_destroy(b_name));
 	}

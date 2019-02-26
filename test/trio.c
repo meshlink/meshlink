@@ -53,7 +53,9 @@ int main() {
 
 	for(int i = 0; i < 3; i++) {
 		char *path;
-		asprintf(&path, "trio_conf.%d", i);
+    int ret_val;
+    (void)ret_val;
+		ret_val = asprintf(&path, "trio_conf.%d", i);
 		assert(path);
 
 		mesh[i] = meshlink_open(path, name[i], "trio", DEV_CLASS_BACKBONE);
