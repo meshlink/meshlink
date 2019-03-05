@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	fprintf(stderr, "Generating Inviation to PEER\n");
-	invite_peer = execute_invite("peer");
+	invite_peer = execute_invite("peer", NULL);
 	assert(invite_peer != NULL);
 
 	if(!mesh_event_sock_send(clientId, NODE_INVITATION, invite_peer, strlen(invite_peer) + 1)) {

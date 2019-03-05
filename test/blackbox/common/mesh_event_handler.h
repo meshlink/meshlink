@@ -72,9 +72,11 @@ typedef enum {
 	INCOMING_META_CONN,
 	OUTGOING_META_CONN,
 	AUTO_DISCONN,
-
+	MESH_EVENT_COMPLETED,
 	MAX_EVENT           // Maximum event enum
 } mesh_event_t;
+
+extern const char *event_status[];
 
 /// mesh event UDP packet
 typedef struct  mesh_event_payload {

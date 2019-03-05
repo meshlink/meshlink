@@ -66,6 +66,10 @@
 
 #include "test_cases_channel_conn.h"
 #include "test_cases_get_all_nodes_by_dev_class.h"
+#include "test_cases_submesh01.h"
+#include "test_cases_submesh02.h"
+#include "test_cases_submesh03.h"
+#include "test_cases_submesh04.h"
 
 #include "../common/containers.h"
 #include "../common/common_handlers.h"
@@ -85,7 +89,8 @@ int main(int argc, char *argv[]) {
 
 	int failed_tests = 0;
 
-	/*failed_tests += test_meta_conn();
+	/*
+	failed_tests += test_meta_conn();
 	failed_tests += test_meshlink_set_status_cb();
 	failed_tests += test_meshlink_join();
 	failed_tests += test_meshlink_set_channel_poll_cb();
@@ -126,8 +131,13 @@ int main(int argc, char *argv[]) {
 	failed_tests += test_meshlink_channel_open();
 	failed_tests += test_meshlink_channel_close();
 
-	failed_tests += test_meshlink_channel_conn();*/
+	failed_tests += test_meshlink_channel_conn();
 	failed_tests += test_optimal_pmtu();
+	*/
+	failed_tests += test_cases_submesh01();
+	failed_tests += test_cases_submesh02();
+	failed_tests += test_cases_submesh03();
+	failed_tests += test_cases_submesh04();
 
 	failed_tests += test_optimal_pmtu();
 

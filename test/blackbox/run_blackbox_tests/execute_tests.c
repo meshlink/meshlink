@@ -79,3 +79,48 @@ int teardown_test(void **state) {
 
 	return EXIT_SUCCESS;
 }
+
+bool change_state(node_status_t *status, mesh_event_t currentEv) {
+
+	if(status->current_index == status->max_events) {
+		return false;
+	}
+
+	if(currentEv == status->expected_events[status->current_index]) {
+		status->current_index = status->current_index + 1;
+
+		return true;
+	} else {
+		return false;
+	}
+}
+
+void signal_node_start(node_status_t *node_status, int start, int end, char *node_ids[]) {
+	int i, index;
+
+	for(i = start; i <= end; i++) {
+		index = node_status[i].current_index;
+
+		if(index < 1 || NODE_JOINED != node_status[i].expected_events[index - 1]) {
+			return;
+		}
+	}
+
+
+	for(i = start; i <= end; i++) {
+		fprintf(stderr, "\tSending signals to '%s'\n", node_ids[i]);
+		node_step_in_container(node_ids[i], "SIGIO");
+	}
+
+	return;
+}
+
+bool check_nodes_finished(node_status_t *node_status, int length) {
+	for(int i = 0; i < length; i++) {
+		if(node_status[i].current_index != node_status[i].max_events) {
+			return false;
+		}
+	}
+
+	return true;
+}

@@ -51,8 +51,8 @@ meshlink_handle_t *execute_open(char *node_name, char *dev_class) {
 	return mesh_handle;
 }
 
-char *execute_invite(char *invitee) {
-	char *invite_url = meshlink_invite_ex(mesh_handle, NULL, invitee, MESHLINK_INVITE_LOCAL | MESHLINK_INVITE_NUMERIC);
+char *execute_invite(char *invitee, meshlink_submesh_t *submesh) {
+	char *invite_url = meshlink_invite_ex(mesh_handle, submesh, invitee, MESHLINK_INVITE_LOCAL | MESHLINK_INVITE_NUMERIC);
 
 	PRINT_TEST_CASE_MSG("meshlink_invite status: %s\n", meshlink_strerror(meshlink_errno));
 	assert(invite_url);

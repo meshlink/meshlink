@@ -167,6 +167,10 @@ AC_CONFIG_FILES([
 	 test/blackbox/test_case_meta_conn_03/Makefile
 	 test/blackbox/test_case_meta_conn_04/Makefile
 	 test/blackbox/test_case_meta_conn_05/Makefile
+	 test/blackbox/test_cases_submesh01/Makefile
+	 test/blackbox/test_cases_submesh02/Makefile
+	 test/blackbox/test_cases_submesh03/Makefile
+	 test/blackbox/test_cases_submesh04/Makefile
 	 examples/Makefile
 ])
 

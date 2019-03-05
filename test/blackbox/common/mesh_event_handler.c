@@ -38,6 +38,16 @@
 #define SERVER_LISTEN_PORT "9000" /* Port number that is binded with mesh event server socket */
 #define UDP_BUFF_MAX 2000
 
+const char *event_status[] = {
+	[NODE_STARTED]                          = "Node Started",
+	[NODE_JOINED]                           = "Node Joined",
+	[ERR_NETWORK]                           = "Network Error",
+	[CHANNEL_OPENED]                        = "Channel Opened",
+	[CHANNEL_DATA_RECIEVED]                         = "Channel Data Received",
+	[SIG_ABORT]                             = "SIG_ABORT Received",
+	[MESH_EVENT_COMPLETED]                          = "MESH_EVENT_COMPLETED Received"
+};
+
 // TODO: Implement mesh event handling with reentrancy .
 static struct sockaddr_in server_addr;
 static int client_fd = -1;
@@ -270,4 +280,3 @@ void mesh_event_destroy(void) {
 	event_receive_thread_running = false;
 	pthread_cancel(event_receive_thread);
 }
-

@@ -1,5 +1,8 @@
+#ifndef TEST_CASES_SUBMESH03_H
+#define TEST_CASES_SUBMESH03_H
+
 /*
-    test_step.h -- Handlers for executing test steps during node simulation
+    test_cases_submesh03.h -- Declarations for Individual Test Case implementation functions
     Copyright (C) 2018  Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
@@ -17,17 +20,11 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef TEST_STEP_H
-#define TEST_STEP_H
 
-#include "../../../src/meshlink.h"
+#include <stdbool.h>
+#include "../common/mesh_event_handler.h"
 
-meshlink_handle_t *execute_open(char *node_name, char *dev_class);
-char *execute_invite(char *invitee, meshlink_submesh_t *submesh);
-void execute_join(char *invite_url);
-void execute_start(void);
-void execute_stop(void);
-void execute_close(void);
-void execute_change_ip(void);
+extern int total_tests;
+extern int test_cases_submesh03(void);
 
-#endif // TEST_STEP_H
+#endif // TEST_CASES_SUBMESH03_H

@@ -70,7 +70,7 @@ void rename_container(const char *old_name, const char *new_name) {
 }
 
 char *run_in_container(const char *cmd, const char *container_name, bool daemonize) {
-	char container_find_name[100];
+	char container_find_name[1000];
 	struct lxc_container *container;
 
 	assert(cmd);
@@ -377,6 +377,23 @@ char *invite_in_container(const char *inviter, const char *invitee) {
 	return invite_url;
 }
 
+/* Run the gen_invite command inside the 'inviter' container to generate an invite
+    for 'invitee' belonging to pparticular submesh, and return the generated invite
+    which is output on the terminal */
+char *submesh_invite_in_container(const char *inviter, const char *invitee, const char *submesh) {
+	char invite_command[200];
+	char *invite_url;
+
+	assert(snprintf(invite_command, sizeof(invite_command),
+	                "LD_LIBRARY_PATH=/home/ubuntu/test/.libs /home/ubuntu/test/gen_invite %s %s %s "
+	                "2> gen_invite.log", inviter, invitee, submesh) >= 0);
+	assert(invite_url = run_in_container(invite_command, inviter, false));
+	PRINT_TEST_CASE_MSG("Invite Generated from '%s' to '%s': %s\n", inviter,
+	                    invitee, invite_url);
+
+	return invite_url;
+}
+
 /* Run the node_sim_<nodename> program inside the 'node''s container */
 void node_sim_in_container(const char *node, const char *device_class, const char *invite_url) {
 	char *node_sim_command;
@@ -419,7 +436,7 @@ void node_sim_in_container_event(const char *node, const char *device_class,
 /* Run the node_step.sh script inside the 'node''s container to send the 'sig' signal to the
     node_sim program in the container */
 void node_step_in_container(const char *node, const char *sig) {
-	char node_step_command[200];
+	char node_step_command[1000];
 
 	assert(snprintf(node_step_command, sizeof(node_step_command),
 	                "/home/ubuntu/test/node_step.sh lt-node_sim_%s %s 1>&2 2> node_step.log",
