@@ -626,23 +626,22 @@ static bool try_bind(int port) {
 		return false;
 	}
 
-	while(ai) {
-		int fd = socket(ai->ai_family, SOCK_STREAM, IPPROTO_TCP);
+	//while(ai) {
+	for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
+		int fd = socket(aip->ai_family, SOCK_STREAM, IPPROTO_TCP);
 
 		if(!fd) {
 			freeaddrinfo(ai);
 			return false;
 		}
 
-		int result = bind(fd, ai->ai_addr, ai->ai_addrlen);
+		int result = bind(fd, aip->ai_addr, aip->ai_addrlen);
 		closesocket(fd);
 
 		if(result) {
 			freeaddrinfo(ai);
 			return false;
 		}
-
-		ai = ai->ai_next;
 	}
 
 	freeaddrinfo(ai);
