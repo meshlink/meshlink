@@ -598,36 +598,28 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 			return false;
 		}
 
-		packmsg_input_t in2 = {data, len};
-		uint32_t version = packmsg_get_uint32(&in2);
-
-		if(version != MESHLINK_CONFIG_VERSION) {
-			logger(mesh, MESHLINK_ERROR, "Invalid host config file in invitation file!\n");
-			return false;
-		}
-
-		char *host = packmsg_get_str_dup(&in2);
-
-		if(!check_id(host)) {
-			logger(mesh, MESHLINK_ERROR, "Invalid node name in invitation file!\n");
-			free(host);
-			return false;
-		}
-
-		if(!strcmp(host, name)) {
-			logger(mesh, MESHLINK_DEBUG, "Secondary chunk would overwrite our own host config file.\n");
-			free(host);
-			return false;
-		}
-
 		config_t config = {data, len};
-		config_write(mesh, host, &config);
-
 		node_t *n = new_node();
-		n->name = host;
-		node_read_full(mesh, n);
-		n->devclass = mesh->devclass;
+
+		if(!node_read_from_config(mesh, n, &config)) {
+			free_node(n);
+			logger(mesh, MESHLINK_ERROR, "Invalid host config file in invitation file!\n");
+			meshlink_errno = MESHLINK_EPEER;
+			return false;
+		}
+
+		if(!strcmp(n->name, name)) {
+			logger(mesh, MESHLINK_DEBUG, "Secondary chunk would overwrite our own host config file.\n");
+			free_node(n);
+			meshlink_errno = MESHLINK_EPEER;
+			return false;
+		}
+
 		node_add(mesh, n);
+
+		if(!config_write(mesh, n->name, &config)) {
+			return false;
+		}
 	}
 
 	sptps_send_record(&(mesh->sptps), 1, ecdsa_get_public_key(mesh->private_key), 32);
@@ -638,8 +630,6 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 	mesh->self->name = xstrdup(name);
 
 	logger(mesh, MESHLINK_DEBUG, "Configuration stored in: %s\n", mesh->confbase);
-
-	load_all_nodes(mesh);
 
 	return true;
 }
@@ -1083,6 +1073,12 @@ void meshlink_open_params_free(meshlink_open_params_t *params) {
 }
 
 meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
+	if(!confbase || !*confbase) {
+		logger(NULL, MESHLINK_ERROR, "No confbase given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
 	/* Create a temporary struct on the stack, to avoid allocating and freeing one. */
 	meshlink_open_params_t params = {NULL};
 
@@ -1096,6 +1092,12 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 }
 
 meshlink_handle_t *meshlink_open_encrypted(const char *confbase, const char *name, const char *appname, dev_class_t devclass, const void *key, size_t keylen) {
+	if(!confbase || !*confbase) {
+		logger(NULL, MESHLINK_ERROR, "No confbase given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
 	/* Create a temporary struct on the stack, to avoid allocating and freeing one. */
 	meshlink_open_params_t params = {NULL};
 
@@ -1112,17 +1114,23 @@ meshlink_handle_t *meshlink_open_encrypted(const char *confbase, const char *nam
 	return meshlink_open_ex(&params);
 }
 
+meshlink_handle_t *meshlink_open_ephemeral(const char *name, const char *appname, dev_class_t devclass) {
+	/* Create a temporary struct on the stack, to avoid allocating and freeing one. */
+	meshlink_open_params_t params = {NULL};
+
+	params.name = (char *)name;
+	params.appname = (char *)appname;
+	params.devclass = devclass;
+	params.netns = -1;
+
+	return meshlink_open_ex(&params);
+}
+
 meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 	// Validate arguments provided by the application
 	bool usingname = false;
 
 	logger(NULL, MESHLINK_DEBUG, "meshlink_open called\n");
-
-	if(!params->confbase || !*params->confbase) {
-		logger(NULL, MESHLINK_ERROR, "No confbase given!\n");
-		meshlink_errno = MESHLINK_EINVAL;
-		return NULL;
-	}
 
 	if(!params->appname || !*params->appname) {
 		logger(NULL, MESHLINK_ERROR, "No appname given!\n");
@@ -1163,7 +1171,11 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 	}
 
 	meshlink_handle_t *mesh = xzalloc(sizeof(meshlink_handle_t));
-	mesh->confbase = xstrdup(params->confbase);
+
+	if(params->confbase) {
+		mesh->confbase = xstrdup(params->confbase);
+	}
+
 	mesh->appname = xstrdup(params->appname);
 	mesh->devclass = params->devclass;
 	mesh->discovery = true;
@@ -1426,7 +1438,7 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 }
 
 void meshlink_close(meshlink_handle_t *mesh) {
-	if(!mesh || !mesh->confbase) {
+	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
 	}
@@ -2369,38 +2381,64 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 		return NULL;
 	}
 
-	config_t config;
+	// Create a config file on the fly.
 
-	// Get our config file
+	uint8_t buf[4096];
+	packmsg_output_t out = {buf, sizeof(buf)};
+	packmsg_add_uint32(&out, MESHLINK_CONFIG_VERSION);
+	packmsg_add_str(&out, mesh->name);
+	packmsg_add_str(&out, CORE_MESH);
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
-	if(!config_read(mesh, mesh->self->name, &config)) {
-		meshlink_errno = MESHLINK_ESTORAGE;
-		pthread_mutex_unlock(&mesh->mesh_mutex);
-		return NULL;
+	packmsg_add_int32(&out, mesh->self->devclass);
+	packmsg_add_bool(&out, mesh->self->status.blacklisted);
+	packmsg_add_bin(&out, ecdsa_get_public_key(mesh->private_key), 32);
+	packmsg_add_str(&out, mesh->self->canonical_address ? mesh->self->canonical_address : "");
+
+	uint32_t count = 0;
+
+	for(uint32_t i = 0; i < 5; i++) {
+		if(mesh->self->recent[i].sa.sa_family) {
+			count++;
+		} else {
+			break;
+		}
+	}
+
+	packmsg_add_array(&out, count);
+
+	for(uint32_t i = 0; i < count; i++) {
+		packmsg_add_sockaddr(&out, &mesh->self->recent[i]);
 	}
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 
-	// Prepare a base64-encoded packmsg array containing our config file
-
-	uint8_t *buf = xmalloc(((config.len + 4) * 4) / 3 + 4);
-	packmsg_output_t out = {buf, config.len + 4};
-	packmsg_add_array(&out, 1);
-	packmsg_add_bin(&out, config.buf, config.len);
-	config_free(&config);
-
 	if(!packmsg_output_ok(&out)) {
 		logger(mesh, MESHLINK_DEBUG, "Error creating export data\n");
 		meshlink_errno = MESHLINK_EINTERNAL;
-		free(buf);
 		return NULL;
 	}
 
-	b64encode_urlsafe(buf, (char *)buf, packmsg_output_size(&out, buf));
+	// Prepare a base64-encoded packmsg array containing our config file
 
-	return (char *)buf;
+	uint32_t len = packmsg_output_size(&out, buf);
+	uint32_t len2 = ((len + 4) * 4) / 3 + 4;
+	uint8_t *buf2 = xmalloc(len2);
+	packmsg_output_t out2 = {buf2, len2};
+	packmsg_add_array(&out2, 1);
+	packmsg_add_bin(&out2, buf, packmsg_output_size(&out, buf));
+
+	if(!packmsg_output_ok(&out2)) {
+		logger(mesh, MESHLINK_DEBUG, "Error creating export data\n");
+		meshlink_errno = MESHLINK_EINTERNAL;
+		free(buf2);
+		return NULL;
+	}
+
+	b64encode_urlsafe(buf2, (char *)buf2, packmsg_output_size(&out2, buf2));
+
+	return (char *)buf2;
 }
 
 bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
@@ -2500,8 +2538,9 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 		}
 
 		if(!packmsg_done(&in2) || keylen != 32) {
-			packmsg_input_invalidate(&in2);
+			packmsg_input_invalidate(&in);
 			free_node(n);
+			break;
 		} else {
 			config_t config = {data, len};
 			config_write(mesh, n->name, &config);
