@@ -6,6 +6,7 @@ TESTS = \
 	channels-cornercases.test \
 	duplicate.test \
 	encrypted.test \
+	ephemeral.test \
 	import-export.test \
 	invite-join.test \
 	sign-verify.test \
@@ -29,6 +30,7 @@ check_PROGRAMS = \
 	duplicate \
 	echo-fork \
 	encrypted \
+	ephemeral \
 	import-export \
 	invite-join \
 	sign-verify \
@@ -61,6 +63,9 @@ echo_fork_LDADD = ../src/libmeshlink.la
 
 encrypted_SOURCES = encrypted.c
 encrypted_LDADD = ../src/libmeshlink.la
+
+ephemeral_SOURCES = ephemeral.c
+ephemeral_LDADD = ../src/libmeshlink.la
 
 import_export_SOURCES = import-export.c
 import_export_LDADD = ../src/libmeshlink.la

@@ -7,6 +7,8 @@
 /channels-fork
 /duplicate
 /echo-fork
+/encrypted
+/ephemeral
 /import-export
 /invite-join
 /sign-verify

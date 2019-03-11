@@ -266,6 +266,30 @@ extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name, 
  */
 extern meshlink_handle_t *meshlink_open_encrypted(const char *confbase, const char *name, const char *appname, dev_class_t devclass, const void *key, size_t keylen);
 
+/// Create an ephemeral MeshLink instance that does not store any state.
+/** This function creates a MeshLink instance.
+ *  No state is ever saved, so once this instance is closed, all its state is gone.
+ *
+ *  The name given should be a unique identifier for this instance.
+ *
+ *  This function returns a pointer to a struct meshlink_handle that will be allocated by MeshLink.
+ *  When the application does no longer need to use this handle, it must call meshlink_close() to
+ *  free its resources.
+ *
+ *  This function does not start any network I/O yet. The application should
+ *  first set callbacks, and then call meshlink_start().
+ *
+ *  @param name     The name which this instance of the application will use in the mesh.
+ *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *  @param appname  The application name which will be used in the mesh.
+ *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *  @param devclass The device class which will be used in the mesh.
+ *
+ *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink, or NULL in case of an error.
+ *                  The pointer is valid until meshlink_close() is called.
+ */
+extern meshlink_handle_t *meshlink_open_ephemeral(const char *name, const char *appname, dev_class_t devclass);
+
 /// Create Sub-Mesh.
 /** This function causes MeshLink to open a new Sub-Mesh network
  *  create a new thread, which will handle all network I/O.

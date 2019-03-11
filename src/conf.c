@@ -75,6 +75,10 @@ static void deltree(const char *dirname) {
 
 /// Create a fresh configuration directory
 bool config_init(meshlink_handle_t *mesh) {
+	if(!mesh->confbase) {
+		return true;
+	}
+
 	if(mkdir(mesh->confbase, 0700) && errno != EEXIST) {
 		logger(mesh, MESHLINK_DEBUG, "Could not create directory %s: %s\n", mesh->confbase, strerror(errno));
 		return false;
@@ -131,6 +135,10 @@ bool config_destroy(const char *confbase) {
 
 /// Check the presence of the main configuration file.
 bool main_config_exists(meshlink_handle_t *mesh) {
+	if(!mesh->confbase) {
+		return false;
+	}
+
 	char path[PATH_MAX];
 	make_main_path(mesh, path, sizeof(path));
 
@@ -139,6 +147,10 @@ bool main_config_exists(meshlink_handle_t *mesh) {
 
 /// Lock the main configuration file.
 bool main_config_lock(meshlink_handle_t *mesh) {
+	if(!mesh->confbase) {
+		return true;
+	}
+
 	char path[PATH_MAX];
 	make_main_path(mesh, path, sizeof(path));
 
@@ -181,6 +193,10 @@ void main_config_unlock(meshlink_handle_t *mesh) {
 
 /// Read a configuration file from a FILE handle.
 bool config_read_file(meshlink_handle_t *mesh, FILE *f, config_t *config) {
+	if(!mesh->confbase) {
+		return false;
+	}
+
 	(void)mesh;
 	long len;
 
@@ -228,6 +244,10 @@ bool config_read_file(meshlink_handle_t *mesh, FILE *f, config_t *config) {
 
 /// Write a configuration file to a FILE handle.
 bool config_write_file(meshlink_handle_t *mesh, FILE *f, const config_t *config) {
+	if(!mesh->confbase) {
+		return true;
+	}
+
 	if(mesh->config_key) {
 		uint8_t buf[config->len + 16];
 		size_t len = sizeof(buf);
@@ -266,6 +286,10 @@ void config_free(config_t *config) {
 
 /// Check the presence of a host configuration file.
 bool config_exists(meshlink_handle_t *mesh, const char *name) {
+	if(!mesh->confbase) {
+		return false;
+	}
+
 	char path[PATH_MAX];
 	make_host_path(mesh, name, path, sizeof(path));
 
@@ -274,6 +298,10 @@ bool config_exists(meshlink_handle_t *mesh, const char *name) {
 
 /// Read a host configuration file.
 bool config_read(meshlink_handle_t *mesh, const char *name, config_t *config) {
+	if(!mesh->confbase) {
+		return false;
+	}
+
 	char path[PATH_MAX];
 	make_host_path(mesh, name, path, sizeof(path));
 
@@ -294,8 +322,37 @@ bool config_read(meshlink_handle_t *mesh, const char *name, config_t *config) {
 	return true;
 }
 
+void config_scan_all(meshlink_handle_t *mesh, config_scan_action_t action) {
+	if(!mesh->confbase) {
+		return;
+	}
+
+	DIR *dir;
+	struct dirent *ent;
+	char dname[PATH_MAX];
+	make_host_path(mesh, NULL, dname, sizeof(dname));
+
+	dir = opendir(dname);
+
+	if(!dir) {
+		logger(mesh, MESHLINK_ERROR, "Could not open %s: %s", dname, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return;
+	}
+
+	while((ent = readdir(dir))) {
+		action(mesh, ent->d_name);
+	}
+
+	closedir(dir);
+}
+
 /// Write a host configuration file.
 bool config_write(meshlink_handle_t *mesh, const char *name, const config_t *config) {
+	if(!mesh->confbase) {
+		return true;
+	}
+
 	char path[PATH_MAX];
 	make_host_path(mesh, name, path, sizeof(path));
 
@@ -318,6 +375,10 @@ bool config_write(meshlink_handle_t *mesh, const char *name, const config_t *con
 
 /// Read the main configuration file.
 bool main_config_read(meshlink_handle_t *mesh, config_t *config) {
+	if(!mesh->confbase) {
+		return false;
+	}
+
 	char path[PATH_MAX];
 	make_main_path(mesh, path, sizeof(path));
 
@@ -340,6 +401,10 @@ bool main_config_read(meshlink_handle_t *mesh, config_t *config) {
 
 /// Write the main configuration file.
 bool main_config_write(meshlink_handle_t *mesh, const config_t *config) {
+	if(!mesh->confbase) {
+		return true;
+	}
+
 	char path[PATH_MAX];
 	make_main_path(mesh, path, sizeof(path));
 
@@ -362,6 +427,10 @@ bool main_config_write(meshlink_handle_t *mesh, const config_t *config) {
 
 /// Read an invitation file, and immediately delete it.
 bool invitation_read(meshlink_handle_t *mesh, const char *name, config_t *config) {
+	if(!mesh->confbase) {
+		return false;
+	}
+
 	char path[PATH_MAX];
 	char used_path[PATH_MAX];
 	make_invitation_path(mesh, name, path, sizeof(path));
@@ -416,6 +485,10 @@ bool invitation_read(meshlink_handle_t *mesh, const char *name, config_t *config
 
 /// Write an invitation file.
 bool invitation_write(meshlink_handle_t *mesh, const char *name, const config_t *config) {
+	if(!mesh->confbase) {
+		return true;
+	}
+
 	char path[PATH_MAX];
 	make_invitation_path(mesh, name, path, sizeof(path));
 
@@ -438,6 +511,10 @@ bool invitation_write(meshlink_handle_t *mesh, const char *name, const config_t 
 
 /// Purge old invitation files
 size_t invitation_purge_old(meshlink_handle_t *mesh, time_t deadline) {
+	if(!mesh->confbase) {
+		return true;
+	}
+
 	char path[PATH_MAX];
 	make_invitation_path(mesh, "", path, sizeof(path));
 

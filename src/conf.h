@@ -27,6 +27,8 @@ typedef struct config_t {
 	size_t len;
 } config_t;
 
+typedef void (*config_scan_action_t)(struct meshlink_handle *mesh, const char *name);
+
 //extern bool config_read_file(struct meshlink_handle *mesh, FILE *f, struct config_t *);
 //extern bool config_write_file(struct meshlink_handle *mesh, FILE *f, const struct config_t *);
 extern void config_free(struct config_t *config);
@@ -43,6 +45,7 @@ extern bool main_config_write(struct meshlink_handle *mesh, const struct config_
 extern bool config_exists(struct meshlink_handle *mesh, const char *name);
 extern bool config_read(struct meshlink_handle *mesh, const char *name, struct config_t *);
 extern bool config_write(struct meshlink_handle *mesh, const char *name, const struct config_t *);
+extern void config_scan_all(struct meshlink_handle *mesh, config_scan_action_t action);
 
 extern bool invitation_read(struct meshlink_handle *mesh, const char *name, struct config_t *);
 extern bool invitation_write(struct meshlink_handle *mesh, const char *name, const struct config_t *);
