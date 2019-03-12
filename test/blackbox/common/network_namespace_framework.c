@@ -170,10 +170,12 @@ void netns_connect_namespaces(netns_state_t *test_state, namespace_t *ns1, names
 			}
 
 			interface->if_name = strdup(if_name);
+
 			assert(interface->if_name);
 
 			// Connect one end of the the veth pair to the namespace's interface
 			assert(sprintf(cmd, "ip link set %s netns %s name %s", eth_pairs[i], ns[i]->name, interface->if_name) >= 0);
+
 			assert(system(cmd) == 0);
 		} else {
 
