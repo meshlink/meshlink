@@ -43,9 +43,10 @@ The contents of a host configuration are:
 
 - uint32: configuration format version
 - str: name of the node
+- str: name of the submesh this node is part of, or "." if it's in the core mesh
 - int32: device class
 - bool: blacklisted
-- bin: public Ed25519 key
+- bin: public Ed25519 key, or zero-length if no key is known
 - str: canonical address (may be zero length if unset)
 - arr[ext]: recent addresses
 
@@ -56,6 +57,7 @@ The contents of an invitation file are:
 
 - uint32: invitation format version
 - str: name of the invitee
+- str: name of the submesh this node will be part of, or "." if it's in the core mesh
 - int32: device class of the invitee (may be unused)
 - arr[bin]: one or more host config files
 

@@ -81,6 +81,7 @@ void free_node(node_t *n) {
 	}
 
 	free(n->name);
+	free(n->canonical_address);
 
 	free(n);
 }

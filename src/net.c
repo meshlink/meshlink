@@ -490,23 +490,27 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			logger(mesh, MESHLINK_DEBUG, "Autoconnect trying to connect to %s", connect_to->name);
 
 			/* check if there is already a connection attempt to this node */
-			bool found = false;
+			bool skip = false;
 
 			for list_each(outgoing_t, outgoing, mesh->outgoings) {
 				if(outgoing->node == connect_to) {
-					found = true;
+					logger(mesh, MESHLINK_DEBUG, "* skip autoconnect since it is an outgoing connection already");
+					skip = true;
 					break;
 				}
 			}
 
-			if(!found) {
+			if(!node_read_public_key(mesh, connect_to)) {
+				logger(mesh, MESHLINK_DEBUG, "* skip autoconnect since we don't know this node's public key");
+				skip = true;
+			}
+
+			if(!skip) {
 				logger(mesh, MESHLINK_DEBUG, "Autoconnecting to %s", connect_to->name);
 				outgoing_t *outgoing = xzalloc(sizeof(outgoing_t));
 				outgoing->node = connect_to;
 				list_insert_tail(mesh->outgoings, outgoing);
 				setup_outgoing_connection(mesh, outgoing);
-			} else {
-				logger(mesh, MESHLINK_DEBUG, "* skip autoconnect since it is an outgoing connection already");
 			}
 		}
 
@@ -585,6 +589,13 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		// done!
 
 		logger(mesh, MESHLINK_DEBUG, "--- autoconnect end ---");
+	}
+
+	for splay_each(node_t, n, mesh->nodes) {
+		if(n->status.dirty) {
+			node_write_config(mesh, n);
+			n->status.dirty = false;
+		}
 	}
 
 	timeout_set(&mesh->loop, data, &(struct timeval) {

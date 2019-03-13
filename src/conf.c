@@ -223,6 +223,7 @@ bool config_read_file(meshlink_handle_t *mesh, FILE *f, config_t *config) {
 		chacha_poly1305_set_key(ctx, mesh->config_key);
 
 		if(len > 12 && chacha_poly1305_decrypt_iv96(ctx, buf, buf + 12, len - 12, decrypted, &decrypted_len)) {
+			chacha_poly1305_exit(ctx);
 			free(buf);
 			config->buf = decrypted;
 			config->len = decrypted_len;
@@ -230,6 +231,7 @@ bool config_read_file(meshlink_handle_t *mesh, FILE *f, config_t *config) {
 		} else {
 			logger(mesh, MESHLINK_ERROR, "Cannot decrypt config file\n");
 			meshlink_errno = MESHLINK_ESTORAGE;
+			chacha_poly1305_exit(ctx);
 			free(decrypted);
 			free(buf);
 			return false;
@@ -330,7 +332,7 @@ void config_scan_all(meshlink_handle_t *mesh, config_scan_action_t action) {
 	DIR *dir;
 	struct dirent *ent;
 	char dname[PATH_MAX];
-	make_host_path(mesh, NULL, dname, sizeof(dname));
+	make_host_path(mesh, "", dname, sizeof(dname));
 
 	dir = opendir(dname);
 
