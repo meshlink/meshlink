@@ -232,11 +232,11 @@ void sockaddrcpy_setport(sockaddr_t *a, const sockaddr_t *b, uint16_t port) {
 
 	switch(b->sa.sa_family) {
 	case AF_INET:
-		a->in.sin_port = port;
+		a->in.sin_port = htons(port);
 		break;
 
 	case AF_INET6:
-		a->in6.sin6_port = port;
+		a->in6.sin6_port = htons(port);
 		break;
 
 	default:

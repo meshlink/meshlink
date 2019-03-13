@@ -35,7 +35,10 @@ void init_submeshes(meshlink_handle_t *mesh) {
 }
 
 void exit_submeshes(meshlink_handle_t *mesh) {
-	list_delete_list(mesh->submeshes);
+	if(mesh->submeshes) {
+		list_delete_list(mesh->submeshes);
+	}
+
 	mesh->submeshes = NULL;
 }
 

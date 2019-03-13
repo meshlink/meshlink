@@ -124,6 +124,34 @@ bool node_read_public_key(meshlink_handle_t *mesh, node_t *n) {
 	}
 
 	n->ecdsa = ecdsa_set_public_key(key);
+
+	// While we are at it, read known address information
+	if(!n->canonical_address) {
+		n->canonical_address = packmsg_get_str_dup(&in);
+	} else {
+		packmsg_skip_element(&in);
+	}
+
+	// Append any known addresses in the config file to the list we currently have
+	uint32_t known_count = 0;
+
+	for(uint32_t i = 0; i < 5; i++) {
+		if(n->recent[i].sa.sa_family) {
+			known_count++;
+		}
+	}
+
+	uint32_t count = packmsg_get_array(&in);
+
+	if(count > 5 - known_count) {
+		count = 5 - known_count;
+	}
+
+	for(uint32_t i = 0; i < count; i++) {
+		n->recent[i + known_count] = packmsg_get_sockaddr(&in);
+	}
+
+
 	config_free(&config);
 	return true;
 }
@@ -207,7 +235,6 @@ bool node_write_config(meshlink_handle_t *mesh, node_t *n) {
 	packmsg_add_str(&out, n->name);
 	packmsg_add_str(&out, n->submesh ? n->submesh->name : CORE_MESH);
 	packmsg_add_int32(&out, n->devclass);
-	assert(n->devclass != 3);
 	packmsg_add_bool(&out, n->status.blacklisted);
 
 	if(ecdsa_active(n->ecdsa)) {
@@ -456,11 +483,13 @@ void close_network_connections(meshlink_handle_t *mesh) {
 	exit_requests(mesh);
 	exit_edges(mesh);
 	exit_nodes(mesh);
+	exit_submeshes(mesh);
 	exit_connections(mesh);
 
-	if(mesh->myport) {
-		free(mesh->myport);
-	}
+	free(mesh->myport);
+	mesh->myport = NULL;
+
+	mesh->self = NULL;
 
 	return;
 }

@@ -522,6 +522,36 @@ int check_port(meshlink_handle_t *mesh) {
 	return 0;
 }
 
+static bool write_main_config_files(meshlink_handle_t *mesh) {
+	uint8_t buf[4096];
+
+	/* Write the main config file */
+	packmsg_output_t out = {buf, sizeof buf};
+
+	packmsg_add_uint32(&out, MESHLINK_CONFIG_VERSION);
+	packmsg_add_str(&out, mesh->name);
+	packmsg_add_bin(&out, ecdsa_get_private_key(mesh->private_key), 96);
+	packmsg_add_bin(&out, ecdsa_get_private_key(mesh->invitation_key), 96);
+	packmsg_add_uint16(&out, atoi(mesh->myport));
+
+	if(!packmsg_output_ok(&out)) {
+		return false;
+	}
+
+	config_t config = {buf, packmsg_output_size(&out, buf)};
+
+	if(!main_config_write(mesh, &config)) {
+		return false;
+	}
+
+	/* Write our own host config file */
+	if(!node_write_config(mesh, mesh->self)) {
+		return false;
+	}
+
+	return true;
+}
+
 static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len) {
 	packmsg_input_t in = {buf, len};
 	uint32_t version = packmsg_get_uint32(&in);
@@ -543,48 +573,28 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 
 	if(!check_id(name)) {
 		logger(mesh, MESHLINK_DEBUG, "Invalid Name found in invitation: %s!\n", name);
+		free(name);
 		return false;
 	}
 
 	if(!count) {
 		logger(mesh, MESHLINK_ERROR, "Incomplete invitation file!\n");
+		free(name);
 		return false;
 	}
+
+	free(mesh->name);
+	free(mesh->self->name);
+	mesh->name = name;
+	mesh->self->name = xstrdup(name);
+	mesh->self->devclass = devclass;
 
 	// Initialize configuration directory
 	if(!config_init(mesh)) {
 		return false;
 	}
 
-	// Write main config file
-	uint8_t outbuf[4096];
-	packmsg_output_t out = {outbuf, sizeof(outbuf)};
-	packmsg_add_uint32(&out, MESHLINK_CONFIG_VERSION);
-	packmsg_add_str(&out, name);
-	packmsg_add_bin(&out, ecdsa_get_private_key(mesh->private_key), 96);
-	packmsg_add_uint16(&out, atoi(mesh->myport));
-
-	config_t config = {outbuf, packmsg_output_size(&out, outbuf)};
-
-	if(!main_config_write(mesh, &config)) {
-		return false;
-	}
-
-	// Write our own host config file
-	out.ptr = outbuf;
-	out.len = sizeof(outbuf);
-	packmsg_add_uint32(&out, MESHLINK_CONFIG_VERSION);
-	packmsg_add_str(&out, name);
-	packmsg_add_str(&out, CORE_MESH);
-	packmsg_add_int32(&out, devclass);
-	packmsg_add_bool(&out, false);
-	packmsg_add_bin(&out, ecdsa_get_public_key(mesh->private_key), 32);
-	packmsg_add_str(&out, ""); // TODO: copy existing canonical address, in case it was added before meshlink_join().
-	packmsg_add_array(&out, 0);
-
-	config.len = packmsg_output_size(&out, outbuf);
-
-	if(!config_write(mesh, name, &config)) {
+	if(!write_main_config_files(mesh)) {
 		return false;
 	}
 
@@ -598,19 +608,36 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 			return false;
 		}
 
-		config_t config = {data, len};
-		node_t *n = new_node();
+		packmsg_input_t in2 = {data, len};
+		uint32_t version = packmsg_get_uint32(&in2);
+		char *name = packmsg_get_str_dup(&in2);
 
-		if(!node_read_from_config(mesh, n, &config)) {
-			free_node(n);
-			logger(mesh, MESHLINK_ERROR, "Invalid host config file in invitation file!\n");
+		if(!packmsg_input_ok(&in2) || version != MESHLINK_CONFIG_VERSION || !check_id(name)) {
+			free(name);
+			packmsg_input_invalidate(&in);
+			break;
+		}
+
+		if(!check_id(name)) {
+			free(name);
+			break;
+		}
+
+		if(!strcmp(name, mesh->name)) {
+			logger(mesh, MESHLINK_DEBUG, "Secondary chunk would overwrite our own host config file.\n");
+			free(name);
 			meshlink_errno = MESHLINK_EPEER;
 			return false;
 		}
 
-		if(!strcmp(n->name, name)) {
-			logger(mesh, MESHLINK_DEBUG, "Secondary chunk would overwrite our own host config file.\n");
+		node_t *n = new_node();
+		n->name = name;
+
+		config_t config = {data, len};
+
+		if(!node_read_from_config(mesh, n, &config)) {
 			free_node(n);
+			logger(mesh, MESHLINK_ERROR, "Invalid host config file in invitation file!\n");
 			meshlink_errno = MESHLINK_EPEER;
 			return false;
 		}
@@ -623,11 +650,6 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 	}
 
 	sptps_send_record(&(mesh->sptps), 1, ecdsa_get_public_key(mesh->private_key), 32);
-
-	free(mesh->name);
-	free(mesh->self->name);
-	mesh->name = xstrdup(name);
-	mesh->self->name = xstrdup(name);
 
 	logger(mesh, MESHLINK_DEBUG, "Configuration stored in: %s\n", mesh->confbase);
 
@@ -825,24 +847,6 @@ static void add_local_addresses(meshlink_handle_t *mesh) {
 	}
 }
 
-#if 0
-static bool meshlink_write_config(meshlink_handle_t *mesh) {
-	uint8_t buf[1024];
-	packmsg_output_t out = {buf, sizeof buf};
-	packmsg_add_str(&out, mesh->name);
-	packmsg_add_uint32(&out, mesh->devclass);
-	packmsg_add_uint16(&out, mesh->port);
-	packmsg_add_bin(&out, ecdsa, sizeof(ecdsa));
-	uint32_t len = packmsg_output_size(&out, buf);
-
-	if(!len) {
-		logger(mesh, MESHLINK_DEBUG, "Could not create configuration data\n",);
-		meshlink_errno = MESHLINK_EINTERNAL;
-		return false;
-	}
-}
-#endif
-
 static bool meshlink_setup(meshlink_handle_t *mesh) {
 	if(!config_init(mesh)) {
 		logger(mesh, MESHLINK_ERROR, "Could not set up configuration in %s: %s\n", mesh->confbase, strerror(errno));
@@ -867,36 +871,13 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	mesh->self->devclass = mesh->devclass;
 	mesh->self->ecdsa = ecdsa_set_public_key(ecdsa_get_public_key(mesh->private_key));
 
-	// Write the main config file
-	uint8_t buf[4096];
-	packmsg_output_t out = {buf, sizeof(buf)};
-
-	packmsg_add_uint32(&out, MESHLINK_CONFIG_VERSION);
-	packmsg_add_str(&out, mesh->name);
-	packmsg_add_bin(&out, ecdsa_get_private_key(mesh->private_key), 96);
-	packmsg_add_bin(&out, ecdsa_get_private_key(mesh->invitation_key), 96);
-	packmsg_add_uint16(&out, atoi(mesh->myport));
-
-	config_t config = {buf, packmsg_output_size(&out, buf)};
-
-	if(!main_config_write(mesh, &config)) {
+	if(!write_main_config_files(mesh)) {
 		return false;
 	}
 
-	// Write our own host config file
-	out.ptr = buf;
-	out.len = sizeof(buf);
-	packmsg_add_uint32(&out, MESHLINK_CONFIG_VERSION);
-	packmsg_add_str(&out, mesh->name);
-	packmsg_add_int32(&out, mesh->devclass);
-	packmsg_add_bool(&out, false);
-	packmsg_add_bin(&out, ecdsa_get_public_key(mesh->private_key), 32);
-	packmsg_add_str(&out, ""); // TODO: copy existing canonical address, in case it was added before meshlink_join().
-	packmsg_add_array(&out, 0);
-
-	config.len = packmsg_output_size(&out, buf);
-
-	if(!config_write(mesh, mesh->name, &config)) {
+	if(!main_config_lock(mesh)) {
+		logger(NULL, MESHLINK_ERROR, "Cannot lock main config file\n");
+		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
 	}
 
@@ -963,6 +944,7 @@ static bool meshlink_read_config(meshlink_handle_t *mesh) {
 
 	if(!node_read_public_key(mesh, mesh->self)) {
 		logger(NULL, MESHLINK_ERROR, "Could not read our host configuration file!");
+		meshlink_errno = MESHLINK_ESTORAGE;
 		free_node(mesh->self);
 		mesh->self = NULL;
 		return false;
@@ -1193,6 +1175,7 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 
 		if(!prf(params->key, params->keylen, "MeshLink configuration key", 26, mesh->config_key, CHACHA_POLY1305_KEYLEN)) {
 			logger(NULL, MESHLINK_ERROR, "Error creating configuration key!\n");
+			meshlink_close(mesh);
 			meshlink_errno = MESHLINK_EINTERNAL;
 			return NULL;
 		}
@@ -1434,6 +1417,16 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	exit_outgoings(mesh);
 
+	// Write out any changed node config files
+	if(mesh->nodes) {
+		for splay_each(node_t, n, mesh->nodes) {
+			if(n->status.dirty) {
+				node_write_config(mesh, n);
+				n->status.dirty = false;
+			}
+		}
+	}
+
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
@@ -1474,6 +1467,8 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	free(mesh->name);
 	free(mesh->appname);
 	free(mesh->confbase);
+	free(mesh->config_key);
+	ecdsa_free(mesh->private_key);
 	pthread_mutex_destroy(&(mesh->mesh_mutex));
 
 	main_config_unlock(mesh);
@@ -1917,7 +1912,7 @@ bool meshlink_set_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *no
 	node_t *n = (node_t *)node;
 	free(n->canonical_address);
 	n->canonical_address = canonical_address;
-	n->status.dirty = true;
+	node_write_config(mesh, n);
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 
@@ -1984,11 +1979,26 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 		goto done;
 	}
 
+	free(mesh->myport);
+	xasprintf(&mesh->myport, "%d", port);
+
+	/* Write meshlink.conf with the updated port number */
+	write_main_config_files(mesh);
+
+	/* Close down the network. This also deletes mesh->self. */
 	close_network_connections(mesh);
 
-	// TODO: write meshlink.conf again
+	/* Recreate mesh->self. */
+	mesh->self = new_node();
+	mesh->self->name = xstrdup(mesh->name);
+	mesh->self->devclass = mesh->devclass;
 
-	if(!setup_network(mesh)) {
+	if(!node_read_public_key(mesh, mesh->self)) {
+		logger(NULL, MESHLINK_ERROR, "Could not read our host configuration file!");
+		meshlink_errno = MESHLINK_ESTORAGE;
+		free_node(mesh->self);
+		mesh->self = NULL;
+	} else if(!setup_network(mesh)) {
 		meshlink_errno = MESHLINK_ENETWORK;
 	} else {
 		rval = true;
@@ -2098,7 +2108,10 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 	packmsg_add_str(&inv, s ? s->name : CORE_MESH);
 	packmsg_add_int32(&inv, DEV_CLASS_UNKNOWN); /* TODO: allow this to be set by inviter? */
 
-	/* TODO: Add several host config files to bootstrap connections */
+	/* TODO: Add several host config files to bootstrap connections.
+	 * Note: make sure we only add config files of nodes that are in the core mesh or the same submesh,
+	 * and are not blacklisted.
+	 */
 	config_t configs[5] = {NULL};
 	int count = 0;
 
@@ -2270,7 +2283,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 
 	mesh->blen = 0;
 
-	if(!sendline(mesh->sock, "0 ?%s %d.%d %s", b64key, PROT_MAJOR, 1, mesh->appname)) {
+	if(!sendline(mesh->sock, "0 ?%s %d.%d %s", b64key, PROT_MAJOR, PROT_MINOR, mesh->appname)) {
 		logger(mesh, MESHLINK_DEBUG, "Error sending request to %s port %s: %s\n", address, port, strerror(errno));
 		closesocket(mesh->sock);
 		meshlink_errno = MESHLINK_ENETWORK;
@@ -2482,7 +2495,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 
 		if(!packmsg_input_ok(&in2) || version != MESHLINK_CONFIG_VERSION || !check_id(name)) {
 			free(name);
-			packmsg_input_invalidate(&in2);
+			packmsg_input_invalidate(&in);
 			break;
 		}
 
@@ -2494,58 +2507,24 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 		node_t *n = lookup_node(mesh, name);
 
 		if(n) {
-			free(name);
 			logger(mesh, MESHLINK_DEBUG, "Node %s already exists, not importing\n", name);
+			free(name);
 			continue;
 		}
 
 		n = new_node();
 		n->name = name;
-		char *submesh_name = packmsg_get_str_dup(&in2);
 
-		if(submesh_name) {
-			if(!strcmp(submesh_name, CORE_MESH)) {
-				n->submesh = NULL;
-			} else {
-				n->submesh = lookup_or_create_submesh(mesh, submesh_name);
+		config_t config = {data, len};
 
-				if(!n->submesh) {
-					packmsg_input_invalidate(&in2);
-				}
-			}
-
-			free(submesh_name);
-		}
-
-		n->devclass = packmsg_get_int32(&in2);
-		n->status.blacklisted = packmsg_get_bool(&in2);
-		const void *key;
-		uint32_t keylen = packmsg_get_bin_raw(&in2, &key);
-
-		if(keylen == 32) {
-			n->ecdsa = ecdsa_set_public_key(key);
-		}
-
-		n->canonical_address = packmsg_get_str_dup(&in2);
-		uint32_t count = packmsg_get_array(&in2);
-
-		if(count > 5) {
-			count = 5;
-		}
-
-		for(uint32_t i = 0; i < count; i++) {
-			n->recent[i] = packmsg_get_sockaddr(&in2);
-		}
-
-		if(!packmsg_done(&in2) || keylen != 32) {
-			packmsg_input_invalidate(&in);
+		if(!node_read_from_config(mesh, n, &config)) {
 			free_node(n);
+			packmsg_input_invalidate(&in);
 			break;
-		} else {
-			config_t config = {data, len};
-			config_write(mesh, n->name, &config);
-			node_add(mesh, n);
 		}
+
+		config_write(mesh, n->name, &config);
+		node_add(mesh, n);
 	}
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
@@ -2584,7 +2563,7 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	}
 
 	n->status.blacklisted = true;
-	n->status.dirty = true;
+	node_write_config(mesh, n);
 	logger(mesh, MESHLINK_DEBUG, "Blacklisted %s.\n", node->name);
 
 	//Immediately terminate any connections we have with the blacklisted node
@@ -2627,7 +2606,7 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	}
 
 	n->status.blacklisted = false;
-	n->status.dirty = true;
+	node_write_config(mesh, n);
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return;
@@ -2651,7 +2630,7 @@ void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const
 	node_t *n = (node_t *)node;
 	memmove(n->recent + 1, n->recent, 4 * sizeof(*n->recent));
 	memcpy(n->recent, addr, SALEN(*addr));
-	n->status.dirty = true;
+	node_write_config(mesh, n);
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	// @TODO do we want to fire off a connection attempt right away?
