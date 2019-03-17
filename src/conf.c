@@ -497,7 +497,7 @@ copy:
 		error = true;
 	}
 
-	// If any error occured during reading or writing, exit.
+	// If any error occurred during reading or writing, exit.
 	if(error) {
 		unlink(tmpname);
 		return false;

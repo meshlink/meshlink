@@ -118,7 +118,7 @@ extern char *mesh_event_sock_create(const char *ifname);
  *  @param callback     callback which handles the mesh event packet.
  *  @param timeout      timeout for which the the function has to wait for the event.
  *
- *  @return             This function returns true if a mesh event occured else false if timeout exceeded.
+ *  @return             This function returns true if a mesh event occurred else false if timeout exceeded.
  */
 extern bool wait_for_event(mesh_event_callback_t callback, int timeout);
 
@@ -131,7 +131,7 @@ extern bool wait_for_event(mesh_event_callback_t callback, int timeout);
  *  @param payload          Payload can also be attached along with the mesh event if any, else NULL can
  *                          can be specified.
  *  @param payload_length   Length of the payload if specified else 0 can be specified.
- *                                                                                                      the maximum payload size can be upto PAYLOAD_MAX_SIZE and if the
+ *                                                                                                      the maximum payload size can be up to PAYLOAD_MAX_SIZE and if the
  *                          PAYLOAD_MAX_SIZE macro is changed it should not exceed the UDP datagram size.
  *
  *  @return                  This function returns true on success else returns false.

@@ -68,7 +68,7 @@ struct devtool_edge {
  *  @return             A pointer to an array containing devtool_edge_t elements,
  *                      or NULL in case of an error.
  *                      If the @a edges @a argument was not NULL, then the
- *                      retun value can be either the same value or a different
+ *                      return value can be either the same value or a different
  *                      value. If the new values is NULL, then the old array
  *                      will have been freed by Meshlink.
  */

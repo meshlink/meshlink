@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	if(!argv[CMD_LINE_ARG_INVITEURL]) {
-		fprintf(stderr, "Generating Inviation to PEER\n");
+		fprintf(stderr, "Generating Invitation to PEER\n");
 		invite_peer = execute_invite("peer", NULL);
 		assert(invite_peer != NULL);
 

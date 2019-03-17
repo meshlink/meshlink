@@ -922,7 +922,7 @@ static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint
 		return finalize_join(mesh);
 
 	case 2:
-		logger(mesh, MESHLINK_DEBUG, "Invitation succesfully accepted.\n");
+		logger(mesh, MESHLINK_DEBUG, "Invitation successfully accepted.\n");
 		shutdown(mesh->sock, SHUT_RDWR);
 		mesh->success = true;
 		break;
@@ -3136,7 +3136,7 @@ ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *chann
 
 	// TODO: more finegrained locking.
 	// Ideally we want to put the data into the UTCP connection's send buffer.
-	// Then, preferrably only if there is room in the receiver window,
+	// Then, preferably only if there is room in the receiver window,
 	// kick the meshlink thread to go send packets.
 
 	pthread_mutex_lock(&mesh->mesh_mutex);

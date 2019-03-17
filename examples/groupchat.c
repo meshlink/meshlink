@@ -328,7 +328,7 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 		        "/who [<name>]         			  List all nodes or show information about the given node.\n"
 		        "/listgroup <name>         		  List all nodes in a given group.\n"
 		        "/canonical -h<hostname> -p<port> Set Canonical address to be present in invitation.\n"
-		        "                      			  Any one of two options an be specified. Atleast one option must be present\n"
+		        "                      			  Any one of two options an be specified. At least one option must be present\n"
 		        "/quit                 			  Exit this program.\n"
 		       );
 	} else {

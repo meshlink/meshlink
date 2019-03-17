@@ -510,7 +510,7 @@ void change_ip(int node) {
 	container->stop(container);
 	assert(container->start(container, 0, NULL));
 
-	strncpy(container_ips[node], new_ip, sizeof(new_ip));   // Save the new IP Addres
+	strncpy(container_ips[node], new_ip, sizeof(new_ip));   // Save the new IP Address
 	PRINT_TEST_CASE_MSG("Node '%s' IP Address changed to %s\n", state_ptr->node_names[node],
 	                    container_ips[node]);
 }

@@ -186,7 +186,7 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 
 	fclose(f);
 
-	logger(mesh, MESHLINK_INFO, "Key succesfully received from %s", c->name);
+	logger(mesh, MESHLINK_INFO, "Key successfully received from %s", c->name);
 
 	//TODO: callback to application to inform of an accepted invitation
 
@@ -339,7 +339,7 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 
 	c->status.invitation_used = true;
 
-	logger(mesh, MESHLINK_INFO, "Invitation %s succesfully sent to %s", cookie, c->name);
+	logger(mesh, MESHLINK_INFO, "Invitation %s successfully sent to %s", cookie, c->name);
 	return true;
 }
 

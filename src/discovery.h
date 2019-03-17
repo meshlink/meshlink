@@ -2,7 +2,7 @@
 #define MESHLINK_DISCOVERY_H
 
 /*
-    discovery.h -- header for dicovery.c
+    discovery.h -- header for discovery.c
     Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify

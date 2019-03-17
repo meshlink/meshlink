@@ -203,7 +203,7 @@ static void meshlink_logger(meshlink_handle_t *mesh, meshlink_log_level_t level,
 		node_pmtu[i].mtu_discovery.count += 1;
 		node_pmtu[i].mtu_size = mtu_len;
 
-	} else if(sscanf(text, "SPTPS key exchange with %s succesful", node_name) == 1) {
+	} else if(sscanf(text, "SPTPS key exchange with %s successful", node_name) == 1) {
 		find_node_index(i, node_name);
 		node_pmtu[i].mtu_start.time = cur_time;
 		node_pmtu[i].mtu_start.count += 1;

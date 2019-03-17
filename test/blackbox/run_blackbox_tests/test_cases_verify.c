@@ -120,7 +120,7 @@ bool test_verify_01(void) {
 		return false;
 	}
 
-	PRINT_TEST_CASE_MSG("meshlink_verify Successfuly verified data\n");
+	PRINT_TEST_CASE_MSG("meshlink_verify Successfully verified data\n");
 	return true;
 }
 
@@ -161,7 +161,7 @@ bool test_verify_02(void) {
 	meshlink_destroy("verifyconf");
 
 	if(!ret) {
-		PRINT_TEST_CASE_MSG("meshlink_sign Successfuly reported error on passing NULL as mesh_handle arg\n");
+		PRINT_TEST_CASE_MSG("meshlink_sign Successfully reported error on passing NULL as mesh_handle arg\n");
 		return true;
 	}
 

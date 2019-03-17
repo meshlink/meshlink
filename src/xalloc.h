@@ -2,7 +2,7 @@
 #define MESHLINK_XALLOC_H
 
 /*
-   xalloc.h -- malloc and related fuctions with out of memory checking
+   xalloc.h -- malloc and related functions with out of memory checking
    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
 
    This program is free software; you can redistribute it and/or modify

@@ -143,8 +143,8 @@ static void test_case_submesh_02(void **state) {
 
     Expected Result:
     Channels should be formed between nodes of sub-mesh & coremesh, nodes with in sub-mesh
-    and should be able to exchange data. Lis of all nodes should only conatin four nodes
-    and the list of submesh should only conatin two nodes of that submesh.
+    and should be able to exchange data. Lis of all nodes should only contain four nodes
+    and the list of submesh should only contain two nodes of that submesh.
 */
 static bool test_steps_submesh_02(void) {
 	char *invite_corenode2, *invite_app1node1, *invite_app2node1, *invite_app1node2, *invite_app2node2;

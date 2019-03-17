@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
 		sleep(1);
 	}
 
-	fprintf(stderr, "Generating Inviation to PEER\n");
+	fprintf(stderr, "Generating Invitation to PEER\n");
 	invite_peer = execute_invite("peer", NULL);
 	assert(invite_peer != NULL);
 
