@@ -1021,6 +1021,28 @@ extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t
  */
 extern uint32_t meshlink_channel_get_flags(meshlink_handle_t *mesh, meshlink_channel_t *channel);
 
+/// Get the amount of bytes in the send buffer.
+/** This returns the amount of bytes in the send buffer.
+ *  These bytes have not been received by the peer yet.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *
+ *  @return             The amount of un-ACKed bytes in the send buffer.
+ */
+extern size_t meshlink_channel_get_sendq(meshlink_handle_t *mesh, meshlink_channel_t *channel);
+
+/// Get the amount of bytes in the receive buffer.
+/** This returns the amount of bytes in the receive buffer.
+ *  These bytes have not been processed by the application yet.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *
+ *  @return             The amount of bytes in the receive buffer.
+ */
+extern size_t meshlink_channel_get_recvq(meshlink_handle_t *mesh, meshlink_channel_t *channel);
+
 /// Hint that a hostname may be found at an address
 /** This function indicates to meshlink that the given hostname is likely found
  *  at the given IP address and port.

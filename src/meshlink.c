@@ -3159,6 +3159,24 @@ uint32_t meshlink_channel_get_flags(meshlink_handle_t *mesh, meshlink_channel_t 
 	return channel->c->flags;
 }
 
+size_t meshlink_channel_get_sendq(meshlink_handle_t *mesh, meshlink_channel_t *channel) {
+	if(!mesh || !channel) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return -1;
+	}
+
+	return utcp_get_sendq(channel->c);
+}
+
+size_t meshlink_channel_get_recvq(meshlink_handle_t *mesh, meshlink_channel_t *channel) {
+	if(!mesh || !channel) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return -1;
+	}
+
+	return utcp_get_recvq(channel->c);
+}
+
 void update_node_status(meshlink_handle_t *mesh, node_t *n) {
 	if(n->status.reachable && mesh->channel_accept_cb && !n->utcp) {
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);

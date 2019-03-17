@@ -691,6 +691,30 @@ public:
 		return meshlink_channel_send(handle, channel, data, len);
 	}
 
+	/// Get the amount of bytes in the send buffer.
+	/** This returns the amount of bytes in the send buffer.
+	 *  These bytes have not been received by the peer yet.
+	 *
+	 *  @param channel      A handle for the channel.
+	 *
+	 *  @return             The amount of un-ACKed bytes in the send buffer.
+	 */
+	size_t channel_get_sendq(channel *channel) {
+		return meshlink_channel_get_sendq(handle, channel);
+	}
+
+	/// Get the amount of bytes in the receive buffer.
+	/** This returns the amount of bytes in the receive buffer.
+	 *  These bytes have not been processed by the application yet.
+	 *
+	 *  @param channel      A handle for the channel.
+	 *
+	 *  @return             The amount of bytes in the receive buffer.
+	 */
+	size_t channel_get_recvq(channel *channel) {
+		return meshlink_channel_get_recvq(handle, channel);
+	}
+
 	/// Enable or disable zeroconf discovery of local peers
 	/** This controls whether zeroconf discovery using the Catta library will be
 	 *  enabled to search for peers on the local network. By default, it is enabled.
