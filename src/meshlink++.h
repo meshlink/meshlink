@@ -145,7 +145,7 @@ public:
 	 *  @param confbase The directory in which MeshLink will store its configuration files.
 	 *  @param name     The name which this instance of the application will use in the mesh.
 	 *  @param appname  The application name which will be used in the mesh.
-	 *  @param dclass   The device class which will be used in the mesh.
+	 *  @param devclass The device class which will be used in the mesh.
 	 *
 	 *  @return         This function will return a pointer to a meshlink::mesh if MeshLink has succesfully set up its configuration files, NULL otherwise.
 	 */
@@ -489,8 +489,6 @@ public:
 	/// Get the network port used by the local node.
 	/** This function returns the network port that the local node is listening on.
 	 *
-	 *  @param mesh          A handle which represents an instance of MeshLink.
-	 *
 	 *  @return              This function returns the port number, or -1 in case of an error.
 	 */
 	int get_port() {
@@ -531,6 +529,7 @@ public:
 	 *  This URL should be passed by the application to the invitee in a way that no eavesdroppers can see the URL.
 	 *  The URL can only be used once, after the user has joined the mesh the URL is no longer valid.
 	 *
+	 *  @param submesh      A handle to the submesh to put the invitee in.
 	 *  @param name         The name that the invitee will use in the mesh.
 	 *  @param flags        A bitwise-or'd combination of flags that controls how the URL is generated.
 	 *
@@ -615,7 +614,7 @@ public:
 	 *  The application then has to decide whether to accept or reject this channel.
 	 *
 	 *  This function sets the channel poll callback to channel_poll_trampoline, which in turn
-	 *  calls channel_poll. To set a differnt, channel-specific poll callback, use set_channel_poll_cb.
+	 *  calls channel_poll. To set a different, channel-specific poll callback, use set_channel_poll_cb.
 	 *
 	 *  @param node         The node to which this channel is being initiated.
 	 *  @param port         The port number the peer wishes to connect to.
@@ -632,9 +631,23 @@ public:
 		return ch;
 	}
 
-	/**
-	 * @override
-	 * Sets channel_receive_trampoline as cb, which in turn calls this->channel_receive( ... ).
+	/// Open a reliable stream channel to another node.
+	/** This function is called whenever a remote node wants to open a channel to the local node.
+	 *  The application then has to decide whether to accept or reject this channel.
+	 *
+	 *  This function sets the channel receive callback to channel_receive_trampoline,
+	 *  which in turn calls channel_receive.
+	 *
+	 *  This function sets the channel poll callback to channel_poll_trampoline, which in turn
+	 *  calls channel_poll. To set a different, channel-specific poll callback, use set_channel_poll_cb.
+	 *
+	 *  @param node         The node to which this channel is being initiated.
+	 *  @param port         The port number the peer wishes to connect to.
+	 *  @param data         A pointer to a buffer containing data to already queue for sending.
+	 *  @param len          The length of the data.
+	 *  @param flags        A bitwise-or'd combination of flags that set the semantics for this channel.
+	 *
+	 *  @return             A handle for the channel, or NULL in case of an error.
 	 */
 	channel *channel_open(node *node, uint16_t port, const void *data, size_t len, uint32_t flags = channel::TCP) {
 		channel *ch = (channel *)meshlink_channel_open_ex(handle, node, port, &channel_receive_trampoline, data, len, flags);
