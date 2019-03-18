@@ -109,7 +109,6 @@ int main() {
 	assert(nb);
 
 	struct sync_flag channel_opened = {.flag = false};
-	pthread_mutex_lock(&channel_opened.mutex);
 
 	meshlink_channel_t *channel = meshlink_channel_open(a, nb, 7, a_receive_cb, NULL, 0);
 	assert(channel);

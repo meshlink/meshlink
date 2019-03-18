@@ -87,14 +87,10 @@ void start_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b) {
 	a->priv = &pair_status;
 	meshlink_set_node_status_cb(a, pair_status_cb);
 
-	pthread_mutex_lock(&pair_status.mutex);
-
 	meshlink_start(a);
 	meshlink_start(b);
 
 	assert(wait_sync_flag(&pair_status, 5));
-
-	pthread_mutex_unlock(&pair_status.mutex);
 
 	meshlink_set_node_status_cb(a, NULL);
 	a->priv = NULL;
