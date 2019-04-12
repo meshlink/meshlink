@@ -3,6 +3,7 @@ devtool_export_json_all_edges_state
 devtool_get_all_edges
 devtool_get_all_submeshes
 devtool_get_node_status
+devtool_keyrotate_probe
 devtool_open_in_netns
 devtool_trybind_probe
 meshlink_add_address
@@ -19,6 +20,7 @@ meshlink_channel_shutdown
 meshlink_close
 meshlink_destroy
 meshlink_enable_discovery
+meshlink_encrypted_key_rotate
 meshlink_errno
 meshlink_export
 meshlink_get_all_nodes

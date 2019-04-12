@@ -159,4 +159,13 @@ extern meshlink_handle_t *devtool_open_in_netns(const char *confbase, const char
  */
 extern void (*devtool_trybind_probe)(void);
 
+/// Debug function pointer variable for encrypted key rotate API
+/** This function pointer variable is a userspace tracepoint or debugger callback for
+ *  encrypted key rotation function @a meshlink_encrypted_key_rotate @a.
+ *  On assigning a debug function variable invokes callback for each stage from the key rotate API.
+ *
+ *  @param stage Debug stage number.
+ */
+extern void (*devtool_keyrotate_probe)(int stage);
+
 #endif

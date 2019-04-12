@@ -1051,6 +1051,22 @@ bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const 
 	return true;
 }
 
+bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key, size_t new_keylen) {
+
+	// While copying old config files to new config files
+	devtool_keyrotate_probe(1);
+	// After completed creating new config files in confbase/new/
+	devtool_keyrotate_probe(2);
+	// Rename confbase/current to confbase/old/
+	devtool_keyrotate_probe(3);
+	// Rename confbase/new/ to confbase/current
+	devtool_keyrotate_probe(4);
+	// Before deleting old sub-directory
+	devtool_keyrotate_probe(5);
+
+	return false;
+}
+
 void meshlink_open_params_free(meshlink_open_params_t *params) {
 	if(!params) {
 		meshlink_errno = MESHLINK_EINVAL;

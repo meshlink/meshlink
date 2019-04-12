@@ -35,6 +35,7 @@ static void nop_probe(void) {
 }
 
 void (*devtool_trybind_probe)(void) = nop_probe;
+void (*devtool_keyrotate_probe)(int stage) = nop_probe;
 
 /* Return an array of edges in the current network graph.
  * Data captures the current state and will not be updated.

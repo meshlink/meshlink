@@ -63,6 +63,7 @@
 #include "test_cases_channel_set_receive_cb.h"
 #include "test_cases_hint_address.h"
 #include "test_optimal_pmtu.h"
+#include "test_cases_key_rotation.h"
 
 #include "test_cases_channel_conn.h"
 #include "test_cases_get_all_nodes_by_dev_class.h"
@@ -147,6 +148,7 @@ int main(int argc, char *argv[]) {
 	failed_tests += test_cases_connection_try();
 
 	failed_tests += test_optimal_pmtu();
+	failed_tests += test_meshlink_encrypted_key_rotation();
 
 	failed_tests += test_meshlink_random_port_bindings01();
 	failed_tests += test_meshlink_random_port_bindings02();
