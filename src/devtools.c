@@ -30,6 +30,12 @@
 
 #include "devtools.h"
 
+static void nop_probe(int stage) {
+	return;
+}
+
+void (*devtool_keyrotate_probe)(int stage) = nop_probe;
+
 /* Return an array of edges in the current network graph.
  * Data captures the current state and will not be updated.
  * Caller must deallocate data when done.
