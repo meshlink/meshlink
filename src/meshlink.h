@@ -1141,6 +1141,19 @@ extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node
  */
 extern void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable);
 
+/// Performs key rotation for an encrypted storage
+
+/** This rotates the (master) key for an encrypted storage and discards the old key
+ *  if the call succeeded. This is an atomic call.
+ *
+ *  @param mesh     A handle which represents an instance of MeshLink.
+ *  @param key      A pointer to the new key used to encrypt storage.
+ *  @param keylen   The length of the new key in bytes.
+ *
+ *  @return         This function returns true if the key rotation for the encrypted storage succeeds, false otherwise.
+ */
+extern bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key, size_t new_keylen);
+
 #ifdef __cplusplus
 }
 #endif
