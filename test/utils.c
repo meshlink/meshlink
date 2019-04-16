@@ -15,6 +15,14 @@ void set_sync_flag(struct sync_flag *s, bool value) {
 	pthread_mutex_unlock(&s->mutex);
 }
 
+bool check_sync_flag(struct sync_flag *s) {
+	bool flag;
+	pthread_mutex_lock(&s->mutex);
+	flag = s->flag;
+	pthread_mutex_unlock(&s->mutex);
+	return flag;
+}
+
 bool wait_sync_flag(struct sync_flag *s, int seconds) {
 	struct timespec timeout;
 	clock_gettime(CLOCK_REALTIME, &timeout);
@@ -22,10 +30,11 @@ bool wait_sync_flag(struct sync_flag *s, int seconds) {
 
 	pthread_mutex_lock(&s->mutex);
 
-	while(!s->flag)
+	while(!s->flag) {
 		if(!pthread_cond_timedwait(&s->cond, &s->mutex, &timeout) || errno != EINTR) {
 			break;
 		}
+	}
 
 	pthread_mutex_unlock(&s->mutex);
 

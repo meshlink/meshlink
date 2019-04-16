@@ -11,6 +11,7 @@ struct sync_flag {
 };
 
 extern void set_sync_flag(struct sync_flag *s, bool value);
+extern bool check_sync_flag(struct sync_flag *s);
 extern bool wait_sync_flag(struct sync_flag *s, int seconds);
 
 /// Create a pair of meshlink instances that are already joined together.

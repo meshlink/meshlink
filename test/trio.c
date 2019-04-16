@@ -53,8 +53,8 @@ int main() {
 
 	for(int i = 0; i < 3; i++) {
 		char *path;
-    int ret_val;
-    (void)ret_val;
+		int ret_val;
+		(void)ret_val;
 		ret_val = asprintf(&path, "trio_conf.%d", i);
 		assert(path);
 

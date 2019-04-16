@@ -404,7 +404,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			for splay_each(node_t, n, mesh->nodes) {
 				logger(mesh, MESHLINK_DEBUG, "* n->devclass = %d", n->devclass);
 
-				if(n != mesh->self && n->devclass <= mesh->devclass && !n->connection && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout)) {
+				if(n != mesh->self && n->devclass <= mesh->devclass && !n->connection && !n->status.blacklisted && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout)) {
 					splay_insert(nodes, n);
 				}
 			}
@@ -438,7 +438,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 					splay_tree_t *nodes = splay_alloc_tree(node_compare_lsc_desc, NULL);
 
 					for splay_each(node_t, n, mesh->nodes) {
-						if(n != mesh->self && n->devclass == devclass && !n->connection && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout)) {
+						if(n != mesh->self && n->devclass == devclass && !n->connection && !n->status.blacklisted && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout)) {
 							splay_insert(nodes, n);
 						}
 					}
@@ -469,7 +469,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			splay_tree_t *nodes = splay_alloc_tree(node_compare_devclass_asc_lsc_desc, NULL);
 
 			for splay_each(node_t, n, mesh->nodes) {
-				if(n != mesh->self && n->devclass <= mesh->devclass && !n->status.reachable && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout)) {
+				if(n != mesh->self && n->devclass <= mesh->devclass && !n->status.reachable && !n->status.blacklisted && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout)) {
 					splay_insert(nodes, n);
 				}
 			}
@@ -489,6 +489,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		if(connect_to && !connect_to->connection) {
 			connect_to->last_connect_try = time(NULL);
+			logger(mesh, MESHLINK_DEBUG, "Autoconnect trying to connect to %s", connect_to->name);
 
 			/* check if there is already a connection attempt to this node */
 			bool found = false;

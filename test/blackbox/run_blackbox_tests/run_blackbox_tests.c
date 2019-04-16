@@ -71,6 +71,8 @@
 #include "test_cases_submesh03.h"
 #include "test_cases_submesh04.h"
 
+#include "test_cases_autoconnect.h"
+
 #include "../common/containers.h"
 #include "../common/common_handlers.h"
 
@@ -133,11 +135,13 @@ int main(int argc, char *argv[]) {
 
 	failed_tests += test_meshlink_channel_conn();
 	failed_tests += test_optimal_pmtu();
-	*/
+
 	failed_tests += test_cases_submesh01();
 	failed_tests += test_cases_submesh02();
 	failed_tests += test_cases_submesh03();
 	failed_tests += test_cases_submesh04();
+	*/
+	failed_tests += test_meshlink_autoconnect();
 
 	failed_tests += test_optimal_pmtu();
 
