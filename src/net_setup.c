@@ -36,7 +36,7 @@
 
 /// Helper function to start parsing a host config file
 static bool node_get_config(meshlink_handle_t *mesh, node_t *n, config_t *config, packmsg_input_t *in) {
-	if(!config_read(mesh, n->name, config)) {
+	if(!config_read(mesh, "current", n->name, config, mesh->config_key)) {
 		return false;
 	}
 
@@ -228,6 +228,10 @@ bool node_read_from_config(meshlink_handle_t *mesh, node_t *n, const config_t *c
 }
 
 bool node_write_config(meshlink_handle_t *mesh, node_t *n) {
+	if(!mesh->confbase) {
+		return true;
+	}
+
 	uint8_t buf[4096];
 	packmsg_output_t out = {buf, sizeof(buf)};
 
@@ -266,18 +270,20 @@ bool node_write_config(meshlink_handle_t *mesh, node_t *n) {
 	}
 
 	config_t config = {buf, packmsg_output_size(&out, buf)};
-	return config_write(mesh, n->name, &config);
+	return config_write(mesh, "current", n->name, &config, mesh->config_key);
 }
 
-static void load_node(meshlink_handle_t *mesh, const char *name) {
+static bool load_node(meshlink_handle_t *mesh, const char *name, void *priv) {
+	(void)priv;
+
 	if(!check_id(name)) {
-		return;
+		return true;
 	}
 
 	node_t *n = lookup_node(mesh, name);
 
 	if(n) {
-		return;
+		return true;
 	}
 
 	n = new_node();
@@ -285,10 +291,12 @@ static void load_node(meshlink_handle_t *mesh, const char *name) {
 
 	if(!node_read_partial(mesh, n)) {
 		free_node(n);
-		return;
+		return true;
 	}
 
 	node_add(mesh, n);
+
+	return true;
 }
 
 /*
@@ -403,7 +411,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	graph(mesh);
 
-	config_scan_all(mesh, load_node);
+	config_scan_all(mesh, "current", "hosts", load_node, NULL);
 
 	/* Open sockets */
 

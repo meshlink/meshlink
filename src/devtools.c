@@ -31,6 +31,7 @@
 #include "devtools.h"
 
 static void nop_probe(int stage) {
+	(void)stage;
 	return;
 }
 

@@ -205,7 +205,7 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 
 	config_t config;
 
-	if(!invitation_read(mesh, cookie, &config)) {
+	if(!invitation_read(mesh, "current", cookie, &config, mesh->config_key)) {
 		logger(mesh, MESHLINK_ERROR, "Error while trying to read invitation file\n");
 		return false;
 	}
