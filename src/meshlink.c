@@ -19,6 +19,8 @@
 
 #include "system.h"
 #include <pthread.h>
+#include <sys/types.h>
+#include <utime.h>
 
 #include "crypto.h"
 #include "ecdsagen.h"
@@ -47,6 +49,16 @@ meshlink_log_cb_t global_log_cb;
 meshlink_log_level_t global_log_level;
 
 typedef bool (*search_node_by_condition_t)(const node_t *, const void *);
+
+typedef struct copy_confbase_params {
+	char *src_confbase;
+	void *src_config_key;
+
+	char *dest_confbase;
+	void *dest_config_key;
+
+	char *config_type;
+} copy_confbase_params_t;
 
 static int rstrip(char *value) {
 	int len = strlen(value);
@@ -770,6 +782,29 @@ static bool sendline(int fd, char *format, ...) {
 	return true;
 }
 
+static bool sync_path(const char *pathname) {
+	int fd = open(pathname, O_RDONLY);
+
+	if(fd < 0) {
+		logger(NULL, MESHLINK_ERROR, "Failed to open %s: %s\n", pathname, strerror(errno));
+		return false;
+	}
+
+	if(fsync(fd)) {
+		logger(NULL, MESHLINK_ERROR, "Failed to sync %s: %s\n", pathname, strerror(errno));
+		close(fd);
+		return false;
+	}
+
+	if(close(fd)) {
+		logger(NULL, MESHLINK_ERROR, "Failed to close %s: %s\n", pathname, strerror(errno));
+		close(fd);
+		return false;
+	}
+
+	return true;
+}
+
 static const char *errstr[] = {
 	[MESHLINK_OK] = "No error",
 	[MESHLINK_EINVAL] = "Invalid argument",
@@ -877,6 +912,8 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	mesh->self->ecdsa = ecdsa_set_public_key(ecdsa_get_public_key(mesh->private_key));
 
 	if(!write_main_config_files(mesh)) {
+		logger(mesh, MESHLINK_ERROR, "Could not write main config files into %s/current: %s\n", mesh->confbase, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
 	}
 
@@ -970,6 +1007,118 @@ static void *setup_network_in_netns_thread(void *arg) {
 	return success ? arg : NULL;
 }
 
+static bool copy_invitation_files(meshlink_handle_t *mesh, const char *name, void *priv) {
+	struct stat st;
+	config_t config;
+	copy_confbase_params_t *copy_confbase_param = (copy_confbase_params_t *)priv;
+
+	char path[PATH_MAX];
+
+	if(snprintf(path, sizeof(path), "%s" SLASH "%s" SLASH "invitations" SLASH "%s", mesh->confbase, copy_confbase_param->src_confbase, name) >= PATH_MAX) {
+		logger(mesh, MESHLINK_DEBUG, "Filename too long: %s" SLASH "%s", path, name);
+		return false;
+	}
+
+	// Read invitation file stat structure
+	if(stat(path, &st)) {
+		logger(mesh, MESHLINK_ERROR, "Could not stat invitation file %s\n", path);
+		return false;
+	}
+
+	// Skip the invitation if the invitation timeout
+	if(time(NULL) > st.st_mtime + mesh->invitation_timeout) {
+		return true;
+	}
+
+	// Read invitation file from "current" confbase sub-directory
+	FILE *f = fopen(path, "r");
+
+	if(!f) {
+		logger(mesh, MESHLINK_ERROR, "Failed to open `%s': %s", path, strerror(errno));
+		return false;
+	}
+
+	if(!config_read_file(mesh, f, &config, copy_confbase_param->src_config_key)) {
+		logger(mesh, MESHLINK_ERROR, "Failed to read `%s': %s", path, strerror(errno));
+		fclose(f);
+		return false;
+	}
+
+	if(fclose(f)) {
+		logger(mesh, MESHLINK_ERROR, "Failed to close `%s': %s", path, strerror(errno));
+		config_free(&config);
+		return false;
+	}
+
+	// Write invitation file copy into new sub-directory confbase
+	if(!invitation_write(mesh, copy_confbase_param->dest_confbase, name, &config, copy_confbase_param->dest_config_key)) {
+		logger(mesh, MESHLINK_DEBUG, "Could not create invitation file %s\n", strerror(errno));
+		return false;
+	}
+
+	config_free(&config);
+
+	// Copy the modify time stamp too
+
+	struct utimbuf times;
+	times.modtime = st.st_mtime;
+	times.actime = st.st_atime;
+
+	char invitation_path[PATH_MAX];
+
+	if(snprintf(invitation_path, sizeof(invitation_path), "%s" SLASH "%s" SLASH "invitations" SLASH "%s", mesh->confbase, copy_confbase_param->dest_confbase, name) >= PATH_MAX) {
+		logger(mesh, MESHLINK_DEBUG, "Filename too long: %s" SLASH "%s", path, name);
+		return false;
+	}
+
+	if(utime(invitation_path, &times)) {
+		return false;
+	}
+
+	return true;
+}
+
+static bool copy_host_files(meshlink_handle_t *mesh, const char *name, void *priv) {
+	config_t config;
+	copy_confbase_params_t *copy_confbase_param = (copy_confbase_params_t *)priv;
+
+	if(!config_read(mesh, copy_confbase_param->src_confbase, name, &config, mesh->config_key)) {
+		return false;
+	}
+
+	if(!config_write(mesh, copy_confbase_param->dest_confbase, name, &config, copy_confbase_param->dest_config_key)) {
+		return false;
+	}
+
+	config_free(&config);
+
+	return true;
+}
+
+static bool config_file_create_new_link(meshlink_handle_t *mesh, const char *name, void *arg) {
+	copy_confbase_params_t *confbase_param = (copy_confbase_params_t *)arg;
+
+	char dst_path[PATH_MAX];
+	char src_path[PATH_MAX];
+
+	if(snprintf(src_path, sizeof(src_path), "%s" SLASH "%s" SLASH "%s" SLASH "%s", mesh->confbase, confbase_param->src_confbase, confbase_param->config_type, name) >= PATH_MAX) {
+		logger(mesh, MESHLINK_DEBUG, "Filename too long: %s" SLASH "%s" SLASH "%s" SLASH "%s", mesh->confbase, confbase_param->src_confbase, confbase_param->config_type, name);
+		return false;
+	}
+
+	if(snprintf(dst_path, sizeof(dst_path), "%s" SLASH "%s" SLASH "%s" SLASH "%s", mesh->confbase, confbase_param->dest_confbase, confbase_param->config_type, name) >= PATH_MAX) {
+		logger(mesh, MESHLINK_DEBUG, "Filename too long: %s" SLASH "%s" SLASH "%s" SLASH "%s", mesh->confbase, confbase_param->dest_confbase, confbase_param->config_type, name);
+		return false;
+	}
+
+	if(link(src_path, dst_path)) {
+		logger(NULL, MESHLINK_ERROR, "Cannot link %s: %s\n", src_path, strerror(errno));
+		return false;
+	}
+
+	return true;
+}
+
 meshlink_open_params_t *meshlink_open_params_init(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
 	if(!confbase || !*confbase) {
 		logger(NULL, MESHLINK_ERROR, "No confbase given!\n");
@@ -1046,20 +1195,200 @@ bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const 
 	return true;
 }
 
-bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key, size_t new_keylen) {
+bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const char *new_key, size_t new_keylen) {
+	if(!mesh || !new_key || !new_keylen || !*new_key) {
+		logger(mesh, MESHLINK_ERROR, "Invalid arguments given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
 
-	// While copying old config files to new config files
+	pthread_mutex_lock(&(mesh->mesh_mutex));
+
+	char *confbase_new = "new";
+	char *confbase_cur = "current";
+	char *confbase_old = "old";
+	char path[PATH_MAX];
+
+	// Create hash for the new key
+	void *new_config_key;
+	new_config_key = xmalloc(CHACHA_POLY1305_KEYLEN);
+
+	if(!prf(new_key, new_keylen, "MeshLink configuration key", 26, new_config_key, CHACHA_POLY1305_KEYLEN)) {
+		logger(mesh, MESHLINK_ERROR, "Error creating new configuration key!\n");
+		meshlink_errno = MESHLINK_EINTERNAL;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	// Copy contents of the "current" confbase sub-directory to "new" confbase sub-directory with the new key
+
+	if(!config_init(mesh, confbase_new)) {
+		logger(mesh, MESHLINK_ERROR, "Could not set up configuration in %s/new: %s\n", mesh->confbase, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
 	devtool_keyrotate_probe(1);
-	// After completed creating new config files in confbase/new/
+
+	copy_confbase_params_t copy_confbase_params;
+	copy_confbase_params.src_confbase = confbase_cur;
+	copy_confbase_params.src_config_key = mesh->config_key;
+	copy_confbase_params.dest_confbase = confbase_new;
+	copy_confbase_params.dest_config_key = new_config_key;
+
+	if(!config_scan_all(mesh, confbase_cur, "invitations", copy_invitation_files, &copy_confbase_params)) {
+		meshlink_errno = MESHLINK_ESTORAGE;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
 	devtool_keyrotate_probe(2);
-	// Rename confbase/current to confbase/old/
+
+	snprintf(path, sizeof(path), "%s" SLASH "new" SLASH "invitations", mesh->confbase);
+	sync_path(path);
+
+	if(!config_scan_all(mesh, confbase_cur, "hosts", copy_host_files, &copy_confbase_params)) {
+		meshlink_errno = MESHLINK_ESTORAGE;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	snprintf(path, sizeof(path), "%s" SLASH "new" SLASH "hosts", mesh->confbase);
+	sync_path(path);
+
 	devtool_keyrotate_probe(3);
-	// Rename confbase/new/ to confbase/current
+
+	// Copy main configuration file
+
+	config_t config;
+
+	if(!main_config_read(mesh, confbase_cur, &config, mesh->config_key)) {
+		logger(mesh, MESHLINK_ERROR, "Could not read main configuration file!");
+		meshlink_errno = MESHLINK_EINTERNAL;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
 	devtool_keyrotate_probe(4);
-	// Before deleting old sub-directory
+
+	if(!main_config_write(mesh, confbase_new, &config, new_config_key)) {
+		logger(mesh, MESHLINK_ERROR, "Could not write main configuration file!");
+		meshlink_errno = MESHLINK_EINTERNAL;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	config_free(&config);
+
 	devtool_keyrotate_probe(5);
 
-	return false;
+	snprintf(path, sizeof(path), "%s" SLASH "new", mesh->confbase);
+	sync_path(path);
+
+
+	// Copy "current" confbase sub-directory contents into "old" sub-directory
+
+	if(!config_init(mesh, confbase_old)) {
+		logger(mesh, MESHLINK_ERROR, "Could not set up configuration in %s/old: %s\n", mesh->confbase, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	copy_confbase_params.dest_confbase = confbase_old;
+	copy_confbase_params.config_type = "invitations";
+
+	devtool_keyrotate_probe(6);
+
+	if(!config_scan_all(mesh, "current", "invitations", config_file_create_new_link, &copy_confbase_params)) {
+		meshlink_errno = MESHLINK_ESTORAGE;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	snprintf(path, sizeof(path), "%s" SLASH "old" SLASH "invitations", mesh->confbase);
+	sync_path(path);
+
+	devtool_keyrotate_probe(7);
+
+	copy_confbase_params.config_type = "hosts";
+
+	if(!config_scan_all(mesh, confbase_cur, "hosts", config_file_create_new_link, &copy_confbase_params)) {
+		meshlink_errno = MESHLINK_ESTORAGE;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	snprintf(path, sizeof(path), "%s" SLASH "old" SLASH "hosts", mesh->confbase);
+	sync_path(path);
+
+	devtool_keyrotate_probe(8);
+
+	char dst_path[PATH_MAX];
+	char src_path[PATH_MAX];
+	snprintf(src_path, sizeof(src_path), "%s" SLASH "current" SLASH "meshlink.conf", mesh->confbase);
+	snprintf(dst_path, sizeof(dst_path), "%s" SLASH "old" SLASH "meshlink.conf", mesh->confbase);
+
+	if(link(src_path, dst_path)) {
+		logger(mesh, MESHLINK_ERROR, "Cannot link %s: %s\n", src_path, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	devtool_keyrotate_probe(9);
+
+	main_config_unlock(mesh);
+
+	// Destroy "current" confbase sub-directory
+
+	if(!config_destroy(mesh->confbase, confbase_cur)) {
+		logger(mesh, MESHLINK_ERROR, "Cannot destroy %s/current\n", mesh->confbase);
+		meshlink_errno = MESHLINK_ESTORAGE;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	devtool_keyrotate_probe(10);
+
+	// Rename confbase/new/ to confbase/current
+
+	if(!rename_confbase_subdir(mesh, confbase_new, confbase_cur)) {
+		logger(mesh, MESHLINK_ERROR, "Cannot rename %s/new to %s/current\n", mesh->confbase, mesh->confbase);
+		meshlink_errno = MESHLINK_ESTORAGE;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	if(!main_config_lock(mesh)) {
+		logger(mesh, MESHLINK_ERROR, "Failed to lock the main configuration file\n");
+		meshlink_errno = MESHLINK_ESTORAGE;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	devtool_keyrotate_probe(11);
+
+	// Cleanup the "old" confbase sub-directory
+
+	if(!config_destroy(mesh->confbase, confbase_old)) {
+		logger(mesh, MESHLINK_ERROR, "Cannot destroy %s/old\n", mesh->confbase);
+		meshlink_errno = MESHLINK_ESTORAGE;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	devtool_keyrotate_probe(12);
+
+	// Change the mesh handle key with new key
+
+	free(mesh->config_key);
+	mesh->config_key = new_config_key;
+
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
+
+	return true;
 }
 
 void meshlink_open_params_free(meshlink_open_params_t *params) {
