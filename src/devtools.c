@@ -30,12 +30,17 @@
 
 #include "devtools.h"
 
-static void nop_probe(void) {
+static void trybind_nop_probe(void) {
 	return;
 }
 
-void (*devtool_trybind_probe)(void) = nop_probe;
-void (*devtool_keyrotate_probe)(int stage) = nop_probe;
+static void keyrotate_nop_probe(int stage) {
+	(void)stage;
+	return;
+}
+
+void (*devtool_trybind_probe)(void) = trybind_nop_probe;
+void (*devtool_keyrotate_probe)(int stage) = keyrotate_nop_probe;
 
 /* Return an array of edges in the current network graph.
  * Data captures the current state and will not be updated.

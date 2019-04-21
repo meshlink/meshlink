@@ -531,6 +531,10 @@ int check_port(meshlink_handle_t *mesh) {
 }
 
 static bool write_main_config_files(meshlink_handle_t *mesh) {
+	if(!mesh->confbase) {
+		return true;
+	}
+
 	uint8_t buf[4096];
 
 	/* Write the main config file */
@@ -548,7 +552,7 @@ static bool write_main_config_files(meshlink_handle_t *mesh) {
 
 	config_t config = {buf, packmsg_output_size(&out, buf)};
 
-	if(!main_config_write(mesh, &config)) {
+	if(!main_config_write(mesh, "current", &config, mesh->config_key)) {
 		return false;
 	}
 
@@ -598,7 +602,7 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 	mesh->self->devclass = devclass;
 
 	// Initialize configuration directory
-	if(!config_init(mesh)) {
+	if(!config_init(mesh, "current")) {
 		return false;
 	}
 
@@ -652,7 +656,7 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 
 		node_add(mesh, n);
 
-		if(!config_write(mesh, n->name, &config)) {
+		if(!config_write(mesh, "current", n->name, &config, mesh->config_key)) {
 			return false;
 		}
 	}
@@ -856,8 +860,8 @@ static void add_local_addresses(meshlink_handle_t *mesh) {
 }
 
 static bool meshlink_setup(meshlink_handle_t *mesh) {
-	if(!config_init(mesh)) {
-		logger(mesh, MESHLINK_ERROR, "Could not set up configuration in %s: %s\n", mesh->confbase, strerror(errno));
+	if(!config_init(mesh, "current")) {
+		logger(mesh, MESHLINK_ERROR, "Could not set up configuration in %s/current: %s\n", mesh->confbase, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
 	}
@@ -880,6 +884,8 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	mesh->self->ecdsa = ecdsa_set_public_key(ecdsa_get_public_key(mesh->private_key));
 
 	if(!write_main_config_files(mesh)) {
+		logger(mesh, MESHLINK_ERROR, "Could not write main config files into %s/current: %s\n", mesh->confbase, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
 	}
 
@@ -902,7 +908,7 @@ static bool meshlink_read_config(meshlink_handle_t *mesh) {
 
 	config_t config;
 
-	if(!main_config_read(mesh, &config)) {
+	if(!main_config_read(mesh, "current", &config, mesh->config_key)) {
 		logger(NULL, MESHLINK_ERROR, "Could not read main configuration file!");
 		return false;
 	}
@@ -1222,7 +1228,7 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 
 	// If no configuration exists yet, create it.
 
-	if(!main_config_exists(mesh)) {
+	if(!meshlink_confbase_exists(mesh)) {
 		if(!meshlink_setup(mesh)) {
 			logger(NULL, MESHLINK_ERROR, "Cannot create initial configuration\n");
 			meshlink_close(mesh);
@@ -1524,7 +1530,21 @@ bool meshlink_destroy(const char *confbase) {
 		return false;
 	}
 
-	return config_destroy(confbase);
+	if(!config_destroy(confbase, "current")) {
+		logger(NULL, MESHLINK_ERROR, "Cannot remove confbase sub-directories %s: %s\n", confbase, strerror(errno));
+		return false;
+	}
+
+	config_destroy(confbase, "new");
+	config_destroy(confbase, "old");
+
+	if(rmdir(confbase) && errno != ENOENT) {
+		logger(NULL, MESHLINK_ERROR, "Cannot remove directory %s: %s\n", confbase, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return false;
+	}
+
+	return true;
 }
 
 void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) {
@@ -1815,7 +1835,7 @@ static meshlink_node_t **meshlink_get_all_nodes_by_condition(meshlink_handle_t *
 static bool search_node_by_dev_class(const node_t *node, const void *condition) {
 	dev_class_t *devclass = (dev_class_t *)condition;
 
-	if(*devclass == node->devclass) {
+	if(*devclass == (dev_class_t)node->devclass) {
 		return true;
 	}
 
@@ -2059,6 +2079,7 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 	mesh->self = new_node();
 	mesh->self->name = xstrdup(mesh->name);
 	mesh->self->devclass = mesh->devclass;
+	xasprintf(&mesh->myport, "%d", port);
 
 	if(!node_read_public_key(mesh, mesh->self)) {
 		logger(NULL, MESHLINK_ERROR, "Could not read our host configuration file!");
@@ -2112,7 +2133,7 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 	}
 
 	// Ensure no host configuration file with that name exists
-	if(config_exists(mesh, name)) {
+	if(config_exists(mesh, "current", name)) {
 		logger(mesh, MESHLINK_DEBUG, "A host config file for %s already exists!\n", name);
 		meshlink_errno = MESHLINK_EEXIST;
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
@@ -2182,7 +2203,7 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 	config_t configs[5] = {NULL};
 	int count = 0;
 
-	if(config_read(mesh, mesh->self->name, &configs[count])) {
+	if(config_read(mesh, "current", mesh->self->name, &configs[count], mesh->config_key)) {
 		count++;
 	}
 
@@ -2196,7 +2217,7 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 
 	config_t config = {outbuf, packmsg_output_size(&inv, outbuf)};
 
-	if(!invitation_write(mesh, cookiehash, &config)) {
+	if(!invitation_write(mesh, "current", cookiehash, &config, mesh->config_key)) {
 		logger(mesh, MESHLINK_DEBUG, "Could not create invitation file %s: %s\n", cookiehash, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
@@ -2590,7 +2611,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 			break;
 		}
 
-		config_write(mesh, n->name, &config);
+		config_write(mesh, "current", n->name, &config, mesh->config_key);
 		node_add(mesh, n);
 	}
 
