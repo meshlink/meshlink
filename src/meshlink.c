@@ -1852,6 +1852,20 @@ meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
 	return node;
 }
 
+meshlink_submesh_t *meshlink_get_submesh(meshlink_handle_t *mesh, const char *name) {
+	if(!mesh || !name) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	meshlink_submesh_t *submesh = NULL;
+
+	pthread_mutex_lock(&(mesh->mesh_mutex));
+	submesh = (meshlink_submesh_t *)lookup_submesh(mesh, name);
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
+	return submesh;
+}
+
 meshlink_node_t **meshlink_get_all_nodes(meshlink_handle_t *mesh, meshlink_node_t **nodes, size_t *nmemb) {
 	if(!mesh || !nmemb || (*nmemb && !nodes)) {
 		meshlink_errno = MESHLINK_EINVAL;

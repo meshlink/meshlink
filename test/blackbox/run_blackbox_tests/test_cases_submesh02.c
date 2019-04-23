@@ -113,7 +113,7 @@ static bool event_cb(mesh_event_payload_t payload) {
 	assert(change_state(&node_status[payload.client_id], payload.mesh_event));
 
 	if(payload.mesh_event == NODE_JOINED) {
-		signal_node_start(node_status, 1, 5, node_ids);
+		signal_node_start(node_status, 1, 5, (char **)node_ids);
 	}
 
 	if(check_nodes_finished(node_status, 6)) {

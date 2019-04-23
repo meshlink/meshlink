@@ -327,6 +327,18 @@ public:
 		return (node *)meshlink_get_node(handle, name);
 	}
 
+	/// Get a handle for a specific submesh.
+	/** This function returns a handle for the submesh with the given name.
+	 *
+	 *  @param name         The name of the submesh for which a handle is requested.
+	 *
+	 *  @return             A pointer to a meshlink::submesh which represents the requested submesh,
+	 *                      or NULL if the requested submesh does not exist.
+	 */
+	submesh *get_submesh(const char *name) {
+		return (submesh *)meshlink_get_submesh(handle, name);
+	}
+
 	/// Get a handle for our own node.
 	/** This function returns a handle for the local node.
 	 *

@@ -154,6 +154,7 @@ int main(int argc, char *argv[]) {
 	meshlink_channel_t *channel = NULL;
 	meshlink_node_t *core_node = NULL;
 	meshlink_node_t **node_handles = NULL;
+	meshlink_submesh_t *submesh = NULL;
 
 	fprintf(stderr, "\tMesh node 'app1node2' starting up........\n");
 
@@ -241,7 +242,7 @@ int main(int argc, char *argv[]) {
 
 	meshlink_node_t *node = meshlink_get_self(mesh);
 	assert(node);
-	meshlink_submesh_t *submesh = meshlink_get_node_submesh(mesh, node);
+	submesh = meshlink_get_node_submesh(mesh, node);
 	assert(submesh);
 
 	node_handles = meshlink_get_all_nodes_by_submesh(mesh, submesh, node_handles, &num_nodes);
@@ -255,6 +256,20 @@ int main(int argc, char *argv[]) {
 			send_event(SIG_ABORT);
 			assert(false);
 		}
+	}
+
+	submesh = meshlink_get_submesh(mesh, "app1");
+
+	if(submesh == NULL) {
+		fprintf(stderr, "\tapp1node2 Got invalid submesh handle\n");
+		send_event(ERR_NETWORK);
+	}
+
+	submesh = meshlink_get_submesh(mesh, "app2");
+
+	if(submesh != NULL) {
+		fprintf(stderr, "\tapp1node2 Submesh handle should be NULL\n");
+		send_event(ERR_NETWORK);
 	}
 
 	send_event(MESH_EVENT_COMPLETED);

@@ -49,6 +49,7 @@ extern void setup_containers(void **state);
 extern void destroy_containers(void);
 extern void restart_all_containers(void);
 extern char *invite_in_container(const char *inviter, const char *invitee);
+extern char *submesh_invite_in_container(const char *inviter, const char *invitee, const char *submesh);
 extern void node_sim_in_container(const char *node, const char *device_class, const char *invite_url);
 extern void node_sim_in_container_event(const char *node, const char *device_class,
                                         const char *invite_url, const char *clientId, const char *import);

@@ -441,6 +441,19 @@ extern meshlink_node_t *meshlink_get_self(meshlink_handle_t *mesh);
  */
 extern meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name);
 
+/// Get a handle for a specific submesh.
+/** This function returns a handle for the submesh with the given name.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param name         The name of the submesh for which a handle is requested.
+ *                      After this function returns, the application is free to overwrite or free @a name @a.
+ *
+ *  @return             A pointer to a meshlink_submesh_t which represents the requested submesh,
+ *                      or NULL if the requested submesh does not exist.
+ *                      The pointer is guaranteed to be valid until meshlink_close() is called.
+ */
+extern meshlink_submesh_t *meshlink_get_submesh(meshlink_handle_t *mesh, const char *name);
+
 /// Get the fingerprint of a node's public key.
 /** This function returns a fingerprint of the node's public key.
  *  It should be treated as an opaque blob.
