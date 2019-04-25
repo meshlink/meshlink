@@ -1048,20 +1048,83 @@ bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const 
 	return true;
 }
 
-bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key, size_t new_keylen) {
+bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const char *new_key, size_t new_keylen) {
+	if(!mesh || !new_key || !new_keylen || !*new_key) {
+		logger(mesh, MESHLINK_ERROR, "Invalid arguments given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
 
-	// While copying old config files to new config files
+	pthread_mutex_lock(&(mesh->mesh_mutex));
+
+	// Create hash for the new key
+	void *new_config_key;
+	new_config_key = xmalloc(CHACHA_POLY1305_KEYLEN);
+
+	if(!prf(new_key, new_keylen, "MeshLink configuration key", 26, new_config_key, CHACHA_POLY1305_KEYLEN)) {
+		logger(mesh, MESHLINK_ERROR, "Error creating new configuration key!\n");
+		meshlink_errno = MESHLINK_EINTERNAL;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	// Copy contents of the "current" confbase sub-directory to "new" confbase sub-directory with the new key
+
+	if(!config_copy(mesh, "current", mesh->config_key, "new", new_config_key)) {
+		logger(mesh, MESHLINK_ERROR, "Could not set up configuration in %s/old: %s\n", mesh->confbase, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
 	devtool_keyrotate_probe(1);
-	// After completed creating new config files in confbase/new/
-	devtool_keyrotate_probe(2);
-	// Rename confbase/current to confbase/old/
-	devtool_keyrotate_probe(3);
-	// Rename confbase/new/ to confbase/current
-	devtool_keyrotate_probe(4);
-	// Before deleting old sub-directory
-	devtool_keyrotate_probe(5);
 
-	return false;
+	main_config_unlock(mesh);
+
+	// Rename confbase/current/ to confbase/old
+
+	if(!config_rename(mesh, "current", "old")) {
+		logger(mesh, MESHLINK_ERROR, "Cannot rename %s/current to %s/old\n", mesh->confbase, mesh->confbase);
+		meshlink_errno = MESHLINK_ESTORAGE;
+		main_config_lock(mesh);
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	devtool_keyrotate_probe(2);
+
+	// Rename confbase/new/ to confbase/current
+
+	if(!config_rename(mesh, "new", "current")) {
+		logger(mesh, MESHLINK_ERROR, "Cannot rename %s/new to %s/current\n", mesh->confbase, mesh->confbase);
+		meshlink_errno = MESHLINK_ESTORAGE;
+		main_config_lock(mesh);
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	devtool_keyrotate_probe(3);
+
+	if(!main_config_lock(mesh)) {
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	// Cleanup the "old" confbase sub-directory
+
+	if(!config_destroy(mesh->confbase, "old")) {
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	// Change the mesh handle key with new key
+
+	free(mesh->config_key);
+	mesh->config_key = new_config_key;
+
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
+
+	return true;
 }
 
 void meshlink_open_params_free(meshlink_open_params_t *params) {
