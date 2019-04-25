@@ -206,6 +206,10 @@ static bool copytree(const char *src_dir_name, const void *src_key, const char *
 		return false;
 	}
 
+	char src_filename[PATH_MAX];
+	char dst_filename[PATH_MAX];
+	struct dirent *ent;
+
 	DIR *src_dir = opendir(src_dir_name);
 
 	if(!src_dir) {
@@ -213,29 +217,23 @@ static bool copytree(const char *src_dir_name, const void *src_key, const char *
 		return false;
 	}
 
-	struct dirent *ent;
+	// Delete if already exists and create a new destination directory
+	deltree(dst_dir_name);
+
+	if(mkdir(dst_dir_name, 0700)) {
+		logger(NULL, MESHLINK_ERROR, "Could not create directory %s\n", dst_filename);
+		return false;
+	}
 
 	while((ent = readdir(src_dir))) {
 		if(ent->d_name[0] == '.') {
 			continue;
 		}
 
-		char src_filename[PATH_MAX];
-		char dst_filename[PATH_MAX];
-
 		snprintf(dst_filename, sizeof(dst_filename), "%s" SLASH "%s", dst_dir_name, ent->d_name);
 		snprintf(src_filename, sizeof(src_filename), "%s" SLASH "%s", src_dir_name, ent->d_name);
 
 		if(ent->d_type == DT_DIR) {
-
-			// Delete if already exists and create a new destination directory
-			deltree(dst_filename);
-
-			if(mkdir(dst_filename, 0700)) {
-				logger(NULL, MESHLINK_ERROR, "Could create directory %s\n", dst_filename);
-				return false;
-			}
-
 			if(!copytree(src_filename, src_key, dst_filename, dst_key)) {
 				logger(NULL, MESHLINK_ERROR, "Copying %s to %s failed\n", src_filename, dst_filename);
 				return false;
@@ -244,7 +242,6 @@ static bool copytree(const char *src_dir_name, const void *src_key, const char *
 			if(!sync_path(dst_filename)) {
 				return false;
 			}
-
 		} else if(ent->d_type == DT_REG) {
 			struct stat st;
 			config_t config;
@@ -317,15 +314,6 @@ bool config_copy(meshlink_handle_t *mesh, const char *src_dir_name, const void *
 
 	snprintf(dst_filename, sizeof(dst_filename), "%s" SLASH "%s", mesh->confbase, dst_dir_name);
 	snprintf(src_filename, sizeof(src_filename), "%s" SLASH "%s", mesh->confbase, src_dir_name);
-
-	if(main_config_exists(mesh, dst_dir_name)) {
-		deltree(dst_dir_name);
-	}
-
-	if(mkdir(dst_filename, 0700)) {
-		logger(NULL, MESHLINK_ERROR, "Could create directory %s\n", dst_filename);
-		return false;
-	}
 
 	return copytree(src_filename, src_key, dst_filename, dst_key);
 }
@@ -583,10 +571,7 @@ bool config_read(meshlink_handle_t *mesh, const char *conf_subdir, const char *n
 		return false;
 	}
 
-	if(fclose(f)) {
-		logger(mesh, MESHLINK_ERROR, "Failed to close `%s': %s", path, strerror(errno));
-		return false;
-	}
+	fclose(f);
 
 	return true;
 }
@@ -676,10 +661,7 @@ bool main_config_read(meshlink_handle_t *mesh, const char *conf_subdir, config_t
 		return false;
 	}
 
-	if(fclose(f)) {
-		logger(mesh, MESHLINK_ERROR, "Failed to close `%s': %s", path, strerror(errno));
-		return false;
-	}
+	fclose(f);
 
 	return true;
 }
@@ -767,10 +749,7 @@ bool invitation_read(meshlink_handle_t *mesh, const char *conf_subdir, const cha
 		return false;
 	}
 
-	if(fclose(f)) {
-		logger(mesh, MESHLINK_ERROR, "Failed to close `%s': %s", path, strerror(errno));
-		return false;
-	}
+	fclose(f);
 
 	unlink(used_path);
 	return true;

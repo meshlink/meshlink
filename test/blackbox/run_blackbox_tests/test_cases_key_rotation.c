@@ -342,7 +342,7 @@ static void debug_probe(int stage) {
 	// Terminate the node at the specified stage (by @ break_stage @ )
 	if(stage == break_stage) {
 		raise(SIGINT);
-	} else if((break_stage < 1) || (break_stage > 11)) {
+	} else if((break_stage < 1) || (break_stage > 3)) {
 		fprintf(stderr, "INVALID stage break\n");
 		raise(SIGABRT);
 	}
@@ -381,7 +381,7 @@ static bool test_key_rotation_05(void) {
 
 	// incrementally debug meshlink_encrypted_key_rotate API atomicity
 
-	for(break_stage = 1; break_stage <= 10; break_stage += 1) {
+	for(break_stage = 1; break_stage <= 3; break_stage += 1) {
 		fprintf(stderr, "Debugging stage %d\n", break_stage);
 		meshlink_destroy("encrypted_conf");
 
@@ -450,15 +450,8 @@ static bool test_key_rotation_05(void) {
 
 		meshlink_destroy("encrypted_conf.1");
 
-		set_sync_flag(&status_changed_cond, false);
-		bar_reachable = false;
-
 		meshlink_handle_t *mesh2 = meshlink_open("encrypted_conf.1", "bar", "bar", DEV_CLASS_BACKBONE);
 		assert(mesh2);
-
-		meshlink_set_node_status_cb(mesh2, node_status_cb);
-		meshlink_set_log_cb(mesh2, MESHLINK_DEBUG, log_cb);
-		meshlink_enable_discovery(mesh2, false);
 
 		assert_int_equal(meshlink_join(mesh2, invitation), true);
 
