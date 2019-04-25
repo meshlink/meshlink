@@ -300,6 +300,26 @@ typedef void (*meshlink_receive_cb_t)(meshlink_handle_t *mesh, meshlink_node_t *
  */
 extern void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb);
 
+/// A callback reporting the meta-connection attempt made by the host node to an another node.
+/** @param mesh      A handle which represents an instance of MeshLink.
+ *  @param node      A pointer to a meshlink_node_t describing the node to whom meta-connection is being tried.
+ *                   This pointer is valid until meshlink_close() is called.
+ */
+typedef void (*meshlink_connection_try_cb_t)(meshlink_handle_t *mesh, meshlink_node_t *node);
+
+/// Set the meta-connection try callback.
+/** This functions sets the callback that is called whenever a connection attempt is happened to another node.
+ *  The callback is run in MeshLink's own thread.
+ *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to hand the data over to the application's thread.
+ *  The callback should also not block itself and return as quickly as possible.
+ *
+ *  @param mesh      A handle which represents an instance of MeshLink.
+ *  @param cb        A pointer to the function which will be called when host node attempts to make
+ *                   the connection to another node. If a NULL pointer is given, the callback will be disabled.
+ */
+extern void meshlink_set_connection_try_cb(meshlink_handle_t *mesh, meshlink_connection_try_cb_t cb);
+
 /// A callback reporting node status changes.
 /** @param mesh       A handle which represents an instance of MeshLink.
  *  @param node       A pointer to a meshlink_node_t describing the node whose status changed.

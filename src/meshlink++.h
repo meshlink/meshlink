@@ -43,6 +43,13 @@ typedef meshlink_errno_t errno_t;
  */
 typedef void (*receive_cb_t)(mesh *mesh, node *source, const void *data, size_t len);
 
+/// A callback reporting the meta-connection attempt made by the host node to an another node.
+/** @param mesh      A handle which represents an instance of MeshLink.
+ *  @param node      A pointer to a meshlink_node_t describing the node to whom meta-connection is being tried.
+ *                   This pointer is valid until meshlink_close() is called.
+ */
+typedef void (*connection_try_cb_t)(mesh *mesh, node *node);
+
 /// A callback reporting node status changes.
 /** @param mesh       A handle which represents an instance of MeshLink.
  *  @param node       A pointer to a meshlink::node describing the node whose status changed.
@@ -213,6 +220,12 @@ public:
 		(void)message;
 	}
 
+	/// This functions is called whenever MeshLink a meta-connection attempt is made.
+	virtual void connection_try(node *peer) {
+		/* do nothing */
+		(void)peer;
+	}
+
 	/// This functions is called whenever another node attempts to open a channel to the local node.
 	/**
 	 *  If the channel is accepted, the poll_callback will be set to channel_poll and can be
@@ -287,6 +300,7 @@ public:
 		meshlink_set_node_duplicate_cb(handle, &node_duplicate_trampoline);
 		meshlink_set_log_cb(handle, MESHLINK_DEBUG, &log_trampoline);
 		meshlink_set_channel_accept_cb(handle, &channel_accept_trampoline);
+		meshlink_set_connection_try_cb(handle, &connection_try_trampoline);
 		return meshlink_start(handle);
 	}
 
@@ -777,6 +791,15 @@ private:
 
 		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
 		that->log(level, message);
+	}
+
+	static void connection_try_trampoline(meshlink_handle_t *handle, meshlink_node_t *peer) {
+		if(!(handle->priv)) {
+			return;
+		}
+
+		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
+		that->connection_try(static_cast<node *>(peer));
 	}
 
 	static bool channel_accept_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, uint16_t port, const void *data, size_t len) {

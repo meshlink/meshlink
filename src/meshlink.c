@@ -1674,6 +1674,17 @@ void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
+void meshlink_set_connection_try_cb(meshlink_handle_t *mesh, meshlink_connection_try_cb_t cb) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	pthread_mutex_lock(&(mesh->mesh_mutex));
+	mesh->connection_try_cb = cb;
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
+}
+
 void meshlink_set_node_status_cb(meshlink_handle_t *mesh, meshlink_node_status_cb_t cb) {
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;

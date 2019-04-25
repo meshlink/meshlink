@@ -25,7 +25,6 @@
 #include <signal.h>
 #include <sys/types.h>
 #include "common_handlers.h"
-#include "containers.h"
 #include "tcpdump.h"
 
 pid_t tcpdump_start(char *interface) {

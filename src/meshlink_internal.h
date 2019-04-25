@@ -88,6 +88,7 @@ struct meshlink_handle {
 
 	meshlink_channel_accept_cb_t channel_accept_cb;
 	meshlink_node_duplicate_cb_t node_duplicate_cb;
+	meshlink_connection_try_cb_t connection_try_cb;
 
 	pthread_t thread;
 	bool threadstarted;

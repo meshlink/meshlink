@@ -637,6 +637,11 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 		return;
 	}
 
+	if(mesh->connection_try_cb) {
+		node_t *n = lookup_node(mesh, outgoing->name);
+		mesh->connection_try_cb(mesh, (struct meshlink_node *)n);
+	}
+
 	do_outgoing_connection(mesh, outgoing);
 }
 
