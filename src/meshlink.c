@@ -1048,8 +1048,8 @@ bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const 
 	return true;
 }
 
-bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const char *new_key, size_t new_keylen) {
-	if(!mesh || !new_key || !new_keylen || !*new_key) {
+bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key, size_t new_keylen) {
+	if(!mesh || !new_key || !new_keylen) {
 		logger(mesh, MESHLINK_ERROR, "Invalid arguments given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
