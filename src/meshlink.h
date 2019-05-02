@@ -1187,7 +1187,7 @@ extern void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable);
  *
  *  @return         This function returns true if the key rotation for the encrypted storage succeeds, false otherwise.
  */
-extern bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const char *new_key, size_t new_keylen);
+extern bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key, size_t new_keylen);
 
 #ifdef __cplusplus
 }
