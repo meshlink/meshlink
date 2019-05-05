@@ -56,65 +56,6 @@
 #include "xalloc.h"
 #include "graph.h"
 
-/* Implementation of Kruskal's algorithm.
-   Running time: O(EN)
-   Please note that sorting on weight is already done by add_edge().
-*/
-
-static void mst_kruskal(meshlink_handle_t *mesh) {
-	/* Clear MST status on connections */
-
-	for list_each(connection_t, c, mesh->connections) {
-		c->status.mst = false;
-	}
-
-	logger(mesh, MESHLINK_DEBUG, "Running Kruskal's algorithm:");
-
-	/* Clear visited status on nodes */
-
-	for splay_each(node_t, n, mesh->nodes) {
-		n->status.visited = false;
-	}
-
-	/* Starting point */
-
-	for splay_each(edge_t, e, mesh->edges) {
-		if(e->from->status.reachable) {
-			e->from->status.visited = true;
-			break;
-		}
-	}
-
-	/* Add safe edges */
-
-	bool skipped = false;
-
-	for splay_each(edge_t, e, mesh->edges) {
-		if(!e->reverse || (e->from->status.visited == e->to->status.visited)) {
-			skipped = true;
-			continue;
-		}
-
-		e->from->status.visited = true;
-		e->to->status.visited = true;
-
-		if(e->connection) {
-			e->connection->status.mst = true;
-		}
-
-		if(e->reverse->connection) {
-			e->reverse->connection->status.mst = true;
-		}
-
-		logger(mesh, MESHLINK_DEBUG, " Adding edge %s - %s weight %d", e->from->name, e->to->name, e->weight);
-
-		if(skipped) {
-			skipped = false;
-			next = mesh->edges->head;
-		}
-	}
-}
-
 /* Implementation of a simple breadth-first search algorithm.
    Running time: O(E)
 */
@@ -249,5 +190,4 @@ static void check_reachability(meshlink_handle_t *mesh) {
 void graph(meshlink_handle_t *mesh) {
 	sssp_bfs(mesh);
 	check_reachability(mesh);
-	mst_kruskal(mesh);
 }

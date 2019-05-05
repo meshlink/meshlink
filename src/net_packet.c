@@ -495,22 +495,6 @@ void send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	return;
 }
 
-/* Broadcast a packet using the minimum spanning tree */
-
-void broadcast_packet(meshlink_handle_t *mesh, const node_t *from, vpn_packet_t *packet) {
-	// Always give ourself a copy of the packet.
-	if(from != mesh->self) {
-		send_packet(mesh, mesh->self, packet);
-	}
-
-	logger(mesh, MESHLINK_INFO, "Broadcasting packet of %d bytes from %s", packet->len, from->name);
-
-	for list_each(connection_t, c, mesh->connections)
-		if(c->status.active && c->status.mst && c != from->nexthop->connection) {
-			send_packet(mesh, c->node, packet);
-		}
-}
-
 static node_t *try_harder(meshlink_handle_t *mesh, const sockaddr_t *from, const vpn_packet_t *pkt) {
 	node_t *n = NULL;
 	bool hard = false;
