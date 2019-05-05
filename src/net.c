@@ -1,6 +1,6 @@
 /*
     net.c -- most of the network code
-    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2019 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -60,12 +60,14 @@ void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report)
 			send_del_edge(mesh, mesh->everyone, c->edge, 0);
 		}
 
-		edge_del(mesh, c->edge);
+		edge_unlink(mesh, c->edge);
+		edge_t *e = c->edge;
 		c->edge = NULL;
 
-		/* Run MST and SSSP algorithms */
+		/* Update the graph */
 
-		graph(mesh);
+		graph_del_edge(mesh, e);
+		free_edge(e);
 
 		/* If the node is not reachable anymore but we remember it had an edge to us, clean it up */
 

@@ -39,7 +39,7 @@ typedef struct connection_status_t {
 	unsigned int timeout_unused: 1;         /* 1 if gotten timeout */
 	unsigned int unused_encryptout: 1;      /* 1 if we can encrypt outgoing traffic */
 	unsigned int unused_decryptin: 1;       /* 1 if we have to decrypt incoming traffic */
-	unsigned int mst: 1;                    /* 1 if this connection is part of a minimum spanning tree */
+	unsigned int unused_mst: 1;             /* 1 if this connection is part of a minimum spanning tree */
 	unsigned int control: 1;                /* 1 if this is a control connection */
 	unsigned int pcap: 1;                   /* 1 if this is a control connection requesting packet capture */
 	unsigned int log: 1;                    /* 1 if this is a control connection requesting log dump */

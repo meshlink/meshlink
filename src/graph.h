@@ -3,7 +3,7 @@
 
 /*
     graph.h -- header for graph.c
-    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2019 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-extern void graph(struct meshlink_handle *mesh);
+extern void graph_add_edge(struct meshlink_handle *mesh, edge_t *e);
+extern void graph_del_edge(struct meshlink_handle *mesh, edge_t *e);
 
 #endif
