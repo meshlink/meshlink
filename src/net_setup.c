@@ -1,6 +1,6 @@
 /*
     net_setup.c -- Setup.
-    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2019 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -511,11 +511,11 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	mesh->self->via = mesh->self;
 	mesh->self->status.reachable = true;
 	mesh->self->last_state_change = mesh->loop.now.tv_sec;
+	mesh->self->prevedge = NULL;
+	mesh->self->distance = 0;
 
 	node_write_devclass(mesh, mesh->self);
 	node_add(mesh, mesh->self);
-
-	graph(mesh);
 
 	load_all_nodes(mesh);
 

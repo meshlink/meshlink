@@ -1,6 +1,6 @@
 /*
     protocol_auth.c -- handle the meta-protocol, authentication
-    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2019 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -529,8 +529,6 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			}
 
 			terminate_connection(mesh, n->connection, false);
-			/* Run graph algorithm to keep things in sync */
-			graph(mesh);
 		}
 	}
 
@@ -582,7 +580,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	/* Run MST and SSSP algorithms */
 
-	graph(mesh);
+	graph_add_edge(mesh, c->edge);
 
 	return true;
 }

@@ -1,6 +1,6 @@
 /*
     net_packet.c -- Handles in- and outgoing VPN packets
-    Copyright (C) 2014-2017 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2019 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 #include "conf.h"
 #include "connection.h"
 #include "crypto.h"
-#include "graph.h"
 #include "logger.h"
 #include "meshlink_internal.h"
 #include "net.h"

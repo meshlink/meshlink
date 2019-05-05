@@ -1,6 +1,6 @@
 /*
     graph.c -- graph algorithms
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2019 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -55,6 +55,183 @@
 #include "utils.h"
 #include "xalloc.h"
 #include "graph.h"
+
+/* Check if a directional edge improves the graph. Returns true if the graph improved, false otherwise. */
+static bool graph_try_improve(meshlink_handle_t *mesh, edge_t *e) {
+	/* Ignore edges whose from node isn't reachable, those will be handled by the reverse edge */
+	if(!e->from->status.reachable) {
+		return false;
+	}
+
+	/* If the to node isn't reachable yet, it now is */
+	if(!e->to->status.reachable) {
+		e->to->status.reachable = true;
+
+		e->to->nexthop = (e->from == mesh->self) ? e->to : e->from->nexthop;
+		e->to->prevedge = e;
+		e->to->via = e->to;
+		e->to->options = e->options;
+		e->to->distance = e->from->distance + 1;
+
+		e->to->maxmtu = MTU;
+		e->to->minmtu = 0;
+		e->to->mtuprobes = 0;
+
+		update_node_udp(mesh, e->to, &e->address);
+
+		if(e->to->connection && e->to->connection->outgoing) {
+			send_req_key(mesh, e->to);
+		}
+
+		update_node_status(mesh, e->to);
+
+		/* Check if e->to had other edges */
+		for splay_each(edge_t, e2, e->to->edge_tree) {
+			if(e2 != e) {
+				graph_try_improve(mesh, e2);
+			}
+		}
+
+		return true;
+	}
+
+	/* If the to node's distance isn't shorted by this edge, return early */
+	if(e->to->distance <= e->from->distance) {
+		return false;
+	}
+
+	if(e->to->distance == e->from->distance + 1) {
+		if(e->weight >= e->to->prevedge->weight) {
+			return false;
+		}
+	}
+
+	/* Now we know this edge is better */
+	e->to->nexthop = (e->from == mesh->self) ? e->to : e->from->nexthop;
+	e->to->prevedge = e;
+	e->to->via = e->to;
+	e->to->options = e->options;
+	e->to->distance = e->from->distance + 1;
+
+	update_node_udp(mesh, e->to, &e->address);
+
+	/* Check if e->to had other edges */
+	for splay_each(edge_t, e2, e->to->edge_tree) {
+		if(e2 != e) {
+			graph_try_improve(mesh, e2);
+		}
+	}
+
+	return true;
+}
+
+/* Add an edge to the graph */
+void graph_add_edge(meshlink_handle_t *mesh, edge_t *e) {
+	/* If there is no reverse edge, ignore this one */
+	if(!e->reverse) {
+		return;
+	}
+
+	/* Check if this edge or its reverse improves the graph */
+	graph_try_improve(mesh, e);
+	graph_try_improve(mesh, e->reverse);
+}
+
+/* Invalidate the distance of a node and all nodes who have a prevedge to this one, recursively */
+static void graph_invalidate_distance(meshlink_handle_t *mesh, node_t *n) {
+	n->distance = INT_MAX;
+
+	for splay_each(edge_t, e, n->edge_tree) {
+		if(e == e->to->prevedge) {
+			graph_invalidate_distance(mesh, e->to);
+		}
+	}
+}
+
+/* Find all edges that connect to a subgraph of nodes whose distance has been invalidated */
+static void graph_prepare_repair(meshlink_handle_t *mesh, list_t *repair_list, node_t *n) {
+	for splay_each(edge_t, e, n->edge_tree) {
+		if(e == e->to->prevedge) {
+			graph_prepare_repair(mesh, repair_list, e->to);
+		} else if(e->to->distance != INT_MAX && e->reverse) {
+			list_insert_tail(repair_list, e->reverse);
+		}
+	}
+}
+
+/* Disconnect a subgraph of nodes linked by prevedges, starting from the given node */
+static void graph_disconnect(meshlink_handle_t *mesh, node_t *n) {
+	for splay_each(edge_t, e, n->edge_tree) {
+		if(e == e->to->prevedge) {
+			graph_disconnect(mesh, e->to);
+		}
+	}
+
+	sptps_stop(&n->sptps);
+
+	n->status.validkey = false;
+	n->status.waitingforkey = false;
+	n->status.udp_confirmed = false;
+	n->status.broadcast = false;
+	n->options = 0;
+	n->last_req_key = 0;
+
+	n->maxmtu = MTU;
+	n->minmtu = 0;
+	n->mtuprobes = 0;
+
+	timeout_del(&mesh->loop, &n->mtutimeout);
+
+	update_node_udp(mesh, n, NULL);
+	update_node_status(mesh, n);
+}
+
+/* Check if the removal of a directional edge degrades the graph. Returns true if the graph caused nodes to disconnect, false otherwise. */
+static bool graph_try_degrade(meshlink_handle_t *mesh, edge_t *e) {
+	/* Ignore edges where one side was not reachable to start with */
+	if(!e->from->status.reachable || !e->to->status.reachable) {
+		return false;
+	}
+
+	/* If this edge wasn't e->to's best edge, exit early. */
+	if(e != e->to->prevedge) {
+		return false;
+	}
+
+	/* Invalidate the distance of this edge and its reverse prevedges recursively */
+	graph_invalidate_distance(mesh, e->to);
+
+	/* Find all edges that connected from valid to the invalidated nodes */
+	list_t *repair_list = list_alloc(NULL);
+	graph_prepare_repair(mesh, repair_list, e->to);
+
+	/* If we have alternative edges, recalculate their distances */
+	if(repair_list->count) {
+		for list_each(edge_t, e2, repair_list) {
+			graph_try_improve(mesh, e2);
+		}
+
+		list_delete_list(repair_list);
+		return false;
+	}
+
+	/* If there are none, there is no alternative path to these nodes. */
+	list_free(repair_list);
+	graph_disconnect(mesh, e->to);
+	return true;
+}
+
+/* Remove an edge from the graph */
+void graph_del_edge(meshlink_handle_t *mesh, edge_t *e) {
+	/* If there is no reverse edge, ignore this one */
+	if(!e->reverse) {
+		return;
+	}
+
+	/* Check if this edge or its reverse degrades the graph */
+	graph_try_degrade(mesh, e);
+	graph_try_degrade(mesh, e->reverse);
+}
 
 /* Implementation of a simple breadth-first search algorithm.
    Running time: O(E)

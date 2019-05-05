@@ -3,7 +3,7 @@
 
 /*
     edge.h -- header for edge.c
-    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2109 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@ extern struct splay_tree_t *new_edge_tree(void) __attribute__((__malloc__));
 extern void free_edge_tree(struct splay_tree_t *);
 extern void edge_add(struct meshlink_handle *mesh, edge_t *);
 extern void edge_del(struct meshlink_handle *mesh, edge_t *);
+extern void edge_unlink(struct meshlink_handle *mesh, edge_t *);
 extern edge_t *lookup_edge(struct node_t *, struct node_t *);
 
 #endif

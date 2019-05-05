@@ -1,6 +1,6 @@
 /*
     edge.c -- edge tree management
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2019 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -100,6 +100,15 @@ void edge_del(meshlink_handle_t *mesh, edge_t *e) {
 
 	splay_delete(mesh->edges, e);
 	splay_delete(e->from->edge_tree, e);
+}
+
+void edge_unlink(meshlink_handle_t *mesh, edge_t *e) {
+	if(e->reverse) {
+		e->reverse->reverse = NULL;
+	}
+
+	splay_delete(mesh->edges, e);
+	splay_unlink(e->from->edge_tree, e);
 }
 
 edge_t *lookup_edge(node_t *from, node_t *to) {

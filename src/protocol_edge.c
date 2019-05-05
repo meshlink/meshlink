@@ -1,6 +1,6 @@
 /*
     protocol_edge.c -- handle the meta-protocol, edges
-    Copyright (C) 2014 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2019 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -210,8 +210,9 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			} else {
 				logger(mesh, MESHLINK_WARNING, "Got %s from %s which does not match existing entry",
 				       "ADD_EDGE", c->name);
-				edge_del(mesh, e);
-				graph(mesh);
+				edge_unlink(mesh, e);
+				graph_del_edge(mesh, e);
+				free_edge(e);
 			}
 		} else {
 			return true;
@@ -238,7 +239,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	/* Run MST before or after we tell the rest? */
 
-	graph(mesh);
+	graph_add_edge(mesh, e);
 
 	if(e->from->submesh && e->to->submesh && (e->from->submesh != e->to->submesh)) {
 		logger(mesh, MESHLINK_ERROR, "Dropping add edge ( %s to %s )", e->from->submesh->name, e->to->submesh->name);
@@ -362,11 +363,9 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	/* Delete the edge */
 
-	edge_del(mesh, e);
-
-	/* Run MST before or after we tell the rest? */
-
-	graph(mesh);
+	edge_unlink(mesh, e);
+	graph_del_edge(mesh, e);
+	free_edge(e);
 
 	/* If the node is not reachable anymore but we remember it had an edge to us, clean it up */
 
@@ -375,7 +374,9 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 		if(e) {
 			send_del_edge(mesh, mesh->everyone, e, 0);
-			edge_del(mesh, e);
+			edge_unlink(mesh, e);
+			graph_del_edge(mesh, e);
+			free_edge(e);
 		}
 	}
 
