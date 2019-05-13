@@ -258,7 +258,7 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 		return false;
 	}
 
-	if(time(NULL) > st.st_mtime + mesh->invitation_timeout) {
+	if(time(NULL) > (time_t)(st.st_mtime + mesh->invitation_timeout)) {
 		logger(mesh, MESHLINK_ERROR, "Peer %s tried to use an outdated invitation file %s\n", c->name, usedname);
 		fclose(f);
 		unlink(usedname);
@@ -428,7 +428,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	get_config_bool(lookup_config(c->config_tree, "blacklisted"), &blacklisted);
 
 	if(blacklisted) {
-		logger(mesh, MESHLINK_EPEER, "Peer %s is blacklisted", c->name);
+		logger(mesh, MESHLINK_INFO, "Peer %s is blacklisted", c->name);
 		return false;
 	}
 

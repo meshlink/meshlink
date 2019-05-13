@@ -64,7 +64,7 @@ static void do_redraw_nodes() {
 		devtool_get_node_status(mesh, nodes[i], &status);
 		char host[NI_MAXHOST] = "";
 		char serv[NI_MAXSERV] = "";
-		getnameinfo(&status.address, sizeof status.address, host, sizeof host, serv, sizeof serv, NI_NUMERICHOST | NI_NUMERICSERV);
+		getnameinfo((struct sockaddr *)&status.address, sizeof status.address, host, sizeof host, serv, sizeof serv, NI_NUMERICHOST | NI_NUMERICSERV);
 		const char *desc;
 
 		switch(status.udp_status) {
@@ -140,7 +140,6 @@ static void node_status(meshlink_handle_t *mesh, meshlink_node_t *node, bool rea
 int main(int argc, char *argv[]) {
 	const char *confbase = ".monitor";
 	const char *id = NULL;
-	char buf[1024];
 
 	if(argc > 1) {
 		confbase = argv[1];

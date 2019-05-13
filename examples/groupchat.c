@@ -239,10 +239,10 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			if(!nnodes) {
 				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink_strerror(meshlink_errno));
 			} else {
-				fprintf(stderr, "%zu known nodes:\n", nnodes);
+				fprintf(stderr, "%lu known nodes:\n", (unsigned long)nnodes);
 
 				for(size_t i = 0; i < nnodes; i++) {
-					fprintf(stderr, " %lu. %s", i, nodes[i]->name);
+					fprintf(stderr, " %lu. %s", (unsigned long)i, nodes[i]->name);
 
 					if((node_group = meshlink_get_node_submesh(mesh, nodes[i]))) {
 						fprintf(stderr, "\t%s", node_group->name);

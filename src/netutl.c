@@ -52,8 +52,10 @@ struct addrinfo *str2addrinfo(const char *address, const char *service, int sock
 
 sockaddr_t str2sockaddr(const char *address, const char *port) {
 	struct addrinfo *ai;
-	sockaddr_t result = {0};
+	sockaddr_t result;
 	int err;
+
+	memset(&result, 0, sizeof(result));
 
 	struct addrinfo hint = {
 		.ai_family = AF_UNSPEC,

@@ -25,10 +25,13 @@
 /* Splay operation */
 
 static splay_node_t *splay_top_down(splay_tree_t *tree, const void *data, int *result) {
-	splay_node_t left = {NULL}, right = {NULL};
+	splay_node_t left, right;
 	splay_node_t *leftbottom = &left, *rightbottom = &right, *child, *grandchild;
 	splay_node_t *root = tree->root;
 	int c;
+
+	memset(&left, 0, sizeof(left));
+	memset(&right, 0, sizeof(right));
 
 	if(!root) {
 		if(result) {

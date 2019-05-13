@@ -387,8 +387,6 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		// get min_connects and max_connects
 
-		assert(mesh->devclass >= 0 && mesh->devclass <= _DEV_CLASS_MAX);
-
 		unsigned int min_connects = dev_class_traits[mesh->devclass].min_connects;
 		unsigned int max_connects = dev_class_traits[mesh->devclass].max_connects;
 

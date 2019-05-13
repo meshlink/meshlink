@@ -63,7 +63,7 @@ void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 
 		char hex[len * 2 + 1];
 
-		if(mesh->log_level >= MESHLINK_DEBUG) {
+		if(mesh->log_level <= MESHLINK_DEBUG) {
 			bin2hex(payload, hex, len);        // don't do this unless it's going to be logged
 		}
 
