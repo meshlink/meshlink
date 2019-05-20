@@ -2291,7 +2291,7 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 done:
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 
-	return rval;
+	return rval && meshlink_get_port(mesh) == port;
 }
 
 void meshlink_set_invitation_timeout(meshlink_handle_t *mesh, int timeout) {

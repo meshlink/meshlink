@@ -507,7 +507,9 @@ public:
 	 *                       If the port is set to 0, then MeshLink will listen on a port
 	 *                       that is randomly assigned by the operating system every time open() is called.
 	 *
-	 *  @return              This function returns true if the port was successfully changed, false otherwise.
+	 *  @return              This function returns true if the port was successfully changed
+	 *                       to the desired port, false otherwise. If it returns false, there
+	 *                       is no guarantee that MeshLink is listening on the old port.
 	 */
 	bool set_port(int port) {
 		return meshlink_set_port(handle, port);
