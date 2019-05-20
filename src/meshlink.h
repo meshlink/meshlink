@@ -730,7 +730,9 @@ extern int meshlink_get_port(meshlink_handle_t *mesh);
  *                       If the port is set to 0, then MeshLink will listen on a port
  *                       that is randomly assigned by the operating system every time meshlink_open() is called.
  *
- *  @return              This function returns true if the port was successfully changed, false otherwise.
+ *  @return              This function returns true if the port was successfully changed
+ *                       to the desired port, false otherwise. If it returns false, there
+ *                       is no guarantee that MeshLink is listening on the old port.
  */
 
 extern bool meshlink_set_port(meshlink_handle_t *mesh, int port);
