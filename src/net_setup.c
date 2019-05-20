@@ -410,14 +410,24 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 		int tcp_fd = setup_listen_socket((sockaddr_t *) aip->ai_addr);
 
 		if(tcp_fd < 0) {
-			continue;
+			if (aip->ai_family == AF_INET) {
+				success = false;
+				break;
+			} else {
+				continue;
+			}
 		}
 
 		int udp_fd = setup_vpn_in_socket(mesh, (sockaddr_t *) aip->ai_addr);
 
 		if(udp_fd < 0) {
 			close(tcp_fd);
-			continue;
+			if (aip->ai_family == AF_INET) {
+				success = false;
+				break;
+			} else {
+				continue;
+			}
 		}
 
 		io_add(&mesh->loop, &mesh->listen_socket[mesh->listen_sockets].tcp, handle_new_meta_connection, &mesh->listen_socket[mesh->listen_sockets], tcp_fd, IO_READ);
