@@ -20,6 +20,7 @@
 #include "system.h"
 #include <pthread.h>
 
+#include "adns.h"
 #include "crypto.h"
 #include "ecdsagen.h"
 #include "logger.h"
@@ -1673,6 +1674,7 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 	}
 
 	init_outgoings(mesh);
+	init_adns(mesh);
 
 	// Start the main thread
 
@@ -1743,6 +1745,7 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 		}
 	}
 
+	exit_adns(mesh);
 	exit_outgoings(mesh);
 
 	// Ensure we are considered unreachable

@@ -193,6 +193,13 @@ struct meshlink_handle {
 	char *catta_servicetype;
 	unsigned int catta_interfaces;
 
+	// ADNS
+	pthread_t adns_thread;
+	pthread_cond_t adns_cond;
+	meshlink_queue_t adns_queue;
+	meshlink_queue_t adns_done_queue;
+	signal_t adns_signal;
+
 	// Proxy configuration, currently not exposed.
 	char *proxyhost;
 	char *proxyport;

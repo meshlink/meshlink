@@ -57,7 +57,7 @@ sockaddr_t str2sockaddr(const char *address, const char *port) {
 
 	struct addrinfo hint = {
 		.ai_family = AF_UNSPEC,
-		.ai_flags = AI_NUMERICHOST,
+		.ai_flags = NI_NUMERICHOST | NI_NUMERICSERV,
 		.ai_socktype = SOCK_STREAM,
 	};
 

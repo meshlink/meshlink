@@ -36,6 +36,7 @@ pkginclude_HEADERS = meshlink++.h meshlink.h
 libmeshlink_la_LDFLAGS = -export-symbols $(srcdir)/meshlink.sym
 
 libmeshlink_la_SOURCES = \
+	adns.c adns.h \
 	buffer.c buffer.h \
 	conf.c conf.h \
 	connection.c connection.h \

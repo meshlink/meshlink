@@ -422,7 +422,7 @@ static bool add_listen_sockets(meshlink_handle_t *mesh) {
 		.ai_family = AF_UNSPEC,
 		.ai_socktype = SOCK_STREAM,
 		.ai_protocol = IPPROTO_TCP,
-		.ai_flags = AI_PASSIVE,
+		.ai_flags = AI_PASSIVE | AI_NUMERICSERV,
 	};
 
 	int err = getaddrinfo(NULL, mesh->myport, &hint, &ai);
