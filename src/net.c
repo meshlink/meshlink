@@ -501,7 +501,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				}
 			}
 
-			if(!node_read_public_key(mesh, connect_to)) {
+			if(!connect_to->status.reachable && !node_read_public_key(mesh, connect_to)) {
 				logger(mesh, MESHLINK_DEBUG, "* skip autoconnect since we don't know this node's public key");
 				skip = true;
 			}
