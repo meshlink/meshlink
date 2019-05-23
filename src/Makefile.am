@@ -46,9 +46,6 @@ libmeshlink_la_SOURCES = \
 	ecdsagen.h \
 	edge.c edge.h \
 	event.c event.h \
-	fake-gai-errnos.h \
-	fake-getaddrinfo.c fake-getaddrinfo.h \
-	fake-getnameinfo.c fake-getnameinfo.h \
 	graph.c graph.h \
 	hash.c hash.h \
 	have.h \

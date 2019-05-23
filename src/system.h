@@ -32,8 +32,4 @@
 
 #include "dropin.h"
 
-#ifndef HAVE_SOCKLEN_T
-typedef int socklen_t;
-#endif
-
 #endif

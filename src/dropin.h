@@ -20,9 +20,6 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "fake-getaddrinfo.h"
-#include "fake-getnameinfo.h"
-
 #ifndef HAVE_ASPRINTF
 extern int asprintf(char **, const char *, ...);
 extern int vasprintf(char **, const char *, va_list ap);
@@ -30,8 +27,13 @@ extern int vasprintf(char **, const char *, va_list ap);
 
 #ifdef HAVE_MINGW
 #define mkdir(a, b) mkdir(a)
+
 #ifndef SHUT_RDWR
 #define SHUT_RDWR SD_BOTH
+#endif
+
+#ifndef EAI_SYSTEM
+#define EAI_SYSTEM 0
 #endif
 #endif
 

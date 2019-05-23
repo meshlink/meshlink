@@ -124,14 +124,6 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 MeshLink_ATTRIBUTE(__malloc__)
 MeshLink_ATTRIBUTE(__warn_unused_result__)
 
-AC_CHECK_TYPES([socklen_t, struct addrinfo, struct sockaddr_in6], , ,
-  [#include "$srcdir/src/have.h"]
-)
-
-AC_CHECK_TYPES([struct sockaddr_storage], ,AC_MSG_ERROR([System must support struct sockaddr_storage.]),
-  [#include "$srcdir/src/have.h"]
-)
-
 dnl Checks for library functions.
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([asprintf fchmod fork gettimeofday random pselect select setns strdup usleep getifaddrs freeifaddrs],
@@ -143,13 +135,6 @@ dnl Support for SunOS
 AC_CHECK_FUNC(socket, [], [
   AC_CHECK_LIB(socket, connect)
 ])
-AC_CHECK_FUNC(gethostbyname, [], [
-  AC_CHECK_LIB(nsl, gethostbyname)
-])
-
-AC_CHECK_DECLS([freeaddrinfo, gai_strerror, getaddrinfo, getnameinfo],
-  [], [], [#include "$srcdir/src/have.h"]
-)
 
 AC_CACHE_SAVE
 
