@@ -11,6 +11,8 @@
 #include "discovery.h"
 #include "sockaddr.h"
 #include "logger.h"
+#include "node.h"
+#include "connection.h"
 
 #include <pthread.h>
 
@@ -266,6 +268,23 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 
 					if(naddress.unknown.family != AF_UNKNOWN) {
 						meshlink_hint_address(mesh, (meshlink_node_t *)node, (struct sockaddr *)&naddress);
+						pthread_mutex_lock(&(mesh->mesh_mutex));
+
+						node_t *n = (node_t *)node;
+
+						if(n->connection && n->connection->outgoing) {
+							n->connection->outgoing->timeout = 0;
+
+							if(n->connection->outgoing->ev.cb) {
+								timeout_set(&mesh->loop, &n->connection->outgoing->ev, &(struct timeval) {
+									0, 0
+								});
+							}
+
+							n->connection->last_ping_time = 0;
+						}
+
+						pthread_mutex_unlock(&(mesh->mesh_mutex));
 					} else {
 						logger(mesh, MESHLINK_WARNING, "Could not resolve node %s to a known address family type.\n", node->name);
 					}
