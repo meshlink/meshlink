@@ -10,7 +10,8 @@ TESTS = \
 	import-export.test \
 	invite-join.test \
 	sign-verify.test \
-	trio.test
+	trio.test \
+	trio2.test
 
 if BLACKBOX_TESTS
 SUBDIRS = blackbox
@@ -34,7 +35,8 @@ check_PROGRAMS = \
 	import-export \
 	invite-join \
 	sign-verify \
-	trio
+	trio \
+	trio2
 
 if INSTALL_TESTS
 bin_PROGRAMS = $(check_PROGRAMS)
@@ -78,3 +80,6 @@ sign_verify_LDADD = ../src/libmeshlink.la
 
 trio_SOURCES = trio.c
 trio_LDADD = ../src/libmeshlink.la
+
+trio2_SOURCES = trio2.c
+trio2_LDADD = ../src/libmeshlink.la

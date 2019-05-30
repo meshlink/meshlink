@@ -585,6 +585,10 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			terminate_connection(mesh, disconnect_from->connection, disconnect_from->connection->status.active);
 		}
 
+		// reduce timeout if we don't have enough connections + outgoings
+		if(cur_connects + mesh->outgoings->count < 3) {
+			timeout = 1;
+		}
 
 		// done!
 
