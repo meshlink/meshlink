@@ -133,6 +133,17 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 
 		logger(mesh, MESHLINK_INFO, "Learned ECDSA public key from %s", from->name);
 		from->status.dirty = true;
+
+		/* If we are trying to form an outgoing connection to this node, retry immediately */
+		for list_each(outgoing_t, outgoing, mesh->outgoings) {
+			if(outgoing->node == from && outgoing->ev.cb) {
+				outgoing->timeout = 0;
+				timeout_set(&mesh->loop, &outgoing->ev, &(struct timeval) {
+					0, 0
+				});
+			}
+		}
+
 		return true;
 	}
 
