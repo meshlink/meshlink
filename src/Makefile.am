@@ -83,6 +83,8 @@ libmeshlink_la_SOURCES = \
 	$(chacha_poly1305_SOURCES) \
 	$(utcp_SOURCES)
 
+EXTRA_libmeshlink_la_DEPENDENCIES = $(srcdir)/meshlink.sym
+
 libmeshlink_la_CFLAGS = $(PTHREAD_CFLAGS) -fPIC -iquote.
 libmeshlink_la_LDFLAGS += $(PTHREAD_LIBS)
 

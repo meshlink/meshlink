@@ -33,6 +33,7 @@ meshlink_get_node_submesh
 meshlink_get_pmtu
 meshlink_get_port
 meshlink_get_self
+meshlink_get_submesh
 meshlink_hint_address
 meshlink_import
 meshlink_invite
@@ -48,6 +49,7 @@ meshlink_set_canonical_address
 meshlink_set_channel_accept_cb
 meshlink_set_channel_poll_cb
 meshlink_set_channel_receive_cb
+meshlink_set_connection_try_cb
 meshlink_set_default_blacklist
 meshlink_set_invitation_timeout
 meshlink_set_log_cb
