@@ -1,13 +1,15 @@
-Quick how-to cross compile MeshLink for android (done from $HOME/android/):
+# Quick how-to cross compile MeshLink for Android
 
-- Download android NDK and setup local ARM toolchain:
-wget http://dl.google.com/android/ndk/android-ndk-r8b-linux-x86.tar.bz2
-tar xfj android-ndk-r8b-linux-x86.tar.bz2
-./android-ndk-r8b/build/tools/make-standalone-toolchain.sh --platform=android-5 --install-dir=/tmp/my-android-toolchain
+- Download the *latest* Android NDK for your OS from https://developer.android.com/ndk/downloads
+- Unzip the NDK in a suitable location, for example `/usr/local`
+- Create a standalone toolchain using the NDK, like so:
+
+        /usr/local/android-ndk-rXXX/build/toold/make-standalone-toolchain.sh --install-dir=/tmp/my-android-toolchain
 
 - Clone and cross-compile MeshLink:
-git clone git://meshlink.io/meshlink
-cd meshlink
-autoreconf -fsi
-CC=/tmp/my-android-toolchain/bin/arm-linux-androideabi-gcc ./configure --host=arm-linux
-make -j5
+
+        git clone git://meshlink.io/meshlink
+        cd meshlink
+        autoreconf -fsi
+        CC=/tmp/my-android-toolchain/bin/arm-linux-androideabi-gcc CXX=/tmp/my-android-toolchain/bin/arm-linux-androideabi-g++ ./configure --host=arm-linux-androideabi
+        make -j$(nproc)
