@@ -71,6 +71,9 @@
 #include "test_cases_submesh03.h"
 #include "test_cases_submesh04.h"
 
+#include "test_cases_random_port_bindings01.h"
+#include "test_cases_random_port_bindings02.h"
+
 #include "../common/containers.h"
 #include "../common/common_handlers.h"
 
@@ -140,6 +143,9 @@ int main(int argc, char *argv[]) {
 	failed_tests += test_cases_submesh04();
 
 	failed_tests += test_optimal_pmtu();
+
+	failed_tests += test_meshlink_random_port_bindings01();
+	failed_tests += test_meshlink_random_port_bindings02();
 
 	printf("[ PASSED ] %d test(s).\n", total_tests - failed_tests);
 	printf("[ FAILED ] %d test(s).\n", failed_tests);

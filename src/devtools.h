@@ -151,4 +151,12 @@ extern meshlink_submesh_t **devtool_get_all_submeshes(meshlink_handle_t *mesh, m
  */
 extern meshlink_handle_t *devtool_open_in_netns(const char *confbase, const char *name, const char *appname, dev_class_t devclass, int netns);
 
+/// Debug function pointer variable for set port API
+/** This function pointer variable is a userspace tracepoint or debugger callback for
+ *  set port function @a meshlink_set_port @a.
+ *  On assigning a debug function variable invokes callback when try_bind() succeeds in meshlink_set_port API.
+ *
+ */
+extern void (*devtool_trybind_probe)(void);
+
 #endif

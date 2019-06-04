@@ -30,6 +30,12 @@
 
 #include "devtools.h"
 
+static void nop_probe(void) {
+	return;
+}
+
+void (*devtool_trybind_probe)(void) = nop_probe;
+
 /* Return an array of edges in the current network graph.
  * Data captures the current state and will not be updated.
  * Caller must deallocate data when done.
