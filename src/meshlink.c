@@ -45,6 +45,7 @@ typedef struct {
 #include "xalloc.h"
 #include "ed25519/sha512.h"
 #include "discovery.h"
+#include "devtools.h"
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
@@ -2307,6 +2308,8 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 		meshlink_errno = MESHLINK_ENETWORK;
 		return false;
 	}
+
+	devtool_trybind_probe();
 
 	bool rval = false;
 

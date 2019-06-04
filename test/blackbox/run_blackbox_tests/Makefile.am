@@ -62,7 +62,9 @@ run_blackbox_tests_SOURCES = \
 	test_cases_submesh03.c \
 	test_cases_submesh04.c \
 	test_cases_autoconnect.c \
-	test_cases_set_connection_try_cb.c 
+	test_cases_set_connection_try_cb.c \
+	test_cases_random_port_bindings01.c \
+	test_cases_random_port_bindings02.c
 
 run_blackbox_tests_LDADD = ../../../src/libmeshlink.la $(LXC_LIBS) $(CMOCKA_LIBS)
 run_blackbox_tests_CFLAGS = -D_GNU_SOURCE $(LXC_CFLAGS) $(CMOCKA_CFLAGS)

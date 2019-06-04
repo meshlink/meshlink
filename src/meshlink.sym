@@ -4,6 +4,7 @@ devtool_get_all_edges
 devtool_get_all_submeshes
 devtool_get_node_status
 devtool_open_in_netns
+devtool_trybind_probe
 meshlink_add_address
 meshlink_add_external_address
 meshlink_blacklist

@@ -513,7 +513,7 @@ void netns_destroy_topology(netns_state_t *test_state) {
 
 		for(i = 0; i < namespace_handle->pid_nos; i++) {
 			pid = (namespace_handle->pids)[i];
-			assert(kill(pid, SIGINT) != -1);
+			kill(pid, SIGINT);
 			pid_ret = waitpid(pid, NULL, WNOHANG);
 			assert(pid_ret != -1);
 
