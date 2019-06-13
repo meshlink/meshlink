@@ -44,6 +44,8 @@ static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *source, boo
 
 /* Meta-connection try callback handler */
 static void connection_try_cb(meshlink_handle_t *mesh, meshlink_node_t *source) {
+	(void)source;
+
 	if(!strcmp(mesh->name, "foo")) {
 		++connection_attempts;
 
@@ -89,8 +91,8 @@ static bool test_set_connection_try_cb_01(void) {
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-	bool imp1 = meshlink_import(mesh1, exp2);
-	bool imp2 = meshlink_import(mesh2, exp1);
+	meshlink_import(mesh1, exp2);
+	meshlink_import(mesh2, exp1);
 	free(exp1);
 	free(exp2);
 

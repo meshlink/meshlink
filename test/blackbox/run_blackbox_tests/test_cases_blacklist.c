@@ -62,6 +62,8 @@ void test_case_mesh_blacklist_01(void **state) {
 static bool received;
 
 static void receive(meshlink_handle_t *mesh, meshlink_node_t *src, const void *data, size_t len) {
+	(void)mesh;
+
 	const char *msg = data;
 	assert(len);
 
@@ -73,6 +75,8 @@ static void receive(meshlink_handle_t *mesh, meshlink_node_t *src, const void *d
 static bool bar_reachable;
 
 static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
+
 	if(!strcmp(node->name, "bar") && reachable) {
 		bar_reachable = true;
 	}

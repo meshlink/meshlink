@@ -269,7 +269,6 @@ static bool test_sign_05(void) {
 	// Signing data
 
 	char *data = "Test";
-	char sig[MESHLINK_SIGLEN];
 	size_t ssize = MESHLINK_SIGLEN;
 	bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, NULL, &ssize);
 
@@ -315,7 +314,6 @@ static bool test_sign_06(void) {
 
 	char *data = "Test";
 	char sig[MESHLINK_SIGLEN];
-	size_t ssize = MESHLINK_SIGLEN;
 	bool ret = meshlink_sign(mesh_handle, data, strlen(data) + 1, sig, NULL);
 
 	// Clean up

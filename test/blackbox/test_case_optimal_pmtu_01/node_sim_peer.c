@@ -33,7 +33,6 @@
 
 extern bool test_pmtu_peer_running;
 
-static struct sync_flag nut_reachable = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 static struct sync_flag channel_opened = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len);
@@ -53,13 +52,6 @@ static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel,
 	}
 
 	return false;
-}
-
-static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
-	(void)len;
-	meshlink_set_channel_poll_cb(mesh, channel, NULL);
-	assert(meshlink_channel_send(mesh, channel, "test", 5) >= 0);
-	return;
 }
 
 /* channel receive callback */

@@ -52,11 +52,6 @@ static void test_case_mesh_channel_close_01(void **state) {
 
 /* Test Steps for meshlink_channel_close Test Case # 1*/
 static bool test_steps_mesh_channel_close_01(void) {
-	bool result = false;
-	char *msg = NULL;
-	char buf[] = "bar";
-	msg = buf;
-	size_t len = sizeof(buf);
 	meshlink_destroy("chan_close_conf.3");
 	meshlink_destroy("chan_close_conf.4");
 

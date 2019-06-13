@@ -43,18 +43,15 @@ static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel,
 static bool channel_reject(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len);
 
 static bool channel_acc;
-static bool channel_rej;
 static bool polled;
 static bool rejected;
 
 /* mutex for the common variable */
 static pthread_mutex_t accept_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t reject_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t poll_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t lock_receive = PTHREAD_MUTEX_INITIALIZER;
 
 static pthread_cond_t accept_cond = PTHREAD_COND_INITIALIZER;
-static pthread_cond_t reject_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t poll_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t receive_cond = PTHREAD_COND_INITIALIZER;
 
@@ -67,12 +64,16 @@ static black_box_state_t test_case_channel_set_accept_cb_02_state = {
 
 /* channel receive callback */
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
+	(void)mesh;
+	(void)channel;
+	(void)dat;
+
 	if(!len) {
 		if(!meshlink_errno) {
-			pthread_mutex_lock(& lock_receive);
+			pthread_mutex_lock(&lock_receive);
 			rejected = true;
 			assert(!pthread_cond_broadcast(&receive_cond));
-			pthread_mutex_unlock(& lock_receive);
+			pthread_mutex_unlock(&lock_receive);
 		}
 	}
 }
@@ -88,9 +89,11 @@ static bool channel_reject(meshlink_handle_t *mesh, meshlink_channel_t *channel,
 }
 
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len) {
+	(void)mesh;
+	(void)channel;
 	(void)dat;
 	(void)len;
-	char *data = (char *) dat;
+
 	assert_int_equal(port, PORT);
 
 	pthread_mutex_lock(&accept_lock);

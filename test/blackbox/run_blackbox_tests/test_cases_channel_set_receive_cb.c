@@ -45,11 +45,6 @@ static void test_case_set_channel_receive_cb_02(void **state);
 static bool test_steps_set_channel_receive_cb_02(void);
 static void test_case_set_channel_receive_cb_03(void **state);
 static bool test_steps_set_channel_receive_cb_03(void);
-static void test_case_set_channel_receive_cb_04(void **state);
-static bool test_steps_set_channel_receive_cb_04(void);
-
-static void channel_poll(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len);
-static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len);
 
 static bool rec_stat = false;
 static bool accept_stat = false;
@@ -63,18 +58,22 @@ static pthread_cond_t receive_cond = PTHREAD_COND_INITIALIZER;
 static black_box_state_t test_case_channel_set_receive_cb_01_state = {
 	.test_case_name = "test_case_channel_set_receive_cb_01",
 };
+
 static black_box_state_t test_case_channel_set_receive_cb_02_state = {
 	.test_case_name = "test_case_channel_set_receive_cb_02",
 };
+
 static black_box_state_t test_case_channel_set_receive_cb_03_state = {
 	.test_case_name = "test_case_channel_set_receive_cb_03",
-};
-static black_box_state_t test_case_channel_set_receive_cb_04_state = {
-	.test_case_name = "test_case_channel_set_receive_cb_04",
 };
 
 /* channel receive callback */
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
+	(void)mesh;
+	(void)channel;
+	(void)dat;
+	(void)len;
+
 	pthread_mutex_lock(& lock_receive);
 	rec_stat = true;
 	assert(!pthread_cond_broadcast(&receive_cond));
@@ -82,6 +81,10 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 }
 
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	(void)port;
+	(void)data;
+	(void)len;
+
 	meshlink_set_channel_receive_cb(mesh, channel, channel_receive_cb);
 
 	pthread_mutex_lock(& lock_accept);

@@ -752,6 +752,8 @@ static bool test_steps_channel_conn_08(void) {
 }
 
 static int black_box_group_setup(void **state) {
+	(void)state;
+
 	const char *nodes[] = { "peer", "nut", "relay" };
 	int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
 
@@ -763,6 +765,8 @@ static int black_box_group_setup(void **state) {
 }
 
 static int black_box_group_teardown(void **state) {
+	(void)state;
+
 	printf("Destroying Containers\n");
 	destroy_containers();
 
@@ -772,21 +776,21 @@ static int black_box_group_teardown(void **state) {
 int test_meshlink_channel_conn(void) {
 	const struct CMUnitTest blackbox_group0_tests[] = {
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_01, setup_test, teardown_test,
-		                (void *)&test_case_channel_conn_01_state),/*
-                cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_02, setup_test, teardown_test,
-                                (void *)&test_case_channel_conn_02_state),
-                cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_03, setup_test, teardown_test,
-                                (void *)&test_case_channel_conn_03_state),
-                cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_04, setup_test, teardown_test,
-                                (void *)&test_case_channel_conn_04_state),
-                cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_05, setup_test, teardown_test,
-                                (void *)&test_case_channel_conn_05_state),
-                cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_06, setup_test, teardown_test,
-                                (void *)&test_case_channel_conn_06_state),
-                cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_07, setup_test, teardown_test,
-                                (void *)&test_case_channel_conn_07_state),
-                cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_08, setup_test, teardown_test,
-                                (void *)&test_case_channel_conn_08_state)*/
+		                (void *)&test_case_channel_conn_01_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_02, setup_test, teardown_test,
+		                (void *)&test_case_channel_conn_02_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_03, setup_test, teardown_test,
+		                (void *)&test_case_channel_conn_03_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_04, setup_test, teardown_test,
+		                (void *)&test_case_channel_conn_04_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_05, setup_test, teardown_test,
+		                (void *)&test_case_channel_conn_05_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_06, setup_test, teardown_test,
+		                (void *)&test_case_channel_conn_06_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_07, setup_test, teardown_test,
+		                (void *)&test_case_channel_conn_07_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_conn_08, setup_test, teardown_test,
+		                (void *)&test_case_channel_conn_08_state),
 	};
 	total_tests += sizeof(blackbox_group0_tests) / sizeof(blackbox_group0_tests[0]);
 

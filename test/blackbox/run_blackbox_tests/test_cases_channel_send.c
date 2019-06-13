@@ -101,6 +101,8 @@ static bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 }
 
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	(void)data;
+
 	assert(port == 7);
 	assert(!len);
 
@@ -111,6 +113,9 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 
 /* channel receive callback */
 static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
+	(void)mesh;
+	(void)channel;
+
 	if(len == 5 && !memcmp(dat, "Hello", 5)) {
 		pthread_mutex_lock(& bar_responded_lock);
 		bar_responded = true;
@@ -268,7 +273,6 @@ static void test_case_mesh_channel_send_03(void **state) {
 
 /* Test Steps for meshlink_channel_send Test Case # 3*/
 static bool test_steps_mesh_channel_send_03(void) {
-	struct timespec timeout = {0};
 	meshlink_destroy("chan_send_conf.7");
 	// Open new meshlink instance.
 

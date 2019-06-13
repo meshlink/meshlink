@@ -208,7 +208,7 @@ static void test_case_mesh_get_node_by_dev_class_02(void **state) {
 static bool test_steps_mesh_get_node_by_dev_class_02(void) {
 	meshlink_node_t **nodes;
 	size_t nnodes = 0;
-	int i;
+
 	meshlink_destroy("getnodeconf.1");
 
 	/* Create meshlink instance for NUT */
@@ -308,6 +308,8 @@ static bool test_steps_mesh_get_node_dev_class_02(void) {
 }
 
 static int black_box_setup_test_case(void **state) {
+	(void)state;
+
 	fprintf(stderr, "Destroying confbases\n");
 	meshlink_destroy("getnodeconf.1");
 	meshlink_destroy("getnodeconf.2");

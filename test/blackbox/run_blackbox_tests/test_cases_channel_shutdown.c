@@ -39,13 +39,8 @@ static void test_case_mesh_channel_shutdown_02(void **state);
 static bool test_steps_mesh_channel_shutdown_02(void);
 static void test_case_mesh_channel_shutdown_03(void **state);
 static bool test_steps_mesh_channel_shutdown_03(void);
-static void test_case_mesh_channel_shutdown_04(void **state);
-static bool test_steps_mesh_channel_shutdown_04(void);
-static void test_case_mesh_channel_shutdown_05(void **state);
-static bool test_steps_mesh_channel_shutdown_05(void);
 
 static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len);
-static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable);
 static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len);
 
 /* State structure for meshlink_channel_shutdown Test Case #1 */
@@ -61,16 +56,6 @@ static black_box_state_t test_mesh_channel_shutdown_02_state = {
 /* State structure for meshlink_channel_shutdown Test Case #3 */
 static black_box_state_t test_mesh_channel_shutdown_03_state = {
 	.test_case_name = "test_case_mesh_channel_shutdown_03",
-};
-
-/* State structure for meshlink_channel_shutdown Test Case #4 */
-static black_box_state_t test_mesh_channel_shutdown_04_state = {
-	.test_case_name = "test_case_mesh_channel_shutdown_04",
-};
-
-/* State structure for meshlink_channel_shutdown Test Case #5 */
-static black_box_state_t test_mesh_channel_shutdown_05_state = {
-	.test_case_name = "test_case_mesh_channel_shutdown_05",
 };
 
 static bool channel_acc;
@@ -90,6 +75,8 @@ static pthread_cond_t foo_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t bar_cond = PTHREAD_COND_INITIALIZER;
 
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	(void)data;
+
 	assert(port == 7);
 	assert(!len);
 
@@ -105,6 +92,9 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 
 /* channel receive callback */
 static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
+	(void)dat;
+	(void)len;
+
 	if(!strcmp(mesh->name, "foo")) {
 		pthread_mutex_lock(& foo_responded_lock);
 		foo_responded = true;
@@ -206,8 +196,6 @@ static bool test_steps_mesh_channel_shutdown_01(void) {
 	}
 
 	pthread_mutex_unlock(&accept_lock);
-
-	meshlink_channel_t *channel2 = bar->priv;
 
 	// Sending to bar and testing the echo
 

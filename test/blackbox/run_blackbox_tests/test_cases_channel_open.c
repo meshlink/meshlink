@@ -63,11 +63,6 @@ static void test_case_mesh_channel_open_01(void **state) {
 	execute_test(test_steps_mesh_channel_open_01, state);
 }
 
-static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	(void)mesh;
-	(void)channel;
-}
-
 /* Test Steps for meshlink_channel_open Test Case # 1
 
     Test Steps:
@@ -106,7 +101,7 @@ static bool test_steps_mesh_channel_open_01(void) {
 	// Open a channel from foo to bar.
 	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
 	assert(bar != NULL);
-	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7000, receive_cb, NULL, 0);
+	meshlink_channel_t *channel = meshlink_channel_open(mesh1, bar, 7000, NULL, NULL, 0);
 	assert_int_not_equal(channel, NULL);
 
 	// Clean up.

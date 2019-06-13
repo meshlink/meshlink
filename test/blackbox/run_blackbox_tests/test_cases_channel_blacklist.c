@@ -47,10 +47,8 @@ static mesh_arg_t peer_arg = {.node_name = "peer", .confbase = "peer", .app_name
 static mesh_arg_t nut_arg = {.node_name = "nut", .confbase = "nut", .app_name = "nut", .dev_class = 1 };
 static mesh_invite_arg_t relay_nut_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "nut" };
 static mesh_invite_arg_t relay_peer_invite_arg = {.mesh_arg = &relay_arg, .invitee_name = "peer" };
-static mesh_invite_arg_t peer_nut_invite_arg = {.mesh_arg = &peer_arg, .invitee_name = "nut" };
 static netns_thread_t netns_relay_nut_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_nut_invite_arg};
 static netns_thread_t netns_relay_peer_invite = {.namespace_name = "relay", .netns_thread = gen_inv, .arg = &relay_peer_invite_arg};
-static netns_thread_t netns_peer_nut_invite = {.namespace_name = "peer", .netns_thread = gen_inv, .arg = &peer_nut_invite_arg};
 static netns_thread_t netns_relay_handle = {.namespace_name = "relay", .netns_thread = test_channel_blacklist_disonnection_relay_01, .arg = &relay_arg};
 static netns_thread_t netns_peer_handle = {.namespace_name = "peer", .netns_thread = test_channel_blacklist_disonnection_peer_01, .arg = &peer_arg};
 static netns_thread_t netns_nut_handle = {.namespace_name = "nut", .netns_thread = test_channel_blacklist_disonnection_nut_01, .arg = &nut_arg};
@@ -58,6 +56,8 @@ static netns_thread_t netns_nut_handle = {.namespace_name = "nut", .netns_thread
 struct sync_flag test_channel_discon_nut_close = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 
 static int setup_test(void **state) {
+	(void)state;
+
 	netns_create_topology(test_channel_disconnection_state);
 	fprintf(stderr, "\nCreated topology\n");
 
@@ -74,6 +74,8 @@ static int setup_test(void **state) {
 }
 
 static int teardown_test(void **state) {
+	(void)state;
+
 	meshlink_destroy("nut");
 	meshlink_destroy("peer");
 	meshlink_destroy("relay");
@@ -83,6 +85,8 @@ static int teardown_test(void **state) {
 }
 
 static void execute_test(test_step_func_t step_func, void **state) {
+	(void)state;
+
 
 	fprintf(stderr, "\n\x1b[32mRunning Test\x1b[0m\n");
 	bool test_result = step_func();
@@ -102,6 +106,8 @@ static void *gen_inv(void *arg) {
 	assert(invitation);
 	mesh_invite_arg->invite_str = invitation;
 	meshlink_close(mesh);
+
+	return NULL;
 }
 
 static void launch_3_nodes(void) {

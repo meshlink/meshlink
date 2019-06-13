@@ -72,8 +72,9 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 }
 
 int main(int argc, char *argv[]) {
+	(void)argc;
+
 	struct timeval main_loop_wait = { 2, 0 };
-	struct timespec timeout = {0};
 
 	// Import mesh event handler
 

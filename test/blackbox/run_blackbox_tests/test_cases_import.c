@@ -42,34 +42,31 @@ static void test_case_import_04(void **state);
 static bool test_import_04(void);
 static void test_case_import_05(void **state);
 static bool test_import_05(void);
-static void test_case_import_06(void **state);
-static bool test_import_06(void);
 
 /* State structure for import API Test Case #1 */
 static black_box_state_t test_case_import_01_state = {
 	.test_case_name = "test_case_import_01",
 };
+
 /* State structure for import API Test Case #2 */
 static black_box_state_t test_case_import_02_state = {
 	.test_case_name = "test_case_import_02",
 };
+
 /* State structure for import API Test Case #3 */
 static black_box_state_t test_case_import_03_state = {
 	.test_case_name = "test_case_import_03",
 };
+
 /* State structure for import API Test Case #4 */
 static black_box_state_t test_case_import_04_state = {
 	.test_case_name = "test_case_import_04",
 };
+
 /* State structure for import API Test Case #5 */
 static black_box_state_t test_case_import_05_state = {
 	.test_case_name = "test_case_import_05",
 };
-/* State structure for import API Test Case #6 */
-static black_box_state_t test_case_import_06_state = {
-	.test_case_name = "test_case_import_06",
-};
-
 
 /* Execute import Test Case # 1 - valid case*/
 static void test_case_import_01(void **state) {

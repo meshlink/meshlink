@@ -35,16 +35,14 @@
 #define CMD_LINE_ARG_INVITEURL  5
 #define CHANNEL_PORT 1234
 
-static bool conn_status = false;
 static int client_id = -1;
 
-static struct sync_flag peer_reachable = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER, .flag = false};
 static struct sync_flag channel_opened = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER, .flag = false};
 static struct sync_flag channel_data_recieved = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER, .flag = false};
 
 static meshlink_handle_t *mesh = NULL;
 
-static void mesh_send_message_handler(char *destination);
+static void mesh_send_message_handler(const char *destination);
 
 static void send_event(mesh_event_t event) {
 	int attempts;
@@ -62,6 +60,8 @@ static void send_event(mesh_event_t event) {
 
 /* channel receive callback */
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
+	(void)mesh;
+
 	char data[100] = {0};
 
 	if(len == 0) {
@@ -74,7 +74,7 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 	fprintf(stderr, "corenode1 got message from %s as %s\n", channel->node->name, data);
 
 	if(!memcmp(dat, "Channel Message", len)) {
-		mesh_send_message_handler((char *)channel->node->name);
+		mesh_send_message_handler(channel->node->name);
 
 		if(0 == strcmp("app1node1", channel->node->name)) {
 			set_sync_flag(&channel_data_recieved, true);
@@ -86,8 +86,9 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 	return;
 }
 
-static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
-                           bool reachable) {
+static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
+
 	if(reachable) {
 		fprintf(stderr, "Node %s became reachable\n", node->name);
 	} else {
@@ -98,8 +99,8 @@ static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
 }
 
 static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
-	char *message = "Channel Message";
-	char *node = (char *)channel->node->name;
+	const char *message = "Channel Message";
+	const char *node = channel->node->name;
 	(void)len;
 	meshlink_set_channel_poll_cb(mesh, channel, NULL);
 	fprintf(stderr, "corenode1's Channel request has been accepted by %s at : %lu\n", node, time(NULL));
@@ -125,7 +126,7 @@ static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel,
 	return true;
 }
 
-void mesh_send_message_handler(char *destination) {
+static void mesh_send_message_handler(const char *destination) {
 	meshlink_channel_t *channel = NULL;
 	meshlink_node_t *target_node = NULL;
 
@@ -139,8 +140,9 @@ void mesh_send_message_handler(char *destination) {
 }
 
 int main(int argc, char *argv[]) {
+	(void)argc;
+
 	struct timeval main_loop_wait = { 5, 0 };
-	int i;
 
 	// Import mesh event handler
 

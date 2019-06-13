@@ -53,6 +53,8 @@ static black_box_state_t test_case_set_status_cb_02_state = {
 
 
 static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *source, bool reach) {
+	(void)mesh;
+
 	fprintf(stderr, "In status callback\n");
 
 	if(reach) {
@@ -98,8 +100,8 @@ static bool test_set_status_cb_01(void) {
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-	bool imp1 = meshlink_import(mesh1, exp2);
-	bool imp2 = meshlink_import(mesh2, exp1);
+	meshlink_import(mesh1, exp2);
+	meshlink_import(mesh2, exp1);
 
 	assert(meshlink_start(mesh1));
 	assert(meshlink_start(mesh2));

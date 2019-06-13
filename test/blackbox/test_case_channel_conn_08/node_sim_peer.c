@@ -43,6 +43,8 @@ static struct sync_flag sigusr = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = P
 static int client_id = -1;
 
 static void mesh_siguser1_signal_handler(int sig_num) {
+	(void)sig_num;
+
 	set_sync_flag(&sigusr, true);
 
 	return;
@@ -84,6 +86,8 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 }
 
 int main(int argc, char *argv[]) {
+	(void)argc;
+
 	struct timeval main_loop_wait = { 2, 0 };
 
 	// Import mesh event handler

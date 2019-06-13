@@ -38,8 +38,6 @@ static void test_case_set_log_cb_01(void **state);
 static bool test_set_log_cb_01(void);
 static void test_case_set_log_cb_02(void **state);
 static bool test_set_log_cb_02(void);
-static void test_case_set_log_cb_03(void **state);
-static bool test_set_log_cb_03(void);
 
 /* log variable gives access to the log callback to know whether invoked or not */
 static bool log;
@@ -57,6 +55,9 @@ static black_box_state_t test_case_set_log_cb_02_state = {
 
 /* log callback */
 static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	(void)mesh;
+	(void)level;
+
 	fprintf(stderr, "Received log text : %s\n", text);
 	log = true;
 }

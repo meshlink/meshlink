@@ -85,6 +85,8 @@ static black_box_state_t test_meta_conn_5_state = {
 };
 
 int black_box_group0_setup(void **state) {
+	(void)state;
+
 	const char *nodes[] = { "peer", "relay", "nut"};
 	int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
 
@@ -96,6 +98,8 @@ int black_box_group0_setup(void **state) {
 }
 
 int black_box_group0_teardown(void **state) {
+	(void)state;
+
 	PRINT_TEST_CASE_MSG("Destroying Containers\n");
 	destroy_containers();
 
@@ -103,6 +107,8 @@ int black_box_group0_teardown(void **state) {
 }
 
 int black_box_all_nodes_setup(void **state) {
+	(void)state;
+
 	const char *nodes[] = { "peer" };
 	int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
 
@@ -137,6 +143,9 @@ static bool meta_conn01_cb(mesh_event_payload_t payload) {
 	case META_RECONN_SUCCESSFUL :
 		meta_conn01_reconn = true;
 		break;
+
+	default:
+		break;
 	}
 
 	return true;
@@ -161,7 +170,6 @@ static void test_case_meta_conn_01(void **state) {
 */
 static bool test_steps_meta_conn_01(void) {
 	char *invite_peer, *invite_nut;
-	int i;
 	char *import;
 
 	import = mesh_event_sock_create(eth_if_name);
@@ -214,6 +222,9 @@ static bool meta_conn02_cb(mesh_event_payload_t payload) {
 	case NODE_STARTED           :
 		fprintf(stderr, "Node started\n");
 		break;
+
+	default:
+		break;
 	}
 
 	return true;
@@ -235,7 +246,6 @@ static void test_case_meta_conn_02(void **state) {
 */
 static bool test_steps_meta_conn_02(void) {
 	char *invite_peer, *invite_nut;
-	int i;
 	char *import;
 
 	import = mesh_event_sock_create(eth_if_name);
@@ -296,6 +306,9 @@ static bool meta_conn03_cb(mesh_event_payload_t payload) {
 		fprintf(stderr, "Reconnected\n");
 		meta_conn03_result = true;
 		break;
+
+	default:
+		break;
 	}
 
 	return true;
@@ -317,7 +330,6 @@ static void test_case_meta_conn_03(void **state) {
 */
 static bool test_steps_meta_conn_03(void) {
 	char *invite_peer, *invite_nut;
-	int i;
 	char *import;
 
 	import = mesh_event_sock_create(eth_if_name);
@@ -376,6 +388,7 @@ static bool meta_conn04_cb(mesh_event_payload_t payload) {
 
 	default                     :
 		fprintf(stderr, "Undefined mesh event\n");
+		break;
 	}
 
 	return true;
@@ -459,6 +472,9 @@ static bool meta_conn05_cb(mesh_event_payload_t payload) {
 
 	case NODE_STARTED           :
 		fprintf(stderr, "Node started\n");
+		break;
+
+	default:
 		break;
 	}
 

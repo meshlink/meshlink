@@ -136,8 +136,9 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 }
 
 
-static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
-                           bool reachable) {
+static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
+
 	if(!strcasecmp(node->name, "corenode1")) {
 		if(reachable) {
 			fprintf(stderr, "\tNode corenode1 became reachable\n");
@@ -148,12 +149,16 @@ static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
 	return;
 }
 
-void mesh_start_test_handler(int a) {
+void mesh_start_test_handler(int signum) {
+	(void)signum;
+
 	fprintf(stderr, "Starting test in app1node1\n");
 	set_sync_flag(&start_test, true);
 }
 
 int main(int argc, char *argv[]) {
+	(void)argc;
+
 	struct timeval main_loop_wait = { 2, 0 };
 	meshlink_channel_t *channel = NULL;
 	meshlink_node_t *core_node = NULL;

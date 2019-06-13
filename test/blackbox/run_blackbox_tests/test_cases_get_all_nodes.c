@@ -40,8 +40,6 @@ static void test_case_get_all_nodes_02(void **state);
 static bool test_get_all_nodes_02(void);
 static void test_case_get_all_nodes_03(void **state);
 static bool test_get_all_nodes_03(void);
-static void test_case_get_all_nodes_04(void **state);
-static bool test_get_all_nodes_04(void);
 
 /* State structure for get_all_nodes Test Case #1 */
 static black_box_state_t test_case_get_all_nodes_01_state = {
@@ -128,11 +126,11 @@ static void test_case_get_all_nodes_02(void **state) {
     Error reported correctly by returning NULL
 */
 static bool test_get_all_nodes_02(void) {
-	meshlink_node_t **nodes = NULL;
 	size_t nmemb = 0;
 
-	meshlink_node_t **node = meshlink_get_all_nodes(NULL, nodes, &nmemb);
-	assert_int_equal(nodes, NULL);
+	meshlink_node_t **nodes = meshlink_get_all_nodes(NULL, NULL, &nmemb);
+	assert_null(nodes);
+	assert_int_equal(nmemb, NULL);
 
 	return true;
 }

@@ -31,6 +31,8 @@
 #define CMD_LINE_ARG_INVITEURL  5
 
 int main(int argc, char *argv[]) {
+	(void)argc;
+
 	struct timeval main_loop_wait = { 5, 0 };
 	int client_id = -1;
 

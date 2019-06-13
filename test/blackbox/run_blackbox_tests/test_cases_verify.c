@@ -44,10 +44,6 @@ static void test_case_verify_05(void **state);
 static bool test_verify_05(void);
 static void test_case_verify_06(void **state);
 static bool test_verify_06(void);
-static void test_case_verify_07(void **state);
-static bool test_verify_07(void);
-static void test_case_verify_08(void **state);
-static bool test_verify_08(void);
 
 /* State structure for verify API Test Case #1 */
 static black_box_state_t test_case_verify_01_state = {

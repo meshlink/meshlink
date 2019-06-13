@@ -40,7 +40,6 @@ static int client_id = -1;
 
 static struct sync_flag peer_reachable = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 static struct sync_flag channel_opened = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
-static struct sync_flag channel_closed = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 
 static void send_event(mesh_event_t event);
 static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
@@ -60,8 +59,9 @@ static void send_event(mesh_event_t event) {
 	return;
 }
 
-static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
-                           bool reachable) {
+static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
+
 	if(!strcasecmp(node->name, "peer")) {
 		if(reachable) {
 			set_sync_flag(&peer_reachable, true);
@@ -82,6 +82,8 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 
 /* channel receive callback */
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
+	(void)mesh;
+
 	if(len == 0) {
 		//send_event(ERR_NETWORK);
 		return;
@@ -99,8 +101,9 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 }
 
 int main(int argc, char *argv[]) {
+	(void)argc;
+
 	struct timeval main_loop_wait = { 5, 0 };
-	int i;
 
 	// Import mesh event handler
 

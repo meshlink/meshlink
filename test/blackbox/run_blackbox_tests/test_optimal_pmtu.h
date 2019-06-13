@@ -45,8 +45,8 @@ typedef struct pmtu_attr {
 	int mtu_size;
 } pmtu_attr_t;
 
-#define NODE_PMTU_RELAY 1
-#define NODE_PMTU_PEER 2
+#define NODE_PMTU_RELAY 0
+#define NODE_PMTU_PEER 1
 
 #define find_node_index(i, node_name) if(!strcasecmp(node_name, "peer")) {          \
 		i = NODE_PMTU_PEER;                        \

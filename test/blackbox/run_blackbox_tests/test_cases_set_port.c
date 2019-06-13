@@ -150,6 +150,8 @@ static bool test_set_port_03(void) {
 
 	meshlink_close(mesh_handle);
 	meshlink_destroy("getportconf");
+
+	return false;
 }
 
 

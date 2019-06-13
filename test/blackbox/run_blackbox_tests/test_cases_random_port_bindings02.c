@@ -51,6 +51,8 @@ static netns_state_t *test_random_port_bindings_state;
 static bool localnode = false;
 
 static int setup_test(void **state) {
+	(void)state;
+
 	netns_create_topology(test_random_port_bindings_state);
 	fprintf(stderr, "\nCreated topology\n");
 
@@ -70,6 +72,8 @@ static int setup_test(void **state) {
 }
 
 static int teardown_test(void **state) {
+	(void)state;
+
 	meshlink_destroy("nut");
 	meshlink_destroy("peer");
 	meshlink_destroy("relay");
@@ -79,6 +83,8 @@ static int teardown_test(void **state) {
 }
 
 static void execute_test(test_step_func_t step_func, void **state) {
+	(void)state;
+
 
 	fprintf(stderr, "\n\x1b[32mRunning Test\x1b[0m\n");
 	bool test_result = step_func();
@@ -89,6 +95,8 @@ static void execute_test(test_step_func_t step_func, void **state) {
 }
 
 static void message_log(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	(void)level;
+
 	char *levelstr = "\x1b[32mRELAY";
 
 	if(strcmp(mesh->name, "peer") == 0) {

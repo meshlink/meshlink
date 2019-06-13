@@ -40,8 +40,6 @@ static void test_case_set_rec_cb_02(void **state);
 static bool test_set_rec_cb_02(void);
 static void test_case_set_rec_cb_03(void **state);
 static bool test_set_rec_cb_03(void);
-static void test_case_set_rec_cb_04(void **state);
-static bool test_set_rec_cb_04(void);
 
 /* Test Steps for meshlink_set_receive_cb Test Case #1 */
 static black_box_state_t test_case_set_rec_cb_01_state = {
@@ -65,6 +63,9 @@ pthread_mutex_t lock;
 
 /* receive callback function */
 static void rec_cb(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
+	(void)mesh;
+	(void)source;
+
 	assert(len);
 
 	pthread_mutex_lock(&lock);

@@ -34,8 +34,10 @@
 
 static bool conn_status = false;
 
-void callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t level,
-                     const char *text) {
+void callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	(void)mesh;
+	(void)level;
+
 	char connection_match_msg[100];
 
 	fprintf(stderr, "meshlink>> %s\n", text);
@@ -78,9 +80,9 @@ void callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t level,
 }
 
 int main(int argc, char *argv[]) {
-	struct timeval main_loop_wait = { 5, 0 };
-	int i, clientId = -1;
-	bool result;
+	(void)argc;
+
+	int clientId = -1;
 	char *invite_peer;
 
 	if((argv[3]) && (argv[4])) {

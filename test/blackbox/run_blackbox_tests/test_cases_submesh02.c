@@ -71,6 +71,8 @@ static black_box_state_t test_case_submesh_2_state = {
 };
 
 static int black_box_group0_setup(void **state) {
+	(void)state;
+
 	const char *nodes[] = { "corenode1", "app1node1", "app2node1", "corenode2", "app1node2", "app2node2" };
 	int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
 
@@ -82,31 +84,22 @@ static int black_box_group0_setup(void **state) {
 }
 
 static int black_box_group0_teardown(void **state) {
+	(void)state;
+
 	PRINT_TEST_CASE_MSG("Destroying Containers\n");
 	destroy_containers();
 
 	return 0;
 }
 
-static int black_box_all_nodes_setup(void **state) {
-	const char *nodes[] = { "corenode1" };
-	int num_nodes = sizeof(nodes) / sizeof(nodes[0]);
-
-	PRINT_TEST_CASE_MSG("Creating Containers\n");
-	destroy_containers();
-	create_containers(nodes, num_nodes);
-	PRINT_TEST_CASE_MSG("Created Containers\n");
-	return 0;
-}
-
 static bool event_cb(mesh_event_payload_t payload) {
 	static node_status_t node_status[6] = {
-		{core_node1, 0, 3, false},
-		{app1_node1, 0, 4, false},
-		{app2_node1, 0, 4, false},
-		{core_node2, 0, 4, false},
-		{app1_node2, 0, 7, false},
-		{app2_node2, 0, 7, false}
+		{core_node1, 0, 3},
+		{app1_node1, 0, 4},
+		{app2_node1, 0, 4},
+		{core_node2, 0, 4},
+		{app1_node2, 0, 7},
+		{app2_node2, 0, 7},
 	};
 
 	fprintf(stderr, "%s(%lu) : %s\n", event_node_name[payload.client_id], time(NULL), event_status[payload.mesh_event]);
@@ -148,10 +141,7 @@ static void test_case_submesh_02(void **state) {
 */
 static bool test_steps_submesh_02(void) {
 	char *invite_corenode2, *invite_app1node1, *invite_app2node1, *invite_app1node2, *invite_app2node2;
-	bool result = false;
-	int i;
 	char *import;
-	pthread_t thread1, thread2;
 
 	import = mesh_event_sock_create(eth_if_name);
 	invite_corenode2 = invite_in_container("corenode1", "corenode2");

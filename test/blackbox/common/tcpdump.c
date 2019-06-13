@@ -17,25 +17,28 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+
 #include <unistd.h>
 #include <sys/prctl.h>
 #include <assert.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <signal.h>
 #include <sys/types.h>
 #include "common_handlers.h"
 #include "tcpdump.h"
 
 pid_t tcpdump_start(char *interface) {
-	pid_t tcpdump_pid;
 	char *argv[] = { "tcpdump", "-i", interface, NULL };
 	// child process have a pipe to the parent process when parent process terminates SIGPIPE kills the tcpdump
 	int pipes[2];
 	assert(pipe(pipes) != -1);
 	PRINT_TEST_CASE_MSG("\x1b[32mLaunching TCP Dump ..\x1b[0m\n");
 
-	if((tcpdump_pid = fork()) == 0) {
+	pid_t tcpdump_pid = fork();
+
+	if(tcpdump_pid == 0) {
 		prctl(PR_SET_PDEATHSIG, SIGHUP);
 		close(pipes[1]);
 		// Open log file for TCP Dump
@@ -45,13 +48,14 @@ pid_t tcpdump_start(char *interface) {
 		assert(dup2(fd, STDOUT_FILENO) != -1);
 
 		// Launch TCPDump with port numbers of sleepy, gateway & relay
-		int ret = execvp("/usr/sbin/tcpdump", argv);
+		execvp("/usr/sbin/tcpdump", argv);
 		perror("execvp ");
-		assert(ret != -1);
+		exit(1);
 	} else {
 		close(pipes[0]);
-		return tcpdump_pid;
 	}
+
+	return tcpdump_pid;
 }
 
 void tcpdump_stop(pid_t tcpdump_pid) {

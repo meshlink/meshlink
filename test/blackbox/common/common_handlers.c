@@ -53,7 +53,8 @@ static int meshlink_get_node_in_container(const char *name) {
 	return -1;
 }
 
-void mesh_close_signal_handler(int a) {
+void mesh_close_signal_handler(int signum) {
+	(void)signum;
 	test_running = false;
 
 	exit(EXIT_SUCCESS);

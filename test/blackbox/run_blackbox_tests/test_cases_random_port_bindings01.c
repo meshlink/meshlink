@@ -138,7 +138,6 @@ void test_case_mesh_random_port_bindings_01(void **state) {
     of the instance should be unchanged.
 */
 bool test_steps_mesh_random_port_bindings_01(void) {
-	struct sockaddr_in servaddr;
 	meshlink_handle_t *relay = NULL;
 	meshlink_destroy("relay_conf");
 
@@ -189,7 +188,6 @@ void test_case_mesh_random_port_bindings_02(void **state) {
     The meshlink_set_port() API should fail.
 */
 bool test_steps_mesh_random_port_bindings_02(void) {
-	int port = -1;
 	meshlink_handle_t *relay = NULL;
 	meshlink_destroy("relay_conf");
 
@@ -205,7 +203,6 @@ bool test_steps_mesh_random_port_bindings_02(void) {
 	assert_true(meshlink_start(relay));
 
 	sleep(1);
-	port = meshlink_get_port(relay);
 
 	devtool_trybind_probe = occupy_trybind_port;
 	meshlink_stop(relay);
@@ -241,10 +238,7 @@ void test_case_mesh_random_port_bindings_03(void **state) {
     previous port number.
 */
 bool test_steps_mesh_random_port_bindings_03(void) {
-	int mode = 1;
 	int port, new_port;
-	struct sockaddr_in servaddr;
-	struct sockaddr_in6 ipv6addr;
 	meshlink_handle_t *relay = NULL;
 	meshlink_destroy("relay_conf");
 

@@ -80,6 +80,13 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 }
 
 static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *source, bool reach) {
+	(void)mesh;
+	(void)source;
+
+	if(!reach) {
+		return;
+	}
+
 	pthread_mutex_lock(&reachable_lock);
 	reachable = true;
 	assert(!pthread_cond_broadcast(&reachable_cond));

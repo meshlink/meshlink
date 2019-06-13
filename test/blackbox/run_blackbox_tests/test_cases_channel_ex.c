@@ -73,10 +73,6 @@ static black_box_state_t test_case_channel_ex_05_state = {
 static black_box_state_t test_case_channel_ex_06_state = {
 	.test_case_name = "test_case_channel_ex_06",
 };
-static black_box_state_t test_case_channel_ex_07_state = {
-	.test_case_name = "test_case_channel_ex_07",
-};
-
 /* mutex for the common variable */
 static pthread_mutex_t accept_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t accept_cond = PTHREAD_COND_INITIALIZER;
@@ -94,9 +90,11 @@ static void cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void 
 }
 
 static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len) {
+	(void)mesh;
+	(void)channel;
 	(void)dat;
 	(void)len;
-	char *data = (char *) dat;
+
 	assert_int_equal(port, PORT);
 
 	pthread_mutex_lock(&accept_lock);

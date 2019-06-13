@@ -89,18 +89,16 @@ void execute_close(void) {
 void execute_change_ip(void) {
 	char *eth_if_ip;
 	int last_byte;
-	char new_ip[20], gateway_ip[20];
+	char new_ip[20] = "", gateway_ip[20] = "";
 	char *last_dot_in_ip;
 	char *eth_if_netmask;
-	char route_chg_command[200];
-	int route_chg_status;
 
 	/* Get existing IP Address of Ethernet Bridge Interface */
-	assert(eth_if_ip = get_ip(eth_if_name));
+	assert((eth_if_ip = get_ip(eth_if_name)));
 
 	/* Set new IP Address by replacing the last byte with last byte + 1 */
-	strncpy(new_ip, eth_if_ip, sizeof(new_ip));
-	assert(last_dot_in_ip = strrchr(new_ip, '.'));
+	strncpy(new_ip, eth_if_ip, sizeof(new_ip) - 1);
+	assert((last_dot_in_ip = strrchr(new_ip, '.')));
 	last_byte = atoi(last_dot_in_ip + 1);
 	assert(snprintf(last_dot_in_ip + 1, 4, "%d", (last_byte > 253) ? 2 : (last_byte + 1)) >= 0);
 
@@ -108,7 +106,7 @@ void execute_change_ip(void) {
 	/* Bring the network interface down before making changes */
 	stop_nw_intf(eth_if_name);
 	/* Save the netmask first, then restore it after setting the new IP Address */
-	assert(eth_if_netmask = get_netmask(eth_if_name));
+	assert((eth_if_netmask = get_netmask(eth_if_name)));
 	set_ip(eth_if_name, new_ip);
 	set_netmask(eth_if_name, eth_if_netmask);
 	/* Bring the network interface back up again to apply changes */
@@ -116,8 +114,8 @@ void execute_change_ip(void) {
 
 	/* Get Gateway's IP Address, by replacing the last byte with 1 in the current IP Address */
 	/* TO DO: Obtain the actual Gateway IP Address */
-	strncpy(gateway_ip, eth_if_ip, sizeof(gateway_ip));
-	assert(last_dot_in_ip = strrchr(gateway_ip, '.'));
+	strncpy(gateway_ip, eth_if_ip, sizeof(gateway_ip) - 1);
+	assert((last_dot_in_ip = strrchr(gateway_ip, '.')));
 	assert(snprintf(last_dot_in_ip + 1, 4, "%d", 1) >= 0);
 
 	/* Add the default route back again, which would have been deleted when the

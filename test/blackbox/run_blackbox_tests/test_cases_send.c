@@ -51,21 +51,6 @@ static black_box_state_t test_mesh_send_03_state = {
 	.test_case_name = "test_case_mesh_send_03",
 };
 
-/* State structure for meshlink_send Test Case #4 */
-static black_box_state_t test_mesh_send_04_state = {
-	.test_case_name = "test_case_mesh_send_04",
-};
-
-/* State structure for meshlink_send Test Case #5 */
-static black_box_state_t test_mesh_send_05_state = {
-	.test_case_name = "test_case_mesh_send_05",
-};
-
-/* State structure for meshlink_send Test Case #6 */
-static black_box_state_t test_mesh_send_06_state = {
-	.test_case_name = "test_case_mesh_send_06",
-};
-
 /* Execute meshlink_send Test Case # 1 */
 static void test_case_mesh_send_01(void **state) {
 	execute_test(test_steps_mesh_send_01, state);
@@ -73,7 +58,8 @@ static void test_case_mesh_send_01(void **state) {
 
 static bool receive_data = false;
 static void receive(meshlink_handle_t *mesh, meshlink_node_t *dest_node, const void *data, size_t len) {
-	const char *msg = data;
+	(void)mesh;
+	(void)dest_node;
 
 	assert(len);
 

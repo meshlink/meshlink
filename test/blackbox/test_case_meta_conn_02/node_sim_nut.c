@@ -34,8 +34,10 @@
 
 static bool conn_status = false;
 
-static void callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t level,
-                            const char *text) {
+static void callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	(void)mesh;
+	(void)level;
+
 	char connection_match_msg[100];
 
 	fprintf(stderr, "meshlink>> %s\n", text);
@@ -78,9 +80,9 @@ static void callback_logger(meshlink_handle_t *mesh, meshlink_log_level_t level,
 }
 
 int main(int argc, char *argv[]) {
+	(void)argc;
+
 	int client_id = -1;
-	bool result = false;
-	int i;
 
 	if((argv[3]) && (argv[4])) {
 		client_id = atoi(argv[3]);

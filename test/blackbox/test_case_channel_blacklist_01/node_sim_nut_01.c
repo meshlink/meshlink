@@ -47,8 +47,8 @@ static struct sync_flag peer_unreachable = {.mutex  = PTHREAD_MUTEX_INITIALIZER,
 static struct sync_flag channel_opened = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 static struct sync_flag channels_closed = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 
-static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
-                           bool reachable) {
+static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
 
 	fprintf(stderr, "Node %s %s\n", node->name, reachable ? "reachable" : "unreachable");
 
@@ -80,6 +80,8 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 }
 
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len) {
+	(void)mesh;
+
 	if(len == 0) {
 		fprintf(stderr, "Closed channel with %s\n", (char *)channel->priv);
 
@@ -103,6 +105,8 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 }
 
 static void log_message(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	(void)level;
+
 	(void)mesh;
 
 	fprintf(stderr, "\x1b[32m nut:\x1b[0m %s\n", text);

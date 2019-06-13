@@ -164,12 +164,12 @@ static bool test_invite_04(void) {
 	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	char *hostname1 = "127.1.1.1";
-	bool ret = meshlink_add_address(mesh_handle, hostname1);
+	meshlink_add_address(mesh_handle, hostname1);
 	char *invitation = meshlink_invite(mesh_handle, NULL, "foo");
 	assert_int_not_equal(strstr(invitation, hostname1), NULL);
 
 	char *hostname2 = "127.1.2.3";
-	ret = meshlink_add_address(mesh_handle, hostname2);
+	meshlink_add_address(mesh_handle, hostname2);
 	invitation = meshlink_invite(mesh_handle, NULL, "bar");
 
 	// Verify we have both the added addresses

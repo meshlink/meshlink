@@ -25,6 +25,8 @@
 #include "../common/mesh_event_handler.h"
 
 int main(int argc, char *argv[]) {
+	(void)argc;
+
 	struct timeval main_loop_wait = { 5, 0 };
 
 	int client_id = -1;

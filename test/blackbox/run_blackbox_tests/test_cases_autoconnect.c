@@ -72,8 +72,6 @@ static void receive(meshlink_handle_t *mesh, meshlink_node_t *src, const void *d
 	assert(len);
 }
 
-static bool bar_reachable;
-
 static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 	(void)mesh;
 	fprintf(stderr, "Status of node {%s} is %d\n", node->name, reachable);

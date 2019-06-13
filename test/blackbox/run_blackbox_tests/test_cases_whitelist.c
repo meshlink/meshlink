@@ -70,7 +70,10 @@ static void test_case_mesh_whitelist_01(void **state) {
 
 
 static void receive(meshlink_handle_t *mesh, meshlink_node_t *src, const void *data, size_t len) {
-	const char *msg = data;
+	(void)mesh;
+	(void)src;
+	(void)data;
+
 	assert(len);
 
 	pthread_mutex_lock(& lock_receive);
@@ -81,6 +84,8 @@ static void receive(meshlink_handle_t *mesh, meshlink_node_t *src, const void *d
 }
 
 static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reach) {
+	(void)mesh;
+
 	if(!strcmp(node->name, "bar")) {
 		pthread_mutex_lock(&reachable_lock);
 		reachable = reach;

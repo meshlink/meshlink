@@ -35,12 +35,6 @@
 #define CHANNEL_PORT 1234
 
 static int client_id = -1;
-static bool channel_rec;
-static bool channel_reply;
-static pthread_mutex_t reply_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t reply_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t recv_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t recv_cond = PTHREAD_COND_INITIALIZER;
 
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len);
 
@@ -77,8 +71,9 @@ static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chan
 }
 
 int main(int argc, char *argv[]) {
+	(void)argc;
+
 	struct timeval main_loop_wait = { 5, 0 };
-	struct timespec timeout = {0};
 
 	// Import mesh event handler
 

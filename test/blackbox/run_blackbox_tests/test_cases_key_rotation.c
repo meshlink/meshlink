@@ -334,6 +334,8 @@ static void test_case_key_rotation_05(void **state) {
 static int break_stage;
 
 static void nop_stage(int stage) {
+	(void)stage;
+
 	return;
 }
 

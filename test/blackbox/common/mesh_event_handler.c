@@ -83,6 +83,7 @@ static bool wait_cond_flag(struct cond_flag *s, int seconds) {
 
 // event_receive_handler running in a separate thread queues all the events received from the UDP port
 static void *event_receive_handler(void *arg) {
+	(void)arg;
 	size_t recv_ret;
 	char udp_buff[UDP_BUFF_MAX];
 	struct sockaddr client;
@@ -120,7 +121,7 @@ static void *event_handler(void *argv) {
 	bool callback_return = false;
 	void *data;
 	mesh_event_payload_t mesh_event_rec_packet;
-	mesh_event_callback_t callback = (mesh_event_callback_t)argv;
+	mesh_event_callback_t callback = *(mesh_event_callback_t *)argv;
 
 	while(event_handle_thread_running) {
 
@@ -173,7 +174,7 @@ char *mesh_event_sock_create(const char *if_name) {
 	server.sin_port   = htons(atoi(SERVER_LISTEN_PORT));
 	assert(bind(server_fd, (struct sockaddr *) &server, sizeof(struct sockaddr)) != -1);
 
-	assert(ip = malloc(30));
+	assert((ip = malloc(30)));
 	strncpy(ip, inet_ntoa(resp_if_addr->sin_addr), 20);
 	strcat(ip, ":");
 	strcat(ip, SERVER_LISTEN_PORT);
@@ -255,7 +256,7 @@ bool wait_for_event(mesh_event_callback_t callback, int seconds) {
 	}
 
 	set_cond_flag(&sync_event, false);
-	assert(!pthread_create(&event_handle_thread, NULL, event_handler, (void *)callback));
+	assert(!pthread_create(&event_handle_thread, NULL, event_handler, (void *)&callback));
 	bool wait_ret = wait_cond_flag(&sync_event, seconds);
 	event_handle_thread_running = false;
 	pthread_cancel(event_handle_thread);

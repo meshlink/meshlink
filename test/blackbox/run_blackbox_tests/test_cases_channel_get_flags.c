@@ -43,16 +43,14 @@ static bool test_steps_channel_get_flags_03(void);
 static black_box_state_t test_case_channel_get_flags_01_state = {
 	.test_case_name = "test_case_channel_get_flags_01",
 };
+
 static black_box_state_t test_case_channel_get_flags_02_state = {
 	.test_case_name = "test_case_channel_get_flags_02",
 };
+
 static black_box_state_t test_case_channel_get_flags_03_state = {
 	.test_case_name = "test_case_channel_get_flags_03",
 };
-static black_box_state_t test_case_channel_get_flags_04_state = {
-	.test_case_name = "test_case_channel_get_flags_04",
-};
-
 
 /* Execute meshlink_channel_get_flags Test Case # 1 - Valid case*/
 static void test_case_channel_get_flags_01(void **state) {

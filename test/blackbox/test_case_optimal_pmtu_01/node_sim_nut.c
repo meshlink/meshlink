@@ -43,7 +43,6 @@ static struct sync_flag channel_opened = {.mutex  = PTHREAD_MUTEX_INITIALIZER, .
 static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
                            bool reachable);
 static void channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *dat, size_t len);
-static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len);
 
 pmtu_attr_t node_pmtu[2];
 static time_t node_shutdown_time = 0;
@@ -68,8 +67,9 @@ static void print_mtu_calc(pmtu_attr_t node_pmtu) {
 }
 
 // Node status callback
-static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node,
-                           bool reachable) {
+static void node_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
+
 	// Signal pthread_cond_wait if peer is reachable
 	if(!strcasecmp(node->name, "peer") && reachable) {
 		set_sync_flag(&peer_reachable, true);
@@ -86,23 +86,6 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 	// Send data via channel to trigger UDP peer to peer hole punching
 	assert(meshlink_channel_send(mesh, channel, "test", 5) >= 0);
 	return;
-}
-
-static bool channel_accept(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *dat, size_t len) {
-	(void)dat;
-	(void)len;
-
-	assert(port == CHANNEL_PORT);
-
-	// If the channel is from peer node set receive callback for it else reject the channel
-	if(!strcmp(channel->node->name, "peer")) {
-		meshlink_set_channel_receive_cb(mesh, channel, channel_receive_cb);
-		mesh->priv = channel;
-
-		return true;
-	}
-
-	return false;
 }
 
 /* channel receive callback */
@@ -139,8 +122,6 @@ static void meshlink_logger(meshlink_handle_t *mesh, meshlink_log_level_t level,
 
 	cur_time = time(NULL);
 	assert(cur_time != -1);
-
-	bool mtu_probe = false;
 
 	if(node_shutdown_time && cur_time >= node_shutdown_time) {
 		test_pmtu_nut_running = false;
@@ -313,4 +294,6 @@ void *node_sim_pmtu_nut_01(void *arg) {
 	print_mtu_calc(node_pmtu[NODE_PMTU_PEER]);
 	fprintf(stderr, "\nNODE_PMTU_RELAY :\n");
 	print_mtu_calc(node_pmtu[NODE_PMTU_RELAY]);
+
+	return NULL;
 }

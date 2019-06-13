@@ -70,8 +70,9 @@ static int netns_delete_namespace(namespace_t *namespace_handle) {
 
 /* Create new network namespace using namespace handle */
 static void netns_create_namespace(netns_state_t *test_state, namespace_t *namespace_handle) {
+	(void)test_state;
+
 	char cmd[200];
-	int cmd_ret;
 
 	// Add the network namespace
 
@@ -83,8 +84,9 @@ static void netns_create_namespace(netns_state_t *test_state, namespace_t *names
 }
 
 static void netns_create_bridge(netns_state_t *test_state, namespace_t *namespace_handle) {
+	(void)test_state;
+
 	char cmd[200];
-	int cmd_ret;
 
 	sprintf(cmd, "ip link add name %s type bridge", namespace_handle->name);
 	assert(system(cmd) == 0);
@@ -94,6 +96,8 @@ static void netns_create_bridge(netns_state_t *test_state, namespace_t *namespac
 }
 
 interface_t *get_peer_interface_handle(netns_state_t *test_state, namespace_t *namespace, namespace_t *peer_namespace) {
+	(void)test_state;
+
 	int i;
 	interface_t *interfaces = namespace->interfaces;
 	int if_no = namespace->interfaces_no;
@@ -126,8 +130,8 @@ bool check_interfaces_visited(netns_state_t *test_state, namespace_t *ns1, names
 }
 
 void netns_connect_namespaces(netns_state_t *test_state, namespace_t *ns1, namespace_t *ns2) {
-	char buff[20], cmd[200], ns_eth0[20], ns_peer0[20];
-	int cmd_ret, if_no, i;
+	char buff[20], cmd[200];
+	int i;
 	char eth_pairs[2][20];
 	namespace_t *ns[2] = { ns1, ns2 };
 	interface_t *interface;
@@ -144,7 +148,7 @@ void netns_connect_namespaces(netns_state_t *test_state, namespace_t *ns1, names
 	// Delete veth pair if already exists
 	for(i = 0; i < 2; i++) {
 		assert(sprintf(cmd, "ip link del %s 2>/dev/null", eth_pairs[i]) >= 0);
-		cmd_ret = system(cmd);
+		system(cmd);
 	}
 
 	// Create veth pair
@@ -193,7 +197,7 @@ void netns_connect_namespaces(netns_state_t *test_state, namespace_t *ns1, names
 }
 
 void netns_configure_ip_address(netns_state_t *test_state) {
-	int i, if_no, cmd_ret;
+	int i, if_no;
 	namespace_t *namespace;
 	interface_t *if_handle;
 	char cmd[200];
@@ -262,9 +266,8 @@ void netns_enable_all_nats(netns_state_t *test_state) {
 }
 
 void netns_create_all_namespaces(netns_state_t *test_state) {
-	int i, j;
-	namespace_t *namespace, *peer_namespace;
-	interface_t *interfaces;
+	int i;
+	namespace_t *namespace;
 
 	for(i = 0; i < test_state->num_namespaces; i++) {
 		namespace = get_namespace_handle_by_index(test_state, i);
@@ -330,7 +333,7 @@ void increment_ipv4_cidr_str(char *ip) {
 	char *ptr = strchr(ip, '/');
 	*ptr = '\0';
 	increment_ipv4_str(ip, INET6_ADDRSTRLEN);
-	sprintf(ip, "%s/%d", ip, subnet);
+	sprintf(ip + strlen(ip), "/%d", subnet);
 }
 
 interface_t *netns_get_priv_addr(netns_state_t *test_state, const char *namespace_name) {
@@ -384,9 +387,7 @@ void netns_add_default_route_addr(netns_state_t *test_state) {
 void netns_assign_ip_addresses(netns_state_t *test_state) {
 	int ns, j;
 	namespace_t *namespace_handle;
-	interface_t *interface_handle, *peer_interface_handle;
-	int sub_net;
-
+	interface_t *interface_handle;
 
 	char *addr = malloc(INET6_ADDRSTRLEN);
 	assert(addr);

@@ -39,8 +39,6 @@ static void test_case_meshlink_join_02(void **state);
 static bool test_meshlink_join_02(void);
 static void test_case_meshlink_join_03(void **state);
 static bool test_meshlink_join_03(void);
-static void test_case_meshlink_join_04(void **state);
-static bool test_meshlink_join_04(void);
 
 /* State structure for join Test Case #1 */
 static black_box_state_t test_case_join_01_state = {
