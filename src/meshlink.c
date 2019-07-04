@@ -2310,7 +2310,15 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 
 	//Before doing meshlink_join make sure we are not connected to another mesh
 	if(mesh->threadstarted) {
-		logger(mesh, MESHLINK_DEBUG, "Already connected to a mesh\n");
+		logger(mesh, MESHLINK_ERROR, "Cannot join while started\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+		return false;
+	}
+
+	// Refuse to join a mesh if we are already part of one. We are part of one if we know at least one other node.
+	if(mesh->nodes->count > 1) {
+		logger(mesh, MESHLINK_ERROR, "Already part of an existing mesh\n");
 		meshlink_errno = MESHLINK_EINVAL;
 		pthread_mutex_unlock(&(mesh->mesh_mutex));
 		return false;

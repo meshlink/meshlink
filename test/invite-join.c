@@ -106,8 +106,6 @@ int main() {
 		return 1;
 	}
 
-	free(baz_url);
-
 	if(!meshlink_start(mesh2)) {
 		fprintf(stderr, "Baz could not start\n");
 		return 1;
@@ -140,6 +138,15 @@ int main() {
 		return 1;
 	}
 
+	// Check that an invitation cannot be used twice
+
+	if(meshlink_join(mesh3, baz_url)) {
+		fprintf(stderr, "Quux could join foo's mesh using an already used invitation\n");
+		return 1;
+	}
+
+	free(baz_url);
+
 	// Check that nodes cannot join with expired invitations
 
 	meshlink_set_invitation_timeout(mesh1, 0);
@@ -150,6 +157,31 @@ int main() {
 	}
 
 	free(quux_url);
+
+	// Check that existing nodes cannot join another mesh
+
+	char *corge_url = meshlink_invite(mesh3, NULL, "corge");
+
+	if(!corge_url) {
+		fprintf(stderr, "Quux could not generate an invitation for corge\n");
+		return 1;
+	}
+
+	fprintf(stderr, "Invitation URL for corge: %s\n", corge_url);
+
+	if(!meshlink_start(mesh3)) {
+		fprintf(stderr, "Quux could not start\n");
+		return 1;
+	}
+
+	meshlink_stop(mesh2);
+
+	if(meshlink_join(mesh2, corge_url)) {
+		fprintf(stderr, "Bar could join twice\n");
+		return 1;
+	}
+
+	free(corge_url);
 
 	// Clean up.
 
