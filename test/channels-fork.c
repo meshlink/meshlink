@@ -79,7 +79,7 @@ int main1(int rfd, int wfd) {
 	(void)ret_val;
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
-	meshlink_handle_t *mesh1 = meshlink_open("channels_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
+	meshlink_handle_t *mesh1 = meshlink_open("channels_fork_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
 
 	if(!mesh1) {
 		fprintf(stderr, "Could not initialize configuration for foo\n");
@@ -174,7 +174,7 @@ int main2(int rfd, int wfd) {
 
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
-	meshlink_handle_t *mesh2 = meshlink_open("channels_conf.2", "bar", "channels", DEV_CLASS_BACKBONE);
+	meshlink_handle_t *mesh2 = meshlink_open("channels_fork_conf.2", "bar", "channels", DEV_CLASS_BACKBONE);
 
 	if(!mesh2) {
 		fprintf(stderr, "Could not initialize configuration for bar\n");

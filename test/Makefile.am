@@ -2,6 +2,7 @@ TESTS = \
 	basic.test \
 	basicpp.test \
 	channels.test \
+	channels-failure.test \
 	channels-fork.test \
 	channels-cornercases.test \
 	duplicate.test \
@@ -26,6 +27,7 @@ check_PROGRAMS = \
 	basic \
 	basicpp \
 	channels \
+	channels-failure \
 	channels-fork \
 	channels-cornercases \
 	duplicate \
@@ -50,6 +52,9 @@ basicpp_LDADD = ../src/libmeshlink.la
 
 channels_SOURCES = channels.c
 channels_LDADD = ../src/libmeshlink.la
+
+channels_failure_SOURCES = channels-failure.c utils.c utils.h
+channels_failure_LDADD = ../src/libmeshlink.la
 
 channels_fork_SOURCES = channels-fork.c
 channels_fork_LDADD = ../src/libmeshlink.la
