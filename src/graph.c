@@ -237,10 +237,13 @@ static void check_reachability(meshlink_handle_t *mesh) {
 				update_node_udp(mesh, n, NULL);
 				n->status.broadcast = false;
 				n->options = 0;
+				utcp_offline(n->utcp, true);
 			} else if(n->connection) {
 				if(n->connection->outgoing) {
 					send_req_key(mesh, n);
 				}
+
+				utcp_offline(n->utcp, false);
 			}
 		}
 	}

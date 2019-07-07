@@ -117,13 +117,9 @@ int main() {
 
 	sleep(1);
 
-	// Stop mesh2, then try to send data to it. We should get a notification that the channel has closed after a while.
-
-	assert(!check_sync_flag(&receive_flag));
+	// Stop mesh2. We should get a notification that the channel has closed after a while.
 
 	meshlink_stop(mesh2);
-
-	assert(meshlink_channel_send(mesh1, channel, "hello", 5) == 5);
 
 	assert(wait_sync_flag(&receive_flag, 70));
 	assert(receive_len == 0);
