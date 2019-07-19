@@ -1,3 +1,5 @@
+#include "system.h"
+
 #include <catta/core.h>
 #include <catta/lookup.h>
 #include <catta/publish.h>
@@ -13,10 +15,6 @@
 #include "logger.h"
 #include "node.h"
 #include "connection.h"
-
-#include <pthread.h>
-
-#include <netinet/in.h>
 
 #define MESHLINK_MDNS_SERVICE_TYPE "_%s._tcp"
 #define MESHLINK_MDNS_NAME_KEY "name"
@@ -70,7 +68,9 @@ static void discovery_entry_group_callback(CattaServer *server, CattaSEntryGroup
 
 
 static void discovery_create_services(meshlink_handle_t *mesh) {
+	char *fingerprint = NULL;
 	char *txt_name = NULL;
+	char *txt_fingerprint = NULL;
 
 	// asserts
 	assert(mesh != NULL);
@@ -94,23 +94,14 @@ static void discovery_create_services(meshlink_handle_t *mesh) {
 	}
 
 	/* Create txt records */
-	size_t txt_name_len = sizeof(MESHLINK_MDNS_NAME_KEY) + 1 + strlen(mesh->name) + 1;
-	txt_name = malloc(txt_name_len);
-
-	if(txt_name == NULL) {
-		logger(mesh, MESHLINK_ERROR, "Could not allocate memory for TXT record\n");
-		goto fail;
-	}
-
-	snprintf(txt_name, txt_name_len, "%s=%s", MESHLINK_MDNS_NAME_KEY, mesh->name);
-
-	char txt_fingerprint[sizeof(MESHLINK_MDNS_FINGERPRINT_KEY) + 1 + MESHLINK_FINGERPRINTLEN + 1];
-	snprintf(txt_fingerprint, sizeof(txt_fingerprint), "%s=%s", MESHLINK_MDNS_FINGERPRINT_KEY, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self));
+	fingerprint = meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self);
+	xasprintf(&txt_name, "%s=%s", MESHLINK_MDNS_NAME_KEY, mesh->name);
+	xasprintf(&txt_fingerprint, "%s=%s", MESHLINK_MDNS_FINGERPRINT_KEY, fingerprint);
 
 	/* Add the service */
 	int ret = 0;
 
-	if((ret = catta_server_add_service(mesh->catta_server, mesh->catta_group, CATTA_IF_UNSPEC, CATTA_PROTO_UNSPEC, 0, meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self), mesh->catta_servicetype, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0) {
+	if((ret = catta_server_add_service(mesh->catta_server, mesh->catta_group, CATTA_IF_UNSPEC, CATTA_PROTO_UNSPEC, 0, fingerprint, mesh->catta_servicetype, NULL, NULL, atoi(mesh->myport), txt_name, txt_fingerprint, NULL)) < 0) {
 		logger(mesh, MESHLINK_ERROR, "Failed to add service: %s\n", catta_strerror(ret));
 		goto fail;
 	}
@@ -127,10 +118,9 @@ fail:
 	catta_simple_poll_quit(mesh->catta_poll);
 
 done:
-
-	if(txt_name) {
-		free(txt_name);
-	}
+	free(fingerprint);
+	free(txt_name);
+	free(txt_fingerprint);
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
