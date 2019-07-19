@@ -15,6 +15,7 @@
 #include "logger.h"
 #include "node.h"
 #include "connection.h"
+#include "xalloc.h"
 
 #define MESHLINK_MDNS_SERVICE_TYPE "_%s._tcp"
 #define MESHLINK_MDNS_NAME_KEY "name"
@@ -60,7 +61,7 @@ static void discovery_entry_group_callback(CattaServer *server, CattaSEntryGroup
 
 	case CATTA_ENTRY_GROUP_UNCOMMITED:
 	case CATTA_ENTRY_GROUP_REGISTERING:
-		;
+		break;
 	}
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
@@ -310,9 +311,17 @@ static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfInde
 
 	case CATTA_BROWSER_NEW:
 		catta_s_service_resolver_new(mesh->catta_server, interface_, protocol, name, type, domain, CATTA_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh);
+		pthread_mutex_lock(&mesh->mesh_mutex);
+		handle_network_change(mesh, ++mesh->catta_interfaces);
+		pthread_mutex_unlock(&mesh->mesh_mutex);
 		break;
 
 	case CATTA_BROWSER_REMOVE:
+		pthread_mutex_lock(&mesh->mesh_mutex);
+		handle_network_change(mesh, --mesh->catta_interfaces);
+		pthread_mutex_unlock(&mesh->mesh_mutex);
+		break;
+
 	case CATTA_BROWSER_ALL_FOR_NOW:
 	case CATTA_BROWSER_CACHE_EXHAUSTED:
 		break;
@@ -500,4 +509,6 @@ void discovery_stop(meshlink_handle_t *mesh) {
 		free(mesh->catta_servicetype);
 		mesh->catta_servicetype = NULL;
 	}
+
+	mesh->catta_interfaces = 0;
 }

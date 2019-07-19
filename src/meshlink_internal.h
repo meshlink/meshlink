@@ -166,6 +166,7 @@ struct meshlink_handle {
 	struct CattaSimplePoll *catta_poll;
 	struct CattaSEntryGroup *catta_group;
 	char *catta_servicetype;
+	unsigned int catta_interfaces;
 
 	int netns;
 	void *config_key;
@@ -205,6 +206,7 @@ extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
 extern int check_port(meshlink_handle_t *mesh);
 extern void handle_duplicate_node(meshlink_handle_t *mesh, struct node_t *n);
+extern void handle_network_change(meshlink_handle_t *mesh, bool online);
 
 /// Device class traits
 typedef struct {
