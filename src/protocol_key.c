@@ -96,7 +96,6 @@ bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 	to->status.validkey = false;
 	to->status.waitingforkey = true;
 	to->last_req_key = mesh->loop.now.tv_sec;
-	to->incompression = mesh->self->incompression;
 	return sptps_start(&to->sptps, to, true, true, mesh->private_key, to->ecdsa, label, sizeof(label) - 1, send_initial_sptps_data, receive_sptps_record);
 }
 
@@ -335,8 +334,6 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		return true;
 	}
 
-	from->outcompression = compression;
-
 	/* SPTPS or old-style key exchange? */
 
 	char buf[strlen(key)];
@@ -353,9 +350,7 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			update_node_udp(mesh, from, &sa);
 		}
 
-		if(from->options & OPTION_PMTU_DISCOVERY && !(from->options & OPTION_TCPONLY)) {
-			send_mtu_probe(mesh, from);
-		}
+		send_mtu_probe(mesh, from);
 	}
 
 	return true;

@@ -213,39 +213,19 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 #endif
 
 #if defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DO)
-
-	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
-		option = IP_PMTUDISC_DO;
-		setsockopt(nfd, IPPROTO_IP, IP_MTU_DISCOVER, (void *)&option, sizeof(option));
-	}
-
+	option = IP_PMTUDISC_DO;
+	setsockopt(nfd, IPPROTO_IP, IP_MTU_DISCOVER, (void *)&option, sizeof(option));
 #elif defined(IP_DONTFRAGMENT)
-
-	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
-		option = 1;
-		setsockopt(nfd, IPPROTO_IP, IP_DONTFRAGMENT, (void *)&option, sizeof(option));
-	}
-
-#else
-#warning No way to disable IPv4 fragmentation
+	option = 1;
+	setsockopt(nfd, IPPROTO_IP, IP_DONTFRAGMENT, (void *)&option, sizeof(option));
 #endif
 
 #if defined(IPV6_MTU_DISCOVER) && defined(IPV6_PMTUDISC_DO)
-
-	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
-		option = IPV6_PMTUDISC_DO;
-		setsockopt(nfd, IPPROTO_IPV6, IPV6_MTU_DISCOVER, (void *)&option, sizeof(option));
-	}
-
+	option = IPV6_PMTUDISC_DO;
+	setsockopt(nfd, IPPROTO_IPV6, IPV6_MTU_DISCOVER, (void *)&option, sizeof(option));
 #elif defined(IPV6_DONTFRAG)
-
-	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
-		option = 1;
-		setsockopt(nfd, IPPROTO_IPV6, IPV6_DONTFRAG, (void *)&option, sizeof(option));
-	}
-
-#else
-#warning No way to disable IPv6 fragmentation
+	option = 1;
+	setsockopt(nfd, IPPROTO_IPV6, IPV6_DONTFRAG, (void *)&option, sizeof(option));
 #endif
 
 	if(bind(nfd, &sa->sa, SALEN(sa->sa))) {

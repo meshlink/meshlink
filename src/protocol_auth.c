@@ -371,14 +371,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
-
-	/* Check some options */
-
-	if(mesh->self->options & OPTION_PMTU_DISCOVERY) {
-		c->options |= OPTION_PMTU_DISCOVERY;
-	}
-
-	return send_request(mesh, c, NULL, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, (c->options & 0xffffff) | (PROT_MINOR << 24));
+	return send_request(mesh, c, NULL, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, OPTION_PMTU_DISCOVERY | (PROT_MINOR << 24));
 }
 
 static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
@@ -444,13 +437,6 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	n->connection = c;
 	c->node = n;
 
-	if(!(c->options & options & OPTION_PMTU_DISCOVERY)) {
-		c->options &= ~OPTION_PMTU_DISCOVERY;
-		options &= ~OPTION_PMTU_DISCOVERY;
-	}
-
-	c->options |= options;
-
 	/* Activate this connection */
 
 	c->allow_request = ALL;
@@ -472,7 +458,6 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	sockaddrcpy_setport(&c->edge->address, &c->address, atoi(hisport));
 	c->edge->weight = dev_class_traits[devclass].edge_weight;
 	c->edge->connection = c;
-	c->edge->options = c->options;
 
 	edge_add(mesh, c->edge);
 

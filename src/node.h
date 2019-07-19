@@ -31,7 +31,6 @@ typedef struct node_status_t {
 	uint16_t waitingforkey: 1;          /* 1 if we already sent out a request */
 	uint16_t visited: 1;                /* 1 if this node has been visited by one of the graph algorithms */
 	uint16_t reachable: 1;              /* 1 if this node is reachable in the graph */
-	uint16_t indirect: 1;               /* 1 if this node is not directly reachable by us */
 	uint16_t udp_confirmed: 1;          /* 1 if the address is one that we received UDP traffic on */
 	uint16_t broadcast: 1;              /* 1 if the next UDP packet should be broadcast to the local network */
 	uint16_t blacklisted: 1;            /* 1 if the node is blacklist so we never want to speak with him anymore */
@@ -89,14 +88,8 @@ typedef struct node_t {
 	int distance;
 	struct node_t *nexthop;                 /* nearest node from us to him */
 	struct edge_t *prevedge;                /* nearest node from him to us */
-	struct node_t *via;                     /* next hop for UDP packets */
 
 	struct splay_tree_t *edge_tree;         /* Edges with this node as one of the endpoints */
-
-	// Unused
-	uint32_t options;                       /* options turned on for this node */
-	int incompression;                      /* Compressionlevel, 0 = no compression */
-	int outcompression;                     /* Compressionlevel, 0 = no compression */
 } node_t;
 
 extern void init_nodes(struct meshlink_handle *mesh);

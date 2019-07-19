@@ -175,14 +175,12 @@ struct meshlink_handle {
 	char line[4096];
 	char buffer[4096];
 
-	// Unused variables
+	// Proxy configuration, currently not exposed.
 	char *proxyhost;
 	char *proxyport;
 	char *proxyuser;
 	char *proxypass;
 	proxytype_t proxytype;
-	sockaddr_t localdiscovery_address;
-	bool localdiscovery;
 };
 
 /// A handle for a MeshLink node.

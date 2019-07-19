@@ -395,15 +395,12 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 bool setup_myself(meshlink_handle_t *mesh) {
 	/* Set some defaults */
 
-	mesh->localdiscovery = true;
 	keylifetime = 3600; // TODO: check if this can be removed as well
 	mesh->maxtimeout = 900;
-	mesh->self->options |= OPTION_PMTU_DISCOVERY;
 
 	/* Done */
 
 	mesh->self->nexthop = mesh->self;
-	mesh->self->via = mesh->self;
 	mesh->self->status.reachable = true;
 	mesh->self->last_state_change = mesh->loop.now.tv_sec;
 

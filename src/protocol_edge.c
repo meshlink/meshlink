@@ -76,7 +76,7 @@ bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e, in
 
 	x = send_request(mesh, c, s, "%d %x %s %d %s %s %s %s %d %s %x %d %d", ADD_EDGE, rand(),
 	                 e->from->name, e->from->devclass, from_submesh, e->to->name, address, port,
-	                 e->to->devclass, to_submesh, e->options, e->weight, contradictions);
+	                 e->to->devclass, to_submesh, OPTION_PMTU_DISCOVERY, e->weight, contradictions);
 	free(address);
 	free(port);
 
@@ -95,14 +95,13 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	int to_devclass;
 	char to_submesh_name[MAX_STRING_SIZE] = "";
 	sockaddr_t address;
-	uint32_t options;
 	int weight;
 	int contradictions = 0;
 	submesh_t *s = NULL;
 
-	if(sscanf(request, "%*d %*x "MAX_STRING" %d "MAX_STRING" "MAX_STRING" "MAX_STRING" "MAX_STRING" %d "MAX_STRING" %x %d %d",
+	if(sscanf(request, "%*d %*x "MAX_STRING" %d "MAX_STRING" "MAX_STRING" "MAX_STRING" "MAX_STRING" %d "MAX_STRING" %*x %d %d",
 	                from_name, &from_devclass, from_submesh_name, to_name, to_address, to_port, &to_devclass, to_submesh_name,
-	                &options, &weight, &contradictions) < 10) {
+	                &weight, &contradictions) < 9) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ADD_EDGE", c->name);
 		return false;
 	}
@@ -190,7 +189,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	e = lookup_edge(from, to);
 
 	if(e) {
-		if(e->weight != weight || e->options != options || sockaddrcmp(&e->address, &address)) {
+		if(e->weight != weight || sockaddrcmp(&e->address, &address)) {
 			if(from == mesh->self) {
 				logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself which does not match existing entry",
 				       "ADD_EDGE", c->name);
@@ -221,7 +220,6 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	e->from = from;
 	e->to = to;
 	e->address = address;
-	e->options = options;
 	e->weight = weight;
 	edge_add(mesh, e);
 

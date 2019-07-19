@@ -105,7 +105,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 		timeout = mesh->pingtimeout;
 	}
 
-	for(int i = 0; i < 4 + mesh->localdiscovery; i++) {
+	for(int i = 0; i < 5; i++) {
 		int len;
 
 		if(i == 0) {
@@ -261,11 +261,6 @@ static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 		return;
 	}
 
-	if(n->outcompression) {
-		logger(mesh, MESHLINK_ERROR, "Error while compressing packet to %s", n->name);
-		return;
-	}
-
 	sptps_send_record(&n->sptps, type, origpkt->data, origpkt->len);
 	return;
 }
@@ -341,22 +336,12 @@ static void choose_broadcast_address(meshlink_handle_t *mesh, const node_t *n, c
 	*sock = rand() % mesh->listen_sockets;
 
 	if(mesh->listen_socket[*sock].sa.sa.sa_family == AF_INET6) {
-		if(mesh->localdiscovery_address.sa.sa_family == AF_INET6) {
-			mesh->localdiscovery_address.in6.sin6_port = n->prevedge->address.in.sin_port;
-			*sa = &mesh->localdiscovery_address;
-		} else {
-			broadcast_ipv6.in6.sin6_port = n->prevedge->address.in.sin_port;
-			broadcast_ipv6.in6.sin6_scope_id = mesh->listen_socket[*sock].sa.in6.sin6_scope_id;
-			*sa = &broadcast_ipv6;
-		}
+		broadcast_ipv6.in6.sin6_port = n->prevedge->address.in.sin_port;
+		broadcast_ipv6.in6.sin6_scope_id = mesh->listen_socket[*sock].sa.in6.sin6_scope_id;
+		*sa = &broadcast_ipv6;
 	} else {
-		if(mesh->localdiscovery_address.sa.sa_family == AF_INET) {
-			mesh->localdiscovery_address.in.sin_port = n->prevedge->address.in.sin_port;
-			*sa = &mesh->localdiscovery_address;
-		} else {
-			broadcast_ipv4.in.sin_port = n->prevedge->address.in.sin_port;
-			*sa = &broadcast_ipv4;
-		}
+		broadcast_ipv4.in.sin_port = n->prevedge->address.in.sin_port;
+		*sa = &broadcast_ipv4;
 	}
 }
 
@@ -375,15 +360,14 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 
 	/* Send it via TCP if it is a handshake packet, TCPOnly is in use, or this packet is larger than the MTU. */
 
-	if(type >= SPTPS_HANDSHAKE || ((mesh->self->options | to->options) & OPTION_TCPONLY) || (type != PKT_PROBE && len > to->minmtu)) {
+	if(type >= SPTPS_HANDSHAKE || (type != PKT_PROBE && len > to->minmtu)) {
 		char buf[len * 4 / 3 + 5];
 		b64encode(data, buf, len);
 
 		/* If no valid key is known yet, send the packets using ANS_KEY requests,
 		   to ensure we get to learn the reflexive UDP address. */
 		if(!to->status.validkey) {
-			to->incompression = mesh->self->incompression;
-			return send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, to->incompression);
+			return send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %s -1 -1 -1 %d", ANS_KEY, mesh->self->name, to->name, buf, 0);
 		} else {
 			return send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_SPTPS, buf);
 		}

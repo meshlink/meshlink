@@ -34,9 +34,6 @@ typedef struct edge_t {
 	struct edge_t *reverse;                 /* edge in the opposite direction, if available */
 
 	int weight;                             /* weight of this edge */
-
-	// Deprecated
-	uint32_t options;                       /* options turned on for this edge */
 } edge_t;
 
 extern void init_edges(struct meshlink_handle *mesh);

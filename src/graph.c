@@ -36,9 +36,9 @@
    For the SSSP algorithm Dijkstra's seems to be a nice choice. Currently a
    simple breadth-first search is presented here.
 
-   The SSSP algorithm will also be used to determine whether nodes are directly,
-   indirectly or not reachable from the source. It will also set the correct
-   destination address and port of a node if possible.
+   The SSSP algorithm will also be used to determine whether nodes are
+   reachable from the source. It will also set the correct destination address
+   and port of a node if possible.
 */
 
 #include "system.h"
@@ -126,17 +126,14 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 
 	for splay_each(node_t, n, mesh->nodes) {
 		n->status.visited = false;
-		n->status.indirect = true;
 		n->distance = -1;
 	}
 
 	/* Begin with mesh->self */
 
 	mesh->self->status.visited = true;
-	mesh->self->status.indirect = false;
 	mesh->self->nexthop = mesh->self;
 	mesh->self->prevedge = NULL;
-	mesh->self->via = mesh->self;
 	mesh->self->distance = 0;
 	list_insert_head(todo_list, mesh->self);
 
@@ -171,20 +168,14 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 			     of nodes behind it.
 			 */
 
-			bool indirect = n->status.indirect || e->options & OPTION_INDIRECT;
-
 			if(e->to->status.visited
-			                && (!e->to->status.indirect || indirect)
 			                && (e->to->distance != n->distance + 1 || e->weight >= e->to->prevedge->weight)) {
 				continue;
 			}
 
 			e->to->status.visited = true;
-			e->to->status.indirect = indirect;
 			e->to->nexthop = (n->nexthop == mesh->self) ? e->to : n->nexthop;
 			e->to->prevedge = e;
-			e->to->via = indirect ? n->via : e->to;
-			e->to->options = e->options;
 			e->to->distance = n->distance + 1;
 
 			if(!e->to->status.reachable || (e->to->address.sa.sa_family == AF_UNSPEC && e->address.sa.sa_family != AF_UNKNOWN)) {
@@ -236,7 +227,6 @@ static void check_reachability(meshlink_handle_t *mesh) {
 			if(!n->status.reachable) {
 				update_node_udp(mesh, n, NULL);
 				n->status.broadcast = false;
-				n->options = 0;
 			} else if(n->connection) {
 				if(n->connection->outgoing) {
 					send_req_key(mesh, n);

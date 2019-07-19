@@ -41,7 +41,6 @@ struct devtool_edge {
 	//   changed by meshlink.
 	struct sockaddr_storage address;///< The address information associated
 	//   with this edge.
-	uint32_t options;               ///< Edge options. @TODO what are edge options?
 	int weight;                     ///< Weight assigned to this edge.
 };
 
@@ -87,7 +86,6 @@ typedef struct devtool_node_status devtool_node_status_t;
 
 /// The status of a node.
 struct devtool_node_status {
-	uint32_t options;
 	uint32_t status;
 	struct sockaddr_storage address;
 	uint16_t mtu;

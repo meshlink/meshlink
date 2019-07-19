@@ -86,7 +86,6 @@ devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *e
 			p->from = (meshlink_node_t *)e->from;
 			p->to = (meshlink_node_t *)e->to;
 			p->address = e->address.storage;
-			p->options = e->options;
 			p->weight = e->weight;
 
 			n++;
@@ -161,10 +160,6 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) 
 			goto fail;
 		}
 
-		if(!fstrwrite("\t\t\t\"options\": ", stream) || !fstrwrite(__itoa(((node_t *)nodes[i])->options), stream) || !fstrwrite(",\n", stream)) {
-			goto fail;
-		}
-
 		if(!fstrwrite("\t\t\t\"devclass\": ", stream) || !fstrwrite(__itoa(((node_t *)nodes[i])->devclass), stream) || !fstrwrite("\n", stream)) {
 			goto fail;
 		}
@@ -214,10 +209,6 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) 
 
 		free(address);
 
-		if(!fstrwrite("\t\t\t\"options\": ", stream) || !fstrwrite(__itoa(edges[i].options), stream) || !fstrwrite(",\n", stream)) {
-			goto fail;
-		}
-
 		if(!fstrwrite("\t\t\t\"weight\": ", stream) || !fstrwrite(__itoa(edges[i].weight), stream) || !fstrwrite("\n", stream)) {
 			goto fail;
 		}
@@ -261,7 +252,6 @@ void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, dev
 
 	pthread_mutex_lock(&mesh->mesh_mutex);
 
-	status->options = internal->options;
 	memcpy(&status->status, &internal->status, sizeof status->status);
 	memcpy(&status->address, &internal->address, sizeof status->address);
 	status->mtu = internal->mtu;
