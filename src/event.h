@@ -35,46 +35,46 @@ typedef void (*signal_cb_t)(event_loop_t *loop, void *data);
 typedef struct timeval(*idle_cb_t)(event_loop_t *loop, void *data);
 
 typedef struct io_t {
+	struct splay_node_t node;
 	int fd;
 	int flags;
 	io_cb_t cb;
 	void *data;
-	struct splay_node_t node;
 } io_t;
 
 typedef struct timeout_t {
+	struct splay_node_t node;
 	struct timeval tv;
 	timeout_cb_t cb;
 	void *data;
-	struct splay_node_t node;
 } timeout_t;
 
 typedef struct signal_t {
+	struct splay_node_t node;
 	int signum;
 	signal_cb_t cb;
 	void *data;
-	struct splay_node_t node;
 } signal_t;
 
 struct event_loop_t {
+	void *data;
+
+	volatile bool running;
+	bool deletion;
+
+	struct timeval now;
+
+	splay_tree_t timeouts;
+	idle_cb_t idle_cb;
+	void *idle_data;
+	splay_tree_t ios;
+	splay_tree_t signals;
+
 	fd_set readfds;
 	fd_set writefds;
 
-	volatile bool running;
-	struct timeval now;
-	bool deletion;
-
-	splay_tree_t ios;
-	splay_tree_t timeouts;
-	splay_tree_t signals;
-
-	idle_cb_t idle_cb;
-	void *idle_data;
-
 	io_t signalio;
 	int pipefd[2];
-
-	void *data;
 };
 
 extern void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int flags);

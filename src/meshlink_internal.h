@@ -35,7 +35,7 @@
 
 #include <pthread.h>
 
-#define MAXSOCKETS 8    /* Probably overkill... */
+#define MAXSOCKETS 4    /* Probably overkill... */
 
 static const char meshlink_invitation_label[] = "MeshLink invitation";
 static const char meshlink_tcp_label[] = "MeshLink TCP";
@@ -78,43 +78,35 @@ struct meshlink_open_params {
 
 /// A handle for an instance of MeshLink.
 struct meshlink_handle {
+	// public members
 	char *name;
 	void *priv;
 
-	char *appname;
-	int32_t devclass;
-
-	char *confbase;
-	FILE *conffile;
-
-	meshlink_receive_cb_t receive_cb;
-	meshlink_node_status_cb_t node_status_cb;
+	// private members
+	pthread_mutex_t mesh_mutex;
+	event_loop_t loop;
+	struct node_t *self;
 	meshlink_log_cb_t log_cb;
 	meshlink_log_level_t log_level;
 
-	meshlink_channel_accept_cb_t channel_accept_cb;
-	meshlink_node_duplicate_cb_t node_duplicate_cb;
-	meshlink_connection_try_cb_t connection_try_cb;
-
-	pthread_t thread;
-	bool threadstarted;
-	pthread_mutex_t mesh_mutex;
-	event_loop_t loop;
-	listen_socket_t listen_socket[MAXSOCKETS];
+	// The most important network-related members come first
 	int listen_sockets;
+	listen_socket_t listen_socket[MAXSOCKETS];
+
+	meshlink_receive_cb_t receive_cb;
+	meshlink_queue_t outpacketqueue;
 	signal_t datafromapp;
 
-	struct node_t *self;
+	hash_t *node_udp_cache;
 
-	struct splay_tree_t *edges;
 	struct splay_tree_t *nodes;
+	struct splay_tree_t *edges;
 
 	struct list_t *connections;
 	struct list_t *outgoings;
 	struct list_t *submeshes;
 
-	meshlink_queue_t outpacketqueue;
-
+	// Meta-connection-related members
 	struct splay_tree_t *past_request_tree;
 	timeout_t past_request_timeout;
 
@@ -125,42 +117,46 @@ struct meshlink_handle {
 	timeout_t pingtimer;
 	timeout_t periodictimer;
 
+	struct connection_t *everyone;
+
+	// Infrequently used callbacks
+	meshlink_node_status_cb_t node_status_cb;
+	meshlink_channel_accept_cb_t channel_accept_cb;
+	meshlink_node_duplicate_cb_t node_duplicate_cb;
+	meshlink_connection_try_cb_t connection_try_cb;
+
+	// Mesh parameters
+	char *appname;
 	char *myport;
 
-	char *proxyhost;
-	char *proxyport;
-	char *proxyuser;
-	char *proxypass;
-	proxytype_t proxytype;
-
-	bool discovery;         // Whether Catta is enabled or not
-	bool localdiscovery;
-	sockaddr_t localdiscovery_address;
-
-	bool default_blacklist;
-
-	hash_t *node_udp_cache;
-	struct connection_t *everyone;
 	struct ecdsa *private_key;
 	struct ecdsa *invitation_key;
-	int invitation_timeout;
 
+	int32_t devclass;
+
+	int invitation_timeout;
 	int pinginterval;       /* seconds between pings */
 	int pingtimeout;        /* seconds to wait for response */
 	int maxtimeout;
 
-	int sock;
-	sptps_t sptps;
-	char cookie[18], hash[18];
-	char *data;
-	size_t thedatalen;
-	bool success;
-	char line[4096];
-	char buffer[4096];
-	size_t blen;
+	int netns;
 
-	pthread_t discovery_thread;
+	bool default_blacklist;
+	bool discovery;         // Whether Catta is enabled or not
+
+
+	// Configuration
+	char *confbase;
+	FILE *conffile;
+	void *config_key;
+
+	// Thread management
+	pthread_t thread;
+	bool threadstarted;
 	bool discovery_threadstarted;
+
+	// Catta
+	pthread_t discovery_thread;
 	struct CattaServer *catta_server;
 	struct CattaSServiceBrowser *catta_browser;
 	struct CattaSimplePoll *catta_poll;
@@ -168,8 +164,25 @@ struct meshlink_handle {
 	char *catta_servicetype;
 	unsigned int catta_interfaces;
 
-	int netns;
-	void *config_key;
+	// State used for meshlink_join()
+	int sock;
+	char cookie[18], hash[18];
+	bool success;
+	sptps_t sptps;
+	char *data;
+	size_t thedatalen;
+	size_t blen;
+	char line[4096];
+	char buffer[4096];
+
+	// Unused variables
+	char *proxyhost;
+	char *proxyport;
+	char *proxyuser;
+	char *proxypass;
+	proxytype_t proxytype;
+	sockaddr_t localdiscovery_address;
+	bool localdiscovery;
 };
 
 /// A handle for a MeshLink node.

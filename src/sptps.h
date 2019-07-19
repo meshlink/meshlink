@@ -43,25 +43,35 @@ typedef bool (*send_data_t)(void *handle, uint8_t type, const void *data, size_t
 typedef bool (*receive_record_t)(void *handle, uint8_t type, const void *data, uint16_t len);
 
 typedef struct sptps {
+	// State
 	bool initiator;
 	bool datagram;
+	bool instate;
+	bool outstate;
+
 	int state;
 
+	// Main member variables
 	char *inbuf;
 	size_t buflen;
-	uint16_t reclen;
 
-	bool instate;
 	chacha_poly1305_ctx_t *incipher;
+	uint32_t replaywin;
 	uint32_t inseqno;
 	uint32_t received;
-	unsigned int replaywin;
-	char *late;
+	uint16_t reclen;
 
-	bool outstate;
 	chacha_poly1305_ctx_t *outcipher;
 	uint32_t outseqno;
 
+	char *late;
+
+	// Callbacks
+	void *handle;
+	send_data_t send_data;
+	receive_record_t receive_record;
+
+	// Variables used for the authentication phase
 	ecdsa_t *mykey;
 	ecdsa_t *hiskey;
 	ecdh_t *ecdh;
@@ -72,9 +82,6 @@ typedef struct sptps {
 	char *label;
 	size_t labellen;
 
-	void *handle;
-	send_data_t send_data;
-	receive_record_t receive_record;
 } sptps_t;
 
 extern unsigned int sptps_replaywin;

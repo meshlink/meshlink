@@ -36,8 +36,8 @@
 #define MAXBUFSIZE ((MAXSIZE > 2048 ? MAXSIZE : 2048) + 128)
 
 typedef struct vpn_packet_t {
-	unsigned int probe: 1;
-	unsigned int tcp: 1;
+	uint16_t probe: 1;
+	int16_t tcp: 1;
 	uint16_t len;           /* the actual number of bytes in the `data' field */
 	uint8_t data[MAXSIZE];
 } vpn_packet_t;

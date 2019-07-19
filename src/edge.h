@@ -30,11 +30,13 @@ typedef struct edge_t {
 	struct node_t *to;
 	sockaddr_t address;
 
-	uint32_t options;                       /* options turned on for this edge */
-	int weight;                             /* weight of this edge */
-
 	struct connection_t *connection;        /* connection associated with this edge, if available */
 	struct edge_t *reverse;                 /* edge in the opposite direction, if available */
+
+	int weight;                             /* weight of this edge */
+
+	// Deprecated
+	uint32_t options;                       /* options turned on for this edge */
 } edge_t;
 
 extern void init_edges(struct meshlink_handle *mesh);
