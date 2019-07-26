@@ -3091,18 +3091,13 @@ end:
 }
 
 void handle_network_change(meshlink_handle_t *mesh, bool online) {
+	(void)online;
+
 	if(!mesh->connections) {
 		return;
 	}
 
-	if(online) {
-		retry(mesh);
-	} else {
-		// We are off-line. Terminate all active connections.
-		for list_each(connection_t, c, mesh->connections) {
-			terminate_connection(mesh, c, false);
-		}
-	}
+	retry(mesh);
 }
 
 static void __attribute__((constructor)) meshlink_init(void) {
