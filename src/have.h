@@ -115,6 +115,10 @@
 #include <arpa/inet.h>
 #endif
 
+#ifdef HAVE_IFADDRS_H
+#include <ifaddrs.h>
+#endif
+
 #ifdef HAVE_MINGW
 #define SLASH "\\"
 #else
