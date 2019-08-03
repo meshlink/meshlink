@@ -39,8 +39,6 @@ static void discovery_entry_group_callback(CattaServer *server, CattaSEntryGroup
 	assert(mesh->catta_server != NULL);
 	assert(mesh->catta_poll != NULL);
 
-	pthread_mutex_lock(&(mesh->mesh_mutex));
-
 	/* Called whenever the entry group state changes */
 	switch(state) {
 	case CATTA_ENTRY_GROUP_ESTABLISHED:
@@ -63,8 +61,6 @@ static void discovery_entry_group_callback(CattaServer *server, CattaSEntryGroup
 	case CATTA_ENTRY_GROUP_REGISTERING:
 		break;
 	}
-
-	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
 
@@ -259,7 +255,6 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 
 					if(naddress.unknown.family != AF_UNKNOWN) {
 						meshlink_hint_address(mesh, (meshlink_node_t *)node, (struct sockaddr *)&naddress);
-						pthread_mutex_lock(&(mesh->mesh_mutex));
 
 						node_t *n = (node_t *)node;
 
@@ -275,7 +270,6 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 							n->connection->last_ping_time = 0;
 						}
 
-						pthread_mutex_unlock(&(mesh->mesh_mutex));
 					} else {
 						logger(mesh, MESHLINK_WARNING, "Could not resolve node %s to a known address family type.\n", node->name);
 					}
@@ -328,18 +322,6 @@ static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfInde
 	}
 }
 
-static void *discovery_loop(void *userdata) {
-	meshlink_handle_t *mesh = userdata;
-
-	// asserts
-	assert(mesh != NULL);
-	assert(mesh->catta_poll != NULL);
-
-	catta_simple_poll_loop(mesh->catta_poll);
-
-	return NULL;
-}
-
 static void discovery_log_cb(CattaLogLevel level, const char *txt) {
 	meshlink_log_level_t mlevel = MESHLINK_CRITICAL;
 
@@ -366,16 +348,9 @@ static void discovery_log_cb(CattaLogLevel level, const char *txt) {
 	logger(NULL, mlevel, "%s\n", txt);
 }
 
-bool discovery_start(meshlink_handle_t *mesh) {
-	logger(mesh, MESHLINK_DEBUG, "discovery_start called\n");
-
-	// asserts
+static void *discovery_loop(void *userdata) {
+	meshlink_handle_t *mesh = userdata;
 	assert(mesh != NULL);
-	assert(mesh->catta_poll == NULL);
-	assert(mesh->catta_server == NULL);
-	assert(mesh->catta_browser == NULL);
-	assert(mesh->discovery_threadstarted == false);
-	assert(mesh->catta_servicetype == NULL);
 
 	// handle catta logs
 	catta_set_log_function(discovery_log_cb);
@@ -430,60 +405,10 @@ bool discovery_start(meshlink_handle_t *mesh) {
 		goto fail;
 	}
 
-	// Start the discovery thread
-	if(pthread_create(&mesh->discovery_thread, NULL, discovery_loop, mesh) != 0) {
-		logger(mesh, MESHLINK_ERROR, "Could not start discovery thread: %s\n", strerror(errno));
-		memset(&mesh->discovery_thread, 0, sizeof(mesh)->discovery_thread);
-		goto fail;
-	}
-
-	mesh->discovery_threadstarted = true;
-
-	return true;
+	catta_simple_poll_loop(mesh->catta_poll);
 
 fail:
 
-	if(mesh->catta_browser != NULL) {
-		catta_s_service_browser_free(mesh->catta_browser);
-		mesh->catta_browser = NULL;
-	}
-
-	if(mesh->catta_server != NULL) {
-		catta_server_free(mesh->catta_server);
-		mesh->catta_server = NULL;
-	}
-
-	if(mesh->catta_poll != NULL) {
-		catta_simple_poll_free(mesh->catta_poll);
-		mesh->catta_poll = NULL;
-	}
-
-	if(mesh->catta_servicetype != NULL) {
-		free(mesh->catta_servicetype);
-		mesh->catta_servicetype = NULL;
-	}
-
-	return false;
-}
-
-void discovery_stop(meshlink_handle_t *mesh) {
-	logger(mesh, MESHLINK_DEBUG, "discovery_stop called\n");
-
-	// asserts
-	assert(mesh != NULL);
-
-	// Shut down
-	if(mesh->catta_poll) {
-		catta_simple_poll_quit(mesh->catta_poll);
-	}
-
-	// Wait for the discovery thread to finish
-	if(mesh->discovery_threadstarted == true) {
-		pthread_join(mesh->discovery_thread, NULL);
-		mesh->discovery_threadstarted = false;
-	}
-
-	// Clean up resources
 	if(mesh->catta_browser != NULL) {
 		catta_s_service_browser_free(mesh->catta_browser);
 		mesh->catta_browser = NULL;
@@ -508,6 +433,49 @@ void discovery_stop(meshlink_handle_t *mesh) {
 	if(mesh->catta_servicetype != NULL) {
 		free(mesh->catta_servicetype);
 		mesh->catta_servicetype = NULL;
+	}
+
+	return NULL;
+}
+
+bool discovery_start(meshlink_handle_t *mesh) {
+	logger(mesh, MESHLINK_DEBUG, "discovery_start called\n");
+
+	// asserts
+	assert(mesh != NULL);
+	assert(mesh->catta_poll == NULL);
+	assert(mesh->catta_server == NULL);
+	assert(mesh->catta_browser == NULL);
+	assert(mesh->discovery_threadstarted == false);
+	assert(mesh->catta_servicetype == NULL);
+
+	// Start the discovery thread
+	if(pthread_create(&mesh->discovery_thread, NULL, discovery_loop, mesh) != 0) {
+		logger(mesh, MESHLINK_ERROR, "Could not start discovery thread: %s\n", strerror(errno));
+		memset(&mesh->discovery_thread, 0, sizeof(mesh)->discovery_thread);
+		return false;
+	}
+
+	mesh->discovery_threadstarted = true;
+
+	return true;
+}
+
+void discovery_stop(meshlink_handle_t *mesh) {
+	logger(mesh, MESHLINK_DEBUG, "discovery_stop called\n");
+
+	// asserts
+	assert(mesh != NULL);
+
+	// Shut down
+	if(mesh->catta_poll) {
+		catta_simple_poll_quit(mesh->catta_poll);
+	}
+
+	// Wait for the discovery thread to finish
+	if(mesh->discovery_threadstarted == true) {
+		pthread_join(mesh->discovery_thread, NULL);
+		mesh->discovery_threadstarted = false;
 	}
 
 	mesh->catta_interfaces = 0;

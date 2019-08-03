@@ -1391,9 +1391,26 @@ static void *meshlink_main_loop(void *arg) {
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 
+#if HAVE_CATTA
+
+	if(mesh->discovery) {
+		discovery_start(mesh);
+	}
+
+#endif
+
 	logger(mesh, MESHLINK_DEBUG, "Starting main_loop...\n");
 	main_loop(mesh);
 	logger(mesh, MESHLINK_DEBUG, "main_loop returned.\n");
+
+#if HAVE_CATTA
+
+	// Stop discovery
+	if(mesh->discovery) {
+		discovery_stop(mesh);
+	}
+
+#endif
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return NULL;
@@ -1453,14 +1470,6 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 
 	mesh->threadstarted = true;
 
-#if HAVE_CATTA
-
-	if(mesh->discovery) {
-		discovery_start(mesh);
-	}
-
-#endif
-
 	assert(mesh->self->ecdsa);
 	assert(!memcmp((uint8_t *)mesh->self->ecdsa + 64, (uint8_t *)mesh->private_key + 64, 32));
 
@@ -1477,15 +1486,6 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 	logger(mesh, MESHLINK_DEBUG, "meshlink_stop called\n");
-
-#if HAVE_CATTA
-
-	// Stop discovery
-	if(mesh->discovery) {
-		discovery_stop(mesh);
-	}
-
-#endif
 
 	// Shut down the main thread
 	event_loop_stop(&mesh->loop);
