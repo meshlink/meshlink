@@ -599,7 +599,7 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 	free(mesh->self->name);
 	mesh->name = name;
 	mesh->self->name = xstrdup(name);
-	mesh->self->devclass = devclass;
+	mesh->self->devclass = devclass == DEV_CLASS_UNKNOWN ? mesh->devclass : devclass;
 
 	// Initialize configuration directory
 	if(!config_init(mesh, "current")) {
