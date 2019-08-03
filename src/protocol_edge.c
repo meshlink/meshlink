@@ -180,6 +180,8 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		node_add(mesh, to);
 	}
 
+	to->devclass = to_devclass;
+
 	/* Convert addresses */
 
 	address = str2sockaddr(to_address, to_port);
