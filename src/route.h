@@ -23,8 +23,6 @@
 #include "net.h"
 #include "node.h"
 
-extern bool decrement_ttl;
-
 extern void route(struct meshlink_handle *mesh, struct node_t *, struct vpn_packet_t *);
 
 #endif

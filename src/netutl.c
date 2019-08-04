@@ -25,8 +25,6 @@
 #include "utils.h"
 #include "xalloc.h"
 
-bool hostnames = false;
-
 /*
   Turn a string into a struct addrinfo.
   Return NULL on failure.
@@ -36,7 +34,7 @@ struct addrinfo *str2addrinfo(const char *address, const char *service, int sock
 	int err;
 
 	struct addrinfo hint = {
-		.ai_family = addressfamily,
+		.ai_family = AF_UNSPEC,
 		.ai_socktype = socktype,
 	};
 
@@ -130,8 +128,7 @@ char *sockaddr2hostname(const sockaddr_t *sa) {
 		return str;
 	}
 
-	err = getnameinfo(&sa->sa, SALEN(sa->sa), address, sizeof(address), port, sizeof(port),
-	                  hostnames ? 0 : (NI_NUMERICHOST | NI_NUMERICSERV));
+	err = getnameinfo(&sa->sa, SALEN(sa->sa), address, sizeof(address), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV);
 
 	if(err) {
 		logger(NULL, MESHLINK_ERROR, "Error while looking up hostname: %s", err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));

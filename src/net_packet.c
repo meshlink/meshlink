@@ -279,10 +279,8 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 	   to the node's reflexive UDP address discovered during key
 	   exchange. */
 
-	static int x = 0;
-
-	if(++x >= 3) {
-		x = 0;
+	if(++mesh->udp_choice >= 3) {
+		mesh->udp_choice = 0;
 		return;
 	}
 
@@ -498,7 +496,6 @@ void broadcast_packet(meshlink_handle_t *mesh, const node_t *from, vpn_packet_t 
 static node_t *try_harder(meshlink_handle_t *mesh, const sockaddr_t *from, const vpn_packet_t *pkt) {
 	node_t *n = NULL;
 	bool hard = false;
-	static time_t last_hard_try = 0;
 
 	for splay_each(edge_t, e, mesh->edges) {
 		if(!e->to->status.reachable || e->to == mesh->self) {
@@ -506,7 +503,7 @@ static node_t *try_harder(meshlink_handle_t *mesh, const sockaddr_t *from, const
 		}
 
 		if(sockaddrcmp_noport(from, &e->address)) {
-			if(last_hard_try == mesh->loop.now.tv_sec) {
+			if(mesh->last_hard_try == mesh->loop.now.tv_sec) {
 				continue;
 			}
 
@@ -522,10 +519,9 @@ static node_t *try_harder(meshlink_handle_t *mesh, const sockaddr_t *from, const
 	}
 
 	if(hard) {
-		last_hard_try = mesh->loop.now.tv_sec;
+		mesh->last_hard_try = mesh->loop.now.tv_sec;
 	}
 
-	last_hard_try = mesh->loop.now.tv_sec;
 	return n;
 }
 

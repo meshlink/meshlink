@@ -25,8 +25,6 @@
 #include "route.h"
 #include "utils.h"
 
-bool decrement_ttl = false;
-
 static bool checklength(node_t *source, vpn_packet_t *packet, uint16_t length) {
 	if(packet->len < length) {
 		logger(source->mesh, MESHLINK_WARNING, "Got too short packet from %s", source->name);

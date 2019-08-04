@@ -110,14 +110,20 @@ struct meshlink_handle {
 	struct splay_tree_t *past_request_tree;
 	timeout_t past_request_timeout;
 
+	int connection_burst;
 	int contradicting_add_edge;
 	int contradicting_del_edge;
 	int sleeptime;
+	time_t connection_burst_time;
 	time_t last_config_check;
+	time_t last_hard_try;
 	timeout_t pingtimer;
 	timeout_t periodictimer;
 
 	struct connection_t *everyone;
+
+	int next_pit;
+	int pits[10];
 
 	// Infrequently used callbacks
 	meshlink_node_status_cb_t node_status_cb;
@@ -138,6 +144,7 @@ struct meshlink_handle {
 	int pinginterval;       /* seconds between pings */
 	int pingtimeout;        /* seconds to wait for response */
 	int maxtimeout;
+	int udp_choice;
 
 	int netns;
 
@@ -226,6 +233,6 @@ typedef struct {
 	int edge_weight;
 } dev_class_traits_t;
 
-extern dev_class_traits_t dev_class_traits[];
+extern const dev_class_traits_t dev_class_traits[];
 
 #endif

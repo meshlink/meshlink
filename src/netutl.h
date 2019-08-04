@@ -23,8 +23,6 @@
 #include "net.h"
 #include "packmsg.h"
 
-extern bool hostnames;
-
 extern struct addrinfo *str2addrinfo(const char *, const char *, int) __attribute__((__malloc__));
 extern sockaddr_t str2sockaddr(const char *, const char *);
 extern void sockaddr2str(const sockaddr_t *, char **, char **);

@@ -84,7 +84,6 @@ typedef struct sptps {
 
 } sptps_t;
 
-extern unsigned int sptps_replaywin;
 extern void sptps_log_quiet(sptps_t *s, int s_errno, const char *format, va_list ap);
 extern void sptps_log_stderr(sptps_t *s, int s_errno, const char *format, va_list ap);
 extern void (*sptps_log)(sptps_t *s, int s_errno, const char *format, va_list ap);

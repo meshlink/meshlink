@@ -27,8 +27,6 @@
 #include "prf.h"
 #include "sptps.h"
 
-unsigned int sptps_replaywin = 32;
-
 /*
    Nonce MUST be exchanged first (done)
    Signatures MUST be done over both nonces, to guarantee the signature is fresh
@@ -670,7 +668,7 @@ bool sptps_start(sptps_t *s, void *handle, bool initiator, bool datagram, ecdsa_
 	s->datagram = datagram;
 	s->mykey = mykey;
 	s->hiskey = hiskey;
-	s->replaywin = sptps_replaywin;
+	s->replaywin = 32;
 
 	if(s->replaywin) {
 		s->late = malloc(s->replaywin);

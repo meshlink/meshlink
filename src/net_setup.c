@@ -321,7 +321,7 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 	struct addrinfo *ai;
 
 	struct addrinfo hint = {
-		.ai_family = addressfamily,
+		.ai_family = AF_UNSPEC,
 		.ai_socktype = SOCK_STREAM,
 		.ai_protocol = IPPROTO_TCP,
 		.ai_flags = AI_PASSIVE,
@@ -395,7 +395,6 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 bool setup_myself(meshlink_handle_t *mesh) {
 	/* Set some defaults */
 
-	keylifetime = 3600; // TODO: check if this can be removed as well
 	mesh->maxtimeout = 900;
 
 	/* Done */
@@ -456,7 +455,6 @@ bool setup_network(meshlink_handle_t *mesh) {
 
 	mesh->pinginterval = 60;
 	mesh->pingtimeout = 5;
-	maxoutbufsize = 10 * MTU;
 
 	if(!setup_myself(mesh)) {
 		return false;

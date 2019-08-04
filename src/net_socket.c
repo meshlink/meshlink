@@ -40,9 +40,7 @@
 #define MSG_NOSIGNAL 0
 #endif
 
-int addressfamily = AF_UNSPEC;
-int seconds_till_retry = 5;
-int max_connection_burst = 100;
+static const int max_connection_burst = 100;
 
 /* Setup sockets */
 
@@ -622,18 +620,19 @@ void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 }
 
 /// Delayed close of a filedescriptor.
-static void tarpit(int fd) {
-	static int pits[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
-	static int next_pit = 0;
-
-	if(pits[next_pit] != -1) {
-		closesocket(pits[next_pit]);
+static void tarpit(meshlink_handle_t *mesh, int fd) {
+	if(!fd) {
+		return;
 	}
 
-	pits[next_pit++] = fd;
+	if(mesh->pits[mesh->next_pit]) {
+		closesocket(mesh->pits[mesh->next_pit]);
+	}
 
-	if(next_pit >= (int)(sizeof pits / sizeof pits[0])) {
-		next_pit = 0;
+	mesh->pits[mesh->next_pit++] = fd;
+
+	if(mesh->next_pit >= (int)(sizeof mesh->pits / sizeof mesh->pits[0])) {
+		mesh->next_pit = 0;
 	}
 }
 
@@ -668,20 +667,17 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 
 	/* Rate limit incoming connections to max_connection_burst/second. */
 
-	static int connection_burst;
-	static int connection_burst_time;
-
-	if(mesh->loop.now.tv_sec != connection_burst_time) {
-		connection_burst_time = mesh->loop.now.tv_sec;
-		connection_burst = 0;
+	if(mesh->loop.now.tv_sec != mesh->connection_burst_time) {
+		mesh->connection_burst_time = mesh->loop.now.tv_sec;
+		mesh->connection_burst = 0;
 	}
 
-	if(connection_burst >= max_connection_burst) {
-		tarpit(fd);
+	if(mesh->connection_burst >= max_connection_burst) {
+		tarpit(mesh, fd);
 		return;
 	}
 
-	connection_burst++;
+	mesh->connection_burst++;
 
 	// Accept the new connection
 

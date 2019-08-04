@@ -72,13 +72,6 @@ typedef struct outgoing_t {
 	struct addrinfo *aip;
 } outgoing_t;
 
-extern int maxoutbufsize;
-extern int addressfamily;
-
-extern int keylifetime;
-extern int max_connection_burst;
-extern bool do_prune;
-
 /* Yes, very strange placement indeed, but otherwise the typedefs get all tangled up */
 #include "connection.h"
 #include "node.h"

@@ -744,8 +744,9 @@ static bool recvline(meshlink_handle_t *mesh, size_t len) {
 
 	return true;
 }
+
 static bool sendline(int fd, char *format, ...) {
-	static char buffer[4096];
+	char buffer[4096];
 	char *p = buffer;
 	int blen = 0;
 	va_list ap;
@@ -3112,7 +3113,7 @@ static void __attribute__((destructor)) meshlink_exit(void) {
 }
 
 /// Device class traits
-dev_class_traits_t dev_class_traits[_DEV_CLASS_MAX + 1] = {
+const dev_class_traits_t dev_class_traits[_DEV_CLASS_MAX + 1] = {
 	{ .min_connects = 3, .max_connects = 10000, .edge_weight = 1 }, // DEV_CLASS_BACKBONE
 	{ .min_connects = 3, .max_connects = 100, .edge_weight = 3 },   // DEV_CLASS_STATIONARY
 	{ .min_connects = 3, .max_connects = 3, .edge_weight = 6 },             // DEV_CLASS_PORTABLE

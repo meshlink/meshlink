@@ -115,16 +115,6 @@ static bool fstrwrite(const char *str, FILE *stream) {
 	return true;
 }
 
-static const char *__itoa(int value) {
-	static char buffer[sizeof(int) * 8 + 1];        // not thread safe
-
-	if(snprintf(buffer, sizeof(buffer), "%d", value) == -1) {
-		return "";
-	}
-
-	return buffer;
-}
-
 bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) {
 	bool result = true;
 
@@ -151,6 +141,8 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) 
 		goto fail;
 	}
 
+	char buf[16];
+
 	for(size_t i = 0; i < node_count; ++i) {
 		if(!fstrwrite("\t\t\"", stream) || !fstrwrite(((node_t *)nodes[i])->name, stream) || !fstrwrite("\": {\n", stream)) {
 			goto fail;
@@ -160,7 +152,9 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) 
 			goto fail;
 		}
 
-		if(!fstrwrite("\t\t\t\"devclass\": ", stream) || !fstrwrite(__itoa(((node_t *)nodes[i])->devclass), stream) || !fstrwrite("\n", stream)) {
+		snprintf(buf, sizeof(buf), "%d", ((node_t *)nodes[i])->devclass);
+
+		if(!fstrwrite("\t\t\t\"devclass\": ", stream) || !fstrwrite(buf, stream) || !fstrwrite("\n", stream)) {
 			goto fail;
 		}
 
@@ -209,7 +203,9 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) 
 
 		free(address);
 
-		if(!fstrwrite("\t\t\t\"weight\": ", stream) || !fstrwrite(__itoa(edges[i].weight), stream) || !fstrwrite("\n", stream)) {
+		snprintf(buf, sizeof(buf), "%d", edges[i].weight);
+
+		if(!fstrwrite("\t\t\t\"weight\": ", stream) || !fstrwrite(buf, stream) || !fstrwrite("\n", stream)) {
 			goto fail;
 		}
 
