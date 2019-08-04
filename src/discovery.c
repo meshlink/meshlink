@@ -78,16 +78,12 @@ static void discovery_create_services(meshlink_handle_t *mesh) {
 	assert(mesh->catta_servicetype != NULL);
 	assert(mesh->self != NULL);
 
-	pthread_mutex_lock(&(mesh->mesh_mutex));
-
 	logger(mesh, MESHLINK_DEBUG, "Adding service\n");
 
 	/* Ifthis is the first time we're called, let's create a new entry group */
-	if(!mesh->catta_group) {
-		if(!(mesh->catta_group = catta_s_entry_group_new(mesh->catta_server, discovery_entry_group_callback, mesh))) {
-			logger(mesh, MESHLINK_ERROR, "catta_entry_group_new() failed: %s\n", catta_strerror(catta_server_errno(mesh->catta_server)));
-			goto fail;
-		}
+	if(!(mesh->catta_group = catta_s_entry_group_new(mesh->catta_server, discovery_entry_group_callback, mesh))) {
+		logger(mesh, MESHLINK_ERROR, "catta_entry_group_new() failed: %s\n", catta_strerror(catta_server_errno(mesh->catta_server)));
+		goto fail;
 	}
 
 	/* Create txt records */
@@ -131,32 +127,41 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 
 	switch(state) {
 	case CATTA_SERVER_RUNNING:
-
 		/* The serve has startup successfully and registered its host
 		 * name on the network, so it's time to create our services */
+		pthread_mutex_lock(&(mesh->mesh_mutex));
+
 		if(!mesh->catta_group) {
 			discovery_create_services(mesh);
 		}
 
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+
 		break;
 
 	case CATTA_SERVER_COLLISION: {
+		/* A host name collision happened. Let's pick a new name for the server */
+		char hostname[17];
+		generate_rand_string(hostname, sizeof(hostname));
+
+		pthread_mutex_lock(&(mesh->mesh_mutex));
+		//
 		// asserts
 		assert(mesh->catta_server != NULL);
 		assert(mesh->catta_poll != NULL);
 
-		/* A host name collision happened. Let's pick a new name for the server */
-		char hostname[17];
-		generate_rand_string(hostname, sizeof(hostname));
 		int result = catta_server_set_host_name(mesh->catta_server, hostname);
 
 		if(result < 0) {
 			catta_simple_poll_quit(mesh->catta_poll);
 		}
+
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
 	}
 	break;
 
 	case CATTA_SERVER_REGISTERING:
+		pthread_mutex_lock(&(mesh->mesh_mutex));
 
 		/* Let's drop our registered services. When the server is back
 		 * in CATTA_SERVER_RUNNING state we will register them
@@ -166,15 +171,21 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 			mesh->catta_group = NULL;
 		}
 
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
+
 		break;
 
 	case CATTA_SERVER_FAILURE:
+		pthread_mutex_lock(&(mesh->mesh_mutex));
+
 		// asserts
 		assert(mesh->catta_server != NULL);
 		assert(mesh->catta_poll != NULL);
 
 		/* Terminate on failure */
 		catta_simple_poll_quit(mesh->catta_poll);
+
+		pthread_mutex_unlock(&(mesh->mesh_mutex));
 		break;
 
 	case CATTA_SERVER_INVALID:
@@ -186,102 +197,86 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 	(void)interface_;
 	(void)protocol;
 	(void)flags;
+	(void)name;
+	(void)type;
+	(void)domain;
+	(void)host_name;
+
 	meshlink_handle_t *mesh = userdata;
 
-	// asserts
-	assert(resolver != NULL);
-	assert(mesh != NULL);
-	assert(mesh->catta_server != NULL);
+	if(event != CATTA_RESOLVER_FOUND) {
+		catta_s_service_resolver_free(resolver);
+		return;
+	}
 
-	/* Called whenever a service has been resolved successfully or timed out */
-	switch(event) {
-	case CATTA_RESOLVER_FAILURE:
-		// asserts
-		assert(name != NULL);
-		assert(type != NULL);
-		assert(domain != NULL);
-		break;
+	// retrieve fingerprint
+	CattaStringList *node_name_li = catta_string_list_find(txt, MESHLINK_MDNS_NAME_KEY);
+	CattaStringList *node_fp_li = catta_string_list_find(txt, MESHLINK_MDNS_FINGERPRINT_KEY);
 
-	case CATTA_RESOLVER_FOUND: {
-		// asserts
-		assert(name != NULL);
-		assert(type != NULL);
-		assert(domain != NULL);
-		assert(host_name != NULL);
-		assert(address != NULL);
-		assert(txt != NULL);
+	if(node_name_li != NULL && node_fp_li != NULL) {
+		char *node_name = (char *)catta_string_list_get_text(node_name_li) + strlen(MESHLINK_MDNS_NAME_KEY);
+		char *node_fp = (char *)catta_string_list_get_text(node_fp_li) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY);
 
-		// retrieve fingerprint
-		CattaStringList *node_name_li = catta_string_list_find(txt, MESHLINK_MDNS_NAME_KEY);
-		CattaStringList *node_fp_li = catta_string_list_find(txt, MESHLINK_MDNS_FINGERPRINT_KEY);
+		if(node_name[0] == '=' && node_fp[0] == '=') {
+			pthread_mutex_lock(&(mesh->mesh_mutex));
 
-		if(node_name_li != NULL && node_fp_li != NULL) {
-			char *node_name = (char *)catta_string_list_get_text(node_name_li) + strlen(MESHLINK_MDNS_NAME_KEY);
-			char *node_fp = (char *)catta_string_list_get_text(node_fp_li) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY);
+			node_name += 1;
+			node_fp += 1;
 
-			if(node_name[0] == '=' && node_fp[0] == '=') {
-				pthread_mutex_lock(&(mesh->mesh_mutex));
+			meshlink_node_t *node = meshlink_get_node(mesh, node_name);
 
-				node_name += 1;
-				node_fp += 1;
+			if(node != NULL) {
+				logger(mesh, MESHLINK_INFO, "Node %s is part of the mesh network.\n", node->name);
 
-				meshlink_node_t *node = meshlink_get_node(mesh, node_name);
+				sockaddr_t naddress;
+				memset(&naddress, 0, sizeof(naddress));
 
-				if(node != NULL) {
-					logger(mesh, MESHLINK_INFO, "Node %s is part of the mesh network.\n", node->name);
+				switch(address->proto) {
+				case CATTA_PROTO_INET: {
+					naddress.in.sin_family = AF_INET;
+					naddress.in.sin_port = htons(port);
+					naddress.in.sin_addr.s_addr = address->data.ipv4.address;
+				}
+				break;
 
-					sockaddr_t naddress;
-					memset(&naddress, 0, sizeof(naddress));
+				case CATTA_PROTO_INET6: {
+					naddress.in6.sin6_family = AF_INET6;
+					naddress.in6.sin6_port = htons(port);
+					memcpy(naddress.in6.sin6_addr.s6_addr, address->data.ipv6.address, sizeof(naddress.in6.sin6_addr.s6_addr));
+				}
+				break;
 
-					switch(address->proto) {
-					case CATTA_PROTO_INET: {
-						naddress.in.sin_family = AF_INET;
-						naddress.in.sin_port = htons(port);
-						naddress.in.sin_addr.s_addr = address->data.ipv4.address;
-					}
+				default:
+					naddress.unknown.family = AF_UNKNOWN;
 					break;
-
-					case CATTA_PROTO_INET6: {
-						naddress.in6.sin6_family = AF_INET6;
-						naddress.in6.sin6_port = htons(port);
-						memcpy(naddress.in6.sin6_addr.s6_addr, address->data.ipv6.address, sizeof(naddress.in6.sin6_addr.s6_addr));
-					}
-					break;
-
-					default:
-						naddress.unknown.family = AF_UNKNOWN;
-						break;
-					}
-
-					if(naddress.unknown.family != AF_UNKNOWN) {
-						meshlink_hint_address(mesh, (meshlink_node_t *)node, (struct sockaddr *)&naddress);
-
-						node_t *n = (node_t *)node;
-
-						if(n->connection && n->connection->outgoing) {
-							n->connection->outgoing->timeout = 0;
-
-							if(n->connection->outgoing->ev.cb) {
-								timeout_set(&mesh->loop, &n->connection->outgoing->ev, &(struct timeval) {
-									0, 0
-								});
-							}
-
-							n->connection->last_ping_time = 0;
-						}
-
-					} else {
-						logger(mesh, MESHLINK_WARNING, "Could not resolve node %s to a known address family type.\n", node->name);
-					}
-				} else {
-					logger(mesh, MESHLINK_WARNING, "Node %s is not part of the mesh network.\n", node_name);
 				}
 
-				pthread_mutex_unlock(&(mesh->mesh_mutex));
+				if(naddress.unknown.family != AF_UNKNOWN) {
+					meshlink_hint_address(mesh, (meshlink_node_t *)node, (struct sockaddr *)&naddress);
+
+					node_t *n = (node_t *)node;
+
+					if(n->connection && n->connection->outgoing) {
+						n->connection->outgoing->timeout = 0;
+
+						if(n->connection->outgoing->ev.cb) {
+							timeout_set(&mesh->loop, &n->connection->outgoing->ev, &(struct timeval) {
+								0, 0
+							});
+						}
+
+						n->connection->last_ping_time = 0;
+					}
+
+				} else {
+					logger(mesh, MESHLINK_WARNING, "Could not resolve node %s to a known address family type.\n", node->name);
+				}
+			} else {
+				logger(mesh, MESHLINK_WARNING, "Node %s is not part of the mesh network.\n", node_name);
 			}
+
+			pthread_mutex_unlock(&(mesh->mesh_mutex));
 		}
-	}
-	break;
 	}
 
 	catta_s_service_resolver_free(resolver);
@@ -292,20 +287,17 @@ static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfInde
 	(void)flags;
 	meshlink_handle_t *mesh = userdata;
 
-	// asserts
-	assert(mesh != NULL);
-	assert(mesh->catta_server != NULL);
-	assert(mesh->catta_poll != NULL);
-
 	/* Called whenever a new services becomes available on the LAN or is removed from the LAN */
 	switch(event) {
 	case CATTA_BROWSER_FAILURE:
+		pthread_mutex_lock(&mesh->mesh_mutex);
 		catta_simple_poll_quit(mesh->catta_poll);
+		pthread_mutex_unlock(&mesh->mesh_mutex);
 		break;
 
 	case CATTA_BROWSER_NEW:
-		catta_s_service_resolver_new(mesh->catta_server, interface_, protocol, name, type, domain, CATTA_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh);
 		pthread_mutex_lock(&mesh->mesh_mutex);
+		catta_s_service_resolver_new(mesh->catta_server, interface_, protocol, name, type, domain, CATTA_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh);
 		handle_network_change(mesh, ++mesh->catta_interfaces);
 		pthread_mutex_unlock(&mesh->mesh_mutex);
 		break;
@@ -405,6 +397,10 @@ static void *discovery_loop(void *userdata) {
 		goto fail;
 	}
 
+	pthread_mutex_lock(&mesh->discovery_mutex);
+	pthread_cond_broadcast(&mesh->discovery_cond);
+	pthread_mutex_unlock(&mesh->discovery_mutex);
+
 	catta_simple_poll_loop(mesh->catta_poll);
 
 fail:
@@ -455,6 +451,10 @@ bool discovery_start(meshlink_handle_t *mesh) {
 		memset(&mesh->discovery_thread, 0, sizeof(mesh)->discovery_thread);
 		return false;
 	}
+
+	pthread_mutex_lock(&mesh->discovery_mutex);
+	pthread_cond_wait(&mesh->discovery_cond, &mesh->discovery_mutex);
+	pthread_mutex_unlock(&mesh->discovery_mutex);
 
 	mesh->discovery_threadstarted = true;
 

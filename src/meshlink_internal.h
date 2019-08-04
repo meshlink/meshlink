@@ -159,6 +159,9 @@ struct meshlink_handle {
 
 	// Thread management
 	pthread_t thread;
+	pthread_cond_t cond;
+	pthread_mutex_t discovery_mutex;
+	pthread_cond_t discovery_cond;
 	bool threadstarted;
 	bool discovery_threadstarted;
 

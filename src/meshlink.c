@@ -1382,15 +1382,15 @@ static void *meshlink_main_loop(void *arg) {
 #ifdef HAVE_SETNS
 
 		if(setns(mesh->netns, CLONE_NEWNET) != 0) {
+			pthread_cond_signal(&mesh->cond);
 			return NULL;
 		}
 
 #else
+			pthread_cond_signal(&mesh->cond);
 		return NULL;
 #endif // HAVE_SETNS
 	}
-
-	pthread_mutex_lock(&(mesh->mesh_mutex));
 
 #if HAVE_CATTA
 
@@ -1400,9 +1400,14 @@ static void *meshlink_main_loop(void *arg) {
 
 #endif
 
+	pthread_mutex_lock(&(mesh->mesh_mutex));
+
 	logger(mesh, MESHLINK_DEBUG, "Starting main_loop...\n");
+	pthread_cond_broadcast(&mesh->cond);
 	main_loop(mesh);
 	logger(mesh, MESHLINK_DEBUG, "main_loop returned.\n");
+
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
 
 #if HAVE_CATTA
 
@@ -1413,7 +1418,6 @@ static void *meshlink_main_loop(void *arg) {
 
 #endif
 
-	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return NULL;
 }
 
@@ -1429,6 +1433,9 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 	logger(mesh, MESHLINK_DEBUG, "meshlink_start called\n");
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
+
+	assert(mesh->self->ecdsa);
+	assert(!memcmp((uint8_t *)mesh->self->ecdsa + 64, (uint8_t *)mesh->private_key + 64, 32));
 
 	if(mesh->threadstarted) {
 		logger(mesh, MESHLINK_DEBUG, "thread was already running\n");
@@ -1469,11 +1476,8 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 		return false;
 	}
 
+	pthread_cond_wait(&mesh->cond, &mesh->mesh_mutex);
 	mesh->threadstarted = true;
-
-	assert(mesh->self->ecdsa);
-	assert(!memcmp((uint8_t *)mesh->self->ecdsa + 64, (uint8_t *)mesh->private_key + 64, 32));
-
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return true;
