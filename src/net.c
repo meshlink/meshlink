@@ -393,7 +393,6 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		logger(mesh, MESHLINK_DEBUG, "* min_connects = %d", min_connects);
 		logger(mesh, MESHLINK_DEBUG, "* max_connects = %d", max_connects);
 
-
 		// find the best one for initial connect
 
 		if(cur_connects < min_connects) {
@@ -402,7 +401,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			for splay_each(node_t, n, mesh->nodes) {
 				logger(mesh, MESHLINK_DEBUG, "* %s->devclass = %d", n->name, n->devclass);
 
-				if(n != mesh->self && n->devclass <= mesh->devclass && !n->connection && !n->status.blacklisted && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout)) {
+				if(n != mesh->self && n->devclass <= mesh->devclass && !n->connection && !n->status.blacklisted && (n->last_connect_try == 0 || (mesh->loop.now.tv_sec - n->last_connect_try) > retry_timeout)) {
 					splay_insert(nodes, n);
 				}
 			}
@@ -436,7 +435,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 					splay_tree_t *nodes = splay_alloc_tree(node_compare_lsc_desc, NULL);
 
 					for splay_each(node_t, n, mesh->nodes) {
-						if(n != mesh->self && n->devclass == devclass && !n->connection && !n->status.blacklisted && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout)) {
+						if(n != mesh->self && n->devclass == devclass && !n->connection && !n->status.blacklisted && (n->last_connect_try == 0 || (mesh->loop.now.tv_sec - n->last_connect_try) > retry_timeout)) {
 							splay_insert(nodes, n);
 						}
 					}
@@ -467,7 +466,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			splay_tree_t *nodes = splay_alloc_tree(node_compare_devclass_asc_lsc_desc, NULL);
 
 			for splay_each(node_t, n, mesh->nodes) {
-				if(n != mesh->self && n->devclass <= mesh->devclass && !n->status.reachable && !n->status.blacklisted && (n->last_connect_try == 0 || (time(NULL) - n->last_connect_try) > retry_timeout)) {
+				if(n != mesh->self && n->devclass <= mesh->devclass && !n->status.reachable && !n->status.blacklisted && (n->last_connect_try == 0 || (mesh->loop.now.tv_sec - n->last_connect_try) > retry_timeout)) {
 					splay_insert(nodes, n);
 				}
 			}
@@ -486,7 +485,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		// perform connect
 
 		if(connect_to && !connect_to->connection) {
-			connect_to->last_connect_try = time(NULL);
+			connect_to->last_connect_try = mesh->loop.now.tv_sec;
 			logger(mesh, MESHLINK_DEBUG, "Autoconnect trying to connect to %s", connect_to->name);
 
 			/* check if there is already a connection attempt to this node */
