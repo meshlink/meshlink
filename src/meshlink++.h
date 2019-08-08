@@ -113,6 +113,7 @@ public:
 	static const uint32_t ORDERED = MESHLINK_CHANNEL_ORDERED;
 	static const uint32_t FRAMED = MESHLINK_CHANNEL_FRAMED;
 	static const uint32_t DROP_LATE = MESHLINK_CHANNEL_DROP_LATE;
+	static const uint32_t NO_PARTIAL = MESHLINK_CHANNEL_NO_PARTIAL;
 	static const uint32_t TCP = MESHLINK_CHANNEL_TCP;
 	static const uint32_t UDP = MESHLINK_CHANNEL_UDP;
 };
@@ -714,6 +715,8 @@ public:
 	 *  @param len          The length of the data.
 	 *
 	 *  @return             The amount of data that was queued, which can be less than len, or a negative value in case of an error.
+	 *                      If MESHLINK_CHANNEL_NO_PARTIAL is set, then the result will either be len,
+	 *                      0 if the buffer is currently too full, or -1 if len is too big even for an empty buffer.
 	 */
 	ssize_t channel_send(channel *channel, void *data, size_t len) {
 		return meshlink_channel_send(handle, channel, data, len);

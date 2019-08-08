@@ -94,6 +94,7 @@ static const uint32_t MESHLINK_CHANNEL_RELIABLE = 1;   // Data is retransmitted 
 static const uint32_t MESHLINK_CHANNEL_ORDERED = 2;    // Data is delivered in-order to the application.
 static const uint32_t MESHLINK_CHANNEL_FRAMED = 4;     // Data is delivered in chunks of the same length as data was originally sent.
 static const uint32_t MESHLINK_CHANNEL_DROP_LATE = 8;  // When packets are reordered, late packets are ignored.
+static const uint32_t MESHLINK_CHANNEL_NO_PARTIAL = 16; // Calls to meshlink_channel_send() will either send all data or nothing.
 static const uint32_t MESHLINK_CHANNEL_TCP = 3;        // Select TCP semantics.
 static const uint32_t MESHLINK_CHANNEL_UDP = 0;        // Select UDP semantics.
 
@@ -1119,6 +1120,8 @@ extern void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *
  *  @param len          The length of the data, or 0 if there is no data to send.
  *
  *  @return             The amount of data that was queued, which can be less than len, or a negative value in case of an error.
+ *                      If MESHLINK_CHANNEL_NO_PARTIAL is set, then the result will either be len,
+ *                      0 if the buffer is currently too full, or -1 if len is too big even for an empty buffer.
  */
 extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len);
 
