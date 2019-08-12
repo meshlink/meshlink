@@ -221,7 +221,8 @@ struct meshlink_channel {
 	void *priv;
 
 	struct utcp_connection *c;
-	meshlink_aio_buffer_t *aio;
+	meshlink_aio_buffer_t *aio_send;
+	meshlink_aio_buffer_t *aio_receive;
 	meshlink_channel_receive_cb_t receive_cb;
 	meshlink_channel_poll_cb_t poll_cb;
 };

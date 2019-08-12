@@ -10,6 +10,7 @@
 
 static const size_t size = 10000000; // size of data to transfer
 static bool bar_reachable = false;
+static int bar_callbacks = 0;
 static int foo_callbacks = 0;
 static size_t bar_received = 0;
 static struct sync_flag bar_finished_flag;
@@ -50,12 +51,14 @@ void foo_aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void
 	foo_callbacks++;
 }
 
-void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+void bar_aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, void *priv) {
+	(void)mesh;
 	(void)channel;
+	(void)data;
+	(void)len;
+	(void)priv;
 
-	char *indata = mesh->priv;
-	memcpy(indata, data, len);
-	mesh->priv = indata + len;
+	bar_callbacks++;
 	bar_received += len;
 
 	if(bar_received >= size) {
@@ -75,12 +78,13 @@ bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 
 bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	assert(port == 7);
+	assert(!data);
+	assert(!len);
+	char *outdata = mesh->priv;
 
-	meshlink_set_channel_receive_cb(mesh, channel, bar_receive_cb);
-
-	if(data) {
-		bar_receive_cb(mesh, channel, data, len);
-	}
+	meshlink_set_channel_receive_cb(mesh, channel, NULL);
+	assert(meshlink_channel_aio_receive(mesh, channel, outdata, size / 4, bar_aio_cb, NULL));
+	assert(meshlink_channel_aio_receive(mesh, channel, outdata + size / 4, size - size / 4, bar_aio_cb, NULL));
 
 	return true;
 }
@@ -173,6 +177,7 @@ int main(int argc, char *argv[]) {
 	assert(wait_sync_flag(&bar_finished_flag, 10));
 
 	assert(foo_callbacks == 2);
+	assert(bar_callbacks == 2);
 	assert(bar_received == size);
 	assert(!memcmp(indata, outdata, size));
 

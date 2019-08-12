@@ -1139,7 +1139,9 @@ extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t
 typedef void (*meshlink_aio_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, void *priv);
 
 /// Transmit data on a channel asynchronously
-/** This queues data to send to the remote node.
+/** This registers a buffer that will be used to send data to the remote node.
+ *  Multiple buffers can be registered, in which case data will be sent in the order the buffers were registered.
+ *  While there are still buffers with unsent data, the poll callback will not be called.
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param channel      A handle for the channel.
@@ -1152,6 +1154,23 @@ typedef void (*meshlink_aio_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *c
  *  @return             True if the buffer was enqueued, false otherwise.
  */
 extern bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv);
+
+/// Receive data on a channel asynchronously
+/** This registers a buffer that will be filled with incoming channel data.
+ *  Multiple buffers can be registered, in which case data will be received in the order the buffers were registered.
+ *  While there are still buffers that have not been filled, the receive callback will not be called.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *  @param data         A pointer to a buffer that will be filled with incoming data.
+ *                      After meshlink_channel_aio_receive() returns, the buffer may not be modified or freed by the application
+ *                      until the callback routine is called.
+ *  @param len          The length of the data.
+ *  @param cb           A pointer to the function which will be called when MeshLink has finished using the buffer.
+ *
+ *  @return             True if the buffer was enqueued, false otherwise.
+ */
+extern bool meshlink_channel_aio_receive(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv);
 
 /// Get channel flags.
 /** This returns the flags used when opening this channel.

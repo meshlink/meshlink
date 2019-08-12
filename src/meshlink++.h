@@ -735,7 +735,9 @@ public:
 	}
 
 	/// Transmit data on a channel asynchronously
-	/** This queues data to send to the remote node.
+	/** This registers a buffer that will be used to send data to the remote node.
+	 *  Multiple buffers can be registered, in which case data will be sent in the order the buffers were registered.
+	 *  While there are still buffers with unsent data, the poll callback will not be called.
 	 *
 	 *  @param channel      A handle for the channel.
 	 *  @param data         A pointer to a buffer containing data sent by the source, or NULL if there is no data to send.
@@ -748,6 +750,24 @@ public:
 	 */
 	bool channel_aio_send(channel *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv) {
 		return meshlink_channel_aio_send(handle, channel, data, len, cb, priv);
+	}
+
+	/// Receive data on a channel asynchronously
+	/** This registers a buffer that will be filled with incoming channel data.
+	 *  Multiple buffers can be registered, in which case data will be received in the order the buffers were registered.
+	 *  While there are still buffers that have not been filled, the receive callback will not be called.
+	 *
+	 *  @param channel      A handle for the channel.
+	 *  @param data         A pointer to a buffer that will be filled with incoming data.
+	 *                      After meshlink_channel_aio_receive() returns, the buffer may not be modified or freed by the application
+	 *                      until the callback routine is called.
+	 *  @param len          The length of the data.
+	 *  @param cb           A pointer to the function which will be called when MeshLink has finished using the buffer.
+	 *
+	 *  @return             True if the buffer was enqueued, false otherwise.
+	 */
+	bool channel_aio_receive(channel *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv) {
+		return meshlink_channel_aio_receive(handle, channel, data, len, cb, priv);
 	}
 
 	/// Get the amount of bytes in the send buffer.
