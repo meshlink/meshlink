@@ -9,6 +9,7 @@ devtool_trybind_probe
 meshlink_add_address
 meshlink_add_external_address
 meshlink_blacklist
+meshlink_channel_aio_send
 meshlink_channel_close
 meshlink_channel_get_flags
 meshlink_channel_get_recvq

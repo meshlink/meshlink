@@ -205,12 +205,23 @@ struct meshlink_submesh {
 	void *priv;
 };
 
+/// An AIO buffer.
+typedef struct meshlink_aio_buffer {
+	const void *data;
+	size_t len;
+	size_t done;
+	meshlink_aio_cb_t cb;
+	void *priv;
+	struct meshlink_aio_buffer *next;
+} meshlink_aio_buffer_t;
+
 /// A channel.
 struct meshlink_channel {
 	struct node_t *node;
 	void *priv;
 
 	struct utcp_connection *c;
+	meshlink_aio_buffer_t *aio;
 	meshlink_channel_receive_cb_t receive_cb;
 	meshlink_channel_poll_cb_t poll_cb;
 };
