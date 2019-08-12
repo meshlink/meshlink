@@ -79,7 +79,7 @@ typedef struct node_t {
 
 	struct connection_t *connection;        /* Connection associated with this node (if a direct connection exists) */
 	time_t last_connect_try;
-	time_t last_successfull_connection;
+	time_t last_successful_connection;
 
 	char *canonical_address;                /* The canonical address of this node, if known */
 	sockaddr_t recent[5];                   /* Recently seen addresses */

@@ -432,7 +432,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	n->devclass = devclass;
 	n->status.dirty = true;
 
-	n->last_successfull_connection = mesh->loop.now.tv_sec;
+	n->last_successful_connection = mesh->loop.now.tv_sec;
 
 	n->connection = c;
 	c->node = n;
