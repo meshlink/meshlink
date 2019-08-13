@@ -3,9 +3,10 @@ TESTS = \
 	basicpp.test \
 	channels.test \
 	channels-aio.test \
+	channels-cornercases.test \
 	channels-failure.test \
 	channels-fork.test \
-	channels-cornercases.test \
+	channels-no-partial.test \
 	duplicate.test \
 	encrypted.test \
 	ephemeral.test \
@@ -29,9 +30,10 @@ check_PROGRAMS = \
 	basicpp \
 	channels \
 	channels-aio \
+	channels-cornercases \
 	channels-failure \
 	channels-fork \
-	channels-cornercases \
+	channels-no-partial \
 	duplicate \
 	echo-fork \
 	encrypted \
@@ -57,6 +59,9 @@ channels_LDADD = ../src/libmeshlink.la
 
 channels_aio_SOURCES = channels-aio.c utils.c utils.h
 channels_aio_LDADD = ../src/libmeshlink.la
+
+channels_no_partial_SOURCES = channels-no-partial.c utils.c utils.h
+channels_no_partial_LDADD = ../src/libmeshlink.la
 
 channels_failure_SOURCES = channels-failure.c utils.c utils.h
 channels_failure_LDADD = ../src/libmeshlink.la

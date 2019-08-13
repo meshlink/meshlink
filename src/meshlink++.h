@@ -650,6 +650,30 @@ public:
 		meshlink_set_channel_poll_cb(handle, channel, (meshlink_channel_poll_cb_t)cb);
 	}
 
+	/// Set the send buffer size of a channel.
+	/** This function sets the desired size of the send buffer.
+	 *  The default size is 128 kB.
+	 *
+	 *  @param channel   A handle for the channel.
+	 *  @param size      The desired size for the send buffer.
+	 *                   If a NULL pointer is given, the callback will be disabled.
+	 */
+	void set_channel_sndbuf(channel *channel, size_t size) {
+		meshlink_set_channel_sndbuf(handle, channel, size);
+	}
+
+	/// Set the receive buffer size of a channel.
+	/** This function sets the desired size of the receive buffer.
+	 *  The default size is 128 kB.
+	 *
+	 *  @param channel   A handle for the channel.
+	 *  @param size      The desired size for the send buffer.
+	 *                   If a NULL pointer is given, the callback will be disabled.
+	 */
+	void set_channel_rcvbuf(channel *channel, size_t size) {
+		meshlink_set_channel_rcvbuf(handle, channel, size);
+	}
+
 	/// Open a reliable stream channel to another node.
 	/** This function is called whenever a remote node wants to open a channel to the local node.
 	 *  The application then has to decide whether to accept or reject this channel.
