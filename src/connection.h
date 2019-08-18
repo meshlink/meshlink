@@ -40,6 +40,7 @@ typedef struct connection_status_t {
 	uint16_t log: 1;                    /* 1 if this is a control connection requesting log dump */
 	uint16_t invitation: 1;             /* 1 if this is an invitation */
 	uint16_t invitation_used: 1;        /* 1 if the invitation has been consumed */
+	uint16_t initiator: 1;              /* 1 if we initiated this connection */
 } connection_status_t;
 
 #include "ecdsa.h"

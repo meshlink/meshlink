@@ -577,6 +577,7 @@ begin:
 	/* Now that there is a working socket, fill in the rest and register this connection. */
 
 	c->status.connecting = true;
+	c->status.initiator = true;
 	c->name = xstrdup(outgoing->node->name);
 	c->last_ping_time = mesh->loop.now.tv_sec;
 
