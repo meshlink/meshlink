@@ -156,7 +156,7 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		if(from->sptps.label) {
 			logger(mesh, MESHLINK_DEBUG, "Got REQ_KEY from %s while we already started a SPTPS session!", from->name);
 
-			if(strcmp(mesh->self->name, from->name) < 0) {
+			if(mesh->loop.now.tv_sec < from->last_req_key + mesh->pingtimeout / 2 && strcmp(mesh->self->name, from->name) < 0) {
 				logger(mesh, MESHLINK_DEBUG, "Ignoring REQ_KEY from %s.", from->name);
 				return true;
 			}
