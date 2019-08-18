@@ -201,7 +201,6 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 				logger(mesh, MESHLINK_WARNING, "Got %s from %s which does not match existing entry",
 				       "ADD_EDGE", c->name);
 				edge_del(mesh, e);
-				graph(mesh);
 			}
 		} else {
 			return true;
