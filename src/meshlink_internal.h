@@ -208,9 +208,13 @@ struct meshlink_submesh {
 /// An AIO buffer.
 typedef struct meshlink_aio_buffer {
 	const void *data;
+	int fd;
 	size_t len;
 	size_t done;
-	meshlink_aio_cb_t cb;
+	union {
+		meshlink_aio_cb_t buffer;
+		meshlink_aio_fd_cb_t fd;
+	} cb;
 	void *priv;
 	struct meshlink_aio_buffer *next;
 } meshlink_aio_buffer_t;

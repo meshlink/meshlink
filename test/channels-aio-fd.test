@@ -1,0 +1,4 @@
+#!/bin/sh
+
+rm -Rf channels_aio_fd_conf.*
+./channels-aio-fd

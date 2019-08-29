@@ -3,6 +3,7 @@ TESTS = \
 	basicpp.test \
 	channels.test \
 	channels-aio.test \
+	channels-aio-fd.test \
 	channels-cornercases.test \
 	channels-failure.test \
 	channels-fork.test \
@@ -30,6 +31,7 @@ check_PROGRAMS = \
 	basicpp \
 	channels \
 	channels-aio \
+	channels-aio-fd \
 	channels-cornercases \
 	channels-failure \
 	channels-fork \
@@ -59,6 +61,9 @@ channels_LDADD = ../src/libmeshlink.la
 
 channels_aio_SOURCES = channels-aio.c utils.c utils.h
 channels_aio_LDADD = ../src/libmeshlink.la
+
+channels_aio_fd_SOURCES = channels-aio-fd.c utils.c utils.h
+channels_aio_fd_LDADD = ../src/libmeshlink.la
 
 channels_no_partial_SOURCES = channels-no-partial.c utils.c utils.h
 channels_no_partial_LDADD = ../src/libmeshlink.la

@@ -1156,9 +1156,19 @@ extern ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t
  *  @param data      A pointer to a buffer containing the enqueued data.
  *  @param len       The length of the buffer.
  *  @param priv      A private pointer which was set by the application when submitting the buffer.
-};
  */
 typedef void (*meshlink_aio_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, void *priv);
+
+/// A callback for asynchronous I/O to and from filedescriptors.
+/** This callbacks signals that MeshLink has finished using this filedescriptor.
+ *
+ *  @param mesh      A handle which represents an instance of MeshLink.
+ *  @param channel   A handle for the channel which used this filedescriptor.
+ *  @param fd        The filedescriptor that was used.
+ *  @param len       The length of the data that was successfully sent or received.
+ *  @param priv      A private pointer which was set by the application when submitting the buffer.
+ */
+typedef void (*meshlink_aio_fd_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *channel, int fd, size_t len, void *priv);
 
 /// Transmit data on a channel asynchronously
 /** This registers a buffer that will be used to send data to the remote node.
@@ -1177,6 +1187,21 @@ typedef void (*meshlink_aio_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t *c
  */
 extern bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv);
 
+/// Transmit data on a channel asynchronously from a filedescriptor
+/** This will read up to the specified length number of bytes from the given filedescriptor, and send it over the channel.
+ *  The callback may be returned early if there is an error reading from the filedescriptor.
+ *  While there is still with unsent data, the poll callback will not be called.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *  @param fd           A file descriptor from which data will be read.
+ *  @param len          The length of the data, or 0 if there is no data to send.
+ *  @param cb           A pointer to the function which will be called when MeshLink has finished using the filedescriptor.
+ *
+ *  @return             True if the buffer was enqueued, false otherwise.
+ */
+extern bool meshlink_channel_aio_fd_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, int fd, size_t len, meshlink_aio_fd_cb_t cb, void *priv);
+
 /// Receive data on a channel asynchronously
 /** This registers a buffer that will be filled with incoming channel data.
  *  Multiple buffers can be registered, in which case data will be received in the order the buffers were registered.
@@ -1193,6 +1218,21 @@ extern bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_
  *  @return             True if the buffer was enqueued, false otherwise.
  */
 extern bool meshlink_channel_aio_receive(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv);
+
+/// Receive data on a channel asynchronously and send it to a filedescriptor
+/** This will read up to the specified length number of bytes from the channel, and send it to the filedescriptor.
+ *  The callback may be returned early if there is an error writing to the filedescriptor.
+ *  While there is still unread data, the receive callback will not be called.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *  @param fd           A file descriptor to which data will be written.
+ *  @param len          The length of the data.
+ *  @param cb           A pointer to the function which will be called when MeshLink has finished using the filedescriptor.
+ *
+ *  @return             True if the buffer was enqueued, false otherwise.
+ */
+extern bool meshlink_channel_aio_fd_receive(meshlink_handle_t *mesh, meshlink_channel_t *channel, int fd, size_t len, meshlink_aio_fd_cb_t cb, void *priv);
 
 /// Get channel flags.
 /** This returns the flags used when opening this channel.
