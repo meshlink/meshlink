@@ -661,6 +661,11 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 		}
 	}
 
+	/* Ensure the configuration directory metadata is on disk */
+	if(!config_sync(mesh, "current")) {
+		return false;
+	}
+
 	sptps_send_record(&(mesh->sptps), 1, ecdsa_get_public_key(mesh->private_key), 32);
 
 	logger(mesh, MESHLINK_DEBUG, "Configuration stored in: %s\n", mesh->confbase);
@@ -887,6 +892,11 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	if(!write_main_config_files(mesh)) {
 		logger(mesh, MESHLINK_ERROR, "Could not write main config files into %s/current: %s\n", mesh->confbase, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
+		return false;
+	}
+
+	/* Ensure the configuration directory metadata is on disk */
+	if(!config_sync(mesh, "current")) {
 		return false;
 	}
 
@@ -2711,6 +2721,10 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 		return false;
 	}
 
+	if(!config_sync(mesh, "current")) {
+		return false;
+	}
+
 	return true;
 }
 
@@ -2740,6 +2754,8 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 
 	n->status.blacklisted = true;
 	node_write_config(mesh, n);
+	config_sync(mesh, "current");
+
 	logger(mesh, MESHLINK_DEBUG, "Blacklisted %s.\n", node->name);
 
 	//Immediately terminate any connections we have with the blacklisted node
@@ -2783,6 +2799,7 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 
 	n->status.blacklisted = false;
 	node_write_config(mesh, n);
+	config_sync(mesh, "current");
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return;

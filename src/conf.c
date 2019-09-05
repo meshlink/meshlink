@@ -80,18 +80,21 @@ static bool sync_path(const char *pathname) {
 
 	if(fd < 0) {
 		logger(NULL, MESHLINK_ERROR, "Failed to open %s: %s\n", pathname, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
 	}
 
 	if(fsync(fd)) {
 		logger(NULL, MESHLINK_ERROR, "Failed to sync %s: %s\n", pathname, strerror(errno));
 		close(fd);
+		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
 	}
 
 	if(close(fd)) {
 		logger(NULL, MESHLINK_ERROR, "Failed to close %s: %s\n", pathname, strerror(errno));
 		close(fd);
+		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
 	}
 
@@ -341,6 +344,31 @@ bool config_rename(meshlink_handle_t *mesh, const char *old_conf_subdir, const c
 	snprintf(new_path, sizeof(new_path), "%s" SLASH "%s", mesh->confbase, new_conf_subdir);
 
 	return rename(old_path, new_path) == 0;
+}
+
+bool config_sync(meshlink_handle_t *mesh, const char *conf_subdir) {
+	if(!mesh->confbase) {
+		return true;
+	}
+
+	if(!conf_subdir) {
+		return false;
+	}
+
+	char path[PATH_MAX];
+	snprintf(path, sizeof(path), "%s" SLASH "%s" SLASH "hosts", mesh->confbase, conf_subdir);
+
+	if(!sync_path(path)) {
+		return false;
+	}
+
+	snprintf(path, sizeof(path), "%s" SLASH "%s", mesh->confbase, conf_subdir);
+
+	if(!sync_path(path)) {
+		return false;
+	}
+
+	return true;
 }
 
 bool meshlink_confbase_exists(meshlink_handle_t *mesh) {
