@@ -138,7 +138,7 @@ struct meshlink_handle {
 	struct ecdsa *private_key;
 	struct ecdsa *invitation_key;
 
-	int32_t devclass;
+	dev_class_t devclass;
 
 	int invitation_timeout;
 	int pinginterval;       /* seconds between pings */

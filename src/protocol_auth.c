@@ -395,7 +395,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		return false;
 	}
 
-	if(devclass < 0 || devclass > _DEV_CLASS_MAX) {
+	if(devclass < 0 || devclass >= DEV_CLASS_COUNT) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ACK", c->name, "devclass invalid");
 		return false;
 	}
@@ -450,7 +450,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	/* Create an edge_t for this connection */
 
-	assert(devclass >= 0 && devclass <= _DEV_CLASS_MAX);
+	assert(devclass >= 0 && devclass < DEV_CLASS_COUNT);
 
 	c->edge = new_edge();
 	c->edge->from = mesh->self;

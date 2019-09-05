@@ -216,7 +216,7 @@ static bool test_steps_mesh_get_node_by_dev_class_02(void) {
 	assert(mesh_nut);
 	meshlink_set_log_cb(mesh_nut, TEST_MESHLINK_LOG_LEVEL, log_message);
 
-	nodes = meshlink_get_all_nodes_by_dev_class(mesh_nut, _DEV_CLASS_MAX + 10, NULL, &nnodes);
+	nodes = meshlink_get_all_nodes_by_dev_class(mesh_nut, DEV_CLASS_COUNT + 10, NULL, &nnodes);
 	assert_int_equal(nodes, NULL);
 	assert_int_not_equal(meshlink_errno, 0);
 

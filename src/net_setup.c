@@ -85,11 +85,11 @@ bool node_read_partial(meshlink_handle_t *mesh, node_t *n) {
 		}
 	}
 
-	int32_t devclass = packmsg_get_int32(&in);
+	dev_class_t devclass = packmsg_get_int32(&in);
 	bool blacklisted = packmsg_get_bool(&in);
 	config_free(&config);
 
-	if(!packmsg_input_ok(&in) || devclass < 0 || devclass > _DEV_CLASS_MAX) {
+	if(!packmsg_input_ok(&in) || devclass < 0 || devclass >= DEV_CLASS_COUNT) {
 		return false;
 	}
 

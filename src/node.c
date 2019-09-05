@@ -57,7 +57,7 @@ node_t *new_node(void) {
 	n->edge_tree = new_edge_tree();
 	n->mtu = MTU;
 	n->maxmtu = MTU;
-	n->devclass = _DEV_CLASS_MAX;
+	n->devclass = DEV_CLASS_UNKNOWN;
 
 	return n;
 }

@@ -575,7 +575,7 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 
 	char *name = packmsg_get_str_dup(&in);
 	packmsg_skip_element(&in); /* submesh */
-	int32_t devclass = packmsg_get_int32(&in);
+	dev_class_t devclass = packmsg_get_int32(&in);
 	uint32_t count = packmsg_get_array(&in);
 
 	if(!name) {
@@ -1012,7 +1012,7 @@ meshlink_open_params_t *meshlink_open_params_init(const char *confbase, const ch
 		}
 	}
 
-	if((int)devclass < 0 || devclass > _DEV_CLASS_MAX) {
+	if(devclass < 0 || devclass >= DEV_CLASS_COUNT) {
 		logger(NULL, MESHLINK_ERROR, "Invalid devclass given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
@@ -1237,7 +1237,7 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 		}
 	}
 
-	if((int)params->devclass < 0 || params->devclass > _DEV_CLASS_MAX) {
+	if(params->devclass < 0 || params->devclass >= DEV_CLASS_COUNT) {
 		logger(NULL, MESHLINK_ERROR, "Invalid devclass given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
@@ -1919,7 +1919,7 @@ static bool search_node_by_submesh(const node_t *node, const void *condition) {
 }
 
 meshlink_node_t **meshlink_get_all_nodes_by_dev_class(meshlink_handle_t *mesh, dev_class_t devclass, meshlink_node_t **nodes, size_t *nmemb) {
-	if(!mesh || ((int)devclass < 0) || (devclass > _DEV_CLASS_MAX) || !nmemb) {
+	if(!mesh || devclass < 0 || devclass >= DEV_CLASS_COUNT || !nmemb) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
 	}

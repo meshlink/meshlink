@@ -424,7 +424,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		if(!connect_to && min_connects <= cur_connects && cur_connects < max_connects) {
 			unsigned int connects = 0;
 
-			for(int32_t devclass = 0; devclass <= mesh->devclass; ++devclass) {
+			for(dev_class_t devclass = 0; devclass <= mesh->devclass; ++devclass) {
 				for list_each(connection_t, c, mesh->connections) {
 					if(c->status.active && c->node && c->node->devclass == devclass) {
 						connects += 1;
@@ -519,7 +519,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		if(min_connects < cur_connects /*&& cur_connects <= max_connects*/) {
 			unsigned int connects = 0;
 
-			for(int32_t devclass = 0; devclass <= mesh->devclass; ++devclass) {
+			for(dev_class_t devclass = 0; devclass <= mesh->devclass; ++devclass) {
 				for list_each(connection_t, c, mesh->connections) {
 					if(c->status.active && c->node && c->node->devclass == devclass) {
 						connects += 1;

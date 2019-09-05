@@ -79,7 +79,7 @@ typedef enum {
 	DEV_CLASS_STATIONARY = 1,
 	DEV_CLASS_PORTABLE = 2,
 	DEV_CLASS_UNKNOWN = 3,
-	_DEV_CLASS_MAX = 3
+	DEV_CLASS_COUNT
 } dev_class_t;
 
 /// Invitation flags

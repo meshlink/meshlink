@@ -108,12 +108,12 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	// Check if devclasses are valid
 
-	if(from_devclass < 0 || from_devclass > _DEV_CLASS_MAX) {
+	if(from_devclass < 0 || from_devclass >= DEV_CLASS_COUNT) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ADD_EDGE", c->name, "from devclass invalid");
 		return false;
 	}
 
-	if(to_devclass < 0 || to_devclass > _DEV_CLASS_MAX) {
+	if(to_devclass < 0 || to_devclass >= DEV_CLASS_COUNT) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "ADD_EDGE", c->name, "to devclass invalid");
 		return false;
 	}
