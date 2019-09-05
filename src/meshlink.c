@@ -1269,6 +1269,8 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 	mesh->invitation_timeout = 604800; // 1 week
 	mesh->netns = params->netns;
 	mesh->submeshes = NULL;
+	mesh->log_cb = global_log_cb;
+	mesh->log_level = global_log_level;
 
 	memcpy(mesh->dev_class_traits, default_class_traits, sizeof(default_class_traits));
 
