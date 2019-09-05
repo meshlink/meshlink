@@ -76,6 +76,15 @@ struct meshlink_open_params {
 	size_t keylen;
 };
 
+/// Device class traits
+typedef struct {
+	int pinginterval;
+	int pingtimeout;
+	unsigned int min_connects;
+	unsigned int max_connects;
+	int edge_weight;
+} dev_class_traits_t;
+
 /// A handle for an instance of MeshLink.
 struct meshlink_handle {
 	// public members
@@ -141,10 +150,10 @@ struct meshlink_handle {
 	dev_class_t devclass;
 
 	int invitation_timeout;
-	int pinginterval;       /* seconds between pings */
-	int pingtimeout;        /* seconds to wait for response */
 	int maxtimeout;
 	int udp_choice;
+
+	dev_class_traits_t dev_class_traits[DEV_CLASS_COUNT];
 
 	int netns;
 
@@ -244,14 +253,5 @@ extern meshlink_log_cb_t global_log_cb;
 extern int check_port(meshlink_handle_t *mesh);
 extern void handle_duplicate_node(meshlink_handle_t *mesh, struct node_t *n);
 extern void handle_network_change(meshlink_handle_t *mesh, bool online);
-
-/// Device class traits
-typedef struct {
-	unsigned int min_connects;
-	unsigned int max_connects;
-	int edge_weight;
-} dev_class_traits_t;
-
-extern const dev_class_traits_t dev_class_traits[];
 
 #endif

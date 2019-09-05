@@ -181,13 +181,15 @@ static void free_past_request(past_request_t *r) {
 	free(r);
 }
 
+static const int request_timeout = 60;
+
 static void age_past_requests(event_loop_t *loop, void *data) {
 	(void)data;
 	meshlink_handle_t *mesh = loop->data;
 	int left = 0, deleted = 0;
 
 	for splay_each(past_request_t, p, mesh->past_request_tree) {
-		if(p->firstseen + mesh->pinginterval <= mesh->loop.now.tv_sec) {
+		if(p->firstseen + request_timeout <= mesh->loop.now.tv_sec) {
 			splay_delete_node(mesh->past_request_tree, node), deleted++;
 		} else {
 			left++;

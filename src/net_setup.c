@@ -453,9 +453,6 @@ bool setup_network(meshlink_handle_t *mesh) {
 	init_edges(mesh);
 	init_requests(mesh);
 
-	mesh->pinginterval = 60;
-	mesh->pingtimeout = 5;
-
 	if(!setup_myself(mesh)) {
 		return false;
 	}

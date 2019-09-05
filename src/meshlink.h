@@ -1279,7 +1279,6 @@ extern size_t meshlink_channel_get_recvq(meshlink_handle_t *mesh, meshlink_chann
 extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr);
 
 /// Enable or disable zeroconf discovery of local peers
-
 /** This controls whether zeroconf discovery using the Catta library will be
  *  enabled to search for peers on the local network. By default, it is enabled.
  *
@@ -1289,7 +1288,6 @@ extern void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node
 extern void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable);
 
 /// Performs key rotation for an encrypted storage
-
 /** This rotates the (master) key for an encrypted storage and discards the old key
  *  if the call succeeded. This is an atomic call.
  *
@@ -1300,6 +1298,17 @@ extern void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable);
  *  @return         This function returns true if the key rotation for the encrypted storage succeeds, false otherwise.
  */
 extern bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key, size_t new_keylen);
+
+/// Set device class timeouts
+/** This sets the ping interval and timeout for a given device class.
+ *
+ *  @param mesh          A handle which represents an instance of MeshLink.
+ *  @param devclass      The device class to update
+ *  @param pinginterval  The interval between keepalive packets, in seconds. The default is 60.
+ *  @param pingtimeout   The required time within which a peer should respond, in seconds. The default is 5.
+ *                       The timeout must be smaller than the interval.
+ */
+extern void meshlink_set_dev_class_timeouts(meshlink_handle_t *mesh, dev_class_t devclass, int pinginterval, int pingtimeout);
 
 #ifdef __cplusplus
 }

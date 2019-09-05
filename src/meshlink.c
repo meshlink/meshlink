@@ -1150,6 +1150,14 @@ void meshlink_open_params_free(meshlink_open_params_t *params) {
 	free(params);
 }
 
+/// Device class traits
+static const dev_class_traits_t default_class_traits[DEV_CLASS_COUNT] = {
+	{ .pingtimeout = 5, .pinginterval = 60, .min_connects = 3, .max_connects = 10000, .edge_weight = 1 }, // DEV_CLASS_BACKBONE
+	{ .pingtimeout = 5, .pinginterval = 60, .min_connects = 3, .max_connects = 100, .edge_weight = 3 },   // DEV_CLASS_STATIONARY
+	{ .pingtimeout = 5, .pinginterval = 60, .min_connects = 3, .max_connects = 3, .edge_weight = 6 },     // DEV_CLASS_PORTABLE
+	{ .pingtimeout = 5, .pinginterval = 60, .min_connects = 1, .max_connects = 1, .edge_weight = 9 },     // DEV_CLASS_UNKNOWN
+};
+
 meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
 	if(!confbase || !*confbase) {
 		logger(NULL, MESHLINK_ERROR, "No confbase given!\n");
@@ -1261,6 +1269,8 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 	mesh->invitation_timeout = 604800; // 1 week
 	mesh->netns = params->netns;
 	mesh->submeshes = NULL;
+
+	memcpy(mesh->dev_class_traits, default_class_traits, sizeof(default_class_traits));
 
 	if(usingname) {
 		mesh->name = xstrdup(params->name);
@@ -3383,6 +3393,23 @@ end:
 #endif
 }
 
+void meshlink_set_dev_class_timeouts(meshlink_handle_t *mesh, dev_class_t devclass, int pinginterval, int pingtimeout) {
+	if(!mesh || devclass < 0 || devclass >= DEV_CLASS_COUNT) {
+		meshlink_errno = EINVAL;
+		return;
+	}
+
+	if(pinginterval < 1 || pingtimeout < 1 || pingtimeout > pinginterval) {
+		meshlink_errno = EINVAL;
+		return;
+	}
+
+	pthread_mutex_lock(&mesh->mesh_mutex);
+	mesh->dev_class_traits[devclass].pinginterval = pinginterval;
+	mesh->dev_class_traits[devclass].pingtimeout = pingtimeout;
+	pthread_mutex_unlock(&mesh->mesh_mutex);
+}
+
 void handle_network_change(meshlink_handle_t *mesh, bool online) {
 	(void)online;
 
@@ -3403,11 +3430,3 @@ static void __attribute__((constructor)) meshlink_init(void) {
 static void __attribute__((destructor)) meshlink_exit(void) {
 	crypto_exit();
 }
-
-/// Device class traits
-const dev_class_traits_t dev_class_traits[_DEV_CLASS_MAX + 1] = {
-	{ .min_connects = 3, .max_connects = 10000, .edge_weight = 1 }, // DEV_CLASS_BACKBONE
-	{ .min_connects = 3, .max_connects = 100, .edge_weight = 3 },   // DEV_CLASS_STATIONARY
-	{ .min_connects = 3, .max_connects = 3, .edge_weight = 6 },             // DEV_CLASS_PORTABLE
-	{ .min_connects = 1, .max_connects = 1, .edge_weight = 9 },             // DEV_CLASS_UNKNOWN
-};

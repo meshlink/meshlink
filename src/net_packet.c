@@ -70,7 +70,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 	if(n->mtuprobes > 32) {
 		if(!n->minmtu) {
 			n->mtuprobes = 31;
-			timeout = mesh->pinginterval;
+			timeout = mesh->dev_class_traits[n->devclass].pinginterval;
 			goto end;
 		}
 
@@ -99,10 +99,10 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 	}
 
 	if(n->mtuprobes == 31) {
-		timeout = mesh->pinginterval;
+		timeout = mesh->dev_class_traits[n->devclass].pinginterval;
 		goto end;
 	} else if(n->mtuprobes == 32) {
-		timeout = mesh->pingtimeout;
+		timeout = mesh->dev_class_traits[n->devclass].pingtimeout;
 	}
 
 	for(int i = 0; i < 5; i++) {

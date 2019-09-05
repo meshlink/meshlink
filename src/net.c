@@ -39,6 +39,8 @@ static inline int min(int a, int b) {
 }
 #endif
 
+static const int default_timeout = 5;
+
 /*
   Terminate a connection:
   - Mark it as inactive
@@ -110,18 +112,20 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 	logger(mesh, MESHLINK_DEBUG, "timeout_handler()");
 
 	for list_each(connection_t, c, mesh->connections) {
+		int pingtimeout = c->node ? mesh->dev_class_traits[c->node->devclass].pingtimeout : default_timeout;
+
 		// Also make sure that if outstanding key requests for the UDP counterpart of a connection has timed out, we restart it.
 		if(c->node) {
-			if(c->node->status.waitingforkey && c->node->last_req_key + mesh->pingtimeout <= mesh->loop.now.tv_sec) {
+			if(c->node->status.waitingforkey && c->node->last_req_key + pingtimeout <= mesh->loop.now.tv_sec) {
 				send_req_key(mesh, c->node);
 			}
 		}
 
-		if(c->last_ping_time + mesh->pingtimeout <= mesh->loop.now.tv_sec) {
+		if(c->last_ping_time + pingtimeout <= mesh->loop.now.tv_sec) {
 			if(c->status.active) {
 				if(c->status.pinged) {
 					logger(mesh, MESHLINK_INFO, "%s didn't respond to PING in %ld seconds", c->name, (long)mesh->loop.now.tv_sec - c->last_ping_time);
-				} else if(c->last_ping_time + mesh->pinginterval <= mesh->loop.now.tv_sec) {
+				} else if(c->last_ping_time + mesh->dev_class_traits[c->node->devclass].pinginterval <= mesh->loop.now.tv_sec) {
 					send_ping(mesh, c);
 					continue;
 				} else {
@@ -140,7 +144,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 	}
 
 	timeout_set(&mesh->loop, data, &(struct timeval) {
-		mesh->pingtimeout, rand() % 100000
+		default_timeout, rand() % 100000
 	});
 }
 
@@ -351,7 +355,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 	mesh->contradicting_add_edge = 0;
 	mesh->contradicting_del_edge = 0;
 
-	int timeout = 5;
+	int timeout = default_timeout;
 
 	/* Check if we need to make or break connections. */
 
@@ -359,7 +363,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		logger(mesh, MESHLINK_DEBUG, "--- autoconnect begin ---");
 
-		int retry_timeout = min(mesh->nodes->count * 5, 60);
+		int retry_timeout = min(mesh->nodes->count * default_timeout, 60);
 
 		logger(mesh, MESHLINK_DEBUG, "* devclass = %d", mesh->devclass);
 		logger(mesh, MESHLINK_DEBUG, "* nodes = %d", mesh->nodes->count);
@@ -387,8 +391,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		// get min_connects and max_connects
 
-		unsigned int min_connects = dev_class_traits[mesh->devclass].min_connects;
-		unsigned int max_connects = dev_class_traits[mesh->devclass].max_connects;
+		unsigned int min_connects = mesh->dev_class_traits[mesh->devclass].min_connects;
+		unsigned int max_connects = mesh->dev_class_traits[mesh->devclass].max_connects;
 
 		logger(mesh, MESHLINK_DEBUG, "* min_connects = %d", min_connects);
 		logger(mesh, MESHLINK_DEBUG, "* max_connects = %d", max_connects);
@@ -690,7 +694,7 @@ void retry(meshlink_handle_t *mesh) {
 */
 int main_loop(meshlink_handle_t *mesh) {
 	timeout_add(&mesh->loop, &mesh->pingtimer, timeout_handler, &mesh->pingtimer, &(struct timeval) {
-		mesh->pingtimeout, rand() % 100000
+		default_timeout, rand() % 100000
 	});
 	timeout_add(&mesh->loop, &mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval) {
 		0, 0
@@ -702,6 +706,10 @@ int main_loop(meshlink_handle_t *mesh) {
 
 	if(!event_loop_run(&(mesh->loop), &(mesh->mesh_mutex))) {
 		logger(mesh, MESHLINK_ERROR, "Error while waiting for input: %s", strerror(errno));
+		abort();
+		timeout_del(&mesh->loop, &mesh->periodictimer);
+		timeout_del(&mesh->loop, &mesh->pingtimer);
+
 		return 1;
 	}
 

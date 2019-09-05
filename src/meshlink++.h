@@ -871,6 +871,16 @@ public:
 		meshlink_enable_discovery(handle, enable);
 	}
 
+	/// Set device class timeouts
+	/** This sets the ping interval and timeout for a given device class.
+	 *
+	 *  @param devclass      The device class to update
+	 *  @param pinginterval  The interval between keepalive packets, in seconds. The default is 60.
+	 *  @param pingtimeout   The required time within which a peer should respond, in seconds. The default is 5.
+	 *                       The timeout must be smaller than the interval.
+	 */
+	void set_dev_class_timeouts(dev_class_t devclass, int pinginterval, int pingtimeout);
+
 private:
 	// non-copyable:
 	mesh(const mesh &) /* TODO: C++11: = delete */;

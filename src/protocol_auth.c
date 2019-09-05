@@ -456,7 +456,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	c->edge->from = mesh->self;
 	c->edge->to = n;
 	sockaddrcpy_setport(&c->edge->address, &c->address, atoi(hisport));
-	c->edge->weight = dev_class_traits[devclass].edge_weight;
+	c->edge->weight = mesh->dev_class_traits[devclass].edge_weight;
 	c->edge->connection = c;
 
 	edge_add(mesh, c->edge);

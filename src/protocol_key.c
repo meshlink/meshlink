@@ -31,6 +31,8 @@
 #include "utils.h"
 #include "xalloc.h"
 
+static const int req_key_timeout = 2;
+
 void send_key_changed(meshlink_handle_t *mesh) {
 	send_request(mesh, mesh->everyone, NULL, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
 
@@ -156,7 +158,7 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		if(from->sptps.label) {
 			logger(mesh, MESHLINK_DEBUG, "Got REQ_KEY from %s while we already started a SPTPS session!", from->name);
 
-			if(mesh->loop.now.tv_sec < from->last_req_key + mesh->pingtimeout / 2 && strcmp(mesh->self->name, from->name) < 0) {
+			if(mesh->loop.now.tv_sec < from->last_req_key + req_key_timeout && strcmp(mesh->self->name, from->name) < 0) {
 				logger(mesh, MESHLINK_DEBUG, "Ignoring REQ_KEY from %s.", from->name);
 				return true;
 			}
