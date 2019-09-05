@@ -1,4 +1,4 @@
 #!/bin/sh
 
-rm -Rf channels_conf.*
+rm -Rf channels_fork_conf.*
 ./channels-fork
