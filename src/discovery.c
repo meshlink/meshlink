@@ -341,6 +341,7 @@ static void discovery_log_cb(CattaLogLevel level, const char *txt) {
 }
 
 static void *discovery_loop(void *userdata) {
+	bool status = false;
 	meshlink_handle_t *mesh = userdata;
 	assert(mesh != NULL);
 
@@ -397,13 +398,17 @@ static void *discovery_loop(void *userdata) {
 		goto fail;
 	}
 
+	status = true;
+
+fail:
+
 	pthread_mutex_lock(&mesh->discovery_mutex);
 	pthread_cond_broadcast(&mesh->discovery_cond);
 	pthread_mutex_unlock(&mesh->discovery_mutex);
 
-	catta_simple_poll_loop(mesh->catta_poll);
-
-fail:
+	if(status) {
+		catta_simple_poll_loop(mesh->catta_poll);
+	}
 
 	if(mesh->catta_browser != NULL) {
 		catta_s_service_browser_free(mesh->catta_browser);
