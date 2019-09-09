@@ -2159,9 +2159,6 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 	free(mesh->myport);
 	xasprintf(&mesh->myport, "%d", port);
 
-	/* Write meshlink.conf with the updated port number */
-	write_main_config_files(mesh);
-
 	/* Close down the network. This also deletes mesh->self. */
 	close_network_connections(mesh);
 
@@ -2180,6 +2177,17 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 		meshlink_errno = MESHLINK_ENETWORK;
 	} else {
 		rval = true;
+	}
+
+	/* Rebuild our own list of recent addresses */
+	memset(mesh->self->recent, 0, sizeof(mesh->self->recent));
+	add_local_addresses(mesh);
+
+	/* Write meshlink.conf with the updated port number */
+	write_main_config_files(mesh);
+
+	if(!config_sync(mesh, "current")) {
+		return false;
 	}
 
 done:

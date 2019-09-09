@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <assert.h>
 
 #include "meshlink.h"
 
@@ -182,6 +183,42 @@ int main() {
 	}
 
 	free(corge_url);
+
+	// Check that invitations work correctly after changing ports
+
+	meshlink_set_invitation_timeout(mesh1, 86400);
+	meshlink_stop(mesh1);
+	meshlink_stop(mesh3);
+
+	int oldport = meshlink_get_port(mesh1);
+	bool success;
+
+	for(int i = 0; i < 100; i++) {
+		success = meshlink_set_port(mesh1, 0x9000 + rand() % 0x1000);
+	}
+
+	assert(success);
+	int newport = meshlink_get_port(mesh1);
+	assert(oldport != newport);
+
+	assert(meshlink_start(mesh1));
+	quux_url = meshlink_invite(mesh1, NULL, "quux");
+	fprintf(stderr, "Invitation URL for quux: %s\n", quux_url);
+
+	// The old port should not be in the invitation URL
+
+	char portstr[10];
+	snprintf(portstr, sizeof(portstr), ":%d", oldport);
+	assert(!strstr(quux_url, portstr));
+
+	// The new port should be in the invitation URL
+
+	snprintf(portstr, sizeof(portstr), ":%d", newport);
+	assert(strstr(quux_url, portstr));
+
+	// The invitation should work
+
+	assert(meshlink_join(mesh3, quux_url));
 
 	// Clean up.
 
