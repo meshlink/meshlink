@@ -145,6 +145,9 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 			}
 		}
 
+		/* Also reset any UTCP timers */
+		utcp_reset_timers(from->utcp);
+
 		return true;
 	}
 
