@@ -11,11 +11,11 @@
 #include "../src/meshlink.h"
 #include "utils.h"
 
-volatile bool b_responded = false;
-volatile bool b_closed = false;
-volatile bool a_nonzero_poll_cb = false;
+static volatile bool b_responded = false;
+static volatile bool b_closed = false;
+static volatile size_t a_poll_cb_len;
 
-void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
 	static struct timeval tv0;
 	struct timeval tv;
 
@@ -33,7 +33,7 @@ void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *tex
 	fprintf(stderr, "[%d] %s\n", level, text);
 }
 
-void a_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+static void a_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	(void)mesh;
 	(void)channel;
 
@@ -41,10 +41,11 @@ void a_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const vo
 		b_responded = true;
 	} else if(len == 0) {
 		b_closed = true;
+		set_sync_flag(channel->priv, true);
 	}
 }
 
-void b_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+static void b_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	// Send one message back, then close the channel.
 	if(len) {
 		meshlink_channel_send(mesh, channel, data, len);
@@ -53,7 +54,7 @@ void b_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const vo
 	meshlink_channel_close(mesh, channel);
 }
 
-bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+static bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	(void)mesh;
 	(void)channel;
 	(void)port;
@@ -63,7 +64,7 @@ bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 	return false;
 }
 
-bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	(void)port;
 
 	meshlink_set_channel_accept_cb(mesh, NULL);
@@ -76,27 +77,27 @@ bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t po
 	return true;
 }
 
-void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
 	(void)len;
 
 	meshlink_set_channel_poll_cb(mesh, channel, NULL);
 	set_sync_flag(channel->priv, true);
 }
 
-void poll_cb2(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+static void poll_cb2(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
 	(void)mesh;
 	(void)channel;
 
-	if(len) {
-		a_nonzero_poll_cb = true;
-	}
+	a_poll_cb_len = len;
+	meshlink_set_channel_poll_cb(mesh, channel, NULL);
+	set_sync_flag(channel->priv, true);
 }
 
 int main() {
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
+
 	meshlink_handle_t *a, *b;
 	open_meshlink_pair(&a, &b, "channels-cornercases");
-	//meshlink_set_log_cb(a, MESHLINK_DEBUG, log_cb);
-	//meshlink_set_log_cb(b, MESHLINK_DEBUG, log_cb);
 
 	// Set the callbacks.
 
@@ -149,22 +150,27 @@ int main() {
 
 	// Send a message to b
 
+	struct sync_flag channel_closed = {.flag = false};
+	channel->priv = &channel_closed;
+
 	meshlink_channel_send(a, channel, "Hello", 5);
 
-	sleep(1);
-
+	assert(wait_sync_flag(&channel_closed, 20));
 	assert(b_responded);
 	assert(b_closed);
 
 	// Try to create a second channel
 
+	struct sync_flag channel_polled = {.flag = false};
+
 	meshlink_channel_t *channel2 = meshlink_channel_open(a, nb, 7, a_receive_cb, NULL, 0);
 	assert(channel2);
+	channel2->priv = &channel_polled;
 	meshlink_set_channel_poll_cb(a, channel2, poll_cb2);
 
-	sleep(1);
+	assert(wait_sync_flag(&channel_polled, 20));
 
-	assert(!a_nonzero_poll_cb);
+	assert(0 == a_poll_cb_len);
 
 	return 0;
 }
