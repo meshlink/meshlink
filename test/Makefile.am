@@ -8,6 +8,7 @@ TESTS = \
 	channels-failure.test \
 	channels-fork.test \
 	channels-no-partial.test \
+	channels-udp.test \
 	duplicate.test \
 	encrypted.test \
 	ephemeral.test \
@@ -36,6 +37,7 @@ check_PROGRAMS = \
 	channels-failure \
 	channels-fork \
 	channels-no-partial \
+	channels-udp \
 	duplicate \
 	echo-fork \
 	encrypted \
@@ -76,6 +78,9 @@ channels_fork_LDADD = ../src/libmeshlink.la
 
 channels_cornercases_SOURCES = channels-cornercases.c utils.c utils.h
 channels_cornercases_LDADD = ../src/libmeshlink.la
+
+channels_udp_SOURCES = channels-udp.c utils.c utils.h
+channels_udp_LDADD = ../src/libmeshlink.la
 
 duplicate_SOURCES = duplicate.c
 duplicate_LDADD = ../src/libmeshlink.la

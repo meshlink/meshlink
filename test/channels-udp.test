@@ -1,0 +1,4 @@
+#!/bin/sh
+
+rm -Rf channels_udp_conf.*
+./channels-udp

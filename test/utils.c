@@ -41,6 +41,23 @@ bool wait_sync_flag(struct sync_flag *s, int seconds) {
 	return s->flag;
 }
 
+void link_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b) {
+	// Import and export both side's data
+
+	meshlink_add_address(a, "localhost");
+	meshlink_add_address(b, "localhost");
+
+	char *data = meshlink_export(a);
+	assert(data);
+	assert(meshlink_import(b, data));
+	free(data);
+
+	data = meshlink_export(b);
+	assert(data);
+	assert(meshlink_import(a, data));
+	free(data);
+}
+
 void open_meshlink_pair(meshlink_handle_t **pa, meshlink_handle_t **pb, const char *prefix) {
 	// Create two new MeshLink instances
 
@@ -65,19 +82,7 @@ void open_meshlink_pair(meshlink_handle_t **pa, meshlink_handle_t **pb, const ch
 	meshlink_enable_discovery(a, false);
 	meshlink_enable_discovery(b, false);
 
-	// Import and export both side's data
-
-	meshlink_add_address(a, "localhost");
-
-	char *data = meshlink_export(a);
-	assert(data);
-	assert(meshlink_import(b, data));
-	free(data);
-
-	data = meshlink_export(b);
-	assert(data);
-	assert(meshlink_import(a, data));
-	free(data);
+	link_meshlink_pair(a, b);
 
 	*pa = a;
 	*pb = b;
