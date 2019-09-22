@@ -349,7 +349,21 @@ static void *discovery_loop(void *userdata) {
 	catta_set_log_function(discovery_log_cb);
 
 	// create service type string
-	size_t servicetype_strlen = sizeof(MESHLINK_MDNS_SERVICE_TYPE) + strlen(mesh->appname) + 1;
+	char appname[strlen(mesh->appname) + 2];
+	strcpy(appname, mesh->appname);
+
+	for(char *p = appname; *p; p++) {
+		if(!isalnum(*p) && *p != '_' && *p != '-') {
+			*p = '_';
+		}
+	}
+
+	if(!appname[1]) {
+		appname[1] = '_';
+		appname[2] = '\0';
+	}
+
+	size_t servicetype_strlen = sizeof(MESHLINK_MDNS_SERVICE_TYPE) + strlen(appname) + 1;
 	mesh->catta_servicetype = malloc(servicetype_strlen);
 
 	if(mesh->catta_servicetype == NULL) {
@@ -357,7 +371,7 @@ static void *discovery_loop(void *userdata) {
 		goto fail;
 	}
 
-	snprintf(mesh->catta_servicetype, servicetype_strlen, MESHLINK_MDNS_SERVICE_TYPE, mesh->appname);
+	snprintf(mesh->catta_servicetype, servicetype_strlen, MESHLINK_MDNS_SERVICE_TYPE, appname);
 
 	// Allocate discovery loop object
 	if(!(mesh->catta_poll = catta_simple_poll_new())) {
