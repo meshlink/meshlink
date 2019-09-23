@@ -238,7 +238,7 @@ extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name, 
 
 /// Open or create a MeshLink instance that uses encrypted storage.
 /** This function opens or creates a MeshLink instance.
- *  The state is stored in the configuration directory passed in the variable @a confbase @a.
+ *  The state is stored in the configuration directory passed in the variable @a confbase.
  *  If the configuration directory does not exist yet, for example when it is the first time
  *  this instance is opened, the configuration directory will be automatically created and initialized.
  *  However, the parent directory should already exist, otherwise an error will be returned.
@@ -253,11 +253,11 @@ extern meshlink_handle_t *meshlink_open(const char *confbase, const char *name, 
  *  first set callbacks, and then call meshlink_start().
  *
  *  @param confbase The directory in which MeshLink will store its configuration files.
- *                  After the function returns, the application is free to overwrite or free @a confbase @a.
+ *                  After the function returns, the application is free to overwrite or free @a confbase.
  *  @param name     The name which this instance of the application will use in the mesh.
- *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *                  After the function returns, the application is free to overwrite or free @a name.
  *  @param appname  The application name which will be used in the mesh.
- *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *                  After the function returns, the application is free to overwrite or free @a name.
  *  @param devclass The device class which will be used in the mesh.
  *  @param key      A pointer to a key used to encrypt storage.
  *  @param keylen   The length of the key in bytes.
@@ -281,9 +281,9 @@ extern meshlink_handle_t *meshlink_open_encrypted(const char *confbase, const ch
  *  first set callbacks, and then call meshlink_start().
  *
  *  @param name     The name which this instance of the application will use in the mesh.
- *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *                  After the function returns, the application is free to overwrite or free @a name.
  *  @param appname  The application name which will be used in the mesh.
- *                  After the function returns, the application is free to overwrite or free @a name @a.
+ *                  After the function returns, the application is free to overwrite or free @a name.
  *  @param devclass The device class which will be used in the mesh.
  *
  *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink, or NULL in case of an error.
@@ -564,7 +564,7 @@ extern meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *n
  *
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param name         The name of the submesh for which a handle is requested.
- *                      After this function returns, the application is free to overwrite or free @a name @a.
+ *                      After this function returns, the application is free to overwrite or free @a name.
  *
  *  @return             A pointer to a meshlink_submesh_t which represents the requested submesh,
  *                      or NULL if the requested submesh does not exist.
@@ -1203,6 +1203,7 @@ typedef void (*meshlink_aio_fd_cb_t)(meshlink_handle_t *mesh, meshlink_channel_t
  *                      until the callback routine is called.
  *  @param len          The length of the data, or 0 if there is no data to send.
  *  @param cb           A pointer to the function which will be called when MeshLink has finished using the buffer.
+ *  @param priv         A private pointer which is passed unchanged to the callback.
  *
  *  @return             True if the buffer was enqueued, false otherwise.
  */
@@ -1218,6 +1219,7 @@ extern bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_
  *  @param fd           A file descriptor from which data will be read.
  *  @param len          The length of the data, or 0 if there is no data to send.
  *  @param cb           A pointer to the function which will be called when MeshLink has finished using the filedescriptor.
+ *  @param priv         A private pointer which is passed unchanged to the callback.
  *
  *  @return             True if the buffer was enqueued, false otherwise.
  */
@@ -1235,6 +1237,7 @@ extern bool meshlink_channel_aio_fd_send(meshlink_handle_t *mesh, meshlink_chann
  *                      until the callback routine is called.
  *  @param len          The length of the data.
  *  @param cb           A pointer to the function which will be called when MeshLink has finished using the buffer.
+ *  @param priv         A private pointer which is passed unchanged to the callback.
  *
  *  @return             True if the buffer was enqueued, false otherwise.
  */
@@ -1250,6 +1253,7 @@ extern bool meshlink_channel_aio_receive(meshlink_handle_t *mesh, meshlink_chann
  *  @param fd           A file descriptor to which data will be written.
  *  @param len          The length of the data.
  *  @param cb           A pointer to the function which will be called when MeshLink has finished using the filedescriptor.
+ *  @param priv         A private pointer which was set by the application when submitting the buffer.
  *
  *  @return             True if the buffer was enqueued, false otherwise.
  */
@@ -1318,7 +1322,7 @@ extern void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable);
  *
  *  @return         This function returns true if the key rotation for the encrypted storage succeeds, false otherwise.
  */
-extern bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key, size_t new_keylen);
+extern bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *key, size_t keylen);
 
 /// Set device class timeouts
 /** This sets the ping interval and timeout for a given device class.

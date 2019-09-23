@@ -796,6 +796,7 @@ public:
 	 *                      until the callback routine is called.
 	 *  @param len          The length of the data, or 0 if there is no data to send.
 	 *  @param cb           A pointer to the function which will be called when MeshLink has finished using the buffer.
+	 *  @param priv         A private pointer which was set by the application when submitting the buffer.
 	 *
 	 *  @return             True if the buffer was enqueued, false otherwise.
 	 */
@@ -812,6 +813,7 @@ public:
 	 *  @param fd           A file descriptor from which data will be read.
 	 *  @param len          The length of the data, or 0 if there is no data to send.
 	 *  @param cb           A pointer to the function which will be called when MeshLink has finished using the filedescriptor.
+	 *  @param priv         A private pointer which was set by the application when submitting the buffer.
 	 *
 	 *  @return             True if the buffer was enqueued, false otherwise.
 	 */
@@ -830,6 +832,7 @@ public:
 	 *                      until the callback routine is called.
 	 *  @param len          The length of the data.
 	 *  @param cb           A pointer to the function which will be called when MeshLink has finished using the buffer.
+	 *  @param priv         A private pointer which was set by the application when submitting the buffer.
 	 *
 	 *  @return             True if the buffer was enqueued, false otherwise.
 	 */
@@ -846,6 +849,7 @@ public:
 	 *  @param fd           A file descriptor to which data will be written.
 	 *  @param len          The length of the data.
 	 *  @param cb           A pointer to the function which will be called when MeshLink has finished using the filedescriptor.
+	 *  @param priv         A private pointer which was set by the application when submitting the buffer.
 	 *
 	 *  @return             True if the buffer was enqueued, false otherwise.
 	 */
