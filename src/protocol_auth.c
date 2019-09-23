@@ -329,7 +329,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	}
 
 	if(n->status.blacklisted) {
-		logger(mesh, MESHLINK_EPEER, "Peer %s is blacklisted", c->name);
+		logger(mesh, MESHLINK_WARNING, "Peer %s is blacklisted", c->name);
 		return false;
 	}
 

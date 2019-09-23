@@ -443,9 +443,7 @@ bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len) {
 	seqno = ntohl(seqno);
 	// TODO: check whether seqno makes sense, to avoid CPU intensive decrypt
 
-	char buffer[len];
-	size_t outlen;
-	return chacha_poly1305_decrypt(s->incipher, seqno, (const char *)data + 4, len - 4, buffer, &outlen);
+	return chacha_poly1305_verify(s->incipher, seqno, (const char *)data + 4, len - 4);
 }
 
 // Receive incoming data, datagram version.
@@ -478,11 +476,20 @@ static bool sptps_receive_data_datagram(sptps_t *s, const void *vdata, size_t le
 
 	// Decrypt
 
-	char buffer[len];
+	if(len > s->decrypted_buffer_len) {
+		s->decrypted_buffer_len *= 2;
+		char *new_buffer = realloc(s->decrypted_buffer, s->decrypted_buffer_len);
+
+		if(!new_buffer) {
+			return error(s, errno, strerror(errno));
+		}
+
+		s->decrypted_buffer = new_buffer;
+	}
 
 	size_t outlen;
 
-	if(!chacha_poly1305_decrypt(s->incipher, seqno, data + 4, len - 4, buffer, &outlen)) {
+	if(!chacha_poly1305_decrypt(s->incipher, seqno, data + 4, len - 4, s->decrypted_buffer, &outlen)) {
 		return error(s, EIO, "Failed to decrypt and verify packet");
 	}
 
@@ -526,20 +533,20 @@ static bool sptps_receive_data_datagram(sptps_t *s, const void *vdata, size_t le
 	}
 
 	// Append a NULL byte for safety.
-	buffer[len - 20] = 0;
+	s->decrypted_buffer[len - 20] = 0;
 
-	uint8_t type = buffer[0];
+	uint8_t type = s->decrypted_buffer[0];
 
 	if(type < SPTPS_HANDSHAKE) {
 		if(!s->instate) {
 			return error(s, EIO, "Application record received before handshake finished");
 		}
 
-		if(!s->receive_record(s->handle, type, buffer + 1, len - 21)) {
+		if(!s->receive_record(s->handle, type, s->decrypted_buffer + 1, len - 21)) {
 			abort();
 		}
 	} else if(type == SPTPS_HANDSHAKE) {
-		if(!receive_handshake(s, buffer + 1, len - 21)) {
+		if(!receive_handshake(s, s->decrypted_buffer + 1, len - 21)) {
 			abort();
 		}
 	} else {
@@ -669,6 +676,12 @@ bool sptps_start(sptps_t *s, void *handle, bool initiator, bool datagram, ecdsa_
 	s->mykey = mykey;
 	s->hiskey = hiskey;
 	s->replaywin = 32;
+	s->decrypted_buffer_len = 1024;
+	s->decrypted_buffer = malloc(s->decrypted_buffer_len);
+
+	if(!s->decrypted_buffer) {
+		return error(s, errno, strerror(errno));
+	}
 
 	if(s->replaywin) {
 		s->late = malloc(s->replaywin);
@@ -719,6 +732,8 @@ bool sptps_stop(sptps_t *s) {
 	free(s->key);
 	free(s->label);
 	free(s->late);
+	memset(s->decrypted_buffer, 0, s->decrypted_buffer_len);
+	free(s->decrypted_buffer);
 	memset(s, 0, sizeof(*s));
 	return true;
 }

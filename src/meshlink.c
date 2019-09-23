@@ -1196,7 +1196,8 @@ meshlink_handle_t *meshlink_open_encrypted(const char *confbase, const char *nam
 	}
 
 	/* Create a temporary struct on the stack, to avoid allocating and freeing one. */
-	meshlink_open_params_t params = {NULL};
+	meshlink_open_params_t params;
+	memset(&params, 0, sizeof(params));
 
 	params.confbase = (char *)confbase;
 	params.name = (char *)name;
@@ -1213,7 +1214,8 @@ meshlink_handle_t *meshlink_open_encrypted(const char *confbase, const char *nam
 
 meshlink_handle_t *meshlink_open_ephemeral(const char *name, const char *appname, dev_class_t devclass) {
 	/* Create a temporary struct on the stack, to avoid allocating and freeing one. */
-	meshlink_open_params_t params = {NULL};
+	meshlink_open_params_t params;
+	memset(&params, 0, sizeof(params));
 
 	params.name = (char *)name;
 	params.appname = (char *)appname;
@@ -2298,7 +2300,8 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 	 * Note: make sure we only add config files of nodes that are in the core mesh or the same submesh,
 	 * and are not blacklisted.
 	 */
-	config_t configs[5] = {NULL};
+	config_t configs[5];
+	memset(configs, 0, sizeof(configs));
 	int count = 0;
 
 	if(config_read(mesh, "current", mesh->self->name, &configs[count], mesh->config_key)) {

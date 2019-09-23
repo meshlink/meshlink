@@ -66,6 +66,9 @@ typedef struct sptps {
 
 	char *late;
 
+	char *decrypted_buffer;
+	size_t decrypted_buffer_len;
+
 	// Callbacks
 	void *handle;
 	send_data_t send_data;
