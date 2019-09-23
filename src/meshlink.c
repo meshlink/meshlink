@@ -1672,6 +1672,17 @@ void meshlink_set_node_status_cb(meshlink_handle_t *mesh, meshlink_node_status_c
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
+void meshlink_set_node_pmtu_cb(meshlink_handle_t *mesh, meshlink_node_pmtu_cb_t cb) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	pthread_mutex_lock(&(mesh->mesh_mutex));
+	mesh->node_pmtu_cb = cb;
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
+}
+
 void meshlink_set_node_duplicate_cb(meshlink_handle_t *mesh, meshlink_node_duplicate_cb_t cb) {
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
