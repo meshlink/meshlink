@@ -418,6 +418,27 @@ typedef void (*meshlink_node_status_cb_t)(meshlink_handle_t *mesh, meshlink_node
  */
 extern void meshlink_set_node_status_cb(meshlink_handle_t *mesh, meshlink_node_status_cb_t cb);
 
+/// A callback reporting node path MTU changes.
+/** @param mesh       A handle which represents an instance of MeshLink.
+ *  @param node       A pointer to a meshlink_node_t describing the node whose status changed.
+ *                    This pointer is valid until meshlink_close() is called.
+ *  @param pmtu       The current path MTU to the node, or 0 if UDP communication is not (yet) possible.
+ */
+typedef void (*meshlink_node_pmtu_cb_t)(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t pmtu);
+
+/// Set the node extended status callback.
+/** This functions sets the callback that is called whenever certain connectivity parameters for a node change.
+ *  The callback is run in MeshLink's own thread.
+ *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to hand the data over to the application's thread.
+ *  The callback should also not block itself and return as quickly as possible.
+ *
+ *  @param mesh      A handle which represents an instance of MeshLink.
+ *  @param cb        A pointer to the function which will be called when another node's extended status changes.
+ *                   If a NULL pointer is given, the callback will be disabled.
+ */
+extern void meshlink_set_node_pmtu_cb(meshlink_handle_t *mesh, meshlink_node_pmtu_cb_t cb);
+
 /// A callback reporting duplicate node detection.
 /** @param mesh       A handle which represents an instance of MeshLink.
  *  @param node       A pointer to a meshlink_node_t describing the node which is duplicate.

@@ -79,6 +79,8 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 		n->mtuprobes = 1;
 		n->minmtu = 0;
 		n->maxmtu = MTU;
+
+		update_node_pmtu(mesh, n);
 	}
 
 	if(n->mtuprobes >= 10 && n->mtuprobes < 32 && !n->minmtu) {
@@ -89,6 +91,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 	if(n->mtuprobes == 30 || (n->mtuprobes < 30 && n->minmtu >= n->maxmtu)) {
 		if(n->minmtu > n->maxmtu) {
 			n->minmtu = n->maxmtu;
+			update_node_pmtu(mesh, n);
 		} else {
 			n->maxmtu = n->minmtu;
 		}
@@ -198,6 +201,7 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 
 		if(n->minmtu < len) {
 			n->minmtu = len;
+			update_node_pmtu(mesh, n);
 		}
 	}
 }

@@ -2812,6 +2812,10 @@ void meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	node_write_config(mesh, n);
 	config_sync(mesh, "current");
 
+	if(n->status.reachable) {
+		update_node_status(mesh, n);
+	}
+
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 	return;
 }
@@ -3378,6 +3382,16 @@ void update_node_status(meshlink_handle_t *mesh, node_t *n) {
 
 	if(mesh->node_status_cb) {
 		mesh->node_status_cb(mesh, (meshlink_node_t *)n, n->status.reachable && !n->status.blacklisted);
+	}
+
+	if(mesh->node_pmtu_cb) {
+		mesh->node_pmtu_cb(mesh, (meshlink_node_t *)n, n->minmtu);
+	}
+}
+
+void update_node_pmtu(meshlink_handle_t *mesh, node_t *n) {
+	if(mesh->node_pmtu_cb && !n->status.blacklisted) {
+		mesh->node_pmtu_cb(mesh, (meshlink_node_t *)n, n->minmtu);
 	}
 }
 
