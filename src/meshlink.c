@@ -3152,7 +3152,9 @@ void meshlink_channel_shutdown(meshlink_handle_t *mesh, meshlink_channel_t *chan
 		return;
 	}
 
+	pthread_mutex_lock(&mesh->mesh_mutex);
 	utcp_shutdown(channel->c, direction);
+	pthread_mutex_unlock(&mesh->mesh_mutex);
 }
 
 void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel) {
@@ -3160,6 +3162,8 @@ void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
 	}
+
+	pthread_mutex_lock(&mesh->mesh_mutex);
 
 	utcp_close(channel->c);
 
@@ -3175,6 +3179,8 @@ void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel
 		aio_signal(mesh, channel, aio);
 		free(aio);
 	}
+
+	pthread_mutex_unlock(&mesh->mesh_mutex);
 
 	free(channel);
 }
