@@ -218,6 +218,7 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 	fd_set readable;
 	fd_set writable;
 
+
 	while(loop->running) {
 		gettimeofday(&loop->now, NULL);
 		struct timeval diff, it, *tv = NULL;
@@ -266,6 +267,8 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		if(mutex) {
 			pthread_mutex_lock(mutex);
 		}
+
+		gettimeofday(&loop->now, NULL);
 
 		if(n < 0) {
 			if(sockwouldblock(errno)) {
