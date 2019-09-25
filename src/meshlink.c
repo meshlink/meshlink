@@ -514,7 +514,7 @@ static bool try_bind(int port) {
 	return true;
 }
 
-int check_port(meshlink_handle_t *mesh) {
+static int check_port(meshlink_handle_t *mesh) {
 	for(int i = 0; i < 1000; i++) {
 		int port = 0x1000 + (rand() & 0x7fff);
 
@@ -2140,7 +2140,13 @@ int meshlink_get_port(meshlink_handle_t *mesh) {
 		return -1;
 	}
 
-	return atoi(mesh->myport);
+	int port;
+
+	pthread_mutex_lock(&(mesh->mesh_mutex));
+	port = atoi(mesh->myport);
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
+
+	return port;
 }
 
 bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
@@ -3051,9 +3057,15 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 }
 
 void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_poll_cb_t cb) {
-	(void)mesh;
+	if(!mesh || !channel) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	pthread_mutex_lock(&mesh->mesh_mutex);
 	channel->poll_cb = cb;
 	utcp_set_poll_cb(channel->c, (cb || channel->aio_send) ? channel_poll : NULL);
+	pthread_mutex_unlock(&mesh->mesh_mutex);
 }
 
 void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_accept_cb_t cb) {
@@ -3111,6 +3123,8 @@ meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_n
 		return NULL;
 	}
 
+	pthread_mutex_lock(&mesh->mesh_mutex);
+
 	node_t *n = (node_t *)node;
 
 	if(!n->utcp) {
@@ -3119,12 +3133,14 @@ meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_n
 
 		if(!n->utcp) {
 			meshlink_errno = errno == ENOMEM ? MESHLINK_ENOMEM : MESHLINK_EINTERNAL;
+			pthread_mutex_unlock(&mesh->mesh_mutex);
 			return NULL;
 		}
 	}
 
 	if(n->status.blacklisted) {
 		logger(mesh, MESHLINK_ERROR, "Cannot open a channel with blacklisted node\n");
+		pthread_mutex_unlock(&mesh->mesh_mutex);
 		return NULL;
 	}
 
@@ -3132,6 +3148,8 @@ meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_n
 	channel->node = n;
 	channel->receive_cb = cb;
 	channel->c = utcp_connect_ex(n->utcp, port, channel_recv, channel, flags);
+
+	pthread_mutex_unlock(&mesh->mesh_mutex);
 
 	if(!channel->c) {
 		meshlink_errno = errno == ENOMEM ? MESHLINK_ENOMEM : MESHLINK_EINTERNAL;
