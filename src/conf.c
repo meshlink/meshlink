@@ -481,7 +481,6 @@ bool config_read_file(meshlink_handle_t *mesh, FILE *f, config_t *config, const 
 	if(fseek(f, 0, SEEK_END) || !(len = ftell(f)) || fseek(f, 0, SEEK_SET)) {
 		logger(mesh, MESHLINK_ERROR, "Cannot get config file size: %s\n", strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
-		fclose(f);
 		return false;
 	}
 
@@ -490,7 +489,6 @@ bool config_read_file(meshlink_handle_t *mesh, FILE *f, config_t *config, const 
 	if(fread(buf, len, 1, f) != 1) {
 		logger(mesh, MESHLINK_ERROR, "Cannot read config file: %s\n", strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
-		fclose(f);
 		return false;
 	}
 
@@ -739,6 +737,7 @@ bool main_config_write(meshlink_handle_t *mesh, const char *conf_subdir, const c
 
 	if(rename(tmp_path, path)) {
 		logger(mesh, MESHLINK_ERROR, "Failed to rename `%s' to `%s': %s", tmp_path, path, strerror(errno));
+		fclose(f);
 		return false;
 	}
 
@@ -833,6 +832,7 @@ bool invitation_write(meshlink_handle_t *mesh, const char *conf_subdir, const ch
 
 	if(fsync(fileno(f))) {
 		logger(mesh, MESHLINK_ERROR, "Failed to sync `%s': %s", path, strerror(errno));
+		fclose(f);
 		return false;
 	}
 
