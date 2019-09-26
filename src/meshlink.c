@@ -846,6 +846,7 @@ static struct timeval idle(event_loop_t *loop, void *data) {
 // Get our local address(es) by simulating connecting to an Internet host.
 static void add_local_addresses(meshlink_handle_t *mesh) {
 	struct sockaddr_storage sn;
+	sn.ss_family = AF_UNKNOWN;
 	socklen_t sl = sizeof(sn);
 
 	// IPv4 example.org
@@ -1013,13 +1014,14 @@ meshlink_open_params_t *meshlink_open_params_init(const char *confbase, const ch
 
 	if(!name || !*name) {
 		logger(NULL, MESHLINK_ERROR, "No name given!\n");
-		//return NULL;
-	} else { //check name only if there is a name != NULL
-		if(!check_id(name)) {
-			logger(NULL, MESHLINK_ERROR, "Invalid name given!\n");
-			meshlink_errno = MESHLINK_EINVAL;
-			return NULL;
-		}
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	};
+
+	if(!check_id(name)) {
+		logger(NULL, MESHLINK_ERROR, "Invalid name given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
 	}
 
 	if(devclass < 0 || devclass >= DEV_CLASS_COUNT) {
@@ -2192,10 +2194,10 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 		meshlink_errno = MESHLINK_ESTORAGE;
 		free_node(mesh->self);
 		mesh->self = NULL;
+		goto done;
 	} else if(!setup_network(mesh)) {
 		meshlink_errno = MESHLINK_ENETWORK;
-	} else {
-		rval = true;
+		goto done;
 	}
 
 	/* Rebuild our own list of recent addresses */
@@ -2205,9 +2207,7 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 	/* Write meshlink.conf with the updated port number */
 	write_main_config_files(mesh);
 
-	if(!config_sync(mesh, "current")) {
-		return false;
-	}
+	rval = config_sync(mesh, "current");
 
 done:
 	pthread_mutex_unlock(&(mesh->mesh_mutex));

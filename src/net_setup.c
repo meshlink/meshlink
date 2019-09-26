@@ -53,7 +53,7 @@ static bool node_get_config(meshlink_handle_t *mesh, node_t *n, config_t *config
 	const char *name;
 	uint32_t len = packmsg_get_str_raw(in, &name);
 
-	if(len != strlen(n->name) || strncmp(name, n->name, len)) {
+	if(len != strlen(n->name) || !name || strncmp(name, n->name, len)) {
 		config_free(config);
 		return false;
 	}

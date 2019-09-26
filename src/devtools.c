@@ -61,7 +61,7 @@ devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *e
 
 	// if result is smaller than edges, we have to dealloc all the excess devtool_edge_t
 	if((size_t)result_size > *nmemb) {
-		result = realloc(edges, result_size * sizeof(*result));
+		result = xrealloc(edges, result_size * sizeof(*result));
 	} else {
 		result = edges;
 	}
@@ -93,7 +93,7 @@ devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *e
 		}
 
 		// shrink result to the actual amount of memory used
-		result = realloc(result, n * sizeof(*result));
+		result = xrealloc(result, n * sizeof(*result));
 		*nmemb = n;
 	} else {
 		*nmemb = 0;

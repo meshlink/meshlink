@@ -221,7 +221,6 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 			pthread_mutex_lock(&(mesh->mesh_mutex));
 
 			node_name += 1;
-			node_fp += 1;
 
 			meshlink_node_t *node = meshlink_get_node(mesh, node_name);
 

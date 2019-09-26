@@ -40,6 +40,7 @@ static inline int min(int a, int b) {
 #endif
 
 static const int default_timeout = 5;
+static const int default_interval = 60;
 
 /*
   Terminate a connection:
@@ -113,6 +114,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 
 	for list_each(connection_t, c, mesh->connections) {
 		int pingtimeout = c->node ? mesh->dev_class_traits[c->node->devclass].pingtimeout : default_timeout;
+		int pinginterval = c->node ? mesh->dev_class_traits[c->node->devclass].pinginterval : default_interval;
 
 		// Also make sure that if outstanding key requests for the UDP counterpart of a connection has timed out, we restart it.
 		if(c->node) {
@@ -125,7 +127,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 			if(c->status.active) {
 				if(c->status.pinged) {
 					logger(mesh, MESHLINK_INFO, "%s didn't respond to PING in %ld seconds", c->name, (long)mesh->loop.now.tv_sec - c->last_ping_time);
-				} else if(c->last_ping_time + mesh->dev_class_traits[c->node->devclass].pinginterval <= mesh->loop.now.tv_sec) {
+				} else if(c->last_ping_time + pinginterval <= mesh->loop.now.tv_sec) {
 					send_ping(mesh, c);
 					continue;
 				} else {
