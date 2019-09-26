@@ -178,7 +178,7 @@ int b64encode_urlsafe(const void *src, char *dst, int length) {
 #endif
 
 const char *winerror(int err) {
-	char buf[1024], *ptr;
+	static char buf[1024], *ptr;
 
 	ptr = buf + sprintf(buf, "(%d) ", err);
 
