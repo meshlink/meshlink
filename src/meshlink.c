@@ -333,7 +333,7 @@ void remove_duplicate_hostnames(char *host[], char *port[], int n) {
 			break;
 		}
 
-		if(found) {
+		if(found || !is_valid_hostname(host[i])) {
 			free(host[i]);
 			free(port[i]);
 			host[i] = NULL;
@@ -417,7 +417,7 @@ static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
 			char resolved_port[NI_MAXSERV];
 			err = getnameinfo(ai_in->ai_addr, ai_in->ai_addrlen, resolved_host, sizeof resolved_host, resolved_port, sizeof resolved_port, NI_NUMERICSERV);
 
-			if(err) {
+			if(err || !is_valid_hostname(resolved_host)) {
 				freeaddrinfo(ai_in);
 				continue;
 			}
