@@ -2743,6 +2743,8 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
 
+	free(buf);
+
 	if(!packmsg_done(&in)) {
 		logger(mesh, MESHLINK_ERROR, "Invalid data\n");
 		meshlink_errno = MESHLINK_EPEER;

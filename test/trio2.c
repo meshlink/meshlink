@@ -87,6 +87,7 @@ int main() {
 	// start the nodes
 
 	for(int i = 0; i < 3; i++) {
+		free(data[i]);
 		assert(meshlink_start(mesh[i]));
 	}
 

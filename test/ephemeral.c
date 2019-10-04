@@ -38,8 +38,17 @@ int main() {
 
 	// Exchange data
 
-	assert(meshlink_import(mesh1, meshlink_export(mesh2)));
-	assert(meshlink_import(mesh2, meshlink_export(mesh1)));
+	char *export1 = meshlink_export(mesh1);
+	char *export2 = meshlink_export(mesh2);
+
+	assert(export1);
+	assert(export2);
+
+	assert(meshlink_import(mesh1, export2));
+	assert(meshlink_import(mesh2, export1));
+
+	free(export1);
+	free(export2);
 
 	// Check that they know each other
 
