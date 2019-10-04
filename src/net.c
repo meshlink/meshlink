@@ -421,7 +421,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				logger(mesh, MESHLINK_DEBUG, "* could not find node for initial connect");
 			}
 
-			splay_free_tree(nodes);
+			splay_delete_tree(nodes);
 		}
 
 
@@ -450,11 +450,11 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 						logger(mesh, MESHLINK_DEBUG, "* found better node");
 						connect_to = (node_t *)nodes->head->data;
 
-						splay_free_tree(nodes);
+						splay_delete_tree(nodes);
 						break;
 					}
 
-					splay_free_tree(nodes);
+					splay_delete_tree(nodes);
 				} else {
 					break;
 				}
@@ -484,7 +484,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				logger(mesh, MESHLINK_DEBUG, "* could not find nodes for partition healing");
 			}
 
-			splay_free_tree(nodes);
+			splay_delete_tree(nodes);
 		}
 
 
@@ -546,7 +546,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 						disconnect_from = (node_t *)nodes->head->data;
 					}
 
-					splay_free_tree(nodes);
+					splay_delete_tree(nodes);
 					break;
 				}
 			}
@@ -577,7 +577,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				logger(mesh, MESHLINK_DEBUG, "* no node we want to disconnect, even though we have too many connections");
 			}
 
-			splay_free_tree(nodes);
+			splay_delete_tree(nodes);
 		}
 
 
