@@ -1604,6 +1604,12 @@ void meshlink_close(meshlink_handle_t *mesh) {
 		close(mesh->netns);
 	}
 
+	for(vpn_packet_t *packet; (packet = meshlink_queue_pop(&mesh->outpacketqueue));) {
+		free(packet);
+	}
+
+	meshlink_queue_exit(&mesh->outpacketqueue);
+
 	free(mesh->name);
 	free(mesh->appname);
 	free(mesh->confbase);
@@ -1778,6 +1784,8 @@ void meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
 	mesh->self->in_packets++;
 	mesh->self->in_bytes += packet->len;
 	route(mesh, mesh->self, packet);
+
+	free(packet);
 }
 
 ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination) {

@@ -45,6 +45,10 @@ static inline void meshlink_queue_init(meshlink_queue_t *queue) {
 	pthread_mutex_init(&queue->mutex, &attr);
 }
 
+static inline void meshlink_queue_exit(meshlink_queue_t *queue) {
+	pthread_mutex_destroy(&queue->mutex);
+}
+
 static inline bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
 	meshlink_queue_item_t *item = malloc(sizeof(*item));
 
