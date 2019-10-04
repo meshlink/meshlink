@@ -129,6 +129,15 @@ void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv) {
 	if(!splay_insert_node(&loop->timeouts, &timeout->node)) {
 		abort();
 	}
+
+	loop->deletion = true;
+}
+
+static void timeout_disable(event_loop_t *loop, timeout_t *timeout) {
+	splay_unlink_node(&loop->timeouts, &timeout->node);
+	timeout->tv = (struct timeval) {
+		0, 0
+	};
 }
 
 void timeout_del(event_loop_t *loop, timeout_t *timeout) {
@@ -136,13 +145,12 @@ void timeout_del(event_loop_t *loop, timeout_t *timeout) {
 		return;
 	}
 
-	loop->deletion = true;
+	if(timerisset(&timeout->tv)) {
+		timeout_disable(loop, timeout);
+	}
 
-	splay_unlink_node(&loop->timeouts, &timeout->node);
-	timeout->cb = 0;
-	timeout->tv = (struct timeval) {
-		0, 0
-	};
+	timeout->cb = NULL;
+	loop->deletion = true;
 }
 
 static int signal_compare(const signal_t *a, const signal_t *b) {
@@ -171,6 +179,16 @@ static void pipe_init(event_loop_t *loop) {
 	if(!pipe(loop->pipefd)) {
 		io_add(loop, &loop->signalio, signalio_handler, NULL, loop->pipefd[0], IO_READ);
 	}
+}
+
+static void pipe_exit(event_loop_t *loop) {
+	io_del(loop, &loop->signalio);
+
+	close(loop->pipefd[0]);
+	close(loop->pipefd[1]);
+
+	loop->pipefd[0] = -1;
+	loop->pipefd[1] = -1;
 }
 
 void signal_trigger(event_loop_t *loop, signal_t *sig) {
@@ -207,6 +225,10 @@ void signal_del(event_loop_t *loop, signal_t *sig) {
 
 	splay_unlink_node(&loop->signals, &sig->node);
 	sig->cb = NULL;
+
+	if(!loop->signals.count && loop->pipefd[0] != -1) {
+		pipe_exit(loop);
+	}
 }
 
 void idle_set(event_loop_t *loop, idle_cb_t cb, void *data) {
@@ -218,7 +240,6 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 	fd_set readable;
 	fd_set writable;
 
-
 	while(loop->running) {
 		gettimeofday(&loop->now, NULL);
 		struct timeval diff, it, *tv = NULL;
@@ -228,11 +249,8 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 			timersub(&timeout->tv, &loop->now, &diff);
 
 			if(diff.tv_sec < 0) {
+				timeout_disable(loop, timeout);
 				timeout->cb(loop, timeout->data);
-
-				if(timercmp(&timeout->tv, &loop->now, <)) {
-					timeout_del(loop, timeout);
-				}
 			} else {
 				tv = &diff;
 				break;

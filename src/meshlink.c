@@ -3512,7 +3512,7 @@ void meshlink_set_dev_class_timeouts(meshlink_handle_t *mesh, dev_class_t devcla
 void handle_network_change(meshlink_handle_t *mesh, bool online) {
 	(void)online;
 
-	if(!mesh->connections) {
+	if(!mesh->connections || !mesh->loop.running) {
 		return;
 	}
 

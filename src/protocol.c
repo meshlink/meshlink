@@ -200,10 +200,11 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 		logger(mesh, MESHLINK_DEBUG, "Aging past requests: deleted %d, left %d", deleted, left);
 	}
 
-	if(left)
+	if(left) {
 		timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timeval) {
-		10, rand() % 100000
-	});
+			10, rand() % 100000
+		});
+	}
 }
 
 bool seen_request(meshlink_handle_t *mesh, const char *request) {
@@ -216,16 +217,23 @@ bool seen_request(meshlink_handle_t *mesh, const char *request) {
 		new = xmalloc(sizeof(*new));
 		new->request = xstrdup(request);
 		new->firstseen = mesh->loop.now.tv_sec;
+
+		if(!mesh->past_request_tree->head) {
+			timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timeval) {
+				10, rand() % 100000
+			});
+		}
+
 		splay_insert(mesh->past_request_tree, new);
-		timeout_add(&mesh->loop, &mesh->past_request_timeout, age_past_requests, NULL, &(struct timeval) {
-			10, rand() % 100000
-		});
 		return false;
 	}
 }
 
 void init_requests(meshlink_handle_t *mesh) {
 	mesh->past_request_tree = splay_alloc_tree((splay_compare_t) past_request_compare, (splay_action_t) free_past_request);
+	timeout_add(&mesh->loop, &mesh->past_request_timeout, age_past_requests, NULL, &(struct timeval) {
+		0, 0
+	});
 }
 
 void exit_requests(meshlink_handle_t *mesh) {
