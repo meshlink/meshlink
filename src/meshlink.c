@@ -1773,8 +1773,9 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 	return true;
 }
 
-void meshlink_send_from_queue(event_loop_t *loop, meshlink_handle_t *mesh) {
+void meshlink_send_from_queue(event_loop_t *loop, void *data) {
 	(void)loop;
+	meshlink_handle_t *mesh = data;
 	vpn_packet_t *packet = meshlink_queue_pop(&mesh->outpacketqueue);
 
 	if(!packet) {

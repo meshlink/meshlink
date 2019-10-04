@@ -247,7 +247,7 @@ typedef struct meshlink_packethdr {
 	uint8_t source[16];
 } __attribute__((__packed__)) meshlink_packethdr_t;
 
-extern void meshlink_send_from_queue(event_loop_t *el, meshlink_handle_t *mesh);
+extern void meshlink_send_from_queue(event_loop_t *loop, void *mesh);
 extern void update_node_status(meshlink_handle_t *mesh, struct node_t *n);
 extern void update_node_pmtu(meshlink_handle_t *mesh, struct node_t *n);
 extern meshlink_log_level_t global_log_level;
