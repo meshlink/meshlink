@@ -219,6 +219,7 @@ int main() {
 	// The invitation should work
 
 	assert(meshlink_join(mesh3, quux_url));
+	free(quux_url);
 
 	// Clean up.
 

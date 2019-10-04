@@ -155,6 +155,7 @@ int main() {
 	// Stream packets from server to clients for 5 seconds at 40 Mbps (1 kB * 500 Hz)
 
 	char data[1000];
+	memset(data, 'U', sizeof(data));
 
 	for(int j = 0; j < 2500; j++) {
 		for(int i = 0; i < 3; i++) {

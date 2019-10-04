@@ -123,6 +123,7 @@ int main() {
 	assert(wait_sync_flag(&channel_opened, 20));
 
 	// Re-initialize everything
+	meshlink_channel_close(a, channel);
 	close_meshlink_pair(a, b, "channels-cornercases");
 	b_responded = false;
 	b_closed = false;
@@ -171,6 +172,10 @@ int main() {
 	assert(wait_sync_flag(&channel_polled, 20));
 
 	assert(0 == a_poll_cb_len);
+
+	meshlink_channel_close(a, channel);
+	meshlink_channel_close(a, channel2);
+	close_meshlink_pair(a, b, "channels-cornercases");
 
 	return 0;
 }

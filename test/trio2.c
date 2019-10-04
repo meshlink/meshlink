@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
@@ -52,14 +53,12 @@ int main() {
 	char *data[3];
 
 	for(int i = 0; i < 3; i++) {
-		char *path;
-		int ret_val;
-		(void)ret_val;
-		ret_val = asprintf(&path, "trio2_conf.%d", i);
-		assert(path);
+		char *path = NULL;
+		assert(asprintf(&path, "trio2_conf.%d", i) != -1 && path);
 
 		mesh[i] = meshlink_open(path, name[i], "trio2", DEV_CLASS_BACKBONE);
 		assert(mesh[i]);
+		free(path);
 
 		meshlink_add_address(mesh[i], "localhost");
 
@@ -101,6 +100,7 @@ int main() {
 	devtool_edge_t *edges = NULL;
 	size_t nedges = 0;
 	assert_after((edges = devtool_get_all_edges(mesh[1], edges, &nedges), nedges == 3), 15);
+	free(edges);
 
 	// Stop the nodes nodes
 

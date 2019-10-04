@@ -79,6 +79,9 @@ void open_meshlink_pair(meshlink_handle_t **pa, meshlink_handle_t **pb, const ch
 	meshlink_handle_t *b = meshlink_open(b_name, "b", prefix, DEV_CLASS_BACKBONE);
 	assert(b);
 
+	free(a_name);
+	free(b_name);
+
 	meshlink_enable_discovery(a, false);
 	meshlink_enable_discovery(b, false);
 
@@ -131,5 +134,8 @@ void close_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b, const char 
 		ret_val = asprintf(&b_name, "%s_conf.2", prefix);
 		assert(b_name);
 		assert(meshlink_destroy(b_name));
+
+		free(a_name);
+		free(b_name);
 	}
 }
