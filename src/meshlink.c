@@ -1857,6 +1857,11 @@ meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 	node = (meshlink_node_t *)lookup_node(mesh, (char *)name); // TODO: make lookup_node() use const
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
+
+	if(!node) {
+		meshlink_errno = MESHLINK_ENOENT;
+	}
+
 	return node;
 }
 
@@ -1871,6 +1876,11 @@ meshlink_submesh_t *meshlink_get_submesh(meshlink_handle_t *mesh, const char *na
 	pthread_mutex_lock(&(mesh->mesh_mutex));
 	submesh = (meshlink_submesh_t *)lookup_submesh(mesh, name);
 	pthread_mutex_unlock(&(mesh->mesh_mutex));
+
+	if(!submesh) {
+		meshlink_errno = MESHLINK_ENOENT;
+	}
+
 	return submesh;
 }
 
