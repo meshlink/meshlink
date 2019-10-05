@@ -277,10 +277,6 @@ splay_tree_t *splay_alloc_tree(splay_compare_t compare, splay_action_t delete) {
 	return tree;
 }
 
-void splay_free_tree(splay_tree_t *tree) {
-	free(tree);
-}
-
 splay_node_t *splay_alloc_node(void) {
 	return xzalloc(sizeof(splay_node_t));
 }
@@ -409,13 +405,15 @@ splay_node_t *splay_search_closest_greater_node(splay_tree_t *tree, const void *
 
 /* Insertion and deletion */
 
-void splay_insert_top(splay_tree_t *tree, splay_node_t *node) {
+static void splay_insert_top(splay_tree_t *tree, splay_node_t *node) {
 	node->prev = node->next = node->left = node->right = node->parent = NULL;
 	tree->head = tree->tail = tree->root = node;
 	tree->count++;
 }
 
-void splay_insert_before(splay_tree_t *tree, splay_node_t *before, splay_node_t *node) {
+static void splay_insert_after(splay_tree_t *tree, splay_node_t *after, splay_node_t *node);
+
+static void splay_insert_before(splay_tree_t *tree, splay_node_t *before, splay_node_t *node) {
 	if(!before) {
 		if(tree->tail) {
 			splay_insert_after(tree, tree->tail, node);
@@ -452,7 +450,7 @@ void splay_insert_before(splay_tree_t *tree, splay_node_t *before, splay_node_t 
 	tree->count++;
 }
 
-void splay_insert_after(splay_tree_t *tree, splay_node_t *after, splay_node_t *node) {
+static void splay_insert_after(splay_tree_t *tree, splay_node_t *after, splay_node_t *node) {
 	if(!after) {
 		if(tree->head) {
 			splay_insert_before(tree, tree->head, node);

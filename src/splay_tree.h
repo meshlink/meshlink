@@ -64,7 +64,7 @@ typedef struct splay_tree_t {
 /* (De)constructors */
 
 extern splay_tree_t *splay_alloc_tree(splay_compare_t, splay_action_t) __attribute__((__malloc__));
-extern void splay_free_tree(splay_tree_t *);
+extern void splay_delete_tree(splay_tree_t *);
 
 extern splay_node_t *splay_alloc_node(void) __attribute__((__malloc__));
 extern void splay_free_node(splay_tree_t *tree, splay_node_t *);
@@ -74,18 +74,10 @@ extern void splay_free_node(splay_tree_t *tree, splay_node_t *);
 extern splay_node_t *splay_insert(splay_tree_t *, void *);
 extern splay_node_t *splay_insert_node(splay_tree_t *, splay_node_t *);
 
-extern void splay_insert_top(splay_tree_t *, splay_node_t *);
-extern void splay_insert_before(splay_tree_t *, splay_node_t *, splay_node_t *);
-extern void splay_insert_after(splay_tree_t *, splay_node_t *, splay_node_t *);
-
 extern splay_node_t *splay_unlink(splay_tree_t *, void *);
 extern void splay_unlink_node(splay_tree_t *tree, splay_node_t *);
 extern void splay_delete(splay_tree_t *, void *);
 extern void splay_delete_node(splay_tree_t *, splay_node_t *);
-
-/* Fast tree cleanup */
-
-extern void splay_delete_tree(splay_tree_t *);
 
 /* Searching */
 

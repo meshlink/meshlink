@@ -275,12 +275,6 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	return true;
 }
 
-bool send_ans_key(meshlink_handle_t *mesh, node_t *to) {
-	(void)mesh;
-	(void)to;
-	abort();
-}
-
 bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	assert(request);
 	assert(*request);

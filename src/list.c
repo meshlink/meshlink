@@ -35,11 +35,11 @@ void list_free(list_t *list) {
 	free(list);
 }
 
-list_node_t *list_alloc_node(void) {
+static list_node_t *list_alloc_node(void) {
 	return xzalloc(sizeof(list_node_t));
 }
 
-void list_free_node(list_t *list, list_node_t *node) {
+static void list_free_node(list_t *list, list_node_t *node) {
 	if(node->data && list->delete) {
 		list->delete(node->data);
 	}
@@ -87,47 +87,11 @@ list_node_t *list_insert_tail(list_t *list, void *data) {
 	return node;
 }
 
-list_node_t *list_insert_after(list_t *list, list_node_t *after, void *data) {
-	list_node_t *node = list_alloc_node();
+static void list_unlink_node(list_t *list, list_node_t *node) {
+	assert(list->count);
+	assert(node->prev || list->head == node);
+	assert(node->next || list->tail == node);
 
-	node->data = data;
-	node->next = after->next;
-	node->prev = after;
-	after->next = node;
-
-	if(node->next) {
-		node->next->prev = node;
-	} else {
-		list->tail = node;
-	}
-
-	list->count++;
-
-	return node;
-}
-
-list_node_t *list_insert_before(list_t *list, list_node_t *before, void *data) {
-	list_node_t *node;
-
-	node = list_alloc_node();
-
-	node->data = data;
-	node->next = before;
-	node->prev = before->prev;
-	before->prev = node;
-
-	if(node->prev) {
-		node->prev->next = node;
-	} else {
-		list->head = node;
-	}
-
-	list->count++;
-
-	return node;
-}
-
-void list_unlink_node(list_t *list, list_node_t *node) {
 	if(node->prev) {
 		node->prev->next = node->next;
 	} else {
@@ -157,10 +121,11 @@ void list_delete_tail(list_t *list) {
 }
 
 void list_delete(list_t *list, const void *data) {
-	for(list_node_t *node = list->head, *next; next = node ? node->next : NULL, node; node = next)
+	for(list_node_t *node = list->head, *next; next = node ? node->next : NULL, node; node = next) {
 		if(node->data == data) {
 			list_delete_node(list, node);
 		}
+	}
 }
 
 /* Head/tail lookup */
@@ -203,8 +168,9 @@ void list_foreach_node(list_t *list, list_action_node_t action) {
 }
 
 void list_foreach(list_t *list, list_action_t action) {
-	for(list_node_t *node = list->head, *next; next = node ? node->next : NULL, node; node = next)
+	for(list_node_t *node = list->head, *next; next = node ? node->next : NULL, node; node = next) {
 		if(node->data) {
 			action(node->data);
 		}
+	}
 }

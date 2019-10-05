@@ -46,19 +46,14 @@ typedef struct list_t {
 
 extern list_t *list_alloc(list_action_t) __attribute__((__malloc__));
 extern void list_free(list_t *);
-extern list_node_t *list_alloc_node(void);
-extern void list_free_node(list_t *, list_node_t *);
 
 /* Insertion and deletion */
 
 extern list_node_t *list_insert_head(list_t *, void *);
 extern list_node_t *list_insert_tail(list_t *, void *);
-extern list_node_t *list_insert_after(list_t *, list_node_t *, void *);
-extern list_node_t *list_insert_before(list_t *, list_node_t *, void *);
 
 extern void list_delete(list_t *, const void *);
 
-extern void list_unlink_node(list_t *, list_node_t *);
 extern void list_delete_node(list_t *, list_node_t *);
 
 extern void list_delete_head(list_t *);

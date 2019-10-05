@@ -30,6 +30,15 @@
 #include "xalloc.h"
 #include "protocol.h"
 
+static submesh_t *new_submesh(void) {
+	return xzalloc(sizeof(submesh_t));
+}
+
+static void free_submesh(submesh_t *s) {
+	free(s->name);
+	free(s);
+}
+
 void init_submeshes(meshlink_handle_t *mesh) {
 	assert(!mesh->submeshes);
 	mesh->submeshes = list_alloc((list_action_t)free_submesh);
@@ -43,37 +52,17 @@ void exit_submeshes(meshlink_handle_t *mesh) {
 	mesh->submeshes = NULL;
 }
 
-submesh_t *new_submesh(void) {
-	submesh_t *s = xzalloc(sizeof(*s));
-
-	s->name = NULL;
-	s->priv = NULL;
-
-	return s;
-}
-
-void free_submesh(submesh_t *s) {
-	if(s->name) {
-		free(s->name);
-	}
-
-	free(s);
-}
-
-static submesh_t *submesh_new(meshlink_handle_t *mesh, const char *submesh) {
-	submesh_t *s = NULL;
+static submesh_t *submesh_add(meshlink_handle_t *mesh, const char *submesh) {
 	assert(submesh);
 
-	s = new_submesh();
+	submesh_t *s = new_submesh();
 	s->name = xstrdup(submesh);
-
-	submesh_add(mesh, (submesh_t *)s);
+	list_insert_tail(mesh->submeshes, (void *)s);
 	return s;
 }
 
 submesh_t *create_submesh(meshlink_handle_t *mesh, const char *submesh) {
 	assert(submesh);
-	submesh_t *s = NULL;
 
 	if(0 == strcmp(submesh, CORE_MESH)) {
 		logger(NULL, MESHLINK_ERROR, "Cannot create submesh handle for core mesh!\n");
@@ -87,23 +76,17 @@ submesh_t *create_submesh(meshlink_handle_t *mesh, const char *submesh) {
 		return NULL;
 	}
 
-	s = lookup_submesh(mesh, submesh);
-
-	if(s) {
+	if(lookup_submesh(mesh, submesh)) {
 		logger(NULL, MESHLINK_ERROR, "SubMesh Already exists!\n");
 		meshlink_errno = MESHLINK_EEXIST;
 		return NULL;
 	}
 
-	s = submesh_new(mesh, submesh);
-
-	meshlink_errno = MESHLINK_OK;
-	return s;
+	return submesh_add(mesh, submesh);
 }
 
 submesh_t *lookup_or_create_submesh(meshlink_handle_t *mesh, const char *submesh) {
 	assert(submesh);
-	submesh_t *s = NULL;
 
 	if(0 == strcmp(submesh, CORE_MESH)) {
 		logger(NULL, MESHLINK_ERROR, "Cannot create submesh handle for core mesh!\n");
@@ -117,26 +100,14 @@ submesh_t *lookup_or_create_submesh(meshlink_handle_t *mesh, const char *submesh
 		return NULL;
 	}
 
-	s = lookup_submesh(mesh, submesh);
+	submesh_t *s = lookup_submesh(mesh, submesh);
 
 	if(s) {
 		meshlink_errno = MESHLINK_OK;
 		return s;
 	}
 
-	s = submesh_new(mesh, submesh);
-
-	meshlink_errno = MESHLINK_OK;
-	return s;
-}
-
-void submesh_add(meshlink_handle_t *mesh, submesh_t *s) {
-	s->mesh = mesh;
-	list_insert_tail(mesh->submeshes, (void *)s);
-}
-
-void submesh_del(meshlink_handle_t *mesh, submesh_t *s) {
-	list_delete(mesh->submeshes, (void *)s);
+	return submesh_add(mesh, submesh);
 }
 
 submesh_t *lookup_submesh(struct meshlink_handle *mesh, const char *submesh_name) {

@@ -33,11 +33,7 @@ typedef struct submesh_t {
 
 extern void init_submeshes(struct meshlink_handle *mesh);
 extern void exit_submeshes(struct meshlink_handle *mesh);
-extern submesh_t *new_submesh(void) __attribute__((__malloc__));
-extern void free_submesh(submesh_t *);
 extern submesh_t *create_submesh(struct meshlink_handle *mesh, const char *);
-extern void submesh_add(struct meshlink_handle *mesh, submesh_t *);
-extern void submesh_del(struct meshlink_handle *mesh, submesh_t *);
 extern submesh_t *lookup_submesh(struct meshlink_handle *mesh, const char *);
 extern submesh_t *lookup_or_create_submesh(struct meshlink_handle *mesh, const char *);
 extern bool submesh_allows_node(const submesh_t *submesh, const struct node_t *node);
