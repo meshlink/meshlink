@@ -21,11 +21,11 @@
 #define MESHLINK_MDNS_NAME_KEY "name"
 #define MESHLINK_MDNS_FINGERPRINT_KEY "fingerprint"
 
-static void generate_rand_string(char *buffer, size_t size) {
+static void generate_rand_string(meshlink_handle_t *mesh, char *buffer, size_t size) {
 	assert(size);
 
 	for(size_t i = 0; i < (size - 1); ++i) {
-		buffer[i] = 'a' + (rand() % ('z' - 'a' + 1));
+		buffer[i] = 'a' + prng(mesh, 'z' - 'a' + 1);
 	}
 
 	buffer[size - 1] = '\0';
@@ -141,7 +141,7 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 	case CATTA_SERVER_COLLISION: {
 		/* A host name collision happened. Let's pick a new name for the server */
 		char hostname[17];
-		generate_rand_string(hostname, sizeof(hostname));
+		generate_rand_string(mesh, hostname, sizeof(hostname));
 
 		pthread_mutex_lock(&(mesh->mesh_mutex));
 
@@ -379,7 +379,7 @@ static void *discovery_loop(void *userdata) {
 
 	// generate some unique host name (we actually do not care about it)
 	char hostname[17];
-	generate_rand_string(hostname, sizeof(hostname));
+	generate_rand_string(mesh, hostname, sizeof(hostname));
 
 	// Let's set the host name for this server.
 	CattaServerConfig config;

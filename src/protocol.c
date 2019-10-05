@@ -209,7 +209,7 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 
 	if(left) {
 		timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timeval) {
-			10, rand() % 100000
+			10, prng(mesh, TIMER_FUDGE)
 		});
 	}
 }
@@ -230,7 +230,7 @@ bool seen_request(meshlink_handle_t *mesh, const char *request) {
 
 		if(!mesh->past_request_tree->head) {
 			timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timeval) {
-				10, rand() % 100000
+				10, prng(mesh, TIMER_FUDGE)
 			});
 		}
 

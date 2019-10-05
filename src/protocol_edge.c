@@ -74,7 +74,7 @@ bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e, in
 		s = e->to->submesh;
 	}
 
-	x = send_request(mesh, c, s, "%d %x %s %d %s %s %s %s %d %s %x %d %d", ADD_EDGE, rand(),
+	x = send_request(mesh, c, s, "%d %x %s %d %s %s %s %s %d %s %x %d %d", ADD_EDGE, prng(mesh, UINT_MAX),
 	                 e->from->name, e->from->devclass, from_submesh, e->to->name, address, port,
 	                 e->to->devclass, to_submesh, OPTION_PMTU_DISCOVERY, e->weight, contradictions);
 	free(address);
@@ -273,7 +273,7 @@ bool send_del_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e, in
 		s = e->to->submesh;
 	}
 
-	return send_request(mesh, c, s, "%d %x %s %s %d", DEL_EDGE, rand(),
+	return send_request(mesh, c, s, "%d %x %s %s %d", DEL_EDGE, prng(mesh, UINT_MAX),
 	                    e->from->name, e->to->name, contradictions);
 }
 

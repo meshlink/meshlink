@@ -120,7 +120,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 		} else if(n->maxmtu <= n->minmtu) {
 			len = n->maxmtu;
 		} else {
-			len = n->minmtu + 1 + rand() % (n->maxmtu - n->minmtu);
+			len = n->minmtu + 1 + prng(mesh, n->maxmtu - n->minmtu);
 		}
 
 		if(len < 64) {
@@ -143,7 +143,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 
 end:
 	timeout_set(&mesh->loop, &n->mtutimeout, &(struct timeval) {
-		timeout, rand() % 100000
+		timeout, prng(mesh, TIMER_FUDGE)
 	});
 }
 
@@ -297,7 +297,7 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 	   So we pick a random edge and a random socket. */
 
 	int i = 0;
-	int j = rand() % n->edge_tree->count;
+	int j = prng(mesh, n->edge_tree->count);
 	edge_t *candidate = NULL;
 
 	for splay_each(edge_t, e, n->edge_tree) {
@@ -309,7 +309,7 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 
 	if(candidate) {
 		*sa = &candidate->address;
-		*sock = rand() % mesh->listen_sockets;
+		*sock = prng(mesh, mesh->listen_sockets);
 	}
 
 	/* Make sure we have a suitable socket for the chosen address */
@@ -340,7 +340,7 @@ static void choose_broadcast_address(meshlink_handle_t *mesh, const node_t *n, c
 		}
 	};
 
-	*sock = rand() % mesh->listen_sockets;
+	*sock = prng(mesh, mesh->listen_sockets);
 
 	if(mesh->listen_socket[*sock].sa.sa.sa_family == AF_INET6) {
 		broadcast_ipv6.in6.sin6_port = n->prevedge->address.in.sin_port;

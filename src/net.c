@@ -148,7 +148,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 	}
 
 	timeout_set(&mesh->loop, data, &(struct timeval) {
-		default_timeout, rand() % 100000
+		default_timeout, prng(mesh, TIMER_FUDGE)
 	});
 }
 
@@ -610,7 +610,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 	}
 
 	timeout_set(&mesh->loop, data, &(struct timeval) {
-		timeout, rand() % 100000
+		timeout, prng(mesh, TIMER_FUDGE)
 	});
 }
 
@@ -698,7 +698,7 @@ void retry(meshlink_handle_t *mesh) {
 */
 int main_loop(meshlink_handle_t *mesh) {
 	timeout_add(&mesh->loop, &mesh->pingtimer, timeout_handler, &mesh->pingtimer, &(struct timeval) {
-		default_timeout, rand() % 100000
+		default_timeout, prng(mesh, TIMER_FUDGE)
 	});
 	timeout_add(&mesh->loop, &mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval) {
 		0, 0

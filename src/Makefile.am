@@ -78,6 +78,7 @@ libmeshlink_la_SOURCES = \
 	system.h \
 	utils.c utils.h \
 	xalloc.h \
+	xoshiro.c xoshiro.h \
 	devtools.c devtools.h \
 	$(ed25519_SOURCES) \
 	$(chacha_poly1305_SOURCES) \

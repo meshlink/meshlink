@@ -34,7 +34,7 @@
 static const int req_key_timeout = 2;
 
 void send_key_changed(meshlink_handle_t *mesh) {
-	send_request(mesh, mesh->everyone, NULL, "%d %x %s", KEY_CHANGED, rand(), mesh->self->name);
+	send_request(mesh, mesh->everyone, NULL, "%d %x %s", KEY_CHANGED, prng(mesh, UINT_MAX), mesh->self->name);
 
 	/* Force key exchange for connections using SPTPS */
 

@@ -32,6 +32,7 @@
 #include "meshlink_queue.h"
 #include "sockaddr.h"
 #include "sptps.h"
+#include "xoshiro.h"
 
 #include <pthread.h>
 
@@ -130,6 +131,7 @@ struct meshlink_handle {
 	timeout_t periodictimer;
 
 	struct connection_t *everyone;
+	uint64_t prng_state[4];
 
 	int next_pit;
 	int pits[10];
@@ -254,5 +256,13 @@ extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
 extern void handle_duplicate_node(meshlink_handle_t *mesh, struct node_t *n);
 extern void handle_network_change(meshlink_handle_t *mesh, bool online);
+
+/// Per-instance PRNG
+static inline int prng(meshlink_handle_t *mesh, uint64_t max) {
+	return xoshiro(mesh->prng_state) % max;
+}
+
+/// Fudge value of ~0.1 seconds, in microseconds.
+static const unsigned int TIMER_FUDGE = 0x20000;
 
 #endif

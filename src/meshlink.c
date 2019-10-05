@@ -516,7 +516,7 @@ static bool try_bind(int port) {
 
 static int check_port(meshlink_handle_t *mesh) {
 	for(int i = 0; i < 1000; i++) {
-		int port = 0x1000 + (rand() & 0x7fff);
+		int port = 0x1000 + prng(mesh, 0x8000);
 
 		if(try_bind(port)) {
 			free(mesh->myport);
@@ -1285,6 +1285,8 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 	mesh->submeshes = NULL;
 	mesh->log_cb = global_log_cb;
 	mesh->log_level = global_log_level;
+
+	randomize(&mesh->prng_state, sizeof(mesh->prng_state));
 
 	memcpy(mesh->dev_class_traits, default_class_traits, sizeof(default_class_traits));
 
@@ -3522,9 +3524,6 @@ void handle_network_change(meshlink_handle_t *mesh, bool online) {
 
 static void __attribute__((constructor)) meshlink_init(void) {
 	crypto_init();
-	unsigned int seed;
-	randomize(&seed, sizeof(seed));
-	srand(seed);
 }
 
 static void __attribute__((destructor)) meshlink_exit(void) {
