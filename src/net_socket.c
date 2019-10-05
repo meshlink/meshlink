@@ -238,6 +238,8 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 } /* int setup_vpn_in_socket */
 
 static void retry_outgoing_handler(event_loop_t *loop, void *data) {
+	assert(data);
+
 	meshlink_handle_t *mesh = loop->data;
 	outgoing_t *outgoing = data;
 	setup_outgoing_connection(mesh, outgoing);

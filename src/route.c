@@ -26,6 +26,8 @@
 #include "utils.h"
 
 static bool checklength(node_t *source, vpn_packet_t *packet, uint16_t length) {
+	assert(length);
+
 	if(packet->len < length) {
 		logger(source->mesh, MESHLINK_WARNING, "Got too short packet from %s", source->name);
 		return false;
@@ -35,6 +37,8 @@ static bool checklength(node_t *source, vpn_packet_t *packet, uint16_t length) {
 }
 
 void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
+	assert(source);
+
 	// TODO: route on name or key
 
 	meshlink_packethdr_t *hdr = (meshlink_packethdr_t *) packet->data;

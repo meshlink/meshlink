@@ -409,59 +409,6 @@ splay_node_t *splay_search_closest_greater_node(splay_tree_t *tree, const void *
 
 /* Insertion and deletion */
 
-splay_node_t *splay_insert(splay_tree_t *tree, void *data) {
-	splay_node_t *closest, *new;
-	int result;
-
-	if(!tree->root) {
-		new = splay_alloc_node();
-		new->data = data;
-		splay_insert_top(tree, new);
-	} else {
-		closest = splay_search_closest_node(tree, data, &result);
-
-		if(!result) {
-			return NULL;
-		}
-
-		new = splay_alloc_node();
-		new->data = data;
-
-		if(result < 0) {
-			splay_insert_before(tree, closest, new);
-		} else {
-			splay_insert_after(tree, closest, new);
-		}
-	}
-
-	return new;
-}
-
-splay_node_t *splay_insert_node(splay_tree_t *tree, splay_node_t *node) {
-	splay_node_t *closest;
-	int result;
-
-	node->left = node->right = node->parent = node->next = node->prev = NULL;
-
-	if(!tree->root) {
-		splay_insert_top(tree, node);
-	} else {
-		closest = splay_search_closest_node(tree, node->data, &result);
-
-		if(!result) {
-			return NULL;
-		}
-
-		if(result < 0) {
-			splay_insert_before(tree, closest, node);
-		} else {
-			splay_insert_after(tree, closest, node);
-		}
-	}
-
-	return node;
-}
-
 void splay_insert_top(splay_tree_t *tree, splay_node_t *node) {
 	node->prev = node->next = node->left = node->right = node->parent = NULL;
 	tree->head = tree->tail = tree->root = node;
@@ -542,6 +489,59 @@ void splay_insert_after(splay_tree_t *tree, splay_node_t *after, splay_node_t *n
 	tree->count++;
 }
 
+splay_node_t *splay_insert(splay_tree_t *tree, void *data) {
+	splay_node_t *closest, *new;
+	int result;
+
+	if(!tree->root) {
+		new = splay_alloc_node();
+		new->data = data;
+		splay_insert_top(tree, new);
+	} else {
+		closest = splay_search_closest_node(tree, data, &result);
+
+		if(!result) {
+			return NULL;
+		}
+
+		new = splay_alloc_node();
+		new->data = data;
+
+		if(result < 0) {
+			splay_insert_before(tree, closest, new);
+		} else {
+			splay_insert_after(tree, closest, new);
+		}
+	}
+
+	return new;
+}
+
+splay_node_t *splay_insert_node(splay_tree_t *tree, splay_node_t *node) {
+	splay_node_t *closest;
+	int result;
+
+	node->left = node->right = node->parent = node->next = node->prev = NULL;
+
+	if(!tree->root) {
+		splay_insert_top(tree, node);
+	} else {
+		closest = splay_search_closest_node(tree, node->data, &result);
+
+		if(!result) {
+			return NULL;
+		}
+
+		if(result < 0) {
+			splay_insert_before(tree, closest, node);
+		} else {
+			splay_insert_after(tree, closest, node);
+		}
+	}
+
+	return node;
+}
+
 splay_node_t *splay_unlink(splay_tree_t *tree, void *data) {
 	splay_node_t *node;
 
@@ -555,6 +555,10 @@ splay_node_t *splay_unlink(splay_tree_t *tree, void *data) {
 }
 
 void splay_unlink_node(splay_tree_t *tree, splay_node_t *node) {
+	assert(tree->count);
+	assert(node->prev || tree->head == node);
+	assert(node->next || tree->tail == node);
+
 	if(node->prev) {
 		node->prev->next = node->next;
 	} else {
@@ -607,9 +611,11 @@ void splay_delete_tree(splay_tree_t *tree) {
 	for(splay_node_t *node = tree->head, *next; node; node = next) {
 		next = node->next;
 		splay_free_node(tree, node);
+		tree->count--;
 	}
 
-	splay_free_tree(tree);
+	assert(!tree->count);
+	free(tree);
 }
 
 /* Tree walking */

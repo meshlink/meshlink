@@ -248,6 +248,9 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 }
 
 bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
+	assert(request);
+	assert(*request);
+
 	char name[MAX_STRING_SIZE];
 
 	if(sscanf(request, "%*d " MAX_STRING " %d.%d", name, &c->protocol_major, &c->protocol_minor) < 2) {
@@ -385,6 +388,9 @@ static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
 }
 
 bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
+	assert(request);
+	assert(*request);
+
 	char hisport[MAX_STRING_SIZE];
 	int devclass;
 	uint32_t options;

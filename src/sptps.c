@@ -52,11 +52,16 @@ void sptps_log_quiet(sptps_t *s, int s_errno, const char *format, va_list ap) {
 	(void)s_errno;
 	(void)format;
 	(void)ap;
+
+	assert(format);
 }
 
 void sptps_log_stderr(sptps_t *s, int s_errno, const char *format, va_list ap) {
 	(void)s;
 	(void)s_errno;
+
+	assert(format);
+
 	vfprintf(stderr, format, ap);
 	fputc('\n', stderr);
 }
@@ -65,6 +70,9 @@ void (*sptps_log)(sptps_t *s, int s_errno, const char *format, va_list ap) = spt
 
 // Log an error message.
 static bool error(sptps_t *s, int s_errno, const char *format, ...) {
+	assert(s_errno);
+	assert(format);
+
 	if(format) {
 		va_list ap;
 		va_start(ap, format);
@@ -77,6 +85,8 @@ static bool error(sptps_t *s, int s_errno, const char *format, ...) {
 }
 
 static void warning(sptps_t *s, const char *format, ...) {
+	assert(format);
+
 	va_list ap;
 	va_start(ap, format);
 	sptps_log(s, 0, format, ap);
@@ -132,6 +142,8 @@ static bool send_record_priv(sptps_t *s, uint8_t type, const void *data, uint16_
 
 // Send an application record.
 bool sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
+	assert(!len || data);
+
 	// Sanity checks: application cannot send data before handshake is finished,
 	// and only record types 0..127 are allowed.
 	if(!s->outstate) {
@@ -199,6 +211,9 @@ static bool send_sig(sptps_t *s) {
 
 // Generate key material from the shared secret created from the ECDHE key exchange.
 static bool generate_key_material(sptps_t *s, const char *shared, size_t len) {
+	assert(shared);
+	assert(len);
+
 	// Initialise cipher and digest structures if necessary
 	if(!s->outstate) {
 		s->incipher = chacha_poly1305_init();

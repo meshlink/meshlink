@@ -103,6 +103,9 @@ void edge_del(meshlink_handle_t *mesh, edge_t *e) {
 }
 
 edge_t *lookup_edge(node_t *from, node_t *to) {
+	assert(from);
+	assert(to);
+
 	edge_t v;
 
 	v.from = from;

@@ -109,6 +109,8 @@ void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report)
   and close the connection.
 */
 static void timeout_handler(event_loop_t *loop, void *data) {
+	assert(data);
+
 	meshlink_handle_t *mesh = loop->data;
 	logger(mesh, MESHLINK_DEBUG, "timeout_handler()");
 

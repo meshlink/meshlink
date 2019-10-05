@@ -42,6 +42,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <limits.h>
+#include <assert.h>
 
 #ifdef HAVE_MINGW
 #include <w32api.h>

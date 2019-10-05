@@ -31,26 +31,47 @@
 
 /// Generate a path to the main configuration file.
 static void make_main_path(meshlink_handle_t *mesh, const char *conf_subdir, char *path, size_t len) {
+	assert(conf_subdir);
+	assert(path);
+	assert(len);
+
 	snprintf(path, len, "%s" SLASH "%s" SLASH "meshlink.conf", mesh->confbase, conf_subdir);
 }
 
 /// Generate a path to a host configuration file.
 static void make_host_path(meshlink_handle_t *mesh, const char *conf_subdir, const char *name, char *path, size_t len) {
+	assert(conf_subdir);
+	assert(name);
+	assert(path);
+	assert(len);
+
 	snprintf(path, len, "%s" SLASH "%s" SLASH "hosts" SLASH "%s", mesh->confbase, conf_subdir, name);
 }
 
 /// Generate a path to an unused invitation file.
 static void make_invitation_path(meshlink_handle_t *mesh, const char *conf_subdir, const char *name, char *path, size_t len) {
+	assert(conf_subdir);
+	assert(name);
+	assert(path);
+	assert(len);
+
 	snprintf(path, len, "%s" SLASH "%s" SLASH "invitations" SLASH "%s", mesh->confbase, conf_subdir, name);
 }
 
 /// Generate a path to a used invitation file.
 static void make_used_invitation_path(meshlink_handle_t *mesh, const char *conf_subdir, const char *name, char *path, size_t len) {
+	assert(conf_subdir);
+	assert(name);
+	assert(path);
+	assert(len);
+
 	snprintf(path, len, "%s" SLASH "%s" SLASH "invitations" SLASH "%s.used", mesh->confbase, conf_subdir, name);
 }
 
 /// Remove a directory recursively
 static void deltree(const char *dirname) {
+	assert(dirname);
+
 	DIR *d = opendir(dirname);
 
 	if(d) {
@@ -76,6 +97,8 @@ static void deltree(const char *dirname) {
 }
 
 static bool sync_path(const char *pathname) {
+	assert(pathname);
+
 	int fd = open(pathname, O_RDONLY);
 
 	if(fd < 0) {
@@ -103,9 +126,9 @@ static bool sync_path(const char *pathname) {
 
 /// Try decrypting the main configuration file from the given sub-directory.
 static bool main_config_decrypt(meshlink_handle_t *mesh, const char *conf_subdir) {
-	if(!mesh->config_key && !mesh->confbase && !conf_subdir) {
-		return false;
-	}
+	assert(mesh->config_key);
+	assert(mesh->confbase);
+	assert(conf_subdir);
 
 	config_t config;
 
@@ -124,12 +147,10 @@ static bool main_config_decrypt(meshlink_handle_t *mesh, const char *conf_subdir
 
 /// Create a fresh configuration directory
 bool config_init(meshlink_handle_t *mesh, const char *conf_subdir) {
+	assert(conf_subdir);
+
 	if(!mesh->confbase) {
 		return true;
-	}
-
-	if(!conf_subdir) {
-		return false;
 	}
 
 	if(mkdir(mesh->confbase, 0700) && errno != EEXIST) {
@@ -167,7 +188,9 @@ bool config_init(meshlink_handle_t *mesh, const char *conf_subdir) {
 
 /// Wipe an existing configuration directory
 bool config_destroy(const char *confbase, const char *conf_subdir) {
-	if(!confbase && !conf_subdir) {
+	assert(conf_subdir);
+
+	if(!confbase) {
 		return false;
 	}
 
@@ -205,9 +228,8 @@ bool config_destroy(const char *confbase, const char *conf_subdir) {
 }
 
 static bool copytree(const char *src_dir_name, const void *src_key, const char *dst_dir_name, const void *dst_key) {
-	if(!src_dir_name || !dst_dir_name) {
-		return false;
-	}
+	assert(src_dir_name);
+	assert(dst_dir_name);
 
 	char src_filename[PATH_MAX];
 	char dst_filename[PATH_MAX];
@@ -312,6 +334,9 @@ static bool copytree(const char *src_dir_name, const void *src_key, const char *
 }
 
 bool config_copy(meshlink_handle_t *mesh, const char *src_dir_name, const void *src_key, const char *dst_dir_name, const void *dst_key) {
+	assert(src_dir_name);
+	assert(dst_dir_name);
+
 	char src_filename[PATH_MAX];
 	char dst_filename[PATH_MAX];
 
@@ -323,7 +348,9 @@ bool config_copy(meshlink_handle_t *mesh, const char *src_dir_name, const void *
 
 /// Check the presence of the main configuration file.
 bool main_config_exists(meshlink_handle_t *mesh, const char *conf_subdir) {
-	if(!mesh->confbase && !conf_subdir) {
+	assert(conf_subdir);
+
+	if(!mesh->confbase) {
 		return false;
 	}
 
@@ -333,7 +360,10 @@ bool main_config_exists(meshlink_handle_t *mesh, const char *conf_subdir) {
 }
 
 bool config_rename(meshlink_handle_t *mesh, const char *old_conf_subdir, const char *new_conf_subdir) {
-	if(!mesh->confbase && !old_conf_subdir && !new_conf_subdir) {
+	assert(old_conf_subdir);
+	assert(new_conf_subdir);
+
+	if(!mesh->confbase) {
 		return false;
 	}
 
@@ -347,12 +377,10 @@ bool config_rename(meshlink_handle_t *mesh, const char *old_conf_subdir, const c
 }
 
 bool config_sync(meshlink_handle_t *mesh, const char *conf_subdir) {
+	assert(conf_subdir);
+
 	if(!mesh->confbase) {
 		return true;
-	}
-
-	if(!conf_subdir) {
-		return false;
 	}
 
 	char path[PATH_MAX];
@@ -476,6 +504,8 @@ void main_config_unlock(meshlink_handle_t *mesh) {
 
 /// Read a configuration file from a FILE handle.
 bool config_read_file(meshlink_handle_t *mesh, FILE *f, config_t *config, const void *key) {
+	assert(f);
+
 	long len;
 
 	if(fseek(f, 0, SEEK_END) || !(len = ftell(f)) || fseek(f, 0, SEEK_SET)) {
@@ -522,6 +552,8 @@ bool config_read_file(meshlink_handle_t *mesh, FILE *f, config_t *config, const 
 
 /// Write a configuration file to a FILE handle.
 bool config_write_file(meshlink_handle_t *mesh, FILE *f, const config_t *config, const void *key) {
+	assert(f);
+
 	if(key) {
 		uint8_t buf[config->len + 16];
 		size_t len = sizeof(buf);
@@ -558,6 +590,8 @@ bool config_write_file(meshlink_handle_t *mesh, FILE *f, const config_t *config,
 
 /// Free resources of a loaded configuration file.
 void config_free(config_t *config) {
+	assert(!config->len || config->buf);
+
 	free((uint8_t *)config->buf);
 	config->buf = NULL;
 	config->len = 0;
@@ -565,7 +599,9 @@ void config_free(config_t *config) {
 
 /// Check the presence of a host configuration file.
 bool config_exists(meshlink_handle_t *mesh, const char *conf_subdir, const char *name) {
-	if(!mesh->confbase && !conf_subdir) {
+	assert(conf_subdir);
+
+	if(!mesh->confbase) {
 		return false;
 	}
 
@@ -577,7 +613,9 @@ bool config_exists(meshlink_handle_t *mesh, const char *conf_subdir, const char 
 
 /// Read a host configuration file.
 bool config_read(meshlink_handle_t *mesh, const char *conf_subdir, const char *name, config_t *config, void *key) {
-	if(!mesh->confbase && !conf_subdir) {
+	assert(conf_subdir);
+
+	if(!mesh->confbase) {
 		return false;
 	}
 
@@ -603,7 +641,10 @@ bool config_read(meshlink_handle_t *mesh, const char *conf_subdir, const char *n
 }
 
 bool config_scan_all(meshlink_handle_t *mesh, const char *conf_subdir, const char *conf_type, config_scan_action_t action, void *arg) {
-	if(!mesh->confbase && !conf_subdir && !conf_type) {
+	assert(conf_subdir);
+	assert(conf_type);
+
+	if(!mesh->confbase) {
 		return false;
 	}
 
@@ -637,7 +678,11 @@ bool config_scan_all(meshlink_handle_t *mesh, const char *conf_subdir, const cha
 
 /// Write a host configuration file.
 bool config_write(meshlink_handle_t *mesh, const char *conf_subdir, const char *name, const config_t *config, void *key) {
-	if(!mesh->confbase && !conf_subdir && !name) {
+	assert(conf_subdir);
+	assert(name);
+	assert(config);
+
+	if(!mesh->confbase) {
 		return true;
 	}
 
@@ -680,7 +725,10 @@ bool config_write(meshlink_handle_t *mesh, const char *conf_subdir, const char *
 
 /// Read the main configuration file.
 bool main_config_read(meshlink_handle_t *mesh, const char *conf_subdir, config_t *config, void *key) {
-	if(!mesh->confbase && !conf_subdir) {
+	assert(conf_subdir);
+	assert(config);
+
+	if(!mesh->confbase) {
 		return false;
 	}
 
@@ -707,7 +755,10 @@ bool main_config_read(meshlink_handle_t *mesh, const char *conf_subdir, config_t
 
 /// Write the main configuration file.
 bool main_config_write(meshlink_handle_t *mesh, const char *conf_subdir, const config_t *config, void *key) {
-	if(!mesh->confbase && !conf_subdir) {
+	assert(conf_subdir);
+	assert(config);
+
+	if(!mesh->confbase) {
 		return true;
 	}
 
@@ -751,7 +802,11 @@ bool main_config_write(meshlink_handle_t *mesh, const char *conf_subdir, const c
 
 /// Read an invitation file from the confbase sub-directory, and immediately delete it.
 bool invitation_read(meshlink_handle_t *mesh, const char *conf_subdir, const char *name, config_t *config, void *key) {
-	if(!mesh->confbase && !conf_subdir) {
+	assert(conf_subdir);
+	assert(name);
+	assert(config);
+
+	if(!mesh->confbase) {
 		return false;
 	}
 
@@ -810,7 +865,11 @@ bool invitation_read(meshlink_handle_t *mesh, const char *conf_subdir, const cha
 
 /// Write an invitation file.
 bool invitation_write(meshlink_handle_t *mesh, const char *conf_subdir, const char *name, const config_t *config, void *key) {
-	if(!mesh->confbase && !conf_subdir) {
+	assert(conf_subdir);
+	assert(name);
+	assert(config);
+
+	if(!mesh->confbase) {
 		return false;
 	}
 

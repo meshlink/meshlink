@@ -106,6 +106,8 @@ devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *e
 }
 
 static bool fstrwrite(const char *str, FILE *stream) {
+	assert(stream);
+
 	size_t len = strlen(str);
 
 	if(fwrite((void *)str, 1, len, stream) != len) {
@@ -116,6 +118,8 @@ static bool fstrwrite(const char *str, FILE *stream) {
 }
 
 bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) {
+	assert(stream);
+
 	bool result = true;
 
 	pthread_mutex_lock(&(mesh->mesh_mutex));
@@ -309,6 +313,7 @@ meshlink_submesh_t **devtool_get_all_submeshes(meshlink_handle_t *mesh, meshlink
 
 	return result;
 }
+
 meshlink_handle_t *devtool_open_in_netns(const char *confbase, const char *name, const char *appname, dev_class_t devclass, int netns) {
 	meshlink_open_params_t *params = meshlink_open_params_init(confbase, name, appname, devclass);
 	params->netns = dup(netns);

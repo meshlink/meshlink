@@ -30,13 +30,13 @@
 
 bool send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t length) {
 	(void)type;
+
+	assert(handle);
+	assert(buffer);
+	assert(length);
+
 	connection_t *c = handle;
 	meshlink_handle_t *mesh = c->mesh;
-
-	if(!c) {
-		logger(mesh, MESHLINK_ERROR, "send_meta_sptps() called with NULL pointer!");
-		abort();
-	}
 
 	buffer_add(&c->outbuf, (const char *)buffer, length);
 	io_set(&mesh->loop, &c->io, IO_READ | IO_WRITE);
@@ -45,10 +45,9 @@ bool send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t leng
 }
 
 bool send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int length) {
-	if(!c) {
-		logger(mesh, MESHLINK_ERROR, "send_meta() called with NULL pointer!");
-		abort();
-	}
+	assert(c);
+	assert(buffer);
+	assert(length);
 
 	logger(mesh, MESHLINK_DEBUG, "Sending %d bytes of metadata to %s", length, c->name);
 
@@ -62,14 +61,19 @@ bool send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int
 }
 
 void broadcast_meta(meshlink_handle_t *mesh, connection_t *from, const char *buffer, int length) {
+	assert(buffer);
+	assert(length);
+
 	for list_each(connection_t, c, mesh->connections)
 		if(c != from && c->status.active) {
 			send_meta(mesh, c, buffer, length);
 		}
 }
 
-void broadcast_submesh_meta(meshlink_handle_t *mesh, connection_t *from, submesh_t *s,
-                            const char *buffer, int length) {
+void broadcast_submesh_meta(meshlink_handle_t *mesh, connection_t *from, submesh_t *s, const char *buffer, int length) {
+	assert(buffer);
+	assert(length);
+
 	for list_each(connection_t, c, mesh->connections)
 		if(c != from && c->status.active) {
 			if(c->node && submesh_allows_node(s, c->node)) {
@@ -79,6 +83,9 @@ void broadcast_submesh_meta(meshlink_handle_t *mesh, connection_t *from, submesh
 }
 
 bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t length) {
+	assert(handle);
+	assert(!length || data);
+
 	connection_t *c = handle;
 	meshlink_handle_t *mesh = c->mesh;
 	char *request = (char *)data;

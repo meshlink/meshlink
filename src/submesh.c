@@ -31,6 +31,7 @@
 #include "protocol.h"
 
 void init_submeshes(meshlink_handle_t *mesh) {
+	assert(!mesh->submeshes);
 	mesh->submeshes = list_alloc((list_action_t)free_submesh);
 }
 
@@ -61,6 +62,7 @@ void free_submesh(submesh_t *s) {
 
 static submesh_t *submesh_new(meshlink_handle_t *mesh, const char *submesh) {
 	submesh_t *s = NULL;
+	assert(submesh);
 
 	s = new_submesh();
 	s->name = xstrdup(submesh);
@@ -70,6 +72,7 @@ static submesh_t *submesh_new(meshlink_handle_t *mesh, const char *submesh) {
 }
 
 submesh_t *create_submesh(meshlink_handle_t *mesh, const char *submesh) {
+	assert(submesh);
 	submesh_t *s = NULL;
 
 	if(0 == strcmp(submesh, CORE_MESH)) {
@@ -99,6 +102,7 @@ submesh_t *create_submesh(meshlink_handle_t *mesh, const char *submesh) {
 }
 
 submesh_t *lookup_or_create_submesh(meshlink_handle_t *mesh, const char *submesh) {
+	assert(submesh);
 	submesh_t *s = NULL;
 
 	if(0 == strcmp(submesh, CORE_MESH)) {
@@ -136,6 +140,8 @@ void submesh_del(meshlink_handle_t *mesh, submesh_t *s) {
 }
 
 submesh_t *lookup_submesh(struct meshlink_handle *mesh, const char *submesh_name) {
+	assert(submesh_name);
+
 	submesh_t *submesh = NULL;
 
 	if(!mesh->submeshes) {

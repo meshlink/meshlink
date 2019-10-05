@@ -22,6 +22,8 @@
 #define MESHLINK_MDNS_FINGERPRINT_KEY "fingerprint"
 
 static void generate_rand_string(char *buffer, size_t size) {
+	assert(size);
+
 	for(size_t i = 0; i < (size - 1); ++i) {
 		buffer[i] = 'a' + (rand() % ('z' - 'a' + 1));
 	}
@@ -34,10 +36,9 @@ static void discovery_entry_group_callback(CattaServer *server, CattaSEntryGroup
 	(void)group;
 	meshlink_handle_t *mesh = userdata;
 
-	// asserts
-	assert(mesh != NULL);
-	assert(mesh->catta_server != NULL);
-	assert(mesh->catta_poll != NULL);
+	assert(mesh);
+	assert(mesh->catta_server);
+	assert(mesh->catta_poll);
 
 	/* Called whenever the entry group state changes */
 	switch(state) {
@@ -69,14 +70,13 @@ static void discovery_create_services(meshlink_handle_t *mesh) {
 	char *txt_name = NULL;
 	char *txt_fingerprint = NULL;
 
-	// asserts
-	assert(mesh != NULL);
-	assert(mesh->name != NULL);
-	assert(mesh->myport != NULL);
-	assert(mesh->catta_server != NULL);
-	assert(mesh->catta_poll != NULL);
-	assert(mesh->catta_servicetype != NULL);
-	assert(mesh->self != NULL);
+	assert(mesh);
+	assert(mesh->name);
+	assert(mesh->myport);
+	assert(mesh->catta_server);
+	assert(mesh->catta_poll);
+	assert(mesh->catta_servicetype);
+	assert(mesh->self);
 
 	logger(mesh, MESHLINK_DEBUG, "Adding service\n");
 
@@ -122,8 +122,7 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 	(void)server;
 	meshlink_handle_t *mesh = userdata;
 
-	// asserts
-	assert(mesh != NULL);
+	assert(mesh);
 
 	switch(state) {
 	case CATTA_SERVER_RUNNING:
@@ -145,10 +144,9 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 		generate_rand_string(hostname, sizeof(hostname));
 
 		pthread_mutex_lock(&(mesh->mesh_mutex));
-		//
-		// asserts
-		assert(mesh->catta_server != NULL);
-		assert(mesh->catta_poll != NULL);
+
+		assert(mesh->catta_server);
+		assert(mesh->catta_poll);
 
 		int result = catta_server_set_host_name(mesh->catta_server, hostname);
 
@@ -178,9 +176,8 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 	case CATTA_SERVER_FAILURE:
 		pthread_mutex_lock(&(mesh->mesh_mutex));
 
-		// asserts
-		assert(mesh->catta_server != NULL);
-		assert(mesh->catta_poll != NULL);
+		assert(mesh->catta_server);
+		assert(mesh->catta_poll);
 
 		/* Terminate on failure */
 		catta_simple_poll_quit(mesh->catta_poll);
@@ -204,6 +201,8 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 
 	meshlink_handle_t *mesh = userdata;
 
+	assert(mesh);
+
 	if(event != CATTA_RESOLVER_FOUND) {
 		catta_s_service_resolver_free(resolver);
 		return;
@@ -213,7 +212,7 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 	CattaStringList *node_name_li = catta_string_list_find(txt, MESHLINK_MDNS_NAME_KEY);
 	CattaStringList *node_fp_li = catta_string_list_find(txt, MESHLINK_MDNS_FINGERPRINT_KEY);
 
-	if(node_name_li != NULL && node_fp_li != NULL) {
+	if(node_name_li && node_fp_li) {
 		char *node_name = (char *)catta_string_list_get_text(node_name_li) + strlen(MESHLINK_MDNS_NAME_KEY);
 		char *node_fp = (char *)catta_string_list_get_text(node_fp_li) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY);
 
@@ -224,7 +223,7 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 
 			meshlink_node_t *node = meshlink_get_node(mesh, node_name);
 
-			if(node != NULL) {
+			if(node) {
 				logger(mesh, MESHLINK_INFO, "Node %s is part of the mesh network.\n", node->name);
 
 				sockaddr_t naddress;
@@ -342,7 +341,7 @@ static void discovery_log_cb(CattaLogLevel level, const char *txt) {
 static void *discovery_loop(void *userdata) {
 	bool status = false;
 	meshlink_handle_t *mesh = userdata;
-	assert(mesh != NULL);
+	assert(mesh);
 
 	// handle catta logs
 	catta_set_log_function(discovery_log_cb);
@@ -423,7 +422,7 @@ fail:
 		catta_simple_poll_loop(mesh->catta_poll);
 	}
 
-	if(mesh->catta_browser != NULL) {
+	if(mesh->catta_browser) {
 		catta_s_service_browser_free(mesh->catta_browser);
 		mesh->catta_browser = NULL;
 	}
@@ -434,17 +433,17 @@ fail:
 		mesh->catta_group = NULL;
 	}
 
-	if(mesh->catta_server != NULL) {
+	if(mesh->catta_server) {
 		catta_server_free(mesh->catta_server);
 		mesh->catta_server = NULL;
 	}
 
-	if(mesh->catta_poll != NULL) {
+	if(mesh->catta_poll) {
 		catta_simple_poll_free(mesh->catta_poll);
 		mesh->catta_poll = NULL;
 	}
 
-	if(mesh->catta_servicetype != NULL) {
+	if(mesh->catta_servicetype) {
 		free(mesh->catta_servicetype);
 		mesh->catta_servicetype = NULL;
 	}
@@ -455,13 +454,12 @@ fail:
 bool discovery_start(meshlink_handle_t *mesh) {
 	logger(mesh, MESHLINK_DEBUG, "discovery_start called\n");
 
-	// asserts
-	assert(mesh != NULL);
-	assert(mesh->catta_poll == NULL);
-	assert(mesh->catta_server == NULL);
-	assert(mesh->catta_browser == NULL);
-	assert(mesh->discovery_threadstarted == false);
-	assert(mesh->catta_servicetype == NULL);
+	assert(mesh);
+	assert(!mesh->catta_poll);
+	assert(!mesh->catta_server);
+	assert(!mesh->catta_browser);
+	assert(!mesh->discovery_threadstarted);
+	assert(!mesh->catta_servicetype);
 
 	// Start the discovery thread
 	if(pthread_create(&mesh->discovery_thread, NULL, discovery_loop, mesh) != 0) {
@@ -482,8 +480,7 @@ bool discovery_start(meshlink_handle_t *mesh) {
 void discovery_stop(meshlink_handle_t *mesh) {
 	logger(mesh, MESHLINK_DEBUG, "discovery_stop called\n");
 
-	// asserts
-	assert(mesh != NULL);
+	assert(mesh);
 
 	// Shut down
 	if(mesh->catta_poll) {

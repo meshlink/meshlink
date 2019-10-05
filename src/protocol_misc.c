@@ -34,6 +34,9 @@ int maxoutbufsize = 0;
 /* Status and error notification routines */
 
 bool status_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
+	assert(request);
+	assert(*request);
+
 	int statusno;
 	char statusstring[MAX_STRING_SIZE];
 
@@ -48,6 +51,9 @@ bool status_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool error_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
+	assert(request);
+	assert(*request);
+
 	int err;
 	char errorstring[MAX_STRING_SIZE];
 
@@ -65,6 +71,10 @@ bool termreq_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	(void)mesh;
 	(void)c;
 	(void)request;
+
+	assert(request);
+	assert(*request);
+
 	return false;
 }
 
@@ -77,6 +87,10 @@ bool send_ping(meshlink_handle_t *mesh, connection_t *c) {
 
 bool ping_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	(void)request;
+
+	assert(request);
+	assert(*request);
+
 	return send_pong(mesh, c);
 }
 
@@ -87,6 +101,10 @@ bool send_pong(meshlink_handle_t *mesh, connection_t *c) {
 bool pong_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	(void)mesh;
 	(void)request;
+
+	assert(request);
+	assert(*request);
+
 	c->status.pinged = false;
 
 	/* Successful connection, reset timeout if this is an outgoing connection. */
@@ -110,6 +128,9 @@ bool pong_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 /* Sending and receiving packets via TCP */
 
 bool tcppacket_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
+	assert(request);
+	assert(*request);
+
 	short int len;
 
 	if(sscanf(request, "%*d %hd", &len) != 1) {

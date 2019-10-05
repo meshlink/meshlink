@@ -28,6 +28,8 @@
 static int random_fd = -1;
 
 void crypto_init(void) {
+	assert(random_fd == -1);
+
 	random_fd = open("/dev/urandom", O_RDONLY);
 
 	if(random_fd < 0) {
@@ -41,10 +43,15 @@ void crypto_init(void) {
 }
 
 void crypto_exit(void) {
+	assert(random_fd != -1);
+
 	close(random_fd);
+	random_fd = -1;
 }
 
 void randomize(void *out, size_t outlen) {
+	assert(outlen);
+
 	char *ptr = out;
 
 	while(outlen) {
@@ -81,6 +88,8 @@ void crypto_exit(void) {
 }
 
 void randomize(void *out, size_t outlen) {
+	assert(outlen);
+
 	if(!CryptGenRandom(prov, outlen, out)) {
 		fprintf(stderr, "CryptGenRandom() failed\n");
 		abort();

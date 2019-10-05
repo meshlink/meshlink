@@ -155,6 +155,11 @@ void send_mtu_probe(meshlink_handle_t *mesh, node_t *n) {
 }
 
 static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet, uint16_t len) {
+	if(len < 64) {
+		logger(mesh, MESHLINK_WARNING, "Got too short MTU probe length %d from %s", packet->len, n->name);
+		return;
+	}
+
 	logger(mesh, MESHLINK_DEBUG, "Got MTU probe length %d from %s", packet->len, n->name);
 
 	if(!packet->data[0]) {
@@ -357,6 +362,10 @@ static void send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *ori
 }
 
 bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
+	assert(handle);
+	assert(data);
+	assert(len);
+
 	node_t *to = handle;
 	meshlink_handle_t *mesh = to->mesh;
 
@@ -405,6 +414,9 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 }
 
 bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t len) {
+	assert(handle);
+	assert(!data || len);
+
 	node_t *from = handle;
 	meshlink_handle_t *mesh = from->mesh;
 

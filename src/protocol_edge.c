@@ -84,6 +84,9 @@ bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e, in
 }
 
 bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
+	assert(request);
+	assert(*request);
+
 	edge_t *e;
 	node_t *from, *to;
 	char from_name[MAX_STRING_SIZE];
@@ -275,6 +278,9 @@ bool send_del_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e, in
 }
 
 bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
+	assert(request);
+	assert(*request);
+
 	edge_t *e;
 	char from_name[MAX_STRING_SIZE];
 	char to_name[MAX_STRING_SIZE];

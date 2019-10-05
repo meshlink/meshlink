@@ -34,6 +34,8 @@ void buffer_compact(buffer_t *buffer, size_t maxsize) {
 
 char *buffer_prepare(buffer_t *buffer, size_t size) {
 	if(!buffer->data) {
+		assert(!buffer->maxlen);
+
 		buffer->maxlen = size;
 		buffer->data = xmalloc(size);
 	} else {
@@ -59,12 +61,18 @@ char *buffer_prepare(buffer_t *buffer, size_t size) {
 // Copy data into the buffer.
 
 void buffer_add(buffer_t *buffer, const char *data, size_t size) {
+	assert(data);
+	assert(size);
+
 	memcpy(buffer_prepare(buffer, size), data, size);
 }
 
 // Remove given number of bytes from the buffer, return a pointer to the start of them.
 
 static char *buffer_consume(buffer_t *buffer, size_t size) {
+	assert(size);
+	assert(buffer->len - buffer->offset >= size);
+
 	char *start = buffer->data + buffer->offset;
 
 	buffer->offset += size;
@@ -94,6 +102,8 @@ char *buffer_readline(buffer_t *buffer) {
 // Check if we have enough bytes in the buffer, and if so, return a pointer to the start of them.
 
 char *buffer_read(buffer_t *buffer, size_t size) {
+	assert(size);
+
 	if(buffer->len - buffer->offset < size) {
 		return NULL;
 	}
@@ -102,6 +112,8 @@ char *buffer_read(buffer_t *buffer, size_t size) {
 }
 
 void buffer_clear(buffer_t *buffer) {
+	assert(!buffer->data == !buffer->maxlen);
+
 	free(buffer->data);
 	buffer->data = NULL;
 	buffer->maxlen = 0;

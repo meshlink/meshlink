@@ -23,6 +23,9 @@
 #include "ed25519/sha512.h"
 
 static void memxor(char *buf, char c, size_t len) {
+	assert(buf);
+	assert(len);
+
 	for(size_t i = 0; i < len; i++) {
 		buf[i] ^= c;
 	}
@@ -33,6 +36,9 @@ static void memxor(char *buf, char c, size_t len) {
 // TODO: separate key setup from hmac_sha512
 
 static bool hmac_sha512(const char *key, size_t keylen, const char *msg, size_t msglen, char *out) {
+	assert(msg);
+	assert(msglen);
+
 	char tmp[2 * mdlen];
 	sha512_context md;
 
@@ -80,6 +86,13 @@ static bool hmac_sha512(const char *key, size_t keylen, const char *msg, size_t 
  */
 
 bool prf(const char *secret, size_t secretlen, char *seed, size_t seedlen, char *out, size_t outlen) {
+	assert(secret);
+	assert(secretlen);
+	assert(seed);
+	assert(seedlen);
+	assert(out);
+	assert(outlen);
+
 	/* Data is what the "inner" HMAC function processes.
 	   It consists of the previous HMAC result plus the seed.
 	 */

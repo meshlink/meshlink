@@ -186,7 +186,10 @@ void *list_get_tail(list_t *list) {
 void list_delete_list(list_t *list) {
 	for(list_node_t *node = list->head, *next; next = node ? node->next : NULL, node; node = next) {
 		list_free_node(list, node);
+		list->count--;
 	}
+
+	assert(!list->count);
 
 	list_free(list);
 }

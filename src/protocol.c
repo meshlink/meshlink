@@ -67,13 +67,13 @@ bool check_id(const char *id) {
    detection as well */
 
 bool send_request(meshlink_handle_t *mesh, connection_t *c, submesh_t *s, const char *format, ...) {
+	assert(c);
+	assert(format);
+	assert(*format);
+
 	va_list args;
 	char request[MAXBUFSIZE];
 	int len;
-
-	if(!c) {
-		return false;
-	}
 
 	/* Use vsnprintf instead of vxasprintf: faster, no memory
 	   fragmentation, cleanup is automatic, and there is a limit on the
@@ -107,6 +107,10 @@ bool send_request(meshlink_handle_t *mesh, connection_t *c, submesh_t *s, const 
 }
 
 void forward_request(meshlink_handle_t *mesh, connection_t *from, submesh_t *s, const char *request) {
+	assert(from);
+	assert(request);
+	assert(*request);
+
 	logger(mesh, MESHLINK_DEBUG, "Forwarding %s from %s: %s", request_name[atoi(request)], from->name, request);
 
 	// Create a temporary newline-terminated copy of the request
@@ -124,6 +128,9 @@ void forward_request(meshlink_handle_t *mesh, connection_t *from, submesh_t *s, 
 }
 
 bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *request) {
+	assert(request);
+	assert(*request);
+
 	if(c->outgoing && mesh->proxytype == PROXY_HTTP && c->allow_request == ID) {
 		if(!request[0] || request[0] == '\r') {
 			return true;
@@ -208,6 +215,9 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 }
 
 bool seen_request(meshlink_handle_t *mesh, const char *request) {
+	assert(request);
+	assert(*request);
+
 	past_request_t *new, p = {.request = request};
 
 	if(splay_search(mesh->past_request_tree, &p)) {
@@ -230,6 +240,8 @@ bool seen_request(meshlink_handle_t *mesh, const char *request) {
 }
 
 void init_requests(meshlink_handle_t *mesh) {
+	assert(!mesh->past_request_tree);
+
 	mesh->past_request_tree = splay_alloc_tree((splay_compare_t) past_request_compare, (splay_action_t) free_past_request);
 	timeout_add(&mesh->loop, &mesh->past_request_timeout, age_past_requests, NULL, &(struct timeval) {
 		0, 0

@@ -62,9 +62,7 @@ static int timeout_compare(const timeout_t *a, const timeout_t *b) {
 }
 
 void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int flags) {
-	if(io->cb) {
-		return;
-	}
+	assert(!io->cb);
 
 	io->fd = fd;
 	io->cb = cb;
@@ -73,12 +71,12 @@ void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int fl
 
 	io_set(loop, io, flags);
 
-	if(!splay_insert_node(&loop->ios, &io->node)) {
-		abort();
-	}
+	assert(splay_insert_node(&loop->ios, &io->node));
 }
 
 void io_set(event_loop_t *loop, io_t *io, int flags) {
+	assert(io->cb);
+
 	io->flags = flags;
 
 	if(flags & IO_READ) {
@@ -95,9 +93,7 @@ void io_set(event_loop_t *loop, io_t *io, int flags) {
 }
 
 void io_del(event_loop_t *loop, io_t *io) {
-	if(!io->cb) {
-		return;
-	}
+	assert(io->cb);
 
 	loop->deletion = true;
 
@@ -116,6 +112,8 @@ void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *
 }
 
 void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv) {
+	assert(timeout->cb);
+
 	if(timerisset(&timeout->tv)) {
 		splay_unlink_node(&loop->timeouts, &timeout->node);
 	}
@@ -176,9 +174,8 @@ static void signalio_handler(event_loop_t *loop, void *data, int flags) {
 }
 
 static void pipe_init(event_loop_t *loop) {
-	if(!pipe(loop->pipefd)) {
-		io_add(loop, &loop->signalio, signalio_handler, NULL, loop->pipefd[0], IO_READ);
-	}
+	assert(pipe(loop->pipefd) == 0);
+	io_add(loop, &loop->signalio, signalio_handler, NULL, loop->pipefd[0], IO_READ);
 }
 
 static void pipe_exit(event_loop_t *loop) {
@@ -198,9 +195,7 @@ void signal_trigger(event_loop_t *loop, signal_t *sig) {
 }
 
 void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum) {
-	if(sig->cb) {
-		return;
-	}
+	assert(!sig->cb);
 
 	sig->cb = cb;
 	sig->data = data;
@@ -217,9 +212,7 @@ void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, u
 }
 
 void signal_del(event_loop_t *loop, signal_t *sig) {
-	if(!sig->cb) {
-		return;
-	}
+	assert(sig->cb);
 
 	loop->deletion = true;
 
@@ -237,6 +230,8 @@ void idle_set(event_loop_t *loop, idle_cb_t cb, void *data) {
 }
 
 bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
+	assert(mutex);
+
 	fd_set readable;
 	fd_set writable;
 
@@ -276,15 +271,11 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		}
 
 		// release mesh mutex during select
-		if(mutex) {
-			pthread_mutex_unlock(mutex);
-		}
+		pthread_mutex_unlock(mutex);
 
 		int n = select(fds, &readable, &writable, NULL, tv);
 
-		if(mutex) {
-			pthread_mutex_lock(mutex);
-		}
+		pthread_mutex_lock(mutex);
 
 		gettimeofday(&loop->now, NULL);
 
@@ -353,6 +344,10 @@ void event_loop_init(event_loop_t *loop) {
 }
 
 void event_loop_exit(event_loop_t *loop) {
+	assert(!loop->ios.count);
+	assert(!loop->timeouts.count);
+	assert(!loop->signals.count);
+
 	for splay_each(io_t, io, &loop->ios) {
 		splay_unlink_node(&loop->ios, node);
 	}

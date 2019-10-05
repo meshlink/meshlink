@@ -25,6 +25,8 @@
 
 // TODO: refactor logging code to use a meshlink_handle_t *.
 void logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *format, ...) {
+	assert(format);
+
 	if(mesh) {
 		if(level < mesh->log_level || !mesh->log_cb) {
 			return;

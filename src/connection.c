@@ -29,6 +29,9 @@
 #include "xalloc.h"
 
 void init_connections(meshlink_handle_t *mesh) {
+	assert(!mesh->connections);
+	assert(!mesh->everyone);
+
 	mesh->connections = list_alloc((list_action_t) free_connection);
 	mesh->everyone = new_connection();
 	mesh->everyone->name = xstrdup("mesh->everyone");
@@ -39,7 +42,9 @@ void exit_connections(meshlink_handle_t *mesh) {
 		list_delete_list(mesh->connections);
 	}
 
-	free_connection(mesh->everyone);
+	if(mesh->everyone) {
+		free_connection(mesh->everyone);
+	}
 
 	mesh->connections = NULL;
 	mesh->everyone = NULL;
@@ -50,9 +55,7 @@ connection_t *new_connection(void) {
 }
 
 void free_connection(connection_t *c) {
-	if(!c) {
-		return;
-	}
+	assert(c);
 
 	sptps_stop(&c->sptps);
 	ecdsa_free(c->ecdsa);
@@ -74,11 +77,15 @@ void free_connection(connection_t *c) {
 }
 
 void connection_add(meshlink_handle_t *mesh, connection_t *c) {
+	assert(c);
+
 	c->mesh = mesh;
 	list_insert_tail(mesh->connections, c);
 }
 
 void connection_del(meshlink_handle_t *mesh, connection_t *c) {
+	assert(c);
+
 	io_del(&mesh->loop, &c->io);
 	list_delete(mesh->connections, c);
 }
