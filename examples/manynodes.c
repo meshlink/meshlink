@@ -251,6 +251,22 @@ static void parse_command(char *buf) {
 		meshlink_blacklist(mesh[nodeindex], node);
 
 		printf("Node '%s' blacklisted.\n", arg);
+	} else if(!strcasecmp(buf, "whitelist")) {
+		if(!arg) {
+			fprintf(stderr, "/whitelist requires an argument!\n");
+			return;
+		}
+
+		meshlink_node_t *node = meshlink_get_node(mesh[nodeindex], arg);
+
+		if(!node) {
+			fprintf(stderr, "Error looking up '%s': %s\n", arg, meshlink_strerror(meshlink_errno));
+			return;
+		}
+
+		meshlink_whitelist(mesh[nodeindex], node);
+
+		printf("Node '%s' whitelisted.\n", arg);
 	} else if(!strcasecmp(buf, "who")) {
 		if(!arg) {
 			nodes = meshlink_get_all_nodes(mesh[nodeindex], nodes, &nnodes);
