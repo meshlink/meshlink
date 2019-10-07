@@ -114,8 +114,6 @@ done:
 	free(fingerprint);
 	free(txt_name);
 	free(txt_fingerprint);
-
-	pthread_mutex_unlock(&(mesh->mesh_mutex));
 }
 
 static void discovery_server_callback(CattaServer *server, CattaServerState state, void *userdata) {
