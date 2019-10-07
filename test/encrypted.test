@@ -1,4 +1,0 @@
-#!/bin/sh
-
-rm -Rf encrypted_conf
-./encrypted

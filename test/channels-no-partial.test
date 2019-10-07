@@ -1,4 +1,0 @@
-#!/bin/sh
-
-rm -Rf channels_no_partial_conf.*
-./channels-no-partial

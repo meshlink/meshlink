@@ -2,20 +2,21 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
+#include <assert.h>
 
 #include "meshlink.h"
+#include "utils.h"
 
-static volatile bool duplicate_detected;
+static struct sync_flag duplicate_detected;
 
 static void handle_duplicate(meshlink_handle_t *mesh, meshlink_node_t *node) {
-	meshlink_node_t *self = meshlink_get_self(mesh);
-	fprintf(stderr, "%s: detected duplicate node %s\n", self->name, node->name);
-	duplicate_detected = true;
+	set_sync_flag(&duplicate_detected, true);
 	meshlink_blacklist(mesh, node);
 }
 
 int main() {
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
+
 	// Open meshlink instances
 
 	static const char *name[4] = {"foo", "bar", "baz", "foo"};
@@ -25,12 +26,9 @@ int main() {
 		char dirname[100];
 		snprintf(dirname, sizeof dirname, "duplicate_conf.%d", i);
 
+		assert(meshlink_destroy(dirname));
 		mesh[i] = meshlink_open(dirname, name[i], "duplicate", DEV_CLASS_BACKBONE);
-
-		if(!mesh[i]) {
-			fprintf(stderr, "Could not initialize configuration for node %d\n", i);
-			return 1;
-		}
+		assert(mesh[i]);
 
 		meshlink_add_address(mesh[i], "localhost");
 		meshlink_enable_discovery(mesh[i], false);
@@ -44,11 +42,12 @@ int main() {
 
 	for(int i = 0; i < 4; i++) {
 		data[i] = meshlink_export(mesh[i]);
+		assert(data[i]);
 	}
 
 	for(int i = 0; i < 3; i++) {
-		meshlink_import(mesh[i], data[i + 1]);
-		meshlink_import(mesh[i + 1], data[i]);
+		assert(meshlink_import(mesh[i], data[i + 1]));
+		assert(meshlink_import(mesh[i + 1], data[i]));
 	}
 
 	for(int i = 0; i < 4; i++) {
@@ -58,32 +57,16 @@ int main() {
 	// Start the meshes
 
 	for(int i = 0; i < 4; i++) {
-		if(!meshlink_start(mesh[i])) {
-			fprintf(stderr, "Could not start mesh %d\n", i);
-			return 1;
-		}
+		assert(meshlink_start(mesh[i]));
 	}
 
 	// Wait for the duplicate node to be detected
 
-	for(int i = 0; i < 20; i++) {
-		sleep(1);
-
-		if(duplicate_detected) {
-			break;
-		}
-	}
-
-	if(!duplicate_detected) {
-		fprintf(stderr, "Failed to detect duplicate node after 20 seconds\n");
-		return 1;
-	}
+	assert(wait_sync_flag(&duplicate_detected, 20));
 
 	// Clean up
 
 	for(int i = 0; i < 4; i++) {
 		meshlink_close(mesh[i]);
 	}
-
-	return 0;
 }

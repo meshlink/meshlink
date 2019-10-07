@@ -24,9 +24,9 @@ struct channel_info {
 	struct aio_info aio_infos[2];
 };
 
-static size_t bar_received_len;
-static struct timeval bar_received_tv;
-static struct sync_flag bar_received_flag;
+static size_t b_received_len;
+static struct timeval b_received_tv;
+static struct sync_flag b_received_flag;
 
 static void aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, void *priv) {
 	(void)mesh;
@@ -56,11 +56,11 @@ static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, con
 	(void)channel;
 	(void)data;
 
-	bar_received_len += len;
+	b_received_len += len;
 
-	if(bar_received_len >= smallsize) {
-		gettimeofday(&bar_received_tv, NULL);
-		set_sync_flag(&bar_received_flag, true);
+	if(b_received_len >= smallsize) {
+		gettimeofday(&b_received_tv, NULL);
+		set_sync_flag(&b_received_flag, true);
 	}
 }
 
@@ -86,10 +86,11 @@ int main(int argc, char *argv[]) {
 	(void)argc;
 	(void)argv;
 
+	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_cb);
+
 	// Prepare data buffers
 
 	char *outdata = malloc(size);
-
 	assert(outdata);
 
 	for(size_t i = 0; i < size; i++) {
@@ -112,70 +113,46 @@ int main(int argc, char *argv[]) {
 
 	// Open two new meshlink instance.
 
-	meshlink_destroy("channels_aio_conf.1");
-	meshlink_destroy("channels_aio_conf.2");
-
-	meshlink_handle_t *mesh1 = meshlink_open("channels_aio_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh1);
-
-	meshlink_handle_t *mesh2 = meshlink_open("channels_aio_conf.2", "bar", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh2);
-
-	mesh2->priv = in_infos;
-
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
-
-	// Import and export both side's data
-
-	meshlink_add_address(mesh1, "localhost");
-
-	char *data = meshlink_export(mesh1);
-	assert(data);
-	assert(meshlink_import(mesh2, data));
-	free(data);
-
-	data = meshlink_export(mesh2);
-	assert(data);
-	assert(meshlink_import(mesh1, data));
-	free(data);
+	meshlink_handle_t *mesh_a, *mesh_b;
+	open_meshlink_pair(&mesh_a, &mesh_b, "channels_aio");
 
 	// Set the callbacks.
 
-	meshlink_set_channel_accept_cb(mesh1, reject_cb);
-	meshlink_set_channel_accept_cb(mesh2, accept_cb);
+	mesh_b->priv = in_infos;
+
+	meshlink_set_channel_accept_cb(mesh_a, reject_cb);
+	meshlink_set_channel_accept_cb(mesh_b, accept_cb);
 
 	// Start both instances
 
-	assert(meshlink_start(mesh1));
-	assert(meshlink_start(mesh2));
+	start_meshlink_pair(mesh_a, mesh_b);
 
-	// Open channels from foo to bar.
+	// Open channels from a to b.
 
-	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-	assert(bar);
+	meshlink_node_t *b = meshlink_get_node(mesh_a, "b");
+	assert(b);
 
 	meshlink_channel_t *channels[nchannels + 1];
 
 	for(size_t i = 0; i < nchannels + 1; i++) {
-		channels[i] = meshlink_channel_open(mesh1, bar, i + 1, NULL, NULL, 0);
+		channels[i] = meshlink_channel_open(mesh_a, b, i + 1, NULL, NULL, 0);
 		assert(channels[i]);
 	}
 
 	// Send a large buffer of data on each channel.
 
 	for(size_t i = 0; i < nchannels; i++) {
-		assert(meshlink_channel_aio_send(mesh1, channels[i], outdata, size / 3, aio_cb, &out_infos[i].aio_infos[0]));
-		assert(meshlink_channel_aio_send(mesh1, channels[i], outdata + size / 3, size - size / 3, aio_cb, &out_infos[i].aio_infos[1]));
+		assert(meshlink_channel_aio_send(mesh_a, channels[i], outdata, size / 3, aio_cb, &out_infos[i].aio_infos[0]));
+		assert(meshlink_channel_aio_send(mesh_a, channels[i], outdata + size / 3, size - size / 3, aio_cb, &out_infos[i].aio_infos[1]));
 	}
 
 	// Send a little bit on the last channel using a regular send
 
-	assert(meshlink_channel_send(mesh1, channels[nchannels], outdata, smallsize) == smallsize);
+	assert(meshlink_channel_send(mesh_a, channels[nchannels], outdata, smallsize) == (ssize_t)smallsize);
 
 	// Wait for everyone to finish.
 
-	assert(wait_sync_flag(&bar_received_flag, 10));
+	assert(wait_sync_flag(&b_received_flag, 10));
 
 	for(size_t i = 0; i < nchannels; i++) {
 		assert(wait_sync_flag(&out_infos[i].aio_infos[0].flag, 10));
@@ -186,7 +163,7 @@ int main(int argc, char *argv[]) {
 
 	// Check that everything is correct.
 
-	assert(bar_received_len == smallsize);
+	assert(b_received_len == smallsize);
 
 	for(size_t i = 0; i < nchannels; i++) {
 		// Data should be transferred intact.
@@ -211,14 +188,11 @@ int main(int argc, char *argv[]) {
 		}
 
 		// The non-AIO transfer should have completed before everything else
-		assert(timercmp(&out_infos[i].aio_infos[0].tv, &bar_received_tv, >=));
-		assert(timercmp(&in_infos[i].aio_infos[0].tv, &bar_received_tv, >=));
+		assert(timercmp(&out_infos[i].aio_infos[0].tv, &b_received_tv, >=));
+		assert(timercmp(&in_infos[i].aio_infos[0].tv, &b_received_tv, >=));
 	}
 
 	// Clean up.
 
-	meshlink_close(mesh2);
-	meshlink_close(mesh1);
-
-	return 0;
+	close_meshlink_pair(mesh_a, mesh_b);
 }

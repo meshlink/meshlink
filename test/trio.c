@@ -12,40 +12,40 @@
 #include "devtools.h"
 #include "utils.h"
 
-static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
-	(void)mesh;
-
-	static struct timeval tv0;
-	struct timeval tv;
-
-	if(tv0.tv_sec == 0) {
-		gettimeofday(&tv0, NULL);
-	}
-
-	gettimeofday(&tv, NULL);
-	fprintf(stderr, "%u.%.03u ", (unsigned int)(tv.tv_sec - tv0.tv_sec), (unsigned int)tv.tv_usec / 1000);
-
-	if(mesh) {
-		fprintf(stderr, "(%s) ", mesh->name);
-	}
-
-	fprintf(stderr, "[%d] %s\n", level, text);
-}
-
-static bool received = false;
+static struct sync_flag received;
+static struct sync_flag bar_learned_baz;
+static struct sync_flag baz_learned_bar;
 
 static void receive_cb(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
 	(void)mesh;
 	(void)source;
 
-	fprintf(stderr, "RECEIVED SOMETHING\n");
-
 	if(len == 5 && !memcmp(data, "Hello", 5)) {
-		received = true;
+		set_sync_flag(&received, true);
+	}
+}
+
+static void bar_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
+	(void)reachable;
+
+	if(!strcmp(node->name, "baz")) {
+		set_sync_flag(&bar_learned_baz, true);
+	}
+}
+
+static void baz_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+	(void)mesh;
+	(void)reachable;
+
+	if(!strcmp(node->name, "bar")) {
+		set_sync_flag(&baz_learned_bar, true);
 	}
 }
 
 int main() {
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
+
 	// Create three instances.
 
 	const char *name[3] = {"foo", "bar", "baz"};
@@ -56,6 +56,7 @@ int main() {
 		char *path = NULL;
 		assert(asprintf(&path, "trio_conf.%d", i) != -1 && path);
 
+		assert(meshlink_destroy(path));
 		mesh[i] = meshlink_open(path, name[i], "trio", DEV_CLASS_BACKBONE);
 		assert(mesh[i]);
 		free(path);
@@ -83,6 +84,9 @@ int main() {
 
 	// start the nodes
 
+	meshlink_set_node_status_cb(mesh[1], bar_status_cb);
+	meshlink_set_node_status_cb(mesh[2], baz_status_cb);
+
 	for(int i = 0; i < 3; i++) {
 		free(data[i]);
 		assert(meshlink_start(mesh[i]));
@@ -90,13 +94,22 @@ int main() {
 
 	// the nodes should now learn about each other
 
-	assert_after(meshlink_get_node(mesh[1], name[2]), 5);
-	assert_after(meshlink_get_node(mesh[2], name[1]), 5);
+	assert(wait_sync_flag(&bar_learned_baz, 5));
+	assert(wait_sync_flag(&baz_learned_bar, 5));
 
 	// Send a packet, expect it is received
 
 	meshlink_set_receive_cb(mesh[1], receive_cb);
-	assert_after((meshlink_send(mesh[2], meshlink_get_node(mesh[2], name[1]), "Hello", 5), received), 15);
+
+	for(int i = 0; i < 15; i++) {
+		assert(meshlink_send(mesh[2], meshlink_get_node(mesh[2], name[1]), "Hello", 5));
+
+		if(wait_sync_flag(&received, 1)) {
+			break;
+		}
+	}
+
+	assert(wait_sync_flag(&received, 15));
 
 	// Check that the second and third node have autoconnected to each other
 
@@ -112,7 +125,17 @@ int main() {
 
 	// Communication should still be possible
 
-	assert_after((meshlink_send(mesh[2], meshlink_get_node(mesh[2], name[1]), "Hello", 5), received), 15);
+	set_sync_flag(&received, false);
+
+	for(int i = 0; i < 15; i++) {
+		assert(meshlink_send(mesh[2], meshlink_get_node(mesh[2], name[1]), "Hello", 5));
+
+		if(wait_sync_flag(&received, 1)) {
+			break;
+		}
+	}
+
+	assert(wait_sync_flag(&received, 15));
 
 	// Stop the other nodes
 
@@ -124,8 +147,6 @@ int main() {
 
 	// Start just the other two nodes
 
-	meshlink_set_log_cb(mesh[1], MESHLINK_DEBUG, log_cb);
-
 	for(int i = 1; i < 3; i++) {
 		assert(meshlink_start(mesh[i]));
 	}
@@ -135,8 +156,17 @@ int main() {
 
 	// Communication should still be possible
 
-	received = false;
-	assert_after((meshlink_send(mesh[2], meshlink_get_node(mesh[2], name[1]), "Hello", 5), received), 25);
+	set_sync_flag(&received, false);
+
+	for(int i = 0; i < 15; i++) {
+		assert(meshlink_send(mesh[2], meshlink_get_node(mesh[2], name[1]), "Hello", 5));
+
+		if(wait_sync_flag(&received, 1)) {
+			break;
+		}
+	}
+
+	assert(wait_sync_flag(&received, 1));
 
 	// Clean up.
 

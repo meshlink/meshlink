@@ -22,6 +22,8 @@ int main(int argc, char *argv[]) {
 	(void)argc;
 	(void)argv;
 
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
+
 	// Start two new meshlink instance.
 
 	meshlink_handle_t *mesh_a;
@@ -69,7 +71,5 @@ int main(int argc, char *argv[]) {
 
 	// Clean up.
 
-	close_meshlink_pair(mesh_a, mesh_b, "channels_no_partial");
-
-	return 0;
+	close_meshlink_pair(mesh_a, mesh_b);
 }

@@ -24,10 +24,13 @@ extern void start_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b);
 extern void stop_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b);
 
 /// Stop and cleanup a pair of meshlink instances.
-extern void close_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b, const char *prefix);
+extern void close_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b);
 
 /// Link two meshlink instances.
 extern void link_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b);
+
+/// Default log callback
+extern void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text);
 
 #define assert_after(cond, timeout)\
 	do {\
@@ -39,4 +42,5 @@ extern void link_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b);
 			sleep(1);\
 		}\
 	} while(0)
+
 #endif

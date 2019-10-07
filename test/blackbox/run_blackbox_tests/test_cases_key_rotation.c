@@ -50,19 +50,6 @@ static bool test_key_rotation_04(void);
 static void test_case_key_rotation_05(void **state);
 static bool test_key_rotation_05(void);
 
-static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
-
-	static const char *levelstr[] = {
-		[MESHLINK_DEBUG] = "\x1b[34mDEBUG",
-		[MESHLINK_INFO] = "\x1b[32mINFO",
-		[MESHLINK_WARNING] = "\x1b[33mWARNING",
-		[MESHLINK_ERROR] = "\x1b[31mERROR",
-		[MESHLINK_CRITICAL] = "\x1b[31mCRITICAL",
-	};
-
-	fprintf(stderr, "%s(%s):\x1b[0m %s\n", mesh->name, levelstr[level], text);
-}
-
 /* Execute key rotation Test Case # 1 - Sanity test */
 static void test_case_key_rotation_01(void **state) {
 	execute_test(test_key_rotation_01, state);

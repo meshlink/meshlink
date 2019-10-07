@@ -1,4 +1,0 @@
-#!/bin/sh
-
-rm -Rf duplicate_conf*
-./duplicate

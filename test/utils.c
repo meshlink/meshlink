@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include <errno.h>
+#include <time.h>
 
 #include "utils.h"
 
@@ -64,14 +65,15 @@ void open_meshlink_pair(meshlink_handle_t **pa, meshlink_handle_t **pb, const ch
 	*pa = *pb = NULL;
 
 	char *a_name, *b_name;
-	int ret_val;
-	(void)ret_val;
 
-	ret_val = asprintf(&a_name, "%s_conf.1", prefix);
+	assert(asprintf(&a_name, "%s_conf.1", prefix) > 0);
 	assert(a_name);
 
-	ret_val = asprintf(&b_name, "%s_conf.2", prefix);
+	assert(asprintf(&b_name, "%s_conf.2", prefix) > 0);
 	assert(b_name);
+
+	assert(meshlink_destroy(a_name));
+	assert(meshlink_destroy(b_name));
 
 	meshlink_handle_t *a = meshlink_open(a_name, "a", prefix, DEV_CLASS_BACKBONE);
 	assert(a);
@@ -104,8 +106,8 @@ void start_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b) {
 	a->priv = &pair_status;
 	meshlink_set_node_status_cb(a, pair_status_cb);
 
-	meshlink_start(a);
-	meshlink_start(b);
+	assert(meshlink_start(a));
+	assert(meshlink_start(b));
 
 	assert(wait_sync_flag(&pair_status, 5));
 
@@ -118,24 +120,34 @@ void stop_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b) {
 	meshlink_stop(b);
 }
 
-void close_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b, const char *prefix) {
-	int ret_val;
-	(void)ret_val;
+void close_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b) {
 	meshlink_close(a);
 	meshlink_close(b);
+}
 
-	if(prefix) {
-		char *a_name, *b_name;
+void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
+	static const char *levelstr[] = {
+		[MESHLINK_DEBUG] = "DEBUG",
+		[MESHLINK_INFO] = "INFO",
+		[MESHLINK_WARNING] = "WARNING",
+		[MESHLINK_ERROR] = "ERROR",
+		[MESHLINK_CRITICAL] = "CRITICAL",
+	};
 
-		ret_val = asprintf(&a_name, "%s_conf.1", prefix);
-		assert(a_name);
-		assert(meshlink_destroy(a_name));
+	static struct timespec ts0;
+	struct timespec ts;
 
-		ret_val = asprintf(&b_name, "%s_conf.2", prefix);
-		assert(b_name);
-		assert(meshlink_destroy(b_name));
+	clock_gettime(CLOCK_MONOTONIC, &ts);
 
-		free(a_name);
-		free(b_name);
+	if(ts0.tv_sec == 0) {
+		ts0 = ts;
 	}
+
+	float diff = (ts.tv_sec - ts0.tv_sec) + (ts.tv_nsec - ts0.tv_nsec) * 1e-9;
+
+	fprintf(stderr, "%7.3f (%s) [%s] %s\n",
+	        diff,
+	        mesh ? mesh->name : "",
+	        levelstr[level],
+	        text);
 }

@@ -15,24 +15,6 @@ static volatile bool b_responded = false;
 static volatile bool b_closed = false;
 static volatile size_t a_poll_cb_len;
 
-static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
-	static struct timeval tv0;
-	struct timeval tv;
-
-	if(tv0.tv_sec == 0) {
-		gettimeofday(&tv0, NULL);
-	}
-
-	gettimeofday(&tv, NULL);
-	fprintf(stderr, "%u.%.03u ", (unsigned int)(tv.tv_sec - tv0.tv_sec), (unsigned int)tv.tv_usec / 1000);
-
-	if(mesh) {
-		fprintf(stderr, "(%s) ", mesh->name);
-	}
-
-	fprintf(stderr, "[%d] %s\n", level, text);
-}
-
 static void a_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	(void)mesh;
 	(void)channel;
@@ -124,7 +106,7 @@ int main() {
 
 	// Re-initialize everything
 	meshlink_channel_close(a, channel);
-	close_meshlink_pair(a, b, "channels-cornercases");
+	close_meshlink_pair(a, b);
 	b_responded = false;
 	b_closed = false;
 	channel_opened.flag = false;
@@ -175,7 +157,5 @@ int main() {
 
 	meshlink_channel_close(a, channel);
 	meshlink_channel_close(a, channel2);
-	close_meshlink_pair(a, b, "channels-cornercases");
-
-	return 0;
+	close_meshlink_pair(a, b);
 }

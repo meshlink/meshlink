@@ -1,4 +1,0 @@
-#!/bin/sh
-
-rm -Rf sign_verify_conf*
-./sign-verify

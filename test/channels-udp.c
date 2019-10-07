@@ -18,24 +18,6 @@ struct client {
 	size_t received;
 };
 
-static void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
-	static struct timeval tv0;
-	struct timeval tv;
-
-	if(tv0.tv_sec == 0) {
-		gettimeofday(&tv0, NULL);
-	}
-
-	gettimeofday(&tv, NULL);
-	fprintf(stderr, "%u.%.03u ", (unsigned int)(tv.tv_sec - tv0.tv_sec), (unsigned int)tv.tv_usec / 1000);
-
-	if(mesh) {
-		fprintf(stderr, "(%s) ", mesh->name);
-	}
-
-	fprintf(stderr, "[%d] %s\n", level, text);
-}
-
 static void server_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	(void)data;
 
@@ -48,8 +30,6 @@ static void server_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chann
 	for(int i = 0; i < 3; i++) {
 		if(c[i] == channel) {
 			c[i] = NULL;
-			fprintf(stderr, "server received channel %d closure from %s\n", i, channel->node->name);
-
 			meshlink_channel_close(mesh, channel);
 		}
 
@@ -78,9 +58,7 @@ static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reach
 	assert(mesh->priv);
 	struct client *client = mesh->priv;
 
-	assert(reachable);
-
-	if(!strcmp(node->name, "server")) {
+	if(reachable && !strcmp(node->name, "server")) {
 		assert(!client->channel);
 		client->channel = meshlink_channel_open_ex(mesh, node, 1, client_receive_cb, NULL, 0, MESHLINK_CHANNEL_UDP);
 		assert(client->channel);
@@ -100,7 +78,6 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 
 	for(int i = 0; i < 3; i++) {
 		if(c[i] == NULL) {
-			fprintf(stderr, "server accepted channel %d from %s\n", i, channel->node->name);
 			c[i] = channel;
 
 			if(i == 2) {
@@ -115,15 +92,16 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 }
 
 int main() {
-	//meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
+	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_cb);
 
-	// Open two new meshlink instance.
+	// Open four new meshlink instance, the server and three peers.
 
 	const char *names[3] = {"foo", "bar", "baz"};
 	struct client clients[3];
 	meshlink_channel_t *channels[3] = {NULL, NULL, NULL};
 	memset(clients, 0, sizeof(clients));
 
+	assert(meshlink_destroy("channels_udp_conf.0"));
 	meshlink_handle_t *server = meshlink_open("channels_udp_conf.0", "server", "channels-udp", DEV_CLASS_BACKBONE);
 	assert(server);
 	meshlink_enable_discovery(server, false);
@@ -134,6 +112,7 @@ int main() {
 	for(int i = 0; i < 3; i++) {
 		char dir[100];
 		snprintf(dir, sizeof(dir), "channels_udp_conf.%d", i + 1);
+		assert(meshlink_destroy(dir));
 		clients[i].mesh = meshlink_open(dir, names[i], "channels-udp", DEV_CLASS_STATIONARY);
 		assert(clients[i].mesh);
 		clients[i].mesh->priv = &clients[i];

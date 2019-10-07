@@ -3,112 +3,54 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <assert.h>
 
 #include "meshlink.h"
-
-void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
-	static struct timeval tv0;
-	struct timeval tv;
-
-	if(tv0.tv_sec == 0) {
-		gettimeofday(&tv0, NULL);
-	}
-
-	gettimeofday(&tv, NULL);
-	fprintf(stderr, "%u.%.03u ", (unsigned int)(tv.tv_sec - tv0.tv_sec), (unsigned int)tv.tv_usec / 1000);
-
-	if(mesh) {
-		fprintf(stderr, "(%s) ", mesh->name);
-	}
-
-	fprintf(stderr, "[%d] %s\n", level, text);
-}
+#include "utils.h"
 
 int main() {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	// Open a new meshlink instance.
 
+	assert(meshlink_destroy("basic_conf"));
 	meshlink_handle_t *mesh = meshlink_open("basic_conf", "foo", "basic", DEV_CLASS_BACKBONE);
-
-	if(!mesh) {
-		fprintf(stderr, "Could not initialize configuration for foo\n");
-		return 1;
-	}
+	assert(mesh);
 
 	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, log_cb);
 
 	// Check that our own node exists.
 
 	meshlink_node_t *self = meshlink_get_self(mesh);
-
-	if(!self) {
-		fprintf(stderr, "Foo does not know about itself\n");
-		return 1;
-	}
-
-	if(strcmp(self->name, "foo")) {
-		fprintf(stderr, "Foo thinks its name is %s\n", self->name);
-		return 1;
-	}
+	assert(self);
+	assert(!strcmp(self->name, "foo"));
 
 	// Start and stop the mesh.
 
-	if(!meshlink_start(mesh)) {
-		fprintf(stderr, "Foo could not start\n");
-		return 1;
-	}
-
+	assert(meshlink_start(mesh));
 	meshlink_stop(mesh);
 
 	// Make sure we can start and stop the mesh again.
 
-	if(!meshlink_start(mesh)) {
-		fprintf(stderr, "Foo could not start twice\n");
-		return 1;
-	}
-
+	assert(meshlink_start(mesh));
 	meshlink_stop(mesh);
 
 	// Close the mesh and open it again, now with a different name parameter.
 
 	meshlink_close(mesh);
+	mesh = meshlink_open("basic_conf", "bar", "basic", DEV_CLASS_BACKBONE);
+	assert(mesh);
 
 	// Check that the name is ignored now, and that we still are "foo".
 
-	mesh = meshlink_open("basic_conf", "bar", "basic", DEV_CLASS_BACKBONE);
-
-	if(!mesh) {
-		fprintf(stderr, "Could not open configuration for foo a second time\n");
-		return 1;
-	}
-
-	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, log_cb);
-
-	if(meshlink_get_node(mesh, "bar")) {
-		fprintf(stderr, "Foo knows about bar, it shouldn't\n");
-		return 1;
-	}
-
+	assert(!meshlink_get_node(mesh, "bar"));
 	self = meshlink_get_self(mesh);
-
-	if(!self) {
-		fprintf(stderr, "Foo doesn't know about itself the second time\n");
-		return 1;
-	}
-
-	if(strcmp(self->name, "foo")) {
-		fprintf(stderr, "Foo thinks its name is %s the second time\n", self->name);
-		return 1;
-	}
+	assert(self);
+	assert(!strcmp(self->name, "foo"));
 
 	// Start and stop the mesh.
 
-	if(!meshlink_start(mesh)) {
-		fprintf(stderr, "Foo could not start a third time\n");
-		return 1;
-	}
-
+	assert(meshlink_start(mesh));
 	meshlink_stop(mesh);
 
 	// That's it.
@@ -117,15 +59,6 @@ int main() {
 
 	// Destroy the mesh.
 
-	if(!meshlink_destroy("basic_conf")) {
-		fprintf(stderr, "Could not destroy configuration\n");
-		return 1;
-	}
-
-	if(!access("basic_conf", F_OK) || errno != ENOENT) {
-		fprintf(stderr, "Configuration not fully destroyed\n");
-		return 1;
-	}
-
-	return 0;
+	assert(meshlink_destroy("basic_conf"));
+	assert(access("basic_conf", F_OK) == -1 && errno == ENOENT);
 }

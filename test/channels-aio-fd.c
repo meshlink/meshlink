@@ -65,10 +65,11 @@ int main(int argc, char *argv[]) {
 	(void)argc;
 	(void)argv;
 
+	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_cb);
+
 	// Prepare file
 
 	char *outdata = malloc(size);
-
 	assert(outdata);
 
 	for(size_t i = 0; i < size; i++) {
@@ -98,61 +99,40 @@ int main(int argc, char *argv[]) {
 
 	// Open two new meshlink instance.
 
-	meshlink_destroy("channels_aio_fd_conf.1");
-	meshlink_destroy("channels_aio_fd_conf.2");
+	meshlink_handle_t *mesh_a, *mesh_b;
+	open_meshlink_pair(&mesh_a, &mesh_b, "channels_aio_fd");
 
-	meshlink_handle_t *mesh1 = meshlink_open("channels_aio_fd_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh1);
+	mesh_b->priv = in_infos;
 
-	meshlink_handle_t *mesh2 = meshlink_open("channels_aio_fd_conf.2", "bar", "channels", DEV_CLASS_BACKBONE);
-	assert(mesh2);
-
-	mesh2->priv = in_infos;
-
-	meshlink_enable_discovery(mesh1, false);
-	meshlink_enable_discovery(mesh2, false);
-
-	// Import and export both side's data
-
-	meshlink_add_address(mesh1, "localhost");
-
-	char *data = meshlink_export(mesh1);
-	assert(data);
-	assert(meshlink_import(mesh2, data));
-	free(data);
-
-	data = meshlink_export(mesh2);
-	assert(data);
-	assert(meshlink_import(mesh1, data));
-	free(data);
+	meshlink_enable_discovery(mesh_a, false);
+	meshlink_enable_discovery(mesh_b, false);
 
 	// Set the callbacks.
 
-	meshlink_set_channel_accept_cb(mesh1, reject_cb);
-	meshlink_set_channel_accept_cb(mesh2, accept_cb);
+	meshlink_set_channel_accept_cb(mesh_a, reject_cb);
+	meshlink_set_channel_accept_cb(mesh_b, accept_cb);
 
 	// Start both instances
 
-	assert(meshlink_start(mesh1));
-	assert(meshlink_start(mesh2));
+	start_meshlink_pair(mesh_a, mesh_b);
 
-	// Open channels from foo to bar.
+	// Open channels from a to b.
 
-	meshlink_node_t *bar = meshlink_get_node(mesh1, "bar");
-	assert(bar);
+	meshlink_node_t *b = meshlink_get_node(mesh_a, "b");
+	assert(b);
 
 	meshlink_channel_t *channels[nchannels];
 
 	for(size_t i = 0; i < nchannels; i++) {
-		channels[i] = meshlink_channel_open(mesh1, bar, i + 1, NULL, NULL, 0);
+		channels[i] = meshlink_channel_open(mesh_a, b, i + 1, NULL, NULL, 0);
 		assert(channels[i]);
 	}
 
 	// Send a large buffer of data on each channel.
 
 	for(size_t i = 0; i < nchannels; i++) {
-		assert(meshlink_channel_aio_fd_send(mesh1, channels[i], fileno(out_infos[i].file), size / 3, aio_fd_cb, &out_infos[i].aio_infos[0]));
-		assert(meshlink_channel_aio_fd_send(mesh1, channels[i], fileno(out_infos[i].file), size - size / 3, aio_fd_cb, &out_infos[i].aio_infos[1]));
+		assert(meshlink_channel_aio_fd_send(mesh_a, channels[i], fileno(out_infos[i].file), size / 3, aio_fd_cb, &out_infos[i].aio_infos[0]));
+		assert(meshlink_channel_aio_fd_send(mesh_a, channels[i], fileno(out_infos[i].file), size - size / 3, aio_fd_cb, &out_infos[i].aio_infos[1]));
 	}
 
 	// Wait for everyone to finish.
@@ -197,8 +177,5 @@ int main(int argc, char *argv[]) {
 
 	// Clean up.
 
-	meshlink_close(mesh2);
-	meshlink_close(mesh1);
-
-	return 0;
+	close_meshlink_pair(mesh_a, mesh_b);
 }
