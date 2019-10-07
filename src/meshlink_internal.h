@@ -143,6 +143,7 @@ struct meshlink_handle {
 	meshlink_channel_accept_cb_t channel_accept_cb;
 	meshlink_node_duplicate_cb_t node_duplicate_cb;
 	meshlink_connection_try_cb_t connection_try_cb;
+	meshlink_error_cb_t error_cb;
 
 	// Mesh parameters
 	char *appname;
@@ -257,6 +258,7 @@ extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
 extern void handle_duplicate_node(meshlink_handle_t *mesh, struct node_t *n);
 extern void handle_network_change(meshlink_handle_t *mesh, bool online);
+extern void call_error_cb(meshlink_handle_t *mesh);
 
 /// Per-instance PRNG
 static inline int prng(meshlink_handle_t *mesh, uint64_t max) {

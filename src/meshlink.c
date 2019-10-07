@@ -1718,6 +1718,17 @@ void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, me
 	}
 }
 
+void meshlink_set_error_cb(struct meshlink_handle *mesh, meshlink_error_cb_t cb) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	pthread_mutex_lock(&(mesh->mesh_mutex));
+	mesh->error_cb = cb;
+	pthread_mutex_unlock(&(mesh->mesh_mutex));
+}
+
 bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
 	meshlink_packethdr_t *hdr;
 
@@ -3523,6 +3534,22 @@ void handle_network_change(meshlink_handle_t *mesh, bool online) {
 
 	retry(mesh);
 }
+
+void call_error_cb(meshlink_handle_t *mesh) {
+	// We should only call the callback function if we are in the background thread.
+	if(!mesh->error_cb) {
+		return;
+	}
+
+	if(!mesh->threadstarted) {
+		return;
+	}
+
+	if(mesh->thread == pthread_self()) {
+		mesh->error_cb(mesh, meshlink_errno);
+	}
+}
+
 
 static void __attribute__((constructor)) meshlink_init(void) {
 	crypto_init();

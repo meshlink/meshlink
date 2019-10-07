@@ -511,6 +511,38 @@ typedef void (*meshlink_log_cb_t)(struct meshlink_handle *mesh, meshlink_log_lev
  */
 extern void meshlink_set_log_cb(struct meshlink_handle *mesh, meshlink_log_level_t level, meshlink_log_cb_t cb);
 
+/// A callback for receiving error conditions encountered by the MeshLink thread.
+/** @param mesh      A handle which represents an instance of MeshLink, or NULL.
+ *  @param errno     The error code describing what kind of error occured.
+ */
+typedef void (*meshlink_error_cb_t)(struct meshlink_handle *mesh, meshlink_errno_t meshlink_errno);
+
+/// Set the error callback.
+/** This functions sets the callback that is called whenever the MeshLink thread encounters a serious error.
+ *
+ *  While most API functions report an error directly to the caller in case something went wrong,
+ *  MeshLink also runs a background thread which can encounter error conditions.
+ *  Most of them will be dealt with automatically, however there can be errors that will prevent MeshLink from
+ *  working correctly. When the callback is called, it means that MeshLink is no longer functioning
+ *  as expected. The application should then present an error message and shut down, or perform any other
+ *  action it deems appropriate.
+ *
+ *  The callback is run in MeshLink's own thread.
+ *  It is important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to hand the data over to the application's thread.
+ *  The callback should also not block itself and return as quickly as possible.
+ *
+ *  Even though the callback signals a serious error inside MeshLink, all open handles are still valid,
+ *  and the application should close handles in exactly the same it would have to do if the callback
+ *  was not called. This must not be done inside the callback itself.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh      A handle which represents an instance of MeshLink, or NULL.
+ *  @param cb        A pointer to the function which will be called when a serious error is encountered.
+ *                   If a NULL pointer is given, the callback will be disabled.
+ */
+extern void meshlink_set_error_cb(struct meshlink_handle *mesh, meshlink_error_cb_t cb);
+
 /// Send data to another node.
 /** This functions sends one packet of data to another node in the mesh.
  *  The packet is sent using UDP semantics, which means that

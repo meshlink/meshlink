@@ -259,6 +259,12 @@ public:
 		(void)message;
 	}
 
+	/// This functions is called whenever MeshLink has encountered a serious error.
+	virtual void error(meshlink_errno_t meshlink_errno) {
+		/* do nothing */
+		(void)meshlink_errno;
+	}
+
 	/// This functions is called whenever MeshLink a meta-connection attempt is made.
 	virtual void connection_try(node *peer) {
 		/* do nothing */
@@ -339,6 +345,7 @@ public:
 		meshlink_set_node_pmtu_cb(handle, &node_pmtu_trampoline);
 		meshlink_set_node_duplicate_cb(handle, &node_duplicate_trampoline);
 		meshlink_set_log_cb(handle, MESHLINK_DEBUG, &log_trampoline);
+		meshlink_set_error_cb(handle, &error_trampoline);
 		meshlink_set_channel_accept_cb(handle, &channel_accept_trampoline);
 		meshlink_set_connection_try_cb(handle, &connection_try_trampoline);
 		return meshlink_start(handle);
@@ -950,6 +957,15 @@ private:
 
 		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
 		that->log(level, message);
+	}
+
+	static void error_trampoline(meshlink_handle_t *handle, meshlink_errno_t meshlink_errno) {
+		if(!(handle->priv)) {
+			return;
+		}
+
+		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
+		that->error(meshlink_errno);
 	}
 
 	static void connection_try_trampoline(meshlink_handle_t *handle, meshlink_node_t *peer) {
