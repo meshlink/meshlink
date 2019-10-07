@@ -1617,9 +1617,11 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	free(mesh->confbase);
 	free(mesh->config_key);
 	ecdsa_free(mesh->private_key);
-	pthread_mutex_destroy(&(mesh->mesh_mutex));
 
 	main_config_unlock(mesh);
+
+	pthread_mutex_unlock(&mesh->mesh_mutex);
+	pthread_mutex_destroy(&mesh->mesh_mutex);
 
 	memset(mesh, 0, sizeof(*mesh));
 
