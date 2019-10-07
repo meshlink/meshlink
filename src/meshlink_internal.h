@@ -54,6 +54,7 @@ typedef struct listen_socket_t {
 	struct io_t tcp;
 	struct io_t udp;
 	sockaddr_t sa;
+	sockaddr_t broadcast_sa;
 	bool bindto;
 } listen_socket_t;
 

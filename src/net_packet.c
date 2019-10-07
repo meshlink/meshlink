@@ -324,32 +324,16 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 }
 
 static void choose_broadcast_address(meshlink_handle_t *mesh, const node_t *n, const sockaddr_t **sa, int *sock) {
-	static sockaddr_t broadcast_ipv4 = {
-		.in = {
-			.sin_family = AF_INET,
-			.sin_addr.s_addr = -1,
-		}
-	};
-
-	static sockaddr_t broadcast_ipv6 = {
-		.in6 = {
-			.sin6_family = AF_INET6,
-			.sin6_addr.s6_addr[0x0] = 0xff,
-			.sin6_addr.s6_addr[0x1] = 0x02,
-			.sin6_addr.s6_addr[0xf] = 0x01,
-		}
-	};
-
 	*sock = prng(mesh, mesh->listen_sockets);
+	sockaddr_t *broadcast_sa = &mesh->listen_socket[*sock].broadcast_sa;
 
-	if(mesh->listen_socket[*sock].sa.sa.sa_family == AF_INET6) {
-		broadcast_ipv6.in6.sin6_port = n->prevedge->address.in.sin_port;
-		broadcast_ipv6.in6.sin6_scope_id = mesh->listen_socket[*sock].sa.in6.sin6_scope_id;
-		*sa = &broadcast_ipv6;
+	if(broadcast_sa->sa.sa_family == AF_INET6) {
+		broadcast_sa->in6.sin6_port = n->prevedge->address.in.sin_port;
 	} else {
-		broadcast_ipv4.in.sin_port = n->prevedge->address.in.sin_port;
-		*sa = &broadcast_ipv4;
+		broadcast_sa->in.sin_port = n->prevedge->address.in.sin_port;
 	}
+
+	*sa = broadcast_sa;
 }
 
 static void send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
