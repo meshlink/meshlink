@@ -645,7 +645,7 @@ bool config_scan_all(meshlink_handle_t *mesh, const char *conf_subdir, const cha
 	assert(conf_type);
 
 	if(!mesh->confbase) {
-		return false;
+		return true;
 	}
 
 	DIR *dir;

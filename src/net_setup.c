@@ -46,6 +46,7 @@ static bool node_get_config(meshlink_handle_t *mesh, node_t *n, config_t *config
 	uint32_t version = packmsg_get_uint32(in);
 
 	if(version != MESHLINK_CONFIG_VERSION) {
+		logger(mesh, MESHLINK_ERROR, "Invalid config file for node %s", n->name);
 		config_free(config);
 		return false;
 	}
@@ -54,47 +55,11 @@ static bool node_get_config(meshlink_handle_t *mesh, node_t *n, config_t *config
 	uint32_t len = packmsg_get_str_raw(in, &name);
 
 	if(len != strlen(n->name) || !name || strncmp(name, n->name, len)) {
+		logger(mesh, MESHLINK_ERROR, "Invalid config file for node %s", n->name);
 		config_free(config);
 		return false;
 	}
 
-	return true;
-}
-
-/// Read device class, blacklist status and submesh from a host config file. Used at startup when reading all host config files.
-bool node_read_partial(meshlink_handle_t *mesh, node_t *n) {
-	config_t config;
-	packmsg_input_t in;
-
-	if(!node_get_config(mesh, n, &config, &in)) {
-		return false;
-	}
-
-	char *submesh_name = packmsg_get_str_dup(&in);
-
-	if(!strcmp(submesh_name, CORE_MESH)) {
-		free(submesh_name);
-		n->submesh = NULL;
-	} else {
-		n->submesh = lookup_or_create_submesh(mesh, submesh_name);
-		free(submesh_name);
-
-		if(!n->submesh) {
-			config_free(&config);
-			return false;
-		}
-	}
-
-	dev_class_t devclass = packmsg_get_int32(&in);
-	bool blacklisted = packmsg_get_bool(&in);
-	config_free(&config);
-
-	if(!packmsg_input_ok(&in) || devclass < 0 || devclass >= DEV_CLASS_COUNT) {
-		return false;
-	}
-
-	n->devclass = devclass;
-	n->status.blacklisted = blacklisted;
 	return true;
 }
 
@@ -295,10 +260,22 @@ static bool load_node(meshlink_handle_t *mesh, const char *name, void *priv) {
 	n = new_node();
 	n->name = xstrdup(name);
 
-	if(!node_read_partial(mesh, n)) {
+	config_t config;
+	packmsg_input_t in;
+
+	if(!node_get_config(mesh, n, &config, &in)) {
 		free_node(n);
-		return true;
+		return false;
 	}
+
+	if(!node_read_from_config(mesh, n, &config)) {
+		logger(mesh, MESHLINK_ERROR, "Invalid config file for node %s", n->name);
+		config_free(&config);
+		free_node(n);
+		return false;
+	}
+
+	config_free(&config);
 
 	node_add(mesh, n);
 
@@ -423,7 +400,10 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	graph(mesh);
 
-	config_scan_all(mesh, "current", "hosts", load_node, NULL);
+	if(!config_scan_all(mesh, "current", "hosts", load_node, NULL)) {
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return false;
+	}
 
 	/* Open sockets */
 
