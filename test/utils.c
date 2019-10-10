@@ -97,7 +97,9 @@ void open_meshlink_pair(meshlink_handle_t **pa, meshlink_handle_t **pb, const ch
 static void pair_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 	(void)node;
 
-	set_sync_flag(mesh->priv, reachable);
+	if(reachable) {
+		set_sync_flag(mesh->priv, true);
+	}
 }
 
 void start_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b) {
