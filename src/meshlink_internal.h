@@ -258,7 +258,7 @@ extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
 extern void handle_duplicate_node(meshlink_handle_t *mesh, struct node_t *n);
 extern void handle_network_change(meshlink_handle_t *mesh, bool online);
-extern void call_error_cb(meshlink_handle_t *mesh);
+extern void call_error_cb(meshlink_handle_t *mesh, meshlink_errno_t meshlink_errno);
 
 /// Per-instance PRNG
 static inline int prng(meshlink_handle_t *mesh, uint64_t max) {

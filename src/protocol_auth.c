@@ -164,8 +164,15 @@ static bool finalize_invitation(meshlink_handle_t *mesh, connection_t *c, const 
 	n->devclass = DEV_CLASS_UNKNOWN;
 	n->ecdsa = ecdsa_set_public_key(data);
 	n->submesh = c->submesh;
+
+	if(!node_write_config(mesh, n)) {
+		logger(mesh, MESHLINK_ERROR, "Error writing configuration file for invited node %s!\n", c->name);
+		free_node(n);
+		return false;
+
+	}
+
 	node_add(mesh, n);
-	node_write_config(mesh, n);
 
 	logger(mesh, MESHLINK_INFO, "Key successfully received from %s", c->name);
 

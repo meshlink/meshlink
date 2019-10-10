@@ -3535,7 +3535,7 @@ void handle_network_change(meshlink_handle_t *mesh, bool online) {
 	retry(mesh);
 }
 
-void call_error_cb(meshlink_handle_t *mesh) {
+void call_error_cb(meshlink_handle_t *mesh, meshlink_errno_t meshlink_errno) {
 	// We should only call the callback function if we are in the background thread.
 	if(!mesh->error_cb) {
 		return;
