@@ -708,6 +708,18 @@ public:
 		meshlink_set_channel_rcvbuf(handle, channel, size);
 	}
 
+	/// Set the connection timeout used for channels to the given node.
+	/** This sets the timeout after which unresponsive channels will be reported as closed.
+	 *  The timeout is set for all current and future channels to the given node.
+	 *
+	 *  @param channel      A handle for the channel.
+	 *  @param timeout      The timeout in seconds after which unresponsive channels will be reported as closed.
+	 *                      The default is 60 seconds.
+	 */
+	void set_node_channel_timeout(node *node, int timeout) {
+		meshlink_set_node_channel_timeout(handle, node, timeout);
+	}
+
 	/// Open a reliable stream channel to another node.
 	/** This function is called whenever a remote node wants to open a channel to the local node.
 	 *  The application then has to decide whether to accept or reject this channel.

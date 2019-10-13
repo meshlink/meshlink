@@ -1380,6 +1380,18 @@ extern size_t meshlink_channel_get_sendq(struct meshlink_handle *mesh, struct me
  */
 extern size_t meshlink_channel_get_recvq(struct meshlink_handle *mesh, struct meshlink_channel *channel);
 
+/// Set the connection timeout used for channels to the given node.
+/** This sets the timeout after which unresponsive channels will be reported as closed.
+ *  The timeout is set for all current and future channels to the given node.
+ *
+ *  \memberof meshlink_node
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *  @param timeout      The timeout in seconds after which unresponsive channels will be reported as closed.
+ *                      The default is 60 seconds.
+ */
+extern void meshlink_set_node_channel_timeout(struct meshlink_handle *mesh, struct meshlink_node *node, int timeout);
+
 /// Hint that a hostname may be found at an address
 /** This function indicates to meshlink that the given hostname is likely found
  *  at the given IP address and port.

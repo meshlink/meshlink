@@ -3446,6 +3446,25 @@ size_t meshlink_channel_get_recvq(meshlink_handle_t *mesh, meshlink_channel_t *c
 	return utcp_get_recvq(channel->c);
 }
 
+void meshlink_set_node_channel_timeout(meshlink_handle_t *mesh, meshlink_node_t *node, int timeout) {
+	if(!mesh || !node) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	node_t *n = (node_t *)node;
+
+	pthread_mutex_lock(&mesh->mesh_mutex);
+
+	if(!n->utcp) {
+		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+	}
+
+	utcp_set_user_timeout(n->utcp, timeout);
+
+	pthread_mutex_unlock(&mesh->mesh_mutex);
+}
+
 void update_node_status(meshlink_handle_t *mesh, node_t *n) {
 	if(n->status.reachable && mesh->channel_accept_cb && !n->utcp) {
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
