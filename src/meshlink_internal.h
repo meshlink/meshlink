@@ -133,6 +133,7 @@ struct meshlink_handle {
 
 	struct connection_t *everyone;
 	uint64_t prng_state[4];
+	uint32_t session_id;
 
 	int next_pit;
 	int pits[10];

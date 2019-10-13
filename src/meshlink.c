@@ -889,6 +889,7 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	mesh->self->name = xstrdup(mesh->name);
 	mesh->self->devclass = mesh->devclass;
 	mesh->self->ecdsa = ecdsa_set_public_key(ecdsa_get_public_key(mesh->private_key));
+	mesh->self->session_id = mesh->session_id;
 
 	if(!write_main_config_files(mesh)) {
 		logger(mesh, MESHLINK_ERROR, "Could not write main config files into %s/current: %s\n", mesh->confbase, strerror(errno));
@@ -967,6 +968,7 @@ static bool meshlink_read_config(meshlink_handle_t *mesh) {
 	mesh->self = new_node();
 	mesh->self->name = xstrdup(name);
 	mesh->self->devclass = mesh->devclass;
+	mesh->self->session_id = mesh->session_id;
 
 	if(!node_read_public_key(mesh, mesh->self)) {
 		logger(NULL, MESHLINK_ERROR, "Could not read our host configuration file!");
@@ -1287,6 +1289,10 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 	mesh->log_level = global_log_level;
 
 	randomize(&mesh->prng_state, sizeof(mesh->prng_state));
+
+	do {
+		randomize(&mesh->session_id, sizeof(mesh->session_id));
+	} while(mesh->session_id == 0);
 
 	memcpy(mesh->dev_class_traits, default_class_traits, sizeof(default_class_traits));
 
@@ -2221,6 +2227,7 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 	mesh->self = new_node();
 	mesh->self->name = xstrdup(mesh->name);
 	mesh->self->devclass = mesh->devclass;
+	mesh->self->session_id = mesh->session_id;
 	xasprintf(&mesh->myport, "%d", port);
 
 	if(!node_read_public_key(mesh, mesh->self)) {

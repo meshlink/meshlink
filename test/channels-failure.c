@@ -87,8 +87,8 @@ int main() {
 
 	// Try setting up a new channel while b is still down.
 
-	poll_flag.flag = false;
-	receive_flag.flag = false;
+	set_sync_flag(&poll_flag, false);
+	set_sync_flag(&receive_flag, false);
 
 	channel = meshlink_channel_open(mesh_a, b, 7, NULL, NULL, 0);
 	assert(channel);
@@ -97,6 +97,33 @@ int main() {
 
 	assert(wait_sync_flag(&poll_flag, 5));
 	assert(poll_len == 0);
+
+	meshlink_channel_close(mesh_a, channel);
+
+	// Restart b and create a new channel
+
+	set_sync_flag(&poll_flag, false);
+	set_sync_flag(&receive_flag, false);
+
+	meshlink_set_node_channel_timeout(mesh_a, b, 60);
+
+	assert(meshlink_start(mesh_b));
+
+	channel = meshlink_channel_open(mesh_a, b, 7, receive_cb, NULL, 0);
+	meshlink_set_channel_poll_cb(mesh_a, channel, poll_cb);
+	assert(channel);
+	assert(wait_sync_flag(&poll_flag, 10));
+	assert(poll_len != 0);
+
+	// Close and reopen b, we should get a fast notification that the channel has been closed.
+
+	meshlink_close(mesh_b);
+	mesh_b = meshlink_open("channels_failure_conf.2", "b", "channels_failure", DEV_CLASS_BACKBONE);
+	assert(mesh_b);
+	assert(meshlink_start(mesh_b));
+
+	assert(wait_sync_flag(&receive_flag, 10));
+	assert(receive_len == 0);
 
 	// Clean up.
 

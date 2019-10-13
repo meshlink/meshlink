@@ -34,6 +34,7 @@ typedef struct edge_t {
 	struct edge_t *reverse;                 /* edge in the opposite direction, if available */
 
 	int weight;                             /* weight of this edge */
+	uint32_t session_id;                     /* the session_id of the from node */
 } edge_t;
 
 extern void init_edges(struct meshlink_handle *mesh);

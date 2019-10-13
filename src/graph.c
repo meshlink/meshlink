@@ -196,6 +196,15 @@ static void check_reachability(meshlink_handle_t *mesh) {
 	/* Check reachability status. */
 
 	for splay_each(node_t, n, mesh->nodes) {
+		/* Check for nodes that have changed session_id */
+		if(n->status.visited && n->prevedge && n->prevedge->reverse->session_id != n->session_id) {
+			n->session_id = n->prevedge->reverse->session_id;
+
+			if(n->utcp) {
+				utcp_abort_all_connections(n->utcp);
+			}
+		}
+
 		if(n->status.visited != n->status.reachable) {
 			n->status.reachable = !n->status.reachable;
 			n->last_state_change = mesh->loop.now.tv_sec;

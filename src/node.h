@@ -50,8 +50,9 @@ typedef struct node_t {
 	dev_class_t devclass;
 
 	// Used for packet I/O
-	sptps_t sptps;
 	int sock;                               /* Socket to use for outgoing UDP packets */
+	uint32_t session_id;                    /* Unique ID for this node's currently running process */
+	sptps_t sptps;
 	sockaddr_t address;                     /* his real (internet) ip to send UDP packets to */
 
 	struct utcp *utcp;

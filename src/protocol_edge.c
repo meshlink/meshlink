@@ -74,9 +74,9 @@ bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e, in
 		s = e->to->submesh;
 	}
 
-	x = send_request(mesh, c, s, "%d %x %s %d %s %s %s %s %d %s %x %d %d", ADD_EDGE, prng(mesh, UINT_MAX),
+	x = send_request(mesh, c, s, "%d %x %s %d %s %s %s %s %d %s %x %d %d %x", ADD_EDGE, prng(mesh, UINT_MAX),
 	                 e->from->name, e->from->devclass, from_submesh, e->to->name, address, port,
-	                 e->to->devclass, to_submesh, OPTION_PMTU_DISCOVERY, e->weight, contradictions);
+	                 e->to->devclass, to_submesh, OPTION_PMTU_DISCOVERY, e->weight, contradictions, e->from->session_id);
 	free(address);
 	free(port);
 
@@ -100,11 +100,12 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	sockaddr_t address;
 	int weight;
 	int contradictions = 0;
+	uint32_t session_id = 0;
 	submesh_t *s = NULL;
 
-	if(sscanf(request, "%*d %*x "MAX_STRING" %d "MAX_STRING" "MAX_STRING" "MAX_STRING" "MAX_STRING" %d "MAX_STRING" %*x %d %d",
+	if(sscanf(request, "%*d %*x "MAX_STRING" %d "MAX_STRING" "MAX_STRING" "MAX_STRING" "MAX_STRING" %d "MAX_STRING" %*x %d %d %x",
 	                from_name, &from_devclass, from_submesh_name, to_name, to_address, to_port, &to_devclass, to_submesh_name,
-	                &weight, &contradictions) < 9) {
+	                &weight, &contradictions, &session_id) < 9) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ADD_EDGE", c->name);
 		return false;
 	}
@@ -164,6 +165,10 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	from->devclass = from_devclass;
 
+	if(!from->session_id) {
+		from->session_id = session_id;
+	}
+
 	if(!to) {
 		to = new_node();
 		to->status.dirty = true;
@@ -194,7 +199,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	e = lookup_edge(from, to);
 
 	if(e) {
-		if(e->weight != weight || sockaddrcmp(&e->address, &address)) {
+		if(e->weight != weight || e->session_id != session_id || sockaddrcmp(&e->address, &address)) {
 			if(from == mesh->self) {
 				logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself which does not match existing entry",
 				       "ADD_EDGE", c->name);
@@ -215,6 +220,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		e = new_edge();
 		e->from = from;
 		e->to = to;
+		e->session_id = session_id;
 		send_del_edge(mesh, c, e, mesh->contradicting_add_edge);
 		free_edge(e);
 		return true;
@@ -225,6 +231,7 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	e->to = to;
 	e->address = address;
 	e->weight = weight;
+	e->session_id = session_id;
 	edge_add(mesh, e);
 
 	/* Run MST before or after we tell the rest? */
@@ -273,8 +280,8 @@ bool send_del_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e, in
 		s = e->to->submesh;
 	}
 
-	return send_request(mesh, c, s, "%d %x %s %s %d", DEL_EDGE, prng(mesh, UINT_MAX),
-	                    e->from->name, e->to->name, contradictions);
+	return send_request(mesh, c, s, "%d %x %s %s %d %x", DEL_EDGE, prng(mesh, UINT_MAX),
+	                    e->from->name, e->to->name, contradictions, e->session_id);
 }
 
 bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
@@ -286,9 +293,10 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	char to_name[MAX_STRING_SIZE];
 	node_t *from, *to;
 	int contradictions = 0;
+	uint32_t session_id = 0;
 	submesh_t *s = NULL;
 
-	if(sscanf(request, "%*d %*x "MAX_STRING" "MAX_STRING" %d", from_name, to_name, &contradictions) < 2) {
+	if(sscanf(request, "%*d %*x "MAX_STRING" "MAX_STRING" %d %x", from_name, to_name, &contradictions, &session_id) < 2) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "DEL_EDGE", c->name);
 		return false;
 	}
