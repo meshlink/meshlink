@@ -732,6 +732,7 @@ public:
 	 *  @param cb           A pointer to the function which will be called when the remote node sends data to the local node.
 	 *  @param data         A pointer to a buffer containing data to already queue for sending.
 	 *  @param len          The length of the data.
+	 *                      If len is 0, the data pointer is copied into the channel's priv member.
 	 *  @param flags        A bitwise-or'd combination of flags that set the semantics for this channel.
 	 *
 	 *  @return             A handle for the channel, or NULL in case of an error.
@@ -756,6 +757,7 @@ public:
 	 *  @param port         The port number the peer wishes to connect to.
 	 *  @param data         A pointer to a buffer containing data to already queue for sending.
 	 *  @param len          The length of the data.
+	 *                      If len is 0, the data pointer is copied into the channel's priv member.
 	 *  @param flags        A bitwise-or'd combination of flags that set the semantics for this channel.
 	 *
 	 *  @return             A handle for the channel, or NULL in case of an error.

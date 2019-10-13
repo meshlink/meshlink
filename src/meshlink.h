@@ -1171,6 +1171,7 @@ extern void meshlink_set_channel_rcvbuf(struct meshlink_handle *mesh, struct mes
  *                      The pointer may be NULL, in which case incoming data is ignored.
  *  @param data         A pointer to a buffer containing data to already queue for sending, or NULL if there is no data to send.
  *                      After meshlink_send() returns, the application is free to overwrite or free this buffer.
+ *                      If len is 0, the data pointer is copied into the channel's priv member.
  *  @param len          The length of the data, or 0 if there is no data to send.
  *  @param flags        A bitwise-or'd combination of flags that set the semantics for this channel.
  *
@@ -1199,6 +1200,7 @@ extern struct meshlink_channel *meshlink_channel_open_ex(struct meshlink_handle 
  *  @param data         A pointer to a buffer containing data to already queue for sending, or NULL if there is no data to send.
  *                      After meshlink_send() returns, the application is free to overwrite or free this buffer.
  *  @param len          The length of the data, or 0 if there is no data to send.
+ *                      If len is 0, the data pointer is copied into the channel's priv member.
  *
  *  @return             A handle for the channel, or NULL in case of an error.
  *                      The handle is valid until meshlink_channel_close() is called.

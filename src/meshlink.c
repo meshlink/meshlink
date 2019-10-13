@@ -3150,7 +3150,7 @@ void meshlink_set_channel_rcvbuf(meshlink_handle_t *mesh, meshlink_channel_t *ch
 }
 
 meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len, uint32_t flags) {
-	if(data || len) {
+	if(data && len) {
 		abort();        // TODO: handle non-NULL data
 	}
 
@@ -3183,6 +3183,11 @@ meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_n
 	meshlink_channel_t *channel = xzalloc(sizeof(*channel));
 	channel->node = n;
 	channel->receive_cb = cb;
+
+	if(data && !len) {
+		channel->priv = (void *)data;
+	}
+
 	channel->c = utcp_connect_ex(n->utcp, port, channel_recv, channel, flags);
 
 	pthread_mutex_unlock(&mesh->mutex);
