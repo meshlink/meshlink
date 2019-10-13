@@ -72,11 +72,15 @@ int main() {
 
 	sleep(1);
 
+	// Set a very small timeout for channels to b.
+
+	meshlink_set_node_channel_timeout(mesh_a, b, 1);
+
 	// Stop mesh_b. We should get a notification that the channel has closed after a while.
 
 	meshlink_stop(mesh_b);
 
-	assert(wait_sync_flag(&receive_flag, 70));
+	assert(wait_sync_flag(&receive_flag, 5));
 	assert(receive_len == 0);
 
 	meshlink_channel_close(mesh_a, channel);
@@ -91,7 +95,7 @@ int main() {
 
 	meshlink_set_channel_poll_cb(mesh_a, channel, poll_cb);
 
-	assert(wait_sync_flag(&poll_flag, 70));
+	assert(wait_sync_flag(&poll_flag, 5));
 	assert(poll_len == 0);
 
 	// Clean up.
