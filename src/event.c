@@ -164,9 +164,9 @@ static void signalio_handler(event_loop_t *loop, void *data, int flags) {
 		return;
 	}
 
-	signal_t *sig = splay_search(&loop->signals, &((signal_t) {
+	signal_t *sig = splay_search(&loop->signals, &(signal_t) {
 		.signum = signum
-	}));
+	});
 
 	if(sig) {
 		sig->cb(loop, sig->data);

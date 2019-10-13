@@ -72,7 +72,7 @@ devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *e
 
 		for splay_each(edge_t, e, mesh->edges) {
 			// skip edges that do not represent a two-directional connection
-			if((!e->reverse) || (e->reverse->to != e->from)) {
+			if(!e->reverse || e->reverse->to != e->from) {
 				continue;
 			}
 

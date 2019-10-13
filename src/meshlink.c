@@ -666,7 +666,7 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 		return false;
 	}
 
-	sptps_send_record(&(mesh->sptps), 1, ecdsa_get_public_key(mesh->private_key), 32);
+	sptps_send_record(&mesh->sptps, 1, ecdsa_get_public_key(mesh->private_key), 32);
 
 	logger(mesh, MESHLINK_DEBUG, "Configuration stored in: %s\n", mesh->confbase);
 
@@ -699,7 +699,7 @@ static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint
 
 	switch(type) {
 	case SPTPS_HANDSHAKE:
-		return sptps_send_record(&(mesh->sptps), 0, mesh->cookie, sizeof(mesh)->cookie);
+		return sptps_send_record(&mesh->sptps, 0, mesh->cookie, sizeof(mesh)->cookie);
 
 	case 0:
 		return finalize_join(mesh, msg, len);
@@ -1783,7 +1783,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 	}
 
 	// Notify event loop
-	signal_trigger(&(mesh->loop), &(mesh->datafromapp));
+	signal_trigger(&mesh->loop, &mesh->datafromapp);
 
 	return true;
 }
