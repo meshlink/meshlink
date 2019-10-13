@@ -94,7 +94,7 @@ struct meshlink_handle {
 	void *priv;
 
 	// private members
-	pthread_mutex_t mesh_mutex;
+	pthread_mutex_t mutex;
 	event_loop_t loop;
 	struct node_t *self;
 	meshlink_log_cb_t log_cb;
