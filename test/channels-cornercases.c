@@ -93,10 +93,9 @@ int main() {
 
 	struct sync_flag channel_opened = {.flag = false};
 
-	meshlink_channel_t *channel = meshlink_channel_open(a, nb, 7, a_receive_cb, NULL, 0);
+	meshlink_channel_t *channel = meshlink_channel_open(a, nb, 7, a_receive_cb, &channel_opened, 0);
 	assert(channel);
 
-	channel->priv = &channel_opened;
 	meshlink_set_channel_poll_cb(a, channel, poll_cb);
 
 	// Start MeshLink and wait for the channel to become connected.
@@ -121,9 +120,8 @@ int main() {
 	nb = meshlink_get_node(a, "b");
 	assert(nb);
 
-	channel = meshlink_channel_open(a, nb, 7, a_receive_cb, NULL, 0);
+	channel = meshlink_channel_open(a, nb, 7, a_receive_cb, &channel_opened, 0);
 	assert(channel);
-	channel->priv = &channel_opened;
 	meshlink_set_channel_poll_cb(a, channel, poll_cb);
 
 	assert(wait_sync_flag(&channel_opened, 20));
@@ -146,9 +144,8 @@ int main() {
 
 	struct sync_flag channel_polled = {.flag = false};
 
-	meshlink_channel_t *channel2 = meshlink_channel_open(a, nb, 7, a_receive_cb, NULL, 0);
+	meshlink_channel_t *channel2 = meshlink_channel_open(a, nb, 7, a_receive_cb, &channel_polled, 0);
 	assert(channel2);
-	channel2->priv = &channel_polled;
 	meshlink_set_channel_poll_cb(a, channel2, poll_cb2);
 
 	assert(wait_sync_flag(&channel_polled, 20));
