@@ -34,7 +34,7 @@ typedef struct connection_status_t {
 	uint16_t pinged: 1;                 /* sent ping */
 	uint16_t active: 1;                 /* 1 if active.. */
 	uint16_t connecting: 1;             /* 1 if we are waiting for a non-blocking connect() to finish */
-	uint16_t mst: 1;                    /* 1 if this connection is part of a minimum spanning tree */
+	uint16_t unused: 1;
 	uint16_t control: 1;                /* 1 if this is a control connection */
 	uint16_t pcap: 1;                   /* 1 if this is a control connection requesting packet capture */
 	uint16_t log: 1;                    /* 1 if this is a control connection requesting log dump */
