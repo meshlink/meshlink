@@ -201,21 +201,18 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	if(e) {
 		if(e->weight != weight || e->session_id != session_id || sockaddrcmp(&e->address, &address)) {
 			if(from == mesh->self) {
-				logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself which does not match existing entry",
-				       "ADD_EDGE", c->name);
+				logger(mesh, MESHLINK_DEBUG, "Got %s from %s for ourself which does not match existing entry", "ADD_EDGE", c->name);
 				send_add_edge(mesh, c, e, 0);
 				return true;
 			} else {
-				logger(mesh, MESHLINK_WARNING, "Got %s from %s which does not match existing entry",
-				       "ADD_EDGE", c->name);
+				logger(mesh, MESHLINK_DEBUG, "Got %s from %s which does not match existing entry", "ADD_EDGE", c->name);
 				edge_del(mesh, e);
 			}
 		} else {
 			return true;
 		}
 	} else if(from == mesh->self) {
-		logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself which does not exist",
-		       "ADD_EDGE", c->name);
+		logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself which does not exist", "ADD_EDGE", c->name);
 		mesh->contradicting_add_edge++;
 		e = new_edge();
 		e->from = from;
@@ -311,14 +308,12 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	to = lookup_node(mesh, to_name);
 
 	if(!from) {
-		logger(mesh, MESHLINK_ERROR, "Got %s from %s which does not appear in the edge tree",
-		       "DEL_EDGE", c->name);
+		logger(mesh, MESHLINK_WARNING, "Got %s from %s which does not appear in the edge tree", "DEL_EDGE", c->name);
 		return true;
 	}
 
 	if(!to) {
-		logger(mesh, MESHLINK_ERROR, "Got %s from %s which does not appear in the edge tree",
-		       "DEL_EDGE", c->name);
+		logger(mesh, MESHLINK_WARNING, "Got %s from %s which does not appear in the edge tree", "DEL_EDGE", c->name);
 		return true;
 	}
 
@@ -331,14 +326,12 @@ bool del_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	e = lookup_edge(from, to);
 
 	if(!e) {
-		logger(mesh, MESHLINK_WARNING, "Got %s from %s which does not appear in the edge tree",
-		       "DEL_EDGE", c->name);
+		logger(mesh, MESHLINK_WARNING, "Got %s from %s which does not appear in the edge tree", "DEL_EDGE", c->name);
 		return true;
 	}
 
 	if(e->from == mesh->self) {
-		logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself",
-		       "DEL_EDGE", c->name);
+		logger(mesh, MESHLINK_WARNING, "Got %s from %s for ourself", "DEL_EDGE", c->name);
 		mesh->contradicting_del_edge++;
 		send_add_edge(mesh, c, e, mesh->contradicting_del_edge);    /* Send back a correction */
 		return true;
