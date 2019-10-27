@@ -248,20 +248,21 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 				}
 
 				if(naddress.unknown.family != AF_UNKNOWN) {
-					meshlink_hint_address(mesh, (meshlink_node_t *)node, (struct sockaddr *)&naddress);
+					meshlink_hint_address(mesh, node, (struct sockaddr *)&naddress);
 
 					node_t *n = (node_t *)node;
+					connection_t *c = n->connection;
 
-					if(n->connection && n->connection->outgoing) {
-						n->connection->outgoing->timeout = 0;
+					if(c && c->outgoing && !c->status.active) {
+						c->outgoing->timeout = 0;
 
-						if(n->connection->outgoing->ev.cb) {
-							timeout_set(&mesh->loop, &n->connection->outgoing->ev, &(struct timeval) {
+						if(c->outgoing->ev.cb) {
+							timeout_set(&mesh->loop, &c->outgoing->ev, &(struct timeval) {
 								0, 0
 							});
 						}
 
-						n->connection->last_ping_time = 0;
+						c->last_ping_time = 0;
 					}
 
 				} else {
