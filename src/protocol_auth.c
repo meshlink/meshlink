@@ -436,9 +436,11 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 				n->connection->outgoing = NULL;
 			}
 
+			/* Remove the edge before terminating the connection, to prevent a graph update. */
+			edge_del(mesh, n->connection->edge);
+			n->connection->edge = NULL;
+
 			terminate_connection(mesh, n->connection, false);
-			/* Run graph algorithm to keep things in sync */
-			graph(mesh);
 		}
 	}
 

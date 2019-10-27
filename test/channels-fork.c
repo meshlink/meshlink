@@ -16,6 +16,7 @@
 #include "../src/meshlink.h"
 
 static struct sync_flag bar_responded;
+static struct sync_flag foo_connected;
 static struct sync_flag foo_gone;
 
 static void foo_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
@@ -62,6 +63,7 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 
 	meshlink_set_node_status_cb(mesh, bar_status_cb);
 	meshlink_set_channel_receive_cb(mesh, channel, bar_receive_cb);
+	set_sync_flag(&foo_connected, true);
 
 	if(data) {
 		bar_receive_cb(mesh, channel, data, len);
@@ -166,6 +168,7 @@ static int main2(int rfd, int wfd) {
 
 	assert(meshlink_start(mesh));
 
+	assert(wait_sync_flag(&foo_connected, 20));
 	assert(wait_sync_flag(&foo_gone, 20));
 
 	meshlink_close(mesh);
