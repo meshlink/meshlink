@@ -843,7 +843,7 @@ bool invitation_read(meshlink_handle_t *mesh, const char *conf_subdir, const cha
 		return false;
 	}
 
-	if(mesh->loop.now.tv_sec > st.st_mtime + mesh->invitation_timeout) {
+	if(mesh->loop.now.tv_sec >= st.st_mtime + mesh->invitation_timeout) {
 		logger(mesh, MESHLINK_ERROR, "Peer tried to use an outdated invitation file %s\n", name);
 		fclose(f);
 		unlink(used_path);
