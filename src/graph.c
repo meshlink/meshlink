@@ -144,6 +144,23 @@ static void check_reachability(meshlink_handle_t *mesh) {
 			if(n->utcp) {
 				utcp_abort_all_connections(n->utcp);
 			}
+
+			if(n->status.visited == n->status.reachable) {
+				/* This session replaces the previous one without changing reachability status.
+				 * We still need to reset the UDP SPTPS state.
+				 */
+				n->status.validkey = false;
+				sptps_stop(&n->sptps);
+				n->status.waitingforkey = false;
+				n->last_req_key = 0;
+
+				n->status.udp_confirmed = false;
+				n->maxmtu = MTU;
+				n->minmtu = 0;
+				n->mtuprobes = 0;
+
+				timeout_del(&mesh->loop, &n->mtutimeout);
+			}
 		}
 
 		if(n->status.visited != n->status.reachable) {
