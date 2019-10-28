@@ -59,18 +59,19 @@ typedef struct meshlink_submesh meshlink_submesh_t;
 
 /// Code of most recent error encountered.
 typedef enum {
-	MESHLINK_OK,        ///< Everything is fine
-	MESHLINK_EINVAL,    ///< Invalid parameter(s) to function call
-	MESHLINK_ENOMEM,    ///< Out of memory
-	MESHLINK_ENOENT,    ///< Node is not known
-	MESHLINK_EEXIST,    ///< Node already exists
-	MESHLINK_EINTERNAL, ///< MeshLink internal error
-	MESHLINK_ERESOLV,   ///< MeshLink could not resolve a hostname
-	MESHLINK_ESTORAGE,  ///< MeshLink could not load or write data from/to disk
-	MESHLINK_ENETWORK,  ///< MeshLink encountered a network error
-	MESHLINK_EPEER,     ///< A peer caused an error
-	MESHLINK_ENOTSUP,   ///< The operation is not supported in the current configuration of MeshLink
-	MESHLINK_EBUSY      ///< The MeshLink instance is already in use by another process
+	MESHLINK_OK,           ///< Everything is fine
+	MESHLINK_EINVAL,       ///< Invalid parameter(s) to function call
+	MESHLINK_ENOMEM,       ///< Out of memory
+	MESHLINK_ENOENT,       ///< Node is not known
+	MESHLINK_EEXIST,       ///< Node already exists
+	MESHLINK_EINTERNAL,    ///< MeshLink internal error
+	MESHLINK_ERESOLV,      ///< MeshLink could not resolve a hostname
+	MESHLINK_ESTORAGE,     ///< MeshLink could not load or write data from/to disk
+	MESHLINK_ENETWORK,     ///< MeshLink encountered a network error
+	MESHLINK_EPEER,        ///< A peer caused an error
+	MESHLINK_ENOTSUP,      ///< The operation is not supported in the current configuration of MeshLink
+	MESHLINK_EBUSY,        ///< The MeshLink instance is already in use by another process
+	MESHLINK_EBLACKLISTED, ///< The operation is not allowed because the node is blacklisted
 } meshlink_errno_t;
 
 /// Device class
