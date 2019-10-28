@@ -2831,10 +2831,12 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 
 	logger(mesh, MESHLINK_DEBUG, "Blacklisted %s.\n", node->name);
 
-	//Immediately terminate any connections we have with the blacklisted node
+	/* Immediately shut down any connections we have with the blacklisted node.
+	 * We can't call terminate_connection(), because we might be called from a callback function.
+	 */
 	for list_each(connection_t, c, mesh->connections) {
 		if(c->node == n) {
-			terminate_connection(mesh, c, c->status.active);
+			shutdown(c->socket, SHUT_RDWR);
 		}
 	}
 
@@ -2845,10 +2847,6 @@ void meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	n->maxmtu = MTU;
 	n->mtuprobes = 0;
 	n->status.udp_confirmed = false;
-
-	if(n->status.reachable) {
-		update_node_status(mesh, n);
-	}
 
 	pthread_mutex_unlock(&mesh->mutex);
 }
