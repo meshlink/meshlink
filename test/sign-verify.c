@@ -1,3 +1,7 @@
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>

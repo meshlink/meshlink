@@ -17,6 +17,10 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <setjmp.h>

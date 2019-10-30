@@ -17,6 +17,10 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>

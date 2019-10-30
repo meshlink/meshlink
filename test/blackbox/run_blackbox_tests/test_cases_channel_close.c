@@ -17,6 +17,10 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
 #include "execute_tests.h"
 #include "test_cases_channel_close.h"
 #include "../common/containers.h"

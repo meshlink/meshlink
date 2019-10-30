@@ -1,5 +1,9 @@
 #define _GNU_SOURCE 1
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>

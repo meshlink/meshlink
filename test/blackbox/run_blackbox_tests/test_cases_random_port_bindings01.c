@@ -17,6 +17,10 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
 /* Modify this to change the logging level of Meshlink */
 #define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
 
