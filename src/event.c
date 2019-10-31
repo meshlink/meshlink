@@ -73,6 +73,7 @@ void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int fl
 
 	splay_node_t *node = splay_insert_node(&loop->ios, &io->node);
 	assert(node);
+	(void)node;
 }
 
 void io_set(event_loop_t *loop, io_t *io, int flags) {
