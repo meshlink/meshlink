@@ -324,6 +324,12 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			return true;
 		}
 
+		if(from == to) {
+			logger(mesh, MESHLINK_WARNING, "Got %s from %s from %s to %s",
+			       "ANS_KEY", c->name, from_name, to_name);
+			return true;
+		}
+
 		/* Append the known UDP address of the from node, if we have a confirmed one */
 		if(!*address && from->status.udp_confirmed && from->address.sa.sa_family != AF_UNSPEC) {
 			char *address, *port;
@@ -336,6 +342,37 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		}
 
 		return send_request(mesh, to->nexthop->connection, NULL, "%s", request);
+	}
+
+	/* Is this an ANS_KEY informing us of our own reflexive UDP address? */
+
+	if(from == mesh->self) {
+		if(*key == '.' && *address && *port) {
+			logger(mesh, MESHLINK_DEBUG, "Learned our own reflexive UDP address from %s: %s port %s", c->name, address, port);
+
+			/* Inform all other nodes we want to communicate with and which are reachable via this connection */
+			for splay_each(node_t, n, mesh->nodes) {
+				if(n->nexthop == c->node) {
+					continue;
+				}
+
+				if(n->status.udp_confirmed) {
+					continue;
+				}
+
+				if(!n->status.waitingforkey && !n->status.validkey) {
+					continue;
+				}
+
+				logger(mesh, MESHLINK_DEBUG, "Forwarding our own reflexive UDP address to %s", n->name);
+				send_request(mesh, c, NULL, "%d %s %s . -1 -1 -1 0 %s %s", ANS_KEY, mesh->self->name, n->name, address, port);
+			}
+		} else {
+			logger(mesh, MESHLINK_WARNING, "Got %s from %s from %s to %s",
+			       "ANS_KEY", c->name, from_name, to_name);
+		}
+
+		return true;
 	}
 
 	/* Process SPTPS data if present */

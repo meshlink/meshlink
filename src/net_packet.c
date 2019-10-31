@@ -185,7 +185,14 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 		   is possible using the address and socket that the reply
 		   packet used. */
 
-		n->status.udp_confirmed = true;
+		if(!n->status.udp_confirmed) {
+			char *address, *port;
+			sockaddr2str(&n->address, &address, &port);
+			send_request(mesh, n->nexthop->connection, NULL, "%d %s %s . -1 -1 -1 0 %s %s", ANS_KEY, n->name, n->name, address, port);
+			free(address);
+			free(port);
+			n->status.udp_confirmed = true;
+		}
 
 		/* If we haven't established the PMTU yet, restart the discovery process. */
 
