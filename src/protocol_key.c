@@ -338,22 +338,24 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		return send_request(mesh, to->nexthop->connection, NULL, "%s", request);
 	}
 
-	/* Don't use key material until every check has passed. */
-	from->status.validkey = false;
+	/* Process SPTPS data if present */
 
-	/* Compression is not supported. */
-	if(compression != 0) {
-		logger(mesh, MESHLINK_ERROR, "Node %s uses bogus compression level!", from->name);
-		return true;
-	}
+	if(*key != '.') {
+		/* Don't use key material until every check has passed. */
+		from->status.validkey = false;
 
-	/* SPTPS or old-style key exchange? */
+		/* Compression is not supported. */
+		if(compression != 0) {
+			logger(mesh, MESHLINK_ERROR, "Node %s uses bogus compression level!", from->name);
+			return true;
+		}
 
-	char buf[strlen(key)];
-	int len = b64decode(key, buf, strlen(key));
+		char buf[strlen(key)];
+		int len = b64decode(key, buf, strlen(key));
 
-	if(!len || !sptps_receive_data(&from->sptps, buf, len)) {
-		logger(mesh, MESHLINK_ERROR, "Error processing SPTPS data from %s", from->name);
+		if(!len || !sptps_receive_data(&from->sptps, buf, len)) {
+			logger(mesh, MESHLINK_ERROR, "Error processing SPTPS data from %s", from->name);
+		}
 	}
 
 	if(from->status.validkey) {

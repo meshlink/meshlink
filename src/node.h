@@ -37,6 +37,7 @@ typedef struct node_status_t {
 	uint16_t destroyed: 1;              /* 1 if the node is being destroyed, deallocate channels when any callback is triggered */
 	uint16_t duplicate: 1;              /* 1 if the node is duplicate, ie. multiple nodes using the same Name are online */
 	uint16_t dirty: 1;                  /* 1 if the configuration of the node is dirty and needs to be written out */
+	uint16_t want_udp: 1;               /* 1 if we want working UDP because we have data to send */
 } node_status_t;
 
 typedef struct node_t {
