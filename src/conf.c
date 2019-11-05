@@ -866,7 +866,19 @@ bool invitation_read(meshlink_handle_t *mesh, const char *conf_subdir, const cha
 
 	fclose(f);
 
-	unlink(used_path);
+	if(unlink(used_path)) {
+		logger(mesh, MESHLINK_ERROR, "Failed to unlink `%s': %s", path, strerror(errno));
+		return false;
+	}
+
+	snprintf(path, sizeof(path), "%s" SLASH "%s" SLASH "invitations", mesh->confbase, conf_subdir);
+
+	if(!sync_path(path)) {
+		logger(mesh, MESHLINK_ERROR, "Failed to sync `%s': %s", path, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return false;
+	}
+
 	return true;
 }
 
