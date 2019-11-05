@@ -580,6 +580,12 @@ bool config_write_file(meshlink_handle_t *mesh, FILE *f, const config_t *config,
 		return false;
 	}
 
+	if(fflush(f)) {
+		logger(mesh, MESHLINK_ERROR, "Failed to flush file: %s", strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return false;
+	}
+
 	if(fsync(fileno(f))) {
 		logger(mesh, MESHLINK_ERROR, "Failed to sync file: %s\n", strerror(errno));
 		return false;
@@ -704,12 +710,6 @@ bool config_write(meshlink_handle_t *mesh, const char *conf_subdir, const char *
 		return false;
 	}
 
-	if(fsync(fileno(f))) {
-		logger(mesh, MESHLINK_ERROR, "Failed to sync `%s': %s", tmp_path, strerror(errno));
-		fclose(f);
-		return false;
-	}
-
 	if(fclose(f)) {
 		logger(mesh, MESHLINK_ERROR, "Failed to close `%s': %s", tmp_path, strerror(errno));
 		return false;
@@ -776,12 +776,6 @@ bool main_config_write(meshlink_handle_t *mesh, const char *conf_subdir, const c
 
 	if(!config_write_file(mesh, f, config, key)) {
 		logger(mesh, MESHLINK_ERROR, "Failed to write `%s': %s", tmp_path, strerror(errno));
-		fclose(f);
-		return false;
-	}
-
-	if(fsync(fileno(f))) {
-		logger(mesh, MESHLINK_ERROR, "Failed to sync `%s': %s", tmp_path, strerror(errno));
 		fclose(f);
 		return false;
 	}
@@ -885,12 +879,6 @@ bool invitation_write(meshlink_handle_t *mesh, const char *conf_subdir, const ch
 
 	if(!config_write_file(mesh, f, config, key)) {
 		logger(mesh, MESHLINK_ERROR, "Failed to write `%s': %s", path, strerror(errno));
-		fclose(f);
-		return false;
-	}
-
-	if(fsync(fileno(f))) {
-		logger(mesh, MESHLINK_ERROR, "Failed to sync `%s': %s", path, strerror(errno));
 		fclose(f);
 		return false;
 	}
