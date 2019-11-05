@@ -402,10 +402,7 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	graph(mesh);
 
-	if(!config_scan_all(mesh, "current", "hosts", load_node, NULL)) {
-		meshlink_errno = MESHLINK_ESTORAGE;
-		return false;
-	}
+	config_scan_all(mesh, "current", "hosts", load_node, NULL);
 
 	/* Open sockets */
 
