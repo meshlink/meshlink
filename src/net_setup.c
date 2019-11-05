@@ -170,12 +170,14 @@ bool node_read_from_config(meshlink_handle_t *mesh, node_t *n, const config_t *c
 	const void *key;
 	uint32_t len = packmsg_get_bin_raw(&in, &key);
 
-	if(len != 32) {
-		return false;
-	}
+	if(len) {
+		if(len != 32) {
+			return false;
+		}
 
-	if(!ecdsa_active(n->ecdsa)) {
-		n->ecdsa = ecdsa_set_public_key(key);
+		if(!ecdsa_active(n->ecdsa)) {
+			n->ecdsa = ecdsa_set_public_key(key);
+		}
 	}
 
 	n->canonical_address = packmsg_get_str_dup(&in);
