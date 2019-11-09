@@ -69,9 +69,9 @@ static int setup_test(void **state) {
 	set_sync_flag(&test_random_port_binding_peer_closed, false);
 	set_sync_flag(&test_random_port_binding_nut_closed, false);
 
-	meshlink_destroy("nut");
-	meshlink_destroy("peer");
-	meshlink_destroy("relay");
+	assert(meshlink_destroy("nut"));
+	assert(meshlink_destroy("peer"));
+	assert(meshlink_destroy("relay"));
 
 	return EXIT_SUCCESS;
 }
@@ -79,9 +79,9 @@ static int setup_test(void **state) {
 static int teardown_test(void **state) {
 	(void)state;
 
-	meshlink_destroy("nut");
-	meshlink_destroy("peer");
-	meshlink_destroy("relay");
+	assert(meshlink_destroy("nut"));
+	assert(meshlink_destroy("peer"));
+	assert(meshlink_destroy("relay"));
 	netns_destroy_topology(test_random_port_bindings_state);
 
 	return EXIT_SUCCESS;
@@ -138,7 +138,7 @@ static void *relay_node(void *arg) {
 
 	//system("ifconfig");
 
-	meshlink_destroy("relay");
+	assert(meshlink_destroy("relay"));
 
 	relay = meshlink_open(mesh_arg->node_name, mesh_arg->confbase, mesh_arg->app_name, mesh_arg->dev_class);
 	assert(relay);
@@ -156,7 +156,7 @@ static void *relay_node(void *arg) {
 	if(localnode == true) {
 		assert(wait_sync_flag(&test_random_port_binding_make_switch, 300));
 		meshlink_close(relay);
-		meshlink_destroy("relay");
+		assert(meshlink_destroy("relay"));
 
 
 		set_sync_flag(&test_random_port_binding_relay_closed, true);
@@ -167,7 +167,7 @@ static void *relay_node(void *arg) {
 	assert(wait_sync_flag(&test_random_port_binding_node_connected, 300));
 
 	meshlink_close(relay);
-	meshlink_destroy("relay");
+	assert(meshlink_destroy("relay"));
 
 
 	set_sync_flag(&test_random_port_binding_relay_closed, true);
@@ -180,7 +180,7 @@ static void *peer_node(void *arg) {
 
 	fprintf(stderr, "\n\x1b[32mPeer Thread Started\x1b[0m\n");
 
-	meshlink_destroy("peer");
+	assert(meshlink_destroy("peer"));
 
 	peer = meshlink_open(mesh_arg->node_name, mesh_arg->confbase, mesh_arg->app_name, mesh_arg->dev_class);
 	assert(peer);
@@ -209,7 +209,7 @@ static void *peer_node(void *arg) {
 	assert(wait_sync_flag(&test_random_port_binding_node_connected, 300));
 
 	meshlink_close(peer);
-	meshlink_destroy("peer");
+	assert(meshlink_destroy("peer"));
 
 	set_sync_flag(&test_random_port_binding_peer_closed, true);
 
@@ -221,7 +221,7 @@ static void *nut_node(void *arg) {
 
 	fprintf(stderr, "\n\x1b[32mNut Thread Started\x1b[0m\n");
 
-	meshlink_destroy("nut");
+	assert(meshlink_destroy("nut"));
 
 	nut_instance = meshlink_open(mesh_arg->node_name, mesh_arg->confbase, mesh_arg->app_name, mesh_arg->dev_class);
 	assert(nut_instance);
@@ -254,7 +254,7 @@ static void *nut_node(void *arg) {
 	assert(wait_sync_flag(&test_random_port_binding_node_connected, 300));
 
 	meshlink_close(nut_instance);
-	meshlink_destroy("nut");
+	assert(meshlink_destroy("nut"));
 
 	set_sync_flag(&test_random_port_binding_nut_closed, true);
 

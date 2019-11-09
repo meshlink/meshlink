@@ -32,11 +32,11 @@ struct addrinfo {
 #endif /* !HAVE_STRUCT_ADDRINFO */
 
 #if !HAVE_DECL_GETADDRINFO
-int getaddrinfo(const char *hostname, const char *servname, const struct addrinfo *hints, struct addrinfo **res);
+int getaddrinfo(const char *hostname, const char *servname, const struct addrinfo *hints, struct addrinfo **res) __attribute__((__warn_unused_result__));
 #endif /* !HAVE_GETADDRINFO */
 
 #if !HAVE_DECL_GAI_STRERROR
-char *gai_strerror(int ecode);
+char *gai_strerror(int ecode) __attribute__((__warn_unused_result__));
 #endif /* !HAVE_GAI_STRERROR */
 
 #if !HAVE_DECL_FREEADDRINFO

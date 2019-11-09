@@ -9,8 +9,8 @@ AC_DEFUN([MeshLink_ATTRIBUTE],
     CFLAGS="$CFLAGS -Wall -Werror"
     AC_COMPILE_IFELSE(
       [AC_LANG_SOURCE(
-        [void test(void) __attribute__ (($1));
-	 void test(void) { return; }
+        [void *test(void *arg) __attribute__ (($1));
+	 void *test(void *arg) { return arg; }
 	],
        )],
        [MeshLink_cv_attribute_$1=yes],

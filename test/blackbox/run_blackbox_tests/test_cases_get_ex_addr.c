@@ -79,7 +79,7 @@ static bool test_steps_mesh_get_address_01(void) {
 
 	free(addr);
 	meshlink_close(mesh);
-	meshlink_destroy("getex_conf");
+	assert(meshlink_destroy("getex_conf"));
 	return true;
 }
 
@@ -128,7 +128,7 @@ static bool test_steps_mesh_get_address_03(void) {
 
 	free(addr);
 	meshlink_close(mesh);
-	meshlink_destroy("getex_conf");
+	assert(meshlink_destroy("getex_conf"));
 	return true;
 }
 

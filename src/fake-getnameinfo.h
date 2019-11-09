@@ -2,7 +2,7 @@
 #define MESHLINK_FAKE_GETNAMEINFO_H
 
 #if !HAVE_DECL_GETNAMEINFO
-int getnameinfo(const struct sockaddr *sa, size_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
+int getnameinfo(const struct sockaddr *sa, size_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags) __attribute__((__warn_unused_result__));
 #endif /* !HAVE_GETNAMEINFO */
 
 #ifndef NI_MAXSERV

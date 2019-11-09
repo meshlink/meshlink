@@ -146,8 +146,8 @@ static void test_case_mesh_channel_shutdown_01(void **state) {
 */
 static bool test_steps_mesh_channel_shutdown_01(void) {
 	struct timespec timeout = {0};
-	meshlink_destroy("chan_shutdown_conf.1");
-	meshlink_destroy("chan_shutdown_conf.2");
+	assert(meshlink_destroy("chan_shutdown_conf.1"));
+	assert(meshlink_destroy("chan_shutdown_conf.2"));
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("chan_shutdown_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
@@ -245,8 +245,8 @@ static bool test_steps_mesh_channel_shutdown_01(void) {
 
 	meshlink_close(mesh2);
 	meshlink_close(mesh1);
-	meshlink_destroy("chan_shutdown_conf.1");
-	meshlink_destroy("chan_shutdown_conf.2");
+	assert(meshlink_destroy("chan_shutdown_conf.1"));
+	assert(meshlink_destroy("chan_shutdown_conf.2"));
 
 	return true;
 }
@@ -266,7 +266,7 @@ static void test_case_mesh_channel_shutdown_02(void **state) {
     meshlink_channel_shutdown API should report proper error handling
 */
 static bool test_steps_mesh_channel_shutdown_02(void) {
-	meshlink_destroy("channelshutdownconf.3");
+	assert(meshlink_destroy("channelshutdownconf.3"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	/* Create meshlink instance */
@@ -290,7 +290,7 @@ static bool test_steps_mesh_channel_shutdown_02(void) {
 	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelshutdownconf.3");
+	assert(meshlink_destroy("channelshutdownconf.3"));
 
 	return true;
 }
@@ -310,7 +310,7 @@ static void test_case_mesh_channel_shutdown_03(void **state) {
     meshlink_channel_shutdown API should report proper error handling
 */
 static bool test_steps_mesh_channel_shutdown_03(void) {
-	meshlink_destroy("channelshutdownconf.4");
+	assert(meshlink_destroy("channelshutdownconf.4"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	/* Create meshlink instance */
@@ -327,7 +327,7 @@ static bool test_steps_mesh_channel_shutdown_03(void) {
 	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelshutdownconf.4");
+	assert(meshlink_destroy("channelshutdownconf.4"));
 
 	return true;
 }

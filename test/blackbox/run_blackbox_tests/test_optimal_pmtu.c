@@ -77,9 +77,9 @@ static int setup_test(void **state) {
 	ping_channel_enable_07 = false;
 	memset(node_pmtu, 0, sizeof(node_pmtu));
 	set_sync_flag(&test_pmtu_nut_closed, false);
-	meshlink_destroy("nut");
-	meshlink_destroy("peer");
-	meshlink_destroy("relay");
+	assert(meshlink_destroy("nut"));
+	assert(meshlink_destroy("peer"));
+	assert(meshlink_destroy("relay"));
 
 	return EXIT_SUCCESS;
 }
@@ -87,9 +87,9 @@ static int setup_test(void **state) {
 static int teardown_test(void **state) {
 	(void)state;
 
-	meshlink_destroy("nut");
-	meshlink_destroy("peer");
-	meshlink_destroy("relay");
+	assert(meshlink_destroy("nut"));
+	assert(meshlink_destroy("peer"));
+	assert(meshlink_destroy("relay"));
 	netns_destroy_topology(test_pmtu_state);
 
 	return EXIT_SUCCESS;

@@ -85,7 +85,7 @@ static bool test_get_fingerprint_cb_01(void) {
 	assert_int_not_equal(fp, NULL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("getfingerprintconf");
+	assert(meshlink_destroy("getfingerprintconf"));
 
 	return true;
 }
@@ -126,7 +126,7 @@ static bool test_get_fingerprint_cb_02(void) {
 	assert_int_equal(fp, NULL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("getfingerprintconf");
+	assert(meshlink_destroy("getfingerprintconf"));
 
 	return true;
 }
@@ -158,7 +158,7 @@ static bool test_get_fingerprint_cb_03(void) {
 	assert_int_equal(fp, NULL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("getfingerprintconf");
+	assert(meshlink_destroy("getfingerprintconf"));
 
 	return true;
 }

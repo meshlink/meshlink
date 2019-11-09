@@ -81,7 +81,7 @@ static bool test_steps_mesh_pmtu_01(void) {
 	assert_int_not_equal(pmtu, -1);
 
 	meshlink_close(mesh);
-	meshlink_destroy("pmtu_conf");
+	assert(meshlink_destroy("pmtu_conf"));
 	return true;
 }
 
@@ -111,7 +111,7 @@ static bool test_steps_mesh_pmtu_02(void) {
 	assert_int_equal(pmtu, -1);
 
 	meshlink_close(mesh);
-	meshlink_destroy("pmtu_conf");
+	assert(meshlink_destroy("pmtu_conf"));
 	return true;
 }
 
@@ -139,7 +139,7 @@ static bool test_steps_mesh_pmtu_03(void) {
 	assert_int_equal(pmtu, -1);
 
 	meshlink_close(mesh);
-	meshlink_destroy("pmtu_conf");
+	assert(meshlink_destroy("pmtu_conf"));
 	return true;
 }
 

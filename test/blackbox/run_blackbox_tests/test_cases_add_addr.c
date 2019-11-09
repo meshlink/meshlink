@@ -72,7 +72,7 @@ static void test_case_mesh_add_address_01(void **state) {
 */
 static bool test_steps_mesh_add_address_01(void) {
 	char *node = "foo";
-	meshlink_destroy("add_conf.1");
+	assert(meshlink_destroy("add_conf.1"));
 
 	// Create node instance
 	meshlink_handle_t *mesh = meshlink_open("add_conf.1", node, "chat", DEV_CLASS_STATIONARY);
@@ -100,7 +100,7 @@ static bool test_steps_mesh_add_address_01(void) {
 
 	// Clean up
 	meshlink_close(mesh);
-	meshlink_destroy("add_conf.1");
+	assert(meshlink_destroy("add_conf.1"));
 	return true;
 }
 
@@ -141,7 +141,7 @@ static void test_case_mesh_add_address_03(void **state) {
     meshlink_add_address API returns false by reporting error successfully.
 */
 static bool test_steps_mesh_add_address_03(void) {
-	meshlink_destroy("add_conf.3");
+	assert(meshlink_destroy("add_conf.3"));
 
 	// Create node instance
 	meshlink_handle_t *mesh = meshlink_open("add_conf.3", "foo", "chat", DEV_CLASS_STATIONARY);
@@ -151,7 +151,7 @@ static bool test_steps_mesh_add_address_03(void) {
 	assert_int_equal(result, false);
 
 	meshlink_close(mesh);
-	meshlink_destroy("add_conf.3");
+	assert(meshlink_destroy("add_conf.3"));
 	return true;
 }
 

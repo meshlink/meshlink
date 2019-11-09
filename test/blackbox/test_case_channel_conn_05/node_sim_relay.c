@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 	assert(mesh);
 	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, meshlink_callback_logger);
 
-	meshlink_start(mesh);
+	assert(meshlink_start(mesh));
 
 	/* All test steps executed - wait for signals to stop/start or close the mesh */
 	while(test_running) {

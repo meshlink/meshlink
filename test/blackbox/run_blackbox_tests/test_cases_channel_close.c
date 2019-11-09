@@ -56,8 +56,8 @@ static void test_case_mesh_channel_close_01(void **state) {
 
 /* Test Steps for meshlink_channel_close Test Case # 1*/
 static bool test_steps_mesh_channel_close_01(void) {
-	meshlink_destroy("chan_close_conf.3");
-	meshlink_destroy("chan_close_conf.4");
+	assert(meshlink_destroy("chan_close_conf.3"));
+	assert(meshlink_destroy("chan_close_conf.4"));
 
 	// Open two new meshlink instance.
 	meshlink_handle_t *mesh1 = meshlink_open("chan_close_conf.3", "foo", "channels", DEV_CLASS_BACKBONE);
@@ -100,8 +100,8 @@ static bool test_steps_mesh_channel_close_01(void) {
 
 	meshlink_close(mesh2);
 	meshlink_close(mesh1);
-	meshlink_destroy("chan_close_conf.3");
-	meshlink_destroy("chan_close_conf.4");
+	assert(meshlink_destroy("chan_close_conf.3"));
+	assert(meshlink_destroy("chan_close_conf.4"));
 	return true;
 }
 
@@ -113,7 +113,7 @@ static void test_case_mesh_channel_close_02(void **state) {
 
 /* Test Steps for meshlink_channel_close Test Case # 2*/
 static bool test_steps_mesh_channel_close_02(void) {
-	meshlink_destroy("chan_close_conf.5");
+	assert(meshlink_destroy("chan_close_conf.5"));
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh = meshlink_open("chan_close_conf.5", "foo", "channels", DEV_CLASS_BACKBONE);
@@ -129,7 +129,7 @@ static bool test_steps_mesh_channel_close_02(void) {
 	// Clean up.
 
 	meshlink_close(mesh);
-	meshlink_destroy("chan_close_conf.5");
+	assert(meshlink_destroy("chan_close_conf.5"));
 	return true;
 }
 

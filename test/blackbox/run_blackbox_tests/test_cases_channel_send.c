@@ -142,8 +142,8 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 /* Test Steps for meshlink_channel_send Test Case # 1*/
 static bool test_steps_mesh_channel_send_01(void) {
 	struct timespec timeout = {0};
-	meshlink_destroy("chan_send_conf.1");
-	meshlink_destroy("chan_send_conf.2");
+	assert(meshlink_destroy("chan_send_conf.1"));
+	assert(meshlink_destroy("chan_send_conf.2"));
 
 	// Open two new meshlink instance.
 	meshlink_handle_t *mesh1 = meshlink_open("chan_send_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
@@ -216,8 +216,8 @@ static bool test_steps_mesh_channel_send_01(void) {
 
 	meshlink_close(mesh2);
 	meshlink_close(mesh1);
-	meshlink_destroy("chan_send_conf.1");
-	meshlink_destroy("chan_send_conf.2");
+	assert(meshlink_destroy("chan_send_conf.1"));
+	assert(meshlink_destroy("chan_send_conf.2"));
 
 	return true;
 }
@@ -230,7 +230,7 @@ static void test_case_mesh_channel_send_02(void **state) {
 /* Test Steps for meshlink_channel_send Test Case # 2*/
 static bool test_steps_mesh_channel_send_02(void) {
 	struct timespec timeout = {0};
-	meshlink_destroy("chan_send_conf.5");
+	assert(meshlink_destroy("chan_send_conf.5"));
 
 	// Open new meshlink instance.
 
@@ -265,7 +265,7 @@ static bool test_steps_mesh_channel_send_02(void) {
 	// Clean up.
 
 	meshlink_close(mesh1);
-	meshlink_destroy("chan_send_conf.5");
+	assert(meshlink_destroy("chan_send_conf.5"));
 
 	return true;
 }
@@ -277,7 +277,7 @@ static void test_case_mesh_channel_send_03(void **state) {
 
 /* Test Steps for meshlink_channel_send Test Case # 3*/
 static bool test_steps_mesh_channel_send_03(void) {
-	meshlink_destroy("chan_send_conf.7");
+	assert(meshlink_destroy("chan_send_conf.7"));
 	// Open new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("chan_send_conf.7", "foo", "channels", DEV_CLASS_BACKBONE);
@@ -295,7 +295,7 @@ static bool test_steps_mesh_channel_send_03(void) {
 	// Clean up.
 
 	meshlink_close(mesh1);
-	meshlink_destroy("chan_send_conf.7");
+	assert(meshlink_destroy("chan_send_conf.7"));
 
 	return true;
 }
@@ -308,7 +308,7 @@ static void test_case_mesh_channel_send_04(void **state) {
 /* Test Steps for meshlink_channel_send Test Case # 4*/
 static bool test_steps_mesh_channel_send_04(void) {
 	struct timespec timeout = {0};
-	meshlink_destroy("chan_send_conf.9");
+	assert(meshlink_destroy("chan_send_conf.9"));
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh1 = meshlink_open("chan_send_conf.9", "foo", "channels", DEV_CLASS_BACKBONE);
@@ -342,7 +342,7 @@ static bool test_steps_mesh_channel_send_04(void) {
 	// Clean up.
 
 	meshlink_close(mesh1);
-	meshlink_destroy("chan_send_conf.9");
+	assert(meshlink_destroy("chan_send_conf.9"));
 
 	return true;
 }

@@ -65,7 +65,7 @@ static void test_case_export_01(void **state) {
     API returns a NULL terminated string containing meta data of NUT.
 */
 static bool test_export_01(void) {
-	meshlink_destroy("exportconf");
+	assert(meshlink_destroy("exportconf"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	/* Create meshlink instance */
@@ -77,7 +77,7 @@ static bool test_export_01(void) {
 	assert_int_not_equal(expo, NULL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("exportconf");
+	assert(meshlink_destroy("exportconf"));
 
 	return true;
 }

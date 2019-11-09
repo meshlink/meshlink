@@ -493,7 +493,7 @@ static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgo
 	return false;
 }
 
-bool do_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
+void do_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 	struct addrinfo *proxyai = NULL;
 	int result;
 
@@ -507,7 +507,7 @@ begin:
 			retry_outgoing(mesh, outgoing);
 		}
 
-		return false;
+		return;
 	}
 
 	connection_t *c = new_connection();
@@ -586,8 +586,6 @@ begin:
 	connection_add(mesh, c);
 
 	io_add(&mesh->loop, &c->io, handle_meta_io, c, c->socket, IO_READ | IO_WRITE);
-
-	return true;
 }
 
 void setup_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {

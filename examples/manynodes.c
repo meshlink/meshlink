@@ -71,8 +71,11 @@ static void linkmesh() {
 
 		for(int j = i + 1; j < n; j++) {
 			char *dataj = meshlink_export(mesh[j]);
-			meshlink_import(mesh[i], dataj);
-			meshlink_import(mesh[j], datai);
+
+			if(!meshlink_import(mesh[i], dataj) || !meshlink_import(mesh[j], datai)) {
+				fprintf(stderr, "Could not exchange keys between %s and %s: %s\n", mesh[i]->name, mesh[j]->name, meshlink_strerror(meshlink_errno));
+			}
+
 			free(dataj);
 		}
 
@@ -248,7 +251,10 @@ static void parse_command(char *buf) {
 			return;
 		}
 
-		meshlink_blacklist(mesh[nodeindex], node);
+		if(!meshlink_blacklist(mesh[nodeindex], node)) {
+			fprintf(stderr, "Error blacklising '%s': %s", arg, meshlink_strerror(meshlink_errno));
+			return;
+		}
 
 		printf("Node '%s' blacklisted.\n", arg);
 	} else if(!strcasecmp(buf, "whitelist")) {
@@ -264,7 +270,10 @@ static void parse_command(char *buf) {
 			return;
 		}
 
-		meshlink_whitelist(mesh[nodeindex], node);
+		if(!meshlink_whitelist(mesh[nodeindex], node)) {
+			fprintf(stderr, "Error whitelising '%s': %s", arg, meshlink_strerror(meshlink_errno));
+			return;
+		}
 
 		printf("Node '%s' whitelisted.\n", arg);
 	} else if(!strcasecmp(buf, "who")) {

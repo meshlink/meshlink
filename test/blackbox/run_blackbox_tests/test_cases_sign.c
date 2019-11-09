@@ -119,7 +119,7 @@ static bool test_sign_01(void) {
 
 	// Clean up
 	meshlink_close(mesh_handle);
-	meshlink_destroy("signconf");
+	assert(meshlink_destroy("signconf"));
 
 	return ret;
 }
@@ -188,7 +188,7 @@ static bool test_sign_03(void) {
 	// Clean up
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("signconf");
+	assert(meshlink_destroy("signconf"));
 
 	if(!ret) {
 		PRINT_TEST_CASE_MSG("meshlink_sign Successfully reported error on passing NULL as data arg\n");
@@ -234,7 +234,7 @@ static bool test_sign_04(void) {
 	// Clean up
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("signconf");
+	assert(meshlink_destroy("signconf"));
 
 	if(!ret) {
 		PRINT_TEST_CASE_MSG("meshlink_sign Successfully reported error on passing 0 as size of data arg\n");
@@ -279,7 +279,7 @@ static bool test_sign_05(void) {
 	// Clean up
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("signconf");
+	assert(meshlink_destroy("signconf"));
 
 	if(!ret) {
 		PRINT_TEST_CASE_MSG("meshlink_sign Successfully reported error on passing NULL as sign arg\n");
@@ -323,7 +323,7 @@ static bool test_sign_06(void) {
 	// Clean up
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("signconf");
+	assert(meshlink_destroy("signconf"));
 
 	if(!ret) {
 		PRINT_TEST_CASE_MSG("meshlink_sign Successfully reported error on passing NULL as signsize arg\n");
@@ -369,7 +369,7 @@ static bool test_sign_07(void) {
 
 	meshlink_stop(mesh_handle);
 	meshlink_close(mesh_handle);
-	meshlink_destroy("signconf");
+	assert(meshlink_destroy("signconf"));
 
 	if(!ret) {
 		PRINT_TEST_CASE_MSG("meshlink_sign Successfully reported error on passing signsize < MESHLINK_SIGLEN arg\n");

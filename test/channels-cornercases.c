@@ -34,7 +34,7 @@ static void a_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, c
 static void b_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	// Send one message back, then close the channel.
 	if(len) {
-		meshlink_channel_send(mesh, channel, data, len);
+		assert(meshlink_channel_send(mesh, channel, data, len) == (ssize_t)len);
 	}
 
 	meshlink_channel_close(mesh, channel);
@@ -138,8 +138,7 @@ int main() {
 	struct sync_flag channel_closed = {.flag = false};
 	channel->priv = &channel_closed;
 
-	meshlink_channel_send(a, channel, "Hello", 5);
-
+	assert(meshlink_channel_send(a, channel, "Hello", 5) == 5);
 	assert(wait_sync_flag(&channel_closed, 20));
 	assert(b_responded);
 	assert(b_closed);

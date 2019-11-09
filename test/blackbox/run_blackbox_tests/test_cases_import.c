@@ -87,8 +87,8 @@ static void test_case_import_01(void **state) {
 */
 static bool test_import_01(void) {
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-	meshlink_destroy("importconf1");
-	meshlink_destroy("importconf2");
+	assert(meshlink_destroy("importconf1"));
+	assert(meshlink_destroy("importconf2"));
 
 	// Opening NUT and bar nodes
 	meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "test", DEV_CLASS_STATIONARY);
@@ -110,8 +110,8 @@ static bool test_import_01(void) {
 
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("importconf1");
-	meshlink_destroy("importconf2");
+	assert(meshlink_destroy("importconf1"));
+	assert(meshlink_destroy("importconf2"));
 	return imp1 && imp2;
 }
 
@@ -130,8 +130,8 @@ static void test_case_import_02(void **state) {
 */
 static bool test_import_02(void) {
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-	meshlink_destroy("importconf1");
-	meshlink_destroy("importconf2");
+	assert(meshlink_destroy("importconf1"));
+	assert(meshlink_destroy("importconf2"));
 
 	// Opening NUT and bar nodes
 	meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "test", DEV_CLASS_STATIONARY);
@@ -153,8 +153,8 @@ static bool test_import_02(void) {
 
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("importconf1");
-	meshlink_destroy("importconf2");
+	assert(meshlink_destroy("importconf1"));
+	assert(meshlink_destroy("importconf2"));
 	return true;
 }
 
@@ -175,8 +175,8 @@ static void test_case_import_03(void **state) {
 static bool test_import_03(void) {
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
-	meshlink_destroy("importconf1");
-	meshlink_destroy("importconf2");
+	assert(meshlink_destroy("importconf1"));
+	assert(meshlink_destroy("importconf2"));
 
 	/* Opening NUT and bar nodes */
 	meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
@@ -199,8 +199,8 @@ static bool test_import_03(void) {
 
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("importconf1");
-	meshlink_destroy("importconf2");
+	assert(meshlink_destroy("importconf1"));
+	assert(meshlink_destroy("importconf2"));
 	return true;
 }
 
@@ -220,8 +220,8 @@ static void test_case_import_04(void **state) {
 */
 static bool test_import_04(void) {
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-	meshlink_destroy("importconf1");
-	meshlink_destroy("importconf2");
+	assert(meshlink_destroy("importconf1"));
+	assert(meshlink_destroy("importconf2"));
 
 	// Opening NUT and bar nodes
 	meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
@@ -244,8 +244,8 @@ static bool test_import_04(void) {
 
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("importconf1");
-	meshlink_destroy("importconf2");
+	assert(meshlink_destroy("importconf1"));
+	assert(meshlink_destroy("importconf2"));
 	return true;
 }
 
@@ -265,8 +265,8 @@ static void test_case_import_05(void **state) {
 */
 static bool test_import_05(void) {
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-	meshlink_destroy("importconf1");
-	meshlink_destroy("importconf2");
+	assert(meshlink_destroy("importconf1"));
+	assert(meshlink_destroy("importconf2"));
 
 	/* Opening NUT and bar nodes */
 	meshlink_handle_t *mesh1 = meshlink_open("importconf1", "nut", "chat", DEV_CLASS_STATIONARY);
@@ -293,8 +293,8 @@ static bool test_import_05(void) {
 
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("importconf1");
-	meshlink_destroy("importconf2");
+	assert(meshlink_destroy("importconf1"));
+	assert(meshlink_destroy("importconf2"));
 	return true;
 }
 

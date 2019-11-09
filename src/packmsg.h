@@ -173,7 +173,7 @@ static inline size_t packmsg_output_size(const packmsg_output_t *buf, const uint
  * \return     True if all read operations performed on the input buffer so far have completed successfully,
  *             false if any error has occurred.
  */
-static inline bool packmsg_input_ok(const packmsg_input_t *buf) {
+static inline __attribute__((__warn_unused_result__)) bool packmsg_input_ok(const packmsg_input_t *buf) {
 	assert(buf);
 
 	return packmsg_likely(buf->len >= 0);
@@ -192,7 +192,7 @@ static inline bool packmsg_input_ok(const packmsg_input_t *buf) {
  *             false if there is still data remaining in the input buffer,
  *             or if any error has occurred.
  */
-static inline bool packmsg_done(const packmsg_input_t *buf) {
+static inline __attribute__((__warn_unused_result__)) bool packmsg_done(const packmsg_input_t *buf) {
 	assert(buf);
 
 	return buf->len == 0;

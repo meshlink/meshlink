@@ -256,7 +256,9 @@ static void receive_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 		return;
 	}
 
-	sptps_receive_data(&n->sptps, inpkt->data, inpkt->len);
+	if(!sptps_receive_data(&n->sptps, inpkt->data, inpkt->len)) {
+		logger(mesh, MESHLINK_ERROR, "Could not process SPTPS data from %s: %s", n->name, strerror(errno));
+	}
 }
 
 static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {

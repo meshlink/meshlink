@@ -36,7 +36,7 @@ void *test_channel_blacklist_disonnection_relay_01(void *arg) {
 	mesh = meshlink_open(mesh_arg->node_name, mesh_arg->confbase, mesh_arg->app_name, mesh_arg->dev_class);
 	assert(mesh);
 
-	meshlink_start(mesh);
+	assert(meshlink_start(mesh));
 
 	/* All test steps executed - wait for signals to stop/start or close the mesh */
 	while(test_channel_blacklist_disonnection_relay_01_running) {

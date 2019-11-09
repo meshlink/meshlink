@@ -18,10 +18,18 @@ int main(int argc, char **argv) {
 
 	myhandle = meshlink_open(confbase, name, "meshlinkapp", DEV_CLASS_STATIONARY);
 
+	if(!myhandle) {
+		fprintf(stderr, "Could not open MeshLink: %s", meshlink_strerror(meshlink_errno));
+		return 1;
+	}
+
 	//Register callback function for incoming data
 	meshlink_set_receive_cb(myhandle, (meshlink_receive_cb_t)handle_recv_data);
 
-	meshlink_start(myhandle);
+	if(!meshlink_start(myhandle)) {
+		fprintf(stderr, "Could not start MeshLink: %s", meshlink_strerror(meshlink_errno));
+		return 1;
+	}
 
 	while(1) {
 		sleep(10);
@@ -39,7 +47,10 @@ int main(int argc, char **argv) {
 		strcpy(mydata, "Hello World!");
 
 		//send out data
-		meshlink_send(myhandle, remotenode, mydata, sizeof(mydata));
+		if(!meshlink_send(myhandle, remotenode, mydata, sizeof(mydata))) {
+			fprintf(stderr, "Error sending data: %s", meshlink_strerror(meshlink_errno));
+			return 1;
+		}
 	}
 
 	meshlink_stop(myhandle);

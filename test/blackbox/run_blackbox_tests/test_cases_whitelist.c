@@ -113,8 +113,8 @@ static bool test_steps_mesh_whitelist_01(void) {
 
 	// Open two new meshlink instance.
 
-	meshlink_destroy("whitelist_conf.1");
-	meshlink_destroy("whitelist_conf.2");
+	assert(meshlink_destroy("whitelist_conf.1"));
+	assert(meshlink_destroy("whitelist_conf.2"));
 	meshlink_handle_t *mesh1 = meshlink_open("whitelist_conf.1", "foo", "test", DEV_CLASS_BACKBONE);
 	assert(mesh1);
 	meshlink_set_log_cb(mesh1, MESHLINK_DEBUG, meshlink_callback_logger);
@@ -170,7 +170,7 @@ static bool test_steps_mesh_whitelist_01(void) {
 	pthread_mutex_unlock(& lock_receive);
 
 
-	meshlink_blacklist(mesh1, foo);
+	assert(meshlink_blacklist(mesh1, foo));
 
 	rec_stat = false;
 	assert(meshlink_send(mesh1, bar, "test", 5));
@@ -183,7 +183,7 @@ static bool test_steps_mesh_whitelist_01(void) {
 	}
 
 	pthread_mutex_unlock(& lock_receive);
-	meshlink_whitelist(mesh1, foo);
+	assert(meshlink_whitelist(mesh1, foo));
 
 	rec_stat = false;
 	bool result = meshlink_send(mesh2, foo, "test", 5);
@@ -200,8 +200,8 @@ static bool test_steps_mesh_whitelist_01(void) {
 
 	meshlink_close(mesh2);
 	meshlink_close(mesh1);
-	meshlink_destroy("whitelist_conf.1");
-	meshlink_destroy("whitelist_conf.2");
+	assert(meshlink_destroy("whitelist_conf.1"));
+	assert(meshlink_destroy("whitelist_conf.2"));
 
 	return result;
 }
@@ -224,8 +224,8 @@ static bool test_steps_mesh_whitelist_02(void) {
 
 	// Open two new meshlink instance.
 
-	meshlink_destroy("whitelist_conf.3");
-	meshlink_destroy("whitelist_conf.4");
+	assert(meshlink_destroy("whitelist_conf.3"));
+	assert(meshlink_destroy("whitelist_conf.4"));
 	meshlink_handle_t *mesh1 = meshlink_open("whitelist_conf.3", "foo", "test", DEV_CLASS_BACKBONE);
 	assert(mesh1);
 	meshlink_handle_t *mesh2 = meshlink_open("whitelist_conf.4", "bar", "test", DEV_CLASS_BACKBONE);
@@ -266,19 +266,19 @@ static bool test_steps_mesh_whitelist_02(void) {
 
 	assert(meshlink_send(mesh1, bar, "test", 5));
 
-	meshlink_blacklist(mesh1, foo);
+	assert(meshlink_blacklist(mesh1, foo));
 
 	// Passing NULL as mesh handle but with valid node handle 'foo'
 
-	meshlink_whitelist(NULL, foo);
+	assert(!meshlink_whitelist(NULL, foo));
 	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	// Clean up.
 
 	meshlink_close(mesh2);
 	meshlink_close(mesh1);
-	meshlink_destroy("whitelist_conf.3");
-	meshlink_destroy("whitelist_conf.4");
+	assert(meshlink_destroy("whitelist_conf.3"));
+	assert(meshlink_destroy("whitelist_conf.4"));
 
 	return true;
 }
@@ -299,20 +299,20 @@ static void test_case_mesh_whitelist_03(void **state) {
 static bool test_steps_mesh_whitelist_03(void) {
 	// Open meshlink instance.
 
-	meshlink_destroy("whitelist_conf");
+	assert(meshlink_destroy("whitelist_conf"));
 	meshlink_handle_t *mesh = meshlink_open("whitelist_conf", "foo", "test", DEV_CLASS_BACKBONE);
 	assert(mesh);
 
 	// Start instance
 	assert(meshlink_start(mesh));
 
-	meshlink_whitelist(mesh, NULL);
+	assert(!meshlink_whitelist(mesh, NULL));
 	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	// Clean up.
 
 	meshlink_close(mesh);
-	meshlink_destroy("whitelist_conf");
+	assert(meshlink_destroy("whitelist_conf"));
 	return true;
 }
 

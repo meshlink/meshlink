@@ -72,7 +72,7 @@ static bool test_steps_mesh_get_port_01(void) {
 	assert_int_not_equal(port, -1);
 
 	meshlink_close(mesh);
-	meshlink_destroy("port_conf");
+	assert(meshlink_destroy("port_conf"));
 	return true;
 }
 

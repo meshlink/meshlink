@@ -227,7 +227,10 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			return;
 		}
 
-		meshlink_blacklist(mesh, node);
+		if(!meshlink_blacklist(mesh, node)) {
+			fprintf(stderr, "Error blacklising '%s': %s", arg, meshlink_strerror(meshlink_errno));
+			return;
+		}
 
 		fprintf(stderr, "Node '%s' blacklisted.\n", arg);
 	} else if(!strcasecmp(buf, "whitelist")) {
@@ -243,7 +246,10 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			return;
 		}
 
-		meshlink_whitelist(mesh, node);
+		if(!meshlink_whitelist(mesh, node)) {
+			fprintf(stderr, "Error whitelising '%s': %s", arg, meshlink_strerror(meshlink_errno));
+			return;
+		}
 
 		fprintf(stderr, "Node '%s' whitelisted.\n", arg);
 	} else if(!strcasecmp(buf, "who")) {

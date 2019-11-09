@@ -138,8 +138,8 @@ static void test_case_set_channel_accept_cb_01(void **state) {
 static bool test_steps_set_channel_accept_cb_01(void) {
 	/* deleting the confbase if already exists */
 	struct timespec timeout = {0};
-	meshlink_destroy("acceptconf1");
-	meshlink_destroy("acceptconf2");
+	assert(meshlink_destroy("acceptconf1"));
+	assert(meshlink_destroy("acceptconf2"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	/* Create meshlink instances */
@@ -225,8 +225,8 @@ static bool test_steps_set_channel_accept_cb_01(void) {
 	/* closing channel, meshes and destroying confbase */
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("acceptconf1");
-	meshlink_destroy("acceptconf2");
+	assert(meshlink_destroy("acceptconf1"));
+	assert(meshlink_destroy("acceptconf2"));
 
 	return true;
 }

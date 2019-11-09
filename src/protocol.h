@@ -87,7 +87,6 @@ extern bool send_ping(struct meshlink_handle *mesh, struct connection_t *);
 extern bool send_pong(struct meshlink_handle *mesh, struct connection_t *);
 extern bool send_add_edge(struct meshlink_handle *mesh, struct connection_t *, const struct edge_t *, int contradictions);
 extern bool send_del_edge(struct meshlink_handle *mesh, struct connection_t *, const struct edge_t *, int contradictions);
-extern void send_key_changed(struct meshlink_handle *mesh);
 extern bool send_req_key(struct meshlink_handle *mesh, struct node_t *);
 
 /* Request handlers  */

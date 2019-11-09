@@ -286,7 +286,7 @@ void *node_sim_pmtu_nut_01(void *arg) {
 
 			if(time_stamp >= send_time) {
 				send_time = time_stamp + 10;
-				meshlink_channel_send(mesh, channel, "ping", 5);
+				assert(meshlink_channel_send(mesh, channel, "ping", 5) == 5);
 			}
 		}
 	}

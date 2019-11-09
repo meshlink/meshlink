@@ -65,8 +65,8 @@ void test_case_hint_address_01(void **state) {
 }
 /* Test Steps for meshlink_hint_address Test Case # 1 - Valid case */
 bool test_steps_hint_address_01(void) {
-	meshlink_destroy("hintconf1");
-	meshlink_destroy("hintconf2");
+	assert(meshlink_destroy("hintconf1"));
+	assert(meshlink_destroy("hintconf2"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	// Create meshlink instance for the nodes
@@ -123,8 +123,8 @@ bool test_steps_hint_address_01(void) {
 	free(buff);
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("hintconf1");
-	meshlink_destroy("hintconf2");
+	assert(meshlink_destroy("hintconf1"));
+	assert(meshlink_destroy("hintconf2"));
 
 	return true;
 }

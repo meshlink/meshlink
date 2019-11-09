@@ -96,7 +96,7 @@ static bool test_steps_channel_get_flags_01(void) {
 	assert_int_equal(flags, MESHLINK_CHANNEL_TCP);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("getflagsconf");
+	assert(meshlink_destroy("getflagsconf"));
 
 	return true;
 }
@@ -145,7 +145,7 @@ static bool test_steps_channel_get_flags_02(void) {
 	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("getflagsconf");
+	assert(meshlink_destroy("getflagsconf"));
 	return true;
 }
 
@@ -181,7 +181,7 @@ static bool test_steps_channel_get_flags_03(void) {
 	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("getflagsconf");
+	assert(meshlink_destroy("getflagsconf"));
 	return true;
 }
 

@@ -213,7 +213,7 @@ static bool test_steps_mesh_get_node_by_dev_class_02(void) {
 	meshlink_node_t **nodes;
 	size_t nnodes = 0;
 
-	meshlink_destroy("getnodeconf.1");
+	assert(meshlink_destroy("getnodeconf.1"));
 
 	/* Create meshlink instance for NUT */
 	meshlink_handle_t *mesh_nut = meshlink_open("getnodeconf.1", "nut", "node_sim", DEV_CLASS_STATIONARY);
@@ -233,7 +233,7 @@ static bool test_steps_mesh_get_node_by_dev_class_02(void) {
 	assert_int_not_equal(meshlink_errno, 0);
 
 	meshlink_close(mesh_nut);
-	meshlink_destroy("getnodeconf.1");
+	assert(meshlink_destroy("getnodeconf.1"));
 	return true;
 }
 
@@ -252,7 +252,7 @@ static void test_case_mesh_get_node_dev_class_01(void **state) {
     meshlink_get_node_dev_class API should return DEV_CLASS_STATIONARY device class
 */
 static bool test_steps_mesh_get_node_dev_class_01(void) {
-	meshlink_destroy("getnodeconf.1");
+	assert(meshlink_destroy("getnodeconf.1"));
 
 	/* Create meshlink instance for NUT */
 	meshlink_handle_t *mesh_nut = meshlink_open("getnodeconf.1", "nut", "node_sim", DEV_CLASS_STATIONARY);
@@ -267,7 +267,7 @@ static bool test_steps_mesh_get_node_dev_class_01(void) {
 	assert_int_equal(dev_class, DEV_CLASS_STATIONARY);
 
 	meshlink_close(mesh_nut);
-	meshlink_destroy("getnodeconf.1");
+	assert(meshlink_destroy("getnodeconf.1"));
 	return true;
 }
 
@@ -287,7 +287,7 @@ static void test_case_mesh_get_node_dev_class_02(void **state) {
     meshlink_errno.
 */
 static bool test_steps_mesh_get_node_dev_class_02(void) {
-	meshlink_destroy("getnodeconf.1");
+	assert(meshlink_destroy("getnodeconf.1"));
 
 	/* Create meshlink instance for NUT */
 	meshlink_handle_t *mesh_nut = meshlink_open("getnodeconf.1", "nut", "node_sim", DEV_CLASS_STATIONARY);
@@ -307,7 +307,7 @@ static bool test_steps_mesh_get_node_dev_class_02(void) {
 	assert_int_not_equal(meshlink_errno, 0);
 
 	meshlink_close(mesh_nut);
-	meshlink_destroy("getnodeconf.1");
+	assert(meshlink_destroy("getnodeconf.1"));
 	return true;
 }
 
@@ -315,11 +315,11 @@ static int black_box_setup_test_case(void **state) {
 	(void)state;
 
 	fprintf(stderr, "Destroying confbases\n");
-	meshlink_destroy("getnodeconf.1");
-	meshlink_destroy("getnodeconf.2");
-	meshlink_destroy("getnodeconf.3");
-	meshlink_destroy("getnodeconf.4");
-	meshlink_destroy("getnodeconf.5");
+	assert(meshlink_destroy("getnodeconf.1"));
+	assert(meshlink_destroy("getnodeconf.2"));
+	assert(meshlink_destroy("getnodeconf.3"));
+	assert(meshlink_destroy("getnodeconf.4"));
+	assert(meshlink_destroy("getnodeconf.5"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_errno = MESHLINK_OK;
 

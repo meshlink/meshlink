@@ -75,8 +75,8 @@ static void test_case_get_all_nodes_01(void **state) {
     Obtaining list of nodes in the mesh at the given instance
 */
 static bool test_get_all_nodes_01(void) {
-	meshlink_destroy("getnodeconf1");
-	meshlink_destroy("getnodeconf2");
+	assert(meshlink_destroy("getnodeconf1"));
+	assert(meshlink_destroy("getnodeconf2"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	/* Create meshlink instance for NUT */
@@ -108,8 +108,8 @@ static bool test_get_all_nodes_01(void) {
 
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("getnodeconf1");
-	meshlink_destroy("getnodeconf2");
+	assert(meshlink_destroy("getnodeconf1"));
+	assert(meshlink_destroy("getnodeconf2"));
 
 	return true;
 }
@@ -162,7 +162,7 @@ static bool test_get_all_nodes_03(void) {
 	assert_int_equal(nodes, NULL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("getallnodesconf");
+	assert(meshlink_destroy("getallnodesconf"));
 
 	return true;
 }

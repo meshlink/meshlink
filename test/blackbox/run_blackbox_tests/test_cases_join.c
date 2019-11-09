@@ -86,8 +86,8 @@ static void test_case_meshlink_join_01(void **state) {
     NUT joins relay using the invitation generated.
 */
 static bool test_meshlink_join_01(void) {
-	meshlink_destroy("join_conf.1");
-	meshlink_destroy("join_conf.2");
+	assert(meshlink_destroy("join_conf.1"));
+	assert(meshlink_destroy("join_conf.2"));
 
 	// Create node instances
 	meshlink_handle_t *mesh1 = meshlink_open("join_conf.1", "nut", "test", DEV_CLASS_STATIONARY);
@@ -101,7 +101,7 @@ static bool test_meshlink_join_01(void) {
 	meshlink_set_node_status_cb(mesh1, status_callback);
 
 	// Inviting nut
-	meshlink_start(mesh2);
+	assert(meshlink_start(mesh2));
 	char *invitation = meshlink_invite(mesh2, NULL, "nut");
 	assert(invitation);
 
@@ -116,8 +116,8 @@ static bool test_meshlink_join_01(void) {
 	free(invitation);
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("join_conf.1");
-	meshlink_destroy("join_conf.2");
+	assert(meshlink_destroy("join_conf.1"));
+	assert(meshlink_destroy("join_conf.2"));
 
 	return true;
 }
@@ -136,7 +136,7 @@ static void test_case_meshlink_join_02(void **state) {
     report error accordingly when NULL is passed as mesh handle argument
 */
 static bool test_meshlink_join_02(void) {
-	meshlink_destroy("join_conf.3");
+	assert(meshlink_destroy("join_conf.3"));
 
 	// Create node instances
 	meshlink_handle_t *mesh1 = meshlink_open("join_conf.3", "nut", "test", DEV_CLASS_STATIONARY);
@@ -151,7 +151,7 @@ static bool test_meshlink_join_02(void) {
 
 	free(invitation);
 	meshlink_close(mesh1);
-	meshlink_destroy("join_conf.3");
+	assert(meshlink_destroy("join_conf.3"));
 
 	return true;
 }
@@ -171,7 +171,7 @@ static void test_case_meshlink_join_03(void **state) {
     Report error accordingly when NULL is passed as invite argument
 */
 static bool test_meshlink_join_03(void) {
-	meshlink_destroy("joinconf.4");
+	assert(meshlink_destroy("joinconf.4"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	/* Create meshlink instance */
@@ -184,7 +184,7 @@ static bool test_meshlink_join_03(void) {
 	assert_int_equal(ret, false);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("joinconf.4");
+	assert(meshlink_destroy("joinconf.4"));
 	return true;
 }
 

@@ -50,7 +50,7 @@ int main() {
 
 	meshlink_set_node_status_cb(mesh1, status_cb);
 
-	meshlink_add_address(mesh1, "localhost");
+	assert(meshlink_add_address(mesh1, "localhost"));
 	char *baz_url = meshlink_invite(mesh1, NULL, "baz");
 	assert(baz_url);
 

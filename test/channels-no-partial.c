@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 
 	// Restart a to ensure it gets to flush the channel send queue.
 
-	meshlink_start(mesh_a);
+	assert(meshlink_start(mesh_a));
 
 	assert_after(!meshlink_channel_get_sendq(mesh_a, channel), 30);
 	assert(meshlink_channel_send(mesh_a, channel, buf, 512) == 512);

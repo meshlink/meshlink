@@ -99,7 +99,7 @@ static bool test_steps_mesh_send_01(void) {
 	assert_int_equal(receive_data, true);
 
 	meshlink_close(mesh);
-	meshlink_destroy("send_conf");
+	assert(meshlink_destroy("send_conf"));
 	return result;
 }
 
@@ -130,7 +130,7 @@ static bool test_steps_mesh_send_02(void) {
 	assert_int_equal(ret, false);
 
 	meshlink_close(mesh);
-	meshlink_destroy("send_conf");
+	assert(meshlink_destroy("send_conf"));
 	return true;
 }
 
@@ -159,7 +159,7 @@ static bool test_steps_mesh_send_03(void) {
 	assert_int_equal(ret, false);
 
 	meshlink_close(mesh);
-	meshlink_destroy("send_conf");
+	assert(meshlink_destroy("send_conf"));
 	return true;
 }
 

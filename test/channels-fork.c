@@ -45,7 +45,7 @@ static void bar_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool r
 static void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	// Echo the data back.
 	if(len) {
-		meshlink_channel_send(mesh, channel, data, len);
+		assert(meshlink_channel_send(mesh, channel, data, len) == (ssize_t)len);
 	} else {
 		meshlink_channel_close(mesh, channel);
 	}
@@ -96,7 +96,7 @@ static int main1(int rfd, int wfd) {
 
 	meshlink_enable_discovery(mesh, false);
 
-	meshlink_add_address(mesh, "localhost");
+	assert(meshlink_add_address(mesh, "localhost"));
 
 	char *data = meshlink_export(mesh);
 	assert(data);
@@ -152,7 +152,7 @@ static int main2(int rfd, int wfd) {
 
 	meshlink_enable_discovery(mesh, false);
 
-	meshlink_add_address(mesh, "localhost");
+	assert(meshlink_add_address(mesh, "localhost"));
 
 	char *data = meshlink_export(mesh);
 	assert(data);

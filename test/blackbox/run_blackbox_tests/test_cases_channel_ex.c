@@ -164,7 +164,7 @@ static bool test_steps_channel_ex_01(void) {
 	assert_int_equal(ret, true);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelexconf");
+	assert(meshlink_destroy("channelexconf"));
 
 	return true;
 }
@@ -217,7 +217,7 @@ static bool test_steps_channel_ex_02(void) {
 	assert_int_equal(ret, true);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelexconf");
+	assert(meshlink_destroy("channelexconf"));
 	return true;
 }
 
@@ -269,7 +269,7 @@ static bool test_steps_channel_ex_03(void) {
 	assert_int_equal(ret, true);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelexconf");
+	assert(meshlink_destroy("channelexconf"));
 	return true;
 }
 
@@ -321,7 +321,7 @@ static bool test_steps_channel_ex_04(void) {
 	assert_int_equal(ret, true);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelexconf");
+	assert(meshlink_destroy("channelexconf"));
 	return true;
 }
 
@@ -361,7 +361,7 @@ static bool test_steps_channel_ex_05(void) {
 	assert(channel == NULL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelexconf");
+	assert(meshlink_destroy("channelexconf"));
 	return true;
 }
 
@@ -399,7 +399,7 @@ static bool test_steps_channel_ex_06(void) {
 	assert_int_equal(channel, NULL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelexconf");
+	assert(meshlink_destroy("channelexconf"));
 	return true;
 }
 

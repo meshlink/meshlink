@@ -113,7 +113,7 @@ bool test_verify_01(void) {
 	assert(source);
 	ret = meshlink_verify(mesh_handle, source, data, strlen(data) + 1, sig, ssize);
 	meshlink_close(mesh_handle);
-	meshlink_destroy("verifyconf");
+	assert(meshlink_destroy("verifyconf"));
 
 	if(!ret) {
 		PRINT_TEST_CASE_MSG("meshlink_verify FAILED to verify data\n");
@@ -158,7 +158,7 @@ bool test_verify_02(void) {
 	assert(source != NULL);
 	bool ret = meshlink_verify(NULL, source, data, strlen(data) + 1, sig, ssize);
 	meshlink_close(mesh_handle);
-	meshlink_destroy("verifyconf");
+	assert(meshlink_destroy("verifyconf"));
 
 	if(!ret) {
 		PRINT_TEST_CASE_MSG("meshlink_sign Successfully reported error on passing NULL as mesh_handle arg\n");
@@ -200,7 +200,7 @@ bool test_verify_03(void) {
 	assert(ret);
 	ret = meshlink_verify(mesh_handle, NULL, data, strlen(data) + 1, sig, ssize);
 	meshlink_close(mesh_handle);
-	meshlink_destroy("verifyconf");
+	assert(meshlink_destroy("verifyconf"));
 
 	if(!ret) {
 		PRINT_TEST_CASE_MSG("meshlink_verify successfully reported NULL as node_handle arg\n");
@@ -228,7 +228,7 @@ void test_case_verify_04(void **state) {
     Reports error accordingly by returning false
 */
 bool test_verify_04(void) {
-	meshlink_destroy("verifyconf");
+	assert(meshlink_destroy("verifyconf"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_handle_t *mesh_handle = meshlink_open("verifyconf", "nut", "node_sim", DEV_CLASS_BACKBONE);
 	assert(mesh_handle);
@@ -245,7 +245,7 @@ bool test_verify_04(void) {
 	ret = meshlink_verify(mesh_handle, source, NULL, strlen(data) + 1, sig, ssize);
 	meshlink_stop(mesh_handle);
 	meshlink_close(mesh_handle);
-	meshlink_destroy("verifyconf");
+	assert(meshlink_destroy("verifyconf"));
 
 	if(!ret) {
 		PRINT_TEST_CASE_MSG("meshlink_verify successfully reported NULL as data arg\n");
@@ -291,7 +291,7 @@ bool test_verify_05(void) {
 	ret = meshlink_verify(mesh_handle, source, data, strlen(data) + 1, NULL, ssize);
 	meshlink_stop(mesh_handle);
 	meshlink_close(mesh_handle);
-	meshlink_destroy("verifyconf");
+	assert(meshlink_destroy("verifyconf"));
 
 	if(!ret) {
 		PRINT_TEST_CASE_MSG("meshlink_verify successfully NULL as sign arg\n");
@@ -321,8 +321,8 @@ void test_case_verify_06(void **state) {
 */
 bool test_verify_06(void) {
 	/* deleting the confbase if already exists */
-	meshlink_destroy("verifyconf1");
-	meshlink_destroy("verifyconf2");
+	assert(meshlink_destroy("verifyconf1"));
+	assert(meshlink_destroy("verifyconf2"));
 	/* Set up logging for Meshlink */
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 	meshlink_handle_t *mesh1 = meshlink_open("verifyconf1", "nut", "chat", DEV_CLASS_STATIONARY);
@@ -349,8 +349,8 @@ bool test_verify_06(void) {
 	ret = meshlink_verify(mesh_handle, source_nut, data, strlen(data) + 1, sig, ssize);
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("verifyconf1");
-	meshlink_destroy("verifyconf2");
+	assert(meshlink_destroy("verifyconf1"));
+	assert(meshlink_destroy("verifyconf2"));
 
 	if(!ret) {
 		PRINT_TEST_CASE_MSG("meshlink_verify successfully returned 'false' when a wrong source node used to verify the data\n");

@@ -99,8 +99,8 @@ static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reach
     but when enabled foo node should not receive data
 */
 bool test_steps_mesh_blacklist_01(void) {
-	meshlink_destroy("blacklist_conf.1");
-	meshlink_destroy("blacklist_conf.2");
+	assert(meshlink_destroy("blacklist_conf.1"));
+	assert(meshlink_destroy("blacklist_conf.2"));
 
 	// Open two new meshlink instance.
 	meshlink_handle_t *mesh1 = meshlink_open("blacklist_conf.1", "foo", "blacklist", DEV_CLASS_BACKBONE);
@@ -136,7 +136,7 @@ bool test_steps_mesh_blacklist_01(void) {
 	sleep(1);
 	assert(received);
 
-	meshlink_blacklist(mesh1, bar);
+	assert(meshlink_blacklist(mesh1, bar));
 
 	received = false;
 	assert(meshlink_send(mesh2, foo, "test", 5));
@@ -146,8 +146,8 @@ bool test_steps_mesh_blacklist_01(void) {
 	// Clean up.
 	meshlink_close(mesh2);
 	meshlink_close(mesh1);
-	meshlink_destroy("blacklist_conf.1");
-	meshlink_destroy("blacklist_conf.2");
+	assert(meshlink_destroy("blacklist_conf.1"));
+	assert(meshlink_destroy("blacklist_conf.2"));
 	return true;
 }
 
@@ -166,7 +166,7 @@ void test_case_mesh_blacklist_02(void **state) {
     meshlink_blacklist API handles the invalid parameter when called by giving proper error number.
 */
 bool test_steps_mesh_blacklist_02(void) {
-	meshlink_destroy("blacklist_conf.3");
+	assert(meshlink_destroy("blacklist_conf.3"));
 
 	// Open two new meshlink instance.
 	meshlink_handle_t *mesh = meshlink_open("blacklist_conf.3", "foo", "blacklist", DEV_CLASS_BACKBONE);
@@ -176,12 +176,12 @@ bool test_steps_mesh_blacklist_02(void) {
 	assert(node);
 
 	// Passing NULL as mesh handle and node handle being some valid node handle
-	meshlink_blacklist(NULL, node);
+	assert(!meshlink_blacklist(NULL, node));
 	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	// Clean up.
 	meshlink_close(mesh);
-	meshlink_destroy("blacklist_conf.3");
+	assert(meshlink_destroy("blacklist_conf.3"));
 	return true;
 }
 
@@ -200,19 +200,19 @@ void test_case_mesh_blacklist_03(void **state) {
     meshlink_blacklist API handles the invalid parameter when called by giving proper error number.
 */
 bool test_steps_mesh_blacklist_03(void) {
-	meshlink_destroy("blacklist_conf.4");
+	assert(meshlink_destroy("blacklist_conf.4"));
 
 	// Open two new meshlink instance.
 	meshlink_handle_t *mesh = meshlink_open("blacklist_conf.4", "foo", "blacklist", DEV_CLASS_BACKBONE);
 	assert(mesh != NULL);
 
 	// Passing NULL as node handle and mesh handle being some valid mesh handle value
-	meshlink_blacklist(mesh, NULL);
+	assert(!meshlink_blacklist(mesh, NULL));
 	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	// Clean up.
 	meshlink_close(mesh);
-	meshlink_destroy("blacklist_conf.4");
+	assert(meshlink_destroy("blacklist_conf.4"));
 	return true;
 }
 

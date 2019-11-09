@@ -91,7 +91,7 @@ static bool test_steps_mesh_open_01(void) {
 	assert_int_not_equal(mesh, NULL);
 
 	meshlink_close(mesh);
-	meshlink_destroy("open_conf");
+	assert(meshlink_destroy("open_conf"));
 	return true;
 }
 
@@ -134,7 +134,7 @@ static bool test_steps_mesh_open_03(void) {
 	meshlink_handle_t *mesh = meshlink_open("openconf", NULL, "test", DEV_CLASS_STATIONARY);
 	assert_int_equal(mesh, NULL);
 
-	meshlink_destroy("open_conf");
+	assert(meshlink_destroy("open_conf"));
 	return true;
 }
 
@@ -156,7 +156,7 @@ static bool test_steps_mesh_open_04(void) {
 	meshlink_handle_t *mesh = meshlink_open("openconf", "foo", NULL, DEV_CLASS_STATIONARY);
 	assert_int_equal(mesh, NULL);
 
-	meshlink_destroy("open_conf");
+	assert(meshlink_destroy("open_conf"));
 	return true;
 }
 
@@ -178,7 +178,7 @@ static bool test_steps_mesh_open_05(void) {
 	meshlink_handle_t *mesh = meshlink_open("openconf", "foo", "test", -1);
 	assert_int_equal(mesh, NULL);
 
-	meshlink_destroy("open_conf");
+	assert(meshlink_destroy("open_conf"));
 	return true;
 }
 

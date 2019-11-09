@@ -49,7 +49,7 @@ static inline void meshlink_queue_exit(meshlink_queue_t *queue) {
 	pthread_mutex_destroy(&queue->mutex);
 }
 
-static inline bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
+static inline __attribute__((__warn_unused_result__)) bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
 	meshlink_queue_item_t *item = malloc(sizeof(*item));
 
 	if(!item) {
@@ -70,7 +70,7 @@ static inline bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
 	return true;
 }
 
-static inline void *meshlink_queue_pop(meshlink_queue_t *queue) {
+static inline __attribute__((__warn_unused_result__)) void *meshlink_queue_pop(meshlink_queue_t *queue) {
 	meshlink_queue_item_t *item;
 	void *data;
 	pthread_mutex_lock(&queue->mutex);

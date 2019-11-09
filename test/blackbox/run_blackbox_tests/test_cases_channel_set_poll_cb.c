@@ -114,8 +114,8 @@ static void test_case_channel_set_poll_cb_01(void **state) {
 static bool test_steps_channel_set_poll_cb_01(void) {
 	/* deleting the confbase if already exists */
 	struct timespec timeout = {0};
-	meshlink_destroy("pollconf1");
-	meshlink_destroy("pollconf2");
+	assert(meshlink_destroy("pollconf1"));
+	assert(meshlink_destroy("pollconf2"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	/* Create meshlink instances */
@@ -170,8 +170,8 @@ static bool test_steps_channel_set_poll_cb_01(void) {
 	/* closing channel, meshes and destroying confbase */
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("pollconf1");
-	meshlink_destroy("pollconf2");
+	assert(meshlink_destroy("pollconf1"));
+	assert(meshlink_destroy("pollconf2"));
 
 	return true;
 }
@@ -212,7 +212,7 @@ static bool test_steps_channel_set_poll_cb_02(void) {
 	assert_int_not_equal(meshlink_errno, 0);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelpollconf3");
+	assert(meshlink_destroy("channelpollconf3"));
 	return true;
 }
 
@@ -245,7 +245,7 @@ static bool test_steps_channel_set_poll_cb_03(void) {
 	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelpollconf4");
+	assert(meshlink_destroy("channelpollconf4"));
 	return true;
 }
 

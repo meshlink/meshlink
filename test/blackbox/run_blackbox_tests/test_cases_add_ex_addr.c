@@ -65,7 +65,7 @@ void test_case_mesh_add_ex_address_01(void **state) {
     meshlink_add_external_address API adds the new address given to it's confbase
 */
 bool test_steps_mesh_add_ex_address_01(void) {
-	meshlink_destroy("addex_conf.1");
+	assert(meshlink_destroy("addex_conf.1"));
 
 	// Create node instance
 	meshlink_handle_t *mesh = meshlink_open("addex_conf.1", "foo", "test", DEV_CLASS_STATIONARY);
@@ -94,7 +94,7 @@ bool test_steps_mesh_add_ex_address_01(void) {
 	assert_int_equal(found, true);
 
 	meshlink_close(mesh);
-	meshlink_destroy("addex_conf.1");
+	assert(meshlink_destroy("addex_conf.1"));
 	return true;
 }
 

@@ -49,8 +49,8 @@ bool wait_sync_flag(struct sync_flag *s, int seconds) {
 void link_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b) {
 	// Import and export both side's data
 
-	meshlink_add_address(a, "localhost");
-	meshlink_add_address(b, "localhost");
+	assert(meshlink_add_address(a, "localhost"));
+	assert(meshlink_add_address(b, "localhost"));
 
 	char *data = meshlink_export(a);
 	assert(data);

@@ -95,7 +95,7 @@ static bool test_set_port_01(void) {
 	// Clean up
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("setportconf");
+	assert(meshlink_destroy("setportconf"));
 	return true;
 }
 
@@ -153,7 +153,7 @@ static bool test_set_port_03(void) {
 	// Clean up
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("getportconf");
+	assert(meshlink_destroy("getportconf"));
 
 	return false;
 }

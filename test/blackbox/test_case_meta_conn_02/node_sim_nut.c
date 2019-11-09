@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
 	assert(mesh_event_sock_send(client_id, META_CONN_SUCCESSFUL, NULL, 0));
 
 	execute_close();
-	meshlink_destroy(argv[1]);
+	assert(meshlink_destroy(argv[1]));
 
 	return 0;
 }

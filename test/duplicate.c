@@ -15,7 +15,7 @@ static struct sync_flag duplicate_detected;
 
 static void handle_duplicate(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	set_sync_flag(&duplicate_detected, true);
-	meshlink_blacklist(mesh, node);
+	assert(meshlink_blacklist(mesh, node));
 }
 
 int main() {
@@ -34,7 +34,7 @@ int main() {
 		mesh[i] = meshlink_open(dirname, name[i], "duplicate", DEV_CLASS_BACKBONE);
 		assert(mesh[i]);
 
-		meshlink_add_address(mesh[i], "localhost");
+		assert(meshlink_add_address(mesh[i], "localhost"));
 		meshlink_enable_discovery(mesh[i], false);
 
 		meshlink_set_node_duplicate_cb(mesh[i], handle_duplicate);

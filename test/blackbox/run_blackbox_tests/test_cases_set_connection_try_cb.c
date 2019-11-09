@@ -75,8 +75,8 @@ static void test_case_set_connection_try_cb_01(void **state) {
     After closing bar node it should invoke 3 connection try callbacks in span of about 30 seconds.
 */
 static bool test_set_connection_try_cb_01(void) {
-	meshlink_destroy("meshlink_conf.1");
-	meshlink_destroy("meshlink_conf.2");
+	assert(meshlink_destroy("meshlink_conf.1"));
+	assert(meshlink_destroy("meshlink_conf.2"));
 
 	// Opening foo and bar nodes
 	meshlink_handle_t *mesh1 = meshlink_open("meshlink_conf.1", "foo", "test", DEV_CLASS_STATIONARY);
@@ -95,8 +95,8 @@ static bool test_set_connection_try_cb_01(void) {
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-	meshlink_import(mesh1, exp2);
-	meshlink_import(mesh2, exp1);
+	assert(meshlink_import(mesh1, exp2));
+	assert(meshlink_import(mesh2, exp1));
 	free(exp1);
 	free(exp2);
 
@@ -129,8 +129,8 @@ static bool test_set_connection_try_cb_01(void) {
 	assert_in_range(attempt_time_stop - attempt_time_start, 25, 45);
 
 	// Cleanup
-	meshlink_destroy("meshlink_conf.1");
-	meshlink_destroy("meshlink_conf.2");
+	assert(meshlink_destroy("meshlink_conf.1"));
+	assert(meshlink_destroy("meshlink_conf.2"));
 
 	return true;
 }

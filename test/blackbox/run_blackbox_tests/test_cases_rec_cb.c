@@ -121,7 +121,7 @@ static bool test_set_rec_cb_01(void) {
 	pthread_mutex_unlock(&lock);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("set_receive_cb_conf");
+	assert(meshlink_destroy("set_receive_cb_conf"));
 	return true;
 }
 
@@ -189,7 +189,7 @@ static bool test_set_rec_cb_03(void) {
 	pthread_mutex_unlock(&lock);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("set_receive_cb_conf");
+	assert(meshlink_destroy("set_receive_cb_conf"));
 	return true;
 }
 

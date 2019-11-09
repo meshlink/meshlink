@@ -80,7 +80,7 @@ static void test_case_set_log_cb_01(void **state) {
     log callback should be invoked when NUT joins with relay.
 */
 static bool test_set_log_cb_01(void) {
-	meshlink_destroy("logconf");
+	assert(meshlink_destroy("logconf"));
 
 	// Create meshlink instance for NUT
 
@@ -104,7 +104,7 @@ static bool test_set_log_cb_01(void) {
 	// closing meshes and destroying confbase
 
 	meshlink_close(mesh);
-	meshlink_destroy("logconf");
+	assert(meshlink_destroy("logconf"));
 
 	return true;
 }

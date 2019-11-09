@@ -444,8 +444,9 @@ bool meshlink_confbase_exists(meshlink_handle_t *mesh) {
 
 	// Cleanup if current is existing with old and new
 	if(confbase_exists && confbase_decryptable) {
-		config_destroy(mesh->confbase, "old");
-		config_destroy(mesh->confbase, "new");
+		if(!config_destroy(mesh->confbase, "old") || !config_destroy(mesh->confbase, "new")) {
+			return false;
+		}
 	}
 
 	return confbase_exists;

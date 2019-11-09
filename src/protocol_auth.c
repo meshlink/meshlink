@@ -343,9 +343,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		return false;
 	}
 
-	node_read_public_key(mesh, n);
-
-	if(!ecdsa_active(n->ecdsa)) {
+	if(!node_read_public_key(mesh, n)) {
 		logger(mesh, MESHLINK_ERROR, "No key known for peer %s", c->name);
 
 		if(n->status.reachable && !n->status.waitingforkey) {

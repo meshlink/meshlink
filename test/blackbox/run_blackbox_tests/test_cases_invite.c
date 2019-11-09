@@ -78,7 +78,7 @@ static void test_case_invite_01(void **state) {
     Generates an invitation
 */
 static bool test_invite_01(void) {
-	meshlink_destroy("inviteconf");
+	assert(meshlink_destroy("inviteconf"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	// Create meshlink instance
@@ -91,7 +91,7 @@ static bool test_invite_01(void) {
 
 	free(invitation);
 	meshlink_close(mesh_handle);
-	meshlink_destroy("inviteconf");
+	assert(meshlink_destroy("inviteconf"));
 	return true;
 }
 
@@ -127,7 +127,7 @@ static void test_case_invite_03(void **state) {
     Reports appropriate error by returning NULL
 */
 static bool test_invite_03(void) {
-	meshlink_destroy("inviteconf");
+	assert(meshlink_destroy("inviteconf"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	// Create meshlink instance
@@ -140,7 +140,7 @@ static bool test_invite_03(void) {
 	assert_int_equal(invitation, NULL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("inviteconf");
+	assert(meshlink_destroy("inviteconf"));
 	return true;
 }
 
@@ -159,7 +159,7 @@ static void test_case_invite_04(void **state) {
     Newly added address should be there in the invitation.
 */
 static bool test_invite_04(void) {
-	meshlink_destroy("inviteconf");
+	assert(meshlink_destroy("inviteconf"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	// Create meshlink instance
@@ -168,12 +168,12 @@ static bool test_invite_04(void) {
 	meshlink_set_log_cb(mesh_handle, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	char *hostname1 = "127.1.1.1";
-	meshlink_add_address(mesh_handle, hostname1);
+	assert(meshlink_add_address(mesh_handle, hostname1));
 	char *invitation = meshlink_invite(mesh_handle, NULL, "foo");
 	assert_int_not_equal(strstr(invitation, hostname1), NULL);
 
 	char *hostname2 = "127.1.2.3";
-	meshlink_add_address(mesh_handle, hostname2);
+	assert(meshlink_add_address(mesh_handle, hostname2));
 	invitation = meshlink_invite(mesh_handle, NULL, "bar");
 
 	// Verify we have both the added addresses
@@ -181,7 +181,7 @@ static bool test_invite_04(void) {
 	assert_int_not_equal(strstr(invitation, hostname2), NULL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("inviteconf");
+	assert(meshlink_destroy("inviteconf"));
 
 	return true;
 }

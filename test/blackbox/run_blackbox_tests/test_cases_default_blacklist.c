@@ -97,9 +97,9 @@ void status_cb1(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) 
     but when enabled foo node should not receive data from foz
 */
 static bool test_steps_mesh_default_blacklist_01(void) {
-	meshlink_destroy("def_blacklist_conf.1");
-	meshlink_destroy("def_blacklist_conf.2");
-	meshlink_destroy("def_blacklist_conf.3");
+	assert(meshlink_destroy("def_blacklist_conf.1"));
+	assert(meshlink_destroy("def_blacklist_conf.2"));
+	assert(meshlink_destroy("def_blacklist_conf.3"));
 
 	// Open two new meshlink instance.
 	meshlink_handle_t *mesh1 = meshlink_open("def_blacklist_conf.1", "foo", "blacklist", DEV_CLASS_BACKBONE);
@@ -165,9 +165,9 @@ static bool test_steps_mesh_default_blacklist_01(void) {
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
 	meshlink_close(mesh3);
-	meshlink_destroy("def_blacklist_conf.1");
-	meshlink_destroy("def_blacklist_conf.2");
-	meshlink_destroy("def_blacklist_conf.3");
+	assert(meshlink_destroy("def_blacklist_conf.1"));
+	assert(meshlink_destroy("def_blacklist_conf.2"));
+	assert(meshlink_destroy("def_blacklist_conf.3"));
 
 	return true;
 }

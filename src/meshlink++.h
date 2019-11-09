@@ -664,9 +664,24 @@ public:
 	 *  and will not send data to it nor accept any data received from it any more.
 	 *
 	 *  @param node         A pointer to a meshlink::node describing the node to be blacklisted.
+	 *
+	 *  @return             This function returns true if the node has been whitelisted, false otherwise.
 	 */
-	void blacklist(node *node) {
+	bool blacklist(node *node) {
 		return meshlink_blacklist(handle, node);
+	}
+
+	/// Whitelist a node on the mesh.
+	/** This function causes the local node to whitelist another node.
+	 *  The local node will allow connections to and from that node,
+	 *  and will send data to it and accept any data received from it.
+	 *
+	 *  @param node         A pointer to a meshlink::node describing the node to be whitelisted.
+	 *
+	 *  @return             This function returns true if the node has been whitelisted, false otherwise.
+	 */
+	bool whitelist(node *node) {
+		return meshlink_whitelist(handle, node);
 	}
 
 	/// Set the poll callback.

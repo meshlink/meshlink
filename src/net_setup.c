@@ -116,7 +116,6 @@ bool node_read_public_key(meshlink_handle_t *mesh, node_t *n) {
 		n->recent[i + known_count] = packmsg_get_sockaddr(&in);
 	}
 
-
 	config_free(&config);
 	return true;
 }
@@ -233,6 +232,7 @@ bool node_write_config(meshlink_handle_t *mesh, node_t *n) {
 	}
 
 	if(!packmsg_output_ok(&out)) {
+		meshlink_errno = MESHLINK_EINTERNAL;
 		return false;
 	}
 
@@ -402,7 +402,9 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	graph(mesh);
 
-	config_scan_all(mesh, "current", "hosts", load_node, NULL);
+	if(!config_scan_all(mesh, "current", "hosts", load_node, NULL)) {
+		logger(mesh, MESHLINK_WARNING, "Could not scan all host config files");
+	}
 
 	/* Open sockets */
 

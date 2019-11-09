@@ -100,8 +100,8 @@ extern node_t *new_node(void) __attribute__((__malloc__));
 extern void free_node(node_t *n);
 extern void node_add(struct meshlink_handle *mesh, node_t *n);
 extern void node_del(struct meshlink_handle *mesh, node_t *n);
-extern node_t *lookup_node(struct meshlink_handle *mesh, const char *name);
-extern node_t *lookup_node_udp(struct meshlink_handle *mesh, const sockaddr_t *sa);
+extern node_t *lookup_node(struct meshlink_handle *mesh, const char *name) __attribute__((__warn_unused_result__));
+extern node_t *lookup_node_udp(struct meshlink_handle *mesh, const sockaddr_t *sa) __attribute__((__warn_unused_result__));
 extern void update_node_udp(struct meshlink_handle *mesh, node_t *n, const sockaddr_t *sa);
 
 #endif

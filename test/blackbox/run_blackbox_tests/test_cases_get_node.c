@@ -81,8 +81,8 @@ static void test_case_mesh_get_node_01(void **state) {
 */
 static bool test_steps_mesh_get_node_01(void) {
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
-	meshlink_destroy("getnode1");
-	meshlink_destroy("getnode2");
+	assert(meshlink_destroy("getnode1"));
+	assert(meshlink_destroy("getnode2"));
 
 	// Opening NUT and bar nodes
 	meshlink_handle_t *mesh1 = meshlink_open("getnode1", "nut", "test", DEV_CLASS_STATIONARY);
@@ -111,8 +111,8 @@ static bool test_steps_mesh_get_node_01(void) {
 	// Cleanup
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("getnode1");
-	meshlink_destroy("getnode2");
+	assert(meshlink_destroy("getnode1"));
+	assert(meshlink_destroy("getnode2"));
 	return true;
 }
 
@@ -158,7 +158,7 @@ static bool test_steps_mesh_get_node_03(void) {
 	assert_int_equal(get_node, NULL);
 
 	meshlink_close(mesh);
-	meshlink_destroy("node_conf.3");
+	assert(meshlink_destroy("node_conf.3"));
 	return true;
 }
 
@@ -187,7 +187,7 @@ static bool test_steps_mesh_get_node_04(void) {
 	assert_int_equal(get_node, NULL);
 
 	meshlink_close(mesh);
-	meshlink_destroy("node_conf");
+	assert(meshlink_destroy("node_conf"));
 	return true;
 }
 

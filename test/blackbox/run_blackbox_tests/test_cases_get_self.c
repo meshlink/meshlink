@@ -75,7 +75,7 @@ static bool test_steps_mesh_get_self_01(void) {
 	}
 
 	meshlink_close(mesh);
-	meshlink_destroy("self_conf");
+	assert(meshlink_destroy("self_conf"));
 	return true;
 
 }

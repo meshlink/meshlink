@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
 	// Restarting the node instance
 
 	meshlink_stop(mesh);
-	meshlink_start(mesh);
+	assert(meshlink_start(mesh));
 
 	assert(wait_sync_flag(&peer_reachable, 60));
 	send_event(NODE_RESTARTED);

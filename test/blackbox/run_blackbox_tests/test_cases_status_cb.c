@@ -85,8 +85,8 @@ static void test_case_set_status_cb_01(void **state) {
     status callback should be invoked when NUT connects/disconnects with 'relay' node.
 */
 static bool test_set_status_cb_01(void) {
-	meshlink_destroy("set_status_cb_conf.1");
-	meshlink_destroy("set_status_cb_conf.2");
+	assert(meshlink_destroy("set_status_cb_conf.1"));
+	assert(meshlink_destroy("set_status_cb_conf.2"));
 
 	// Opening NUT and bar nodes
 	meshlink_handle_t *mesh1 = meshlink_open("set_status_cb_conf.1", "nut", "test", DEV_CLASS_STATIONARY);
@@ -104,8 +104,8 @@ static bool test_set_status_cb_01(void) {
 	assert(exp1 != NULL);
 	char *exp2 = meshlink_export(mesh2);
 	assert(exp2 != NULL);
-	meshlink_import(mesh1, exp2);
-	meshlink_import(mesh2, exp1);
+	assert(meshlink_import(mesh1, exp2));
+	assert(meshlink_import(mesh2, exp1));
 
 	assert(meshlink_start(mesh1));
 	assert(meshlink_start(mesh2));
@@ -123,8 +123,8 @@ static bool test_set_status_cb_01(void) {
 	free(exp1);
 	free(exp2);
 	meshlink_close(mesh1);
-	meshlink_destroy("set_status_cb_conf.1");
-	meshlink_destroy("set_status_cb_conf.2");
+	assert(meshlink_destroy("set_status_cb_conf.1"));
+	assert(meshlink_destroy("set_status_cb_conf.2"));
 
 	return true;
 }
@@ -146,7 +146,7 @@ static bool test_set_status_cb_02(void) {
 
 	// Create meshlink instance
 
-	meshlink_destroy("set_status_cb_conf.3");
+	assert(meshlink_destroy("set_status_cb_conf.3"));
 	meshlink_handle_t *mesh_handle = meshlink_open("set_status_cb_conf.3", "nut", "node_sim", 1);
 	assert(mesh_handle);
 
@@ -159,7 +159,7 @@ static bool test_set_status_cb_02(void) {
 	// Clean up
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("set_status_cb_conf.3");
+	assert(meshlink_destroy("set_status_cb_conf.3"));
 	return true;
 }
 

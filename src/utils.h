@@ -45,6 +45,6 @@ extern const char *winerror(int);
 #define sockinuse(x) ((x) == EADDRINUSE)
 #endif
 
-extern unsigned int bitfield_to_int(const void *bitfield, size_t size);
+extern unsigned int bitfield_to_int(const void *bitfield, size_t size) __attribute__((__warn_unused_result__));
 
 #endif

@@ -179,7 +179,7 @@ void *test_channel_blacklist_disonnection_nut_01(void *arg) {
 
 	fprintf(stderr, "Node blacklisted\n");
 	set_sync_flag(&channels_closed, false);
-	meshlink_blacklist(mesh, peer_node);
+	assert(meshlink_blacklist(mesh, peer_node));
 
 	sleep(10);
 
@@ -209,7 +209,7 @@ void *test_channel_blacklist_disonnection_nut_01(void *arg) {
 
 	set_sync_flag(&peer_reachable, false);
 
-	meshlink_whitelist(mesh, peer_node);
+	assert(meshlink_whitelist(mesh, peer_node));
 	fprintf(stderr, "Node whitelisted\n");
 
 	wait_sync_flag(&peer_reachable, 70);

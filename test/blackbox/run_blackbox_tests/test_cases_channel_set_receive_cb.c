@@ -122,7 +122,7 @@ static void test_case_set_channel_receive_cb_01(void **state) {
 */
 static bool test_steps_set_channel_receive_cb_01(void) {
 	struct timespec timeout = {0};
-	meshlink_destroy("channelreceiveconf");
+	assert(meshlink_destroy("channelreceiveconf"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	/* Create meshlink instance */
@@ -160,7 +160,7 @@ static bool test_steps_set_channel_receive_cb_01(void) {
 	pthread_mutex_unlock(& lock_receive);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelreceiveconf");
+	assert(meshlink_destroy("channelreceiveconf"));
 
 	return true;
 }
@@ -179,7 +179,7 @@ static void test_case_set_channel_receive_cb_02(void **state) {
     meshlink_channel_set_receive_cb returning proper meshlink_errno.
 */
 static bool test_steps_set_channel_receive_cb_02(void) {
-	meshlink_destroy("channelreceiveconf");
+	assert(meshlink_destroy("channelreceiveconf"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	/* Create meshlink instance */
@@ -202,7 +202,7 @@ static bool test_steps_set_channel_receive_cb_02(void) {
 	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelreceiveconf");
+	assert(meshlink_destroy("channelreceiveconf"));
 
 	return true;
 }
@@ -221,7 +221,7 @@ static void test_case_set_channel_receive_cb_03(void **state) {
     meshlink_channel_set_receive_cb returning proper meshlink_errno.
 */
 static bool test_steps_set_channel_receive_cb_03(void) {
-	meshlink_destroy("channelreceiveconf");
+	assert(meshlink_destroy("channelreceiveconf"));
 	meshlink_set_log_cb(NULL, TEST_MESHLINK_LOG_LEVEL, meshlink_callback_logger);
 
 	/* Create meshlink instance */
@@ -239,7 +239,7 @@ static bool test_steps_set_channel_receive_cb_03(void) {
 
 	assert_int_equal(meshlink_errno, MESHLINK_EINVAL);
 	meshlink_close(mesh_handle);
-	meshlink_destroy("channelreceiveconf");
+	assert(meshlink_destroy("channelreceiveconf"));
 	return true;
 }
 

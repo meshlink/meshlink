@@ -75,7 +75,7 @@ static bool test_steps_mesh_start_01(void) {
 
 	// Clean up
 	meshlink_close(mesh);
-	meshlink_destroy("start_conf");
+	assert(meshlink_destroy("start_conf"));
 
 	if(!result) {
 		fprintf(stderr, "meshlink_start status1: %s\n", meshlink_strerror(meshlink_errno));
@@ -100,7 +100,7 @@ static void test_case_mesh_start_02(void **state) {
 */
 static bool test_steps_mesh_start_02(void) {
 	bool result = false;
-	meshlink_destroy("start_conf");
+	assert(meshlink_destroy("start_conf"));
 	meshlink_handle_t *mesh = meshlink_open("start_conf", "foo", "test", DEV_CLASS_STATIONARY);
 	assert(mesh);
 
@@ -112,7 +112,7 @@ static bool test_steps_mesh_start_02(void) {
 	// Clean up
 
 	meshlink_close(mesh);
-	meshlink_destroy("start_conf");
+	assert(meshlink_destroy("start_conf"));
 	return true;
 }
 

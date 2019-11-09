@@ -45,6 +45,6 @@ extern struct splay_tree_t *new_edge_tree(void) __attribute__((__malloc__));
 extern void free_edge_tree(struct splay_tree_t *);
 extern void edge_add(struct meshlink_handle *mesh, edge_t *);
 extern void edge_del(struct meshlink_handle *mesh, edge_t *);
-extern edge_t *lookup_edge(struct node_t *, struct node_t *);
+extern edge_t *lookup_edge(struct node_t *, struct node_t *) __attribute__((__warn_unused_result__));
 
 #endif

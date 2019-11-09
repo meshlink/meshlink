@@ -65,7 +65,7 @@ int main() {
 		assert(mesh[i]);
 		free(path);
 
-		meshlink_add_address(mesh[i], "localhost");
+		assert(meshlink_add_address(mesh[i], "localhost"));
 
 		data[i] = meshlink_export(mesh[i]);
 		assert(data[i]);

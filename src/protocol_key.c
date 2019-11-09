@@ -33,17 +33,6 @@
 
 static const int req_key_timeout = 2;
 
-void send_key_changed(meshlink_handle_t *mesh) {
-	send_request(mesh, mesh->everyone, NULL, "%d %x %s", KEY_CHANGED, prng(mesh, UINT_MAX), mesh->self->name);
-
-	/* Force key exchange for connections using SPTPS */
-
-	for splay_each(node_t, n, mesh->nodes)
-		if(n->status.reachable && n->status.validkey) {
-			sptps_force_kex(&n->sptps);
-		}
-}
-
 bool key_changed_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	assert(request);
 	assert(*request);
@@ -188,8 +177,17 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		from->status.validkey = false;
 		from->status.waitingforkey = true;
 		from->last_req_key = mesh->loop.now.tv_sec;
-		sptps_start(&from->sptps, from, false, true, mesh->private_key, from->ecdsa, label, sizeof(label) - 1, send_sptps_data, receive_sptps_record);
-		sptps_receive_data(&from->sptps, buf, len);
+
+		if(!sptps_start(&from->sptps, from, false, true, mesh->private_key, from->ecdsa, label, sizeof(label) - 1, send_sptps_data, receive_sptps_record)) {
+			logger(mesh, MESHLINK_ERROR, "Could not start SPTPS session with %s: %s", from->name, strerror(errno));
+			return true;
+		}
+
+		if(!sptps_receive_data(&from->sptps, buf, len)) {
+			logger(mesh, MESHLINK_ERROR, "Could not process SPTPS data from %s: %s", from->name, strerror(errno));
+			return true;
+		}
+
 		return true;
 	}
 
@@ -207,7 +205,11 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 			return true;
 		}
 
-		sptps_receive_data(&from->sptps, buf, len);
+		if(!sptps_receive_data(&from->sptps, buf, len)) {
+			logger(mesh, MESHLINK_ERROR, "Could not process SPTPS data from %s: %s", from->name, strerror(errno));
+			return true;
+		}
+
 		return true;
 	}
 

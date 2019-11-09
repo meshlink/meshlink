@@ -66,9 +66,9 @@ static int setup_test(void **state) {
 	netns_create_topology(test_channel_disconnection_state);
 	fprintf(stderr, "\nCreated topology\n");
 
-	meshlink_destroy("nut");
-	meshlink_destroy("peer");
-	meshlink_destroy("relay");
+	assert(meshlink_destroy("nut"));
+	assert(meshlink_destroy("peer"));
+	assert(meshlink_destroy("relay"));
 	channel_discon_case_ping = false;
 	channel_discon_network_failure_01 = false;
 	channel_discon_network_failure_02 = false;
@@ -81,9 +81,9 @@ static int setup_test(void **state) {
 static int teardown_test(void **state) {
 	(void)state;
 
-	meshlink_destroy("nut");
-	meshlink_destroy("peer");
-	meshlink_destroy("relay");
+	assert(meshlink_destroy("nut"));
+	assert(meshlink_destroy("peer"));
+	assert(meshlink_destroy("relay"));
 	netns_destroy_topology(test_channel_disconnection_state);
 
 	return EXIT_SUCCESS;

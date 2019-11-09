@@ -101,8 +101,8 @@ bool test_steps_mesh_autoconnect(void) {
 	char *invite = NULL;
 	meshlink_node_t *node = NULL;
 
-	meshlink_destroy("m1n1");
-	meshlink_destroy("m1n2");
+	assert(meshlink_destroy("m1n1"));
+	assert(meshlink_destroy("m1n2"));
 
 	// Open two new meshlink instance.
 	mesh1 = meshlink_open("m1n1", "m1n1", "autoconnect", DEV_CLASS_BACKBONE);
@@ -129,7 +129,7 @@ bool test_steps_mesh_autoconnect(void) {
 	assert(wait_sync_flag(&test_autoconnect_m1n1_reachable, 30));
 
 	node = meshlink_get_node(mesh2, "m1n1");
-	meshlink_blacklist(mesh2, node);
+	assert(meshlink_blacklist(mesh2, node));
 	set_sync_flag(&test_autoconnect_blacklisted, true);
 
 	assert(wait_sync_flag(&test_autoconnect_successful, 60));
@@ -140,8 +140,8 @@ bool test_steps_mesh_autoconnect(void) {
 	meshlink_close(mesh2);
 	fprintf(stderr, "Meshlink node2 closed\n");
 
-	meshlink_destroy("m1n1");
-	meshlink_destroy("m1n2");
+	assert(meshlink_destroy("m1n1"));
+	assert(meshlink_destroy("m1n2"));
 	fprintf(stderr, "Meshlink nodes destroyed\n");
 
 	return true;

@@ -263,11 +263,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	channel_data_recieved.flag = false;
-	meshlink_blacklist(mesh, app1_node1);
+	assert(meshlink_blacklist(mesh, app1_node1));
 
 	sleep(2);
 
-	meshlink_channel_send(mesh, ch_app1node1, "test", 5);
+	assert(meshlink_channel_send(mesh, ch_app1node1, "test", 5) == 5);
 
 	wait_sync_flag(&channel_data_recieved, 30);
 
@@ -277,11 +277,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	channel_data_recieved.flag = false;
-	meshlink_whitelist(mesh, app1_node1);
+	assert(meshlink_whitelist(mesh, app1_node1));
 
 	sleep(2);
 
-	meshlink_channel_send(mesh, ch_app1node1, "Channel Message", strlen("Channel Message"));
+	assert(meshlink_channel_send(mesh, ch_app1node1, "Channel Message", strlen("Channel Message")) == strlen("Channel Message"));
 
 	assert(wait_sync_flag(&channel_data_recieved, 60));
 

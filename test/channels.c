@@ -32,7 +32,7 @@ static void b_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, c
 	fwrite(data, 1, len, stdout);
 	printf("\n");
 	// Echo the data back.
-	meshlink_channel_send(mesh, channel, data, len);
+	assert(meshlink_channel_send(mesh, channel, data, len) == (ssize_t)len);
 }
 
 static bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {

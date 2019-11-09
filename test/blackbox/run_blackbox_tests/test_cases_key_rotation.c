@@ -70,7 +70,7 @@ static void test_case_key_rotation_01(void **state) {
 */
 static bool test_key_rotation_01(void) {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
-	meshlink_destroy("encrypted_conf");
+	assert(meshlink_destroy("encrypted_conf"));
 
 	// Open a new meshlink instance.
 
@@ -91,7 +91,7 @@ static bool test_key_rotation_01(void) {
 	// Cleanup
 
 	meshlink_close(mesh);
-	meshlink_destroy("encrypted_conf");
+	assert(meshlink_destroy("encrypted_conf"));
 
 	return true;
 }
@@ -113,7 +113,7 @@ static void test_case_key_rotation_02(void **state) {
 */
 static bool test_key_rotation_02(void) {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
-	meshlink_destroy("encrypted_conf");
+	assert(meshlink_destroy("encrypted_conf"));
 
 	// Open a new meshlink instance.
 
@@ -145,7 +145,7 @@ static bool test_key_rotation_02(void) {
 	// Cleanup
 
 	meshlink_close(mesh);
-	meshlink_destroy("encrypted_conf");
+	assert(meshlink_destroy("encrypted_conf"));
 
 	return true;
 }
@@ -166,7 +166,7 @@ static void test_case_key_rotation_03(void **state) {
     been changed to new by key rotate API.
 */
 static bool test_key_rotation_03(void) {
-	meshlink_destroy("encrypted_conf");
+	assert(meshlink_destroy("encrypted_conf"));
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	// Open a new meshlink instance.
@@ -188,7 +188,7 @@ static bool test_key_rotation_03(void) {
 
 	// Cleanup
 
-	meshlink_destroy("encrypted_conf");
+	assert(meshlink_destroy("encrypted_conf"));
 
 	return true;
 }
@@ -224,7 +224,7 @@ static bool test_key_rotation_04(void) {
 	bool join_status;
 	char *invitations_directory_path = "encrypted_conf/current/invitations/";
 
-	meshlink_destroy("encrypted_conf");
+	assert(meshlink_destroy("encrypted_conf"));
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	// Open a new meshlink instance.
@@ -310,9 +310,9 @@ static bool test_key_rotation_04(void) {
 	meshlink_close(mesh);
 	meshlink_close(mesh1);
 	meshlink_close(mesh2);
-	meshlink_destroy("encrypted_conf");
-	meshlink_destroy("encrypted_conf.1");
-	meshlink_destroy("encrypted_conf.2");
+	assert(meshlink_destroy("encrypted_conf"));
+	assert(meshlink_destroy("encrypted_conf.1"));
+	assert(meshlink_destroy("encrypted_conf.2"));
 
 	return true;
 }
@@ -360,7 +360,7 @@ static bool test_key_rotation_05(void) {
 	pid_t pid;
 	int status;
 	meshlink_handle_t *mesh;
-	meshlink_destroy("encrypted_conf");
+	assert(meshlink_destroy("encrypted_conf"));
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	assert(signal(SIGINT, SIG_DFL) != SIG_ERR);
@@ -376,7 +376,7 @@ static bool test_key_rotation_05(void) {
 
 	for(break_stage = 1; break_stage <= 3; break_stage += 1) {
 		fprintf(stderr, "Debugging stage %d\n", break_stage);
-		meshlink_destroy("encrypted_conf");
+		assert(meshlink_destroy("encrypted_conf"));
 
 		assert(pipe(pipefd) != -1);
 
@@ -397,7 +397,7 @@ static bool test_key_rotation_05(void) {
 
 			assert(write(pipefd[1], invitation, strlen(invitation) + 1) != -1);
 
-			meshlink_encrypted_key_rotate(mesh, "newkey", 6);
+			assert(meshlink_encrypted_key_rotate(mesh, "newkey", 6));
 			raise(SIGABRT);
 		}
 
@@ -441,7 +441,7 @@ static bool test_key_rotation_05(void) {
 
 		assert(meshlink_start(mesh));
 
-		meshlink_destroy("encrypted_conf.1");
+		assert(meshlink_destroy("encrypted_conf.1"));
 
 		meshlink_handle_t *mesh2 = meshlink_open("encrypted_conf.1", "bar", "bar", DEV_CLASS_BACKBONE);
 		assert(mesh2);
@@ -461,8 +461,8 @@ static bool test_key_rotation_05(void) {
 
 	// Cleanup
 
-	meshlink_destroy("encrypted_conf");
-	meshlink_destroy("encrypted_conf.1");
+	assert(meshlink_destroy("encrypted_conf"));
+	assert(meshlink_destroy("encrypted_conf.1"));
 	devtool_keyrotate_probe = nop_stage;
 	return true;
 }
