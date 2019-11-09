@@ -40,6 +40,7 @@ extern bool config_destroy(const char *confbase, const char *conf_subdir);
 extern bool config_copy(struct meshlink_handle *mesh, const char *src_dir_name, const void *src_key, const char *dst_dir_name, const void *dst_key);
 extern bool config_rename(struct meshlink_handle *mesh, const char *old_conf_subdir, const char *new_conf_subdir);
 extern bool config_sync(struct meshlink_handle *mesh, const char *conf_subdir);
+extern bool sync_path(const char *path) __attribute__((__warn_unused_result__));
 
 extern bool main_config_exists(struct meshlink_handle *mesh, const char *conf_subdir);
 extern bool main_config_lock(struct meshlink_handle *mesh);

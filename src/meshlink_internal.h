@@ -169,7 +169,7 @@ struct meshlink_handle {
 
 	// Configuration
 	char *confbase;
-	FILE *conffile;
+	FILE *lockfile;
 	void *config_key;
 
 	// Thread management

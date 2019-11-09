@@ -96,7 +96,7 @@ static void deltree(const char *dirname) {
 	rmdir(dirname);
 }
 
-static bool sync_path(const char *pathname) {
+bool sync_path(const char *pathname) {
 	assert(pathname);
 
 	int fd = open(pathname, O_RDONLY);
@@ -153,11 +153,6 @@ bool config_init(meshlink_handle_t *mesh, const char *conf_subdir) {
 		return true;
 	}
 
-	if(mkdir(mesh->confbase, 0700) && errno != EEXIST) {
-		logger(mesh, MESHLINK_DEBUG, "Could not create directory %s: %s\n", mesh->confbase, strerror(errno));
-		return false;
-	}
-
 	char path[PATH_MAX];
 
 	// Create "current" sub-directory in the confbase
@@ -191,7 +186,7 @@ bool config_destroy(const char *confbase, const char *conf_subdir) {
 	assert(conf_subdir);
 
 	if(!confbase) {
-		return false;
+		return true;
 	}
 
 	struct stat st;
@@ -456,35 +451,42 @@ bool meshlink_confbase_exists(meshlink_handle_t *mesh) {
 	return confbase_exists;
 }
 
-/// Lock the main configuration file.
+/// Lock the main configuration file. Creates confbase if necessary.
 bool main_config_lock(meshlink_handle_t *mesh) {
 	if(!mesh->confbase) {
 		return true;
 	}
 
+	if(mkdir(mesh->confbase, 0700) && errno != EEXIST) {
+		logger(NULL, MESHLINK_ERROR, "Cannot create configuration directory %s: %s", mesh->confbase, strerror(errno));
+		meshlink_close(mesh);
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return NULL;
+	}
+
 	char path[PATH_MAX];
-	make_main_path(mesh, "current", path, sizeof(path));
+	snprintf(path, sizeof(path), "%s" SLASH "meshlink.lock", mesh->confbase);
 
-	mesh->conffile = fopen(path, "r");
+	mesh->lockfile = fopen(path, "w+");
 
-	if(!mesh->conffile) {
+	if(!mesh->lockfile) {
 		logger(NULL, MESHLINK_ERROR, "Cannot not open %s: %s\n", path, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
 	}
 
 #ifdef FD_CLOEXEC
-	fcntl(fileno(mesh->conffile), F_SETFD, FD_CLOEXEC);
+	fcntl(fileno(mesh->lockfile), F_SETFD, FD_CLOEXEC);
 #endif
 
 #ifdef HAVE_MINGW
 	// TODO: use _locking()?
 #else
 
-	if(flock(fileno(mesh->conffile), LOCK_EX | LOCK_NB) != 0) {
+	if(flock(fileno(mesh->lockfile), LOCK_EX | LOCK_NB) != 0) {
 		logger(NULL, MESHLINK_ERROR, "Cannot lock %s: %s\n", path, strerror(errno));
-		fclose(mesh->conffile);
-		mesh->conffile = NULL;
+		fclose(mesh->lockfile);
+		mesh->lockfile = NULL;
 		meshlink_errno = MESHLINK_EBUSY;
 		return false;
 	}
@@ -496,9 +498,9 @@ bool main_config_lock(meshlink_handle_t *mesh) {
 
 /// Unlock the main configuration file.
 void main_config_unlock(meshlink_handle_t *mesh) {
-	if(mesh->conffile) {
-		fclose(mesh->conffile);
-		mesh->conffile = NULL;
+	if(mesh->lockfile) {
+		fclose(mesh->lockfile);
+		mesh->lockfile = NULL;
 	}
 }
 

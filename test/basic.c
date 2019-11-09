@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <dirent.h>
 
 #include "meshlink.h"
 #include "utils.h"
@@ -21,7 +22,14 @@ int main() {
 	meshlink_handle_t *mesh = meshlink_open("basic_conf", "foo", "basic", DEV_CLASS_BACKBONE);
 	assert(mesh);
 
-	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, log_cb);
+	// Check that we can't open a second instance of the same node.
+
+	meshlink_handle_t *mesh2 = meshlink_open("basic_conf", "foo", "basic", DEV_CLASS_BACKBONE);
+	assert(!mesh2);
+
+	// Check that we cannot destroy an instance that is in use.
+
+	assert(!meshlink_destroy("basic_conf"));
 
 	// Check that our own node exists.
 
@@ -56,13 +64,21 @@ int main() {
 
 	assert(meshlink_start(mesh));
 	meshlink_stop(mesh);
-
-	// That's it.
-
 	meshlink_close(mesh);
 
 	// Destroy the mesh.
 
 	assert(meshlink_destroy("basic_conf"));
-	assert(access("basic_conf", F_OK) == -1 && errno == ENOENT);
+
+	// Check that the configuration directory is completely empty.
+
+	DIR *dir = opendir("basic_conf");
+	assert(dir);
+	struct dirent *ent;
+
+	while((ent = readdir(dir))) {
+		assert(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."));
+	}
+
+	closedir(dir);
 }

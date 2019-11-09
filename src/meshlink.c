@@ -903,23 +903,10 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 		return false;
 	}
 
-	if(!main_config_lock(mesh)) {
-		logger(NULL, MESHLINK_ERROR, "Cannot lock main config file\n");
-		meshlink_errno = MESHLINK_ESTORAGE;
-		return false;
-	}
-
 	return true;
 }
 
 static bool meshlink_read_config(meshlink_handle_t *mesh) {
-	// Open the configuration file and lock it
-	if(!main_config_lock(mesh)) {
-		logger(NULL, MESHLINK_ERROR, "Cannot lock main config file\n");
-		meshlink_errno = MESHLINK_ESTORAGE;
-		return false;
-	}
-
 	config_t config;
 
 	if(!main_config_read(mesh, "current", &config, mesh->config_key)) {
@@ -1104,14 +1091,11 @@ bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key,
 
 	devtool_keyrotate_probe(1);
 
-	main_config_unlock(mesh);
-
 	// Rename confbase/current/ to confbase/old
 
 	if(!config_rename(mesh, "current", "old")) {
 		logger(mesh, MESHLINK_ERROR, "Cannot rename %s/current to %s/old\n", mesh->confbase, mesh->confbase);
 		meshlink_errno = MESHLINK_ESTORAGE;
-		main_config_lock(mesh);
 		pthread_mutex_unlock(&mesh->mutex);
 		return false;
 	}
@@ -1123,17 +1107,11 @@ bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key,
 	if(!config_rename(mesh, "new", "current")) {
 		logger(mesh, MESHLINK_ERROR, "Cannot rename %s/new to %s/current\n", mesh->confbase, mesh->confbase);
 		meshlink_errno = MESHLINK_ESTORAGE;
-		main_config_lock(mesh);
 		pthread_mutex_unlock(&mesh->mutex);
 		return false;
 	}
 
 	devtool_keyrotate_probe(3);
-
-	if(!main_config_lock(mesh)) {
-		pthread_mutex_unlock(&mesh->mutex);
-		return false;
-	}
 
 	// Cleanup the "old" confbase sub-directory
 
@@ -1324,6 +1302,12 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 	mesh->loop.data = mesh;
 
 	meshlink_queue_init(&mesh->outpacketqueue);
+
+	// Atomically lock the configuration directory.
+	if(!main_config_lock(mesh)) {
+		meshlink_close(mesh);
+		return NULL;
+	}
 
 	// If no configuration exists yet, create it.
 
@@ -1641,16 +1625,57 @@ bool meshlink_destroy(const char *confbase) {
 		return false;
 	}
 
-	if(!config_destroy(confbase, "current")) {
-		logger(NULL, MESHLINK_ERROR, "Cannot remove confbase sub-directories %s: %s\n", confbase, strerror(errno));
+	/* Exit early if the confbase directory itself doesn't exist */
+	if(access(confbase, F_OK) && errno == ENOENT) {
+		return true;
+	}
+
+	/* Take the lock the same way meshlink_open() would. */
+	char lockfilename[PATH_MAX];
+	snprintf(lockfilename, sizeof(lockfilename), "%s" SLASH "meshlink.lock", confbase);
+
+	FILE *lockfile = fopen(lockfilename, "w+");
+
+	if(!lockfile) {
+		logger(NULL, MESHLINK_ERROR, "Could not open lock file %s: %s", lockfilename, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
 	}
 
-	config_destroy(confbase, "new");
-	config_destroy(confbase, "old");
+#ifdef FD_CLOEXEC
+	fcntl(fileno(lockfile), F_SETFD, FD_CLOEXEC);
+#endif
 
-	if(rmdir(confbase) && errno != ENOENT) {
-		logger(NULL, MESHLINK_ERROR, "Cannot remove directory %s: %s\n", confbase, strerror(errno));
+#ifdef HAVE_MINGW
+	// TODO: use _locking()?
+#else
+
+	if(flock(fileno(lockfile), LOCK_EX | LOCK_NB) != 0) {
+		logger(NULL, MESHLINK_ERROR, "Configuration directory %s still in use\n", lockfilename);
+		fclose(lockfile);
+		meshlink_errno = MESHLINK_EBUSY;
+		return false;
+	}
+
+#endif
+
+	if(!config_destroy(confbase, "current") || !config_destroy(confbase, "new") || !config_destroy(confbase, "old")) {
+		logger(NULL, MESHLINK_ERROR, "Cannot remove sub-directories in %s: %s\n", confbase, strerror(errno));
+		return false;
+	}
+
+	if(unlink(lockfilename)) {
+		logger(NULL, MESHLINK_ERROR, "Cannot remove lock file %s: %s\n", lockfilename, strerror(errno));
+		fclose(lockfile);
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return false;
+	}
+
+	fclose(lockfile);
+
+	/* TODO: do we need to remove confbase? Potential race condition? */
+	if(!sync_path(confbase)) {
+		logger(NULL, MESHLINK_ERROR, "Cannot sync directory %s: %s\n", confbase, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
 	}

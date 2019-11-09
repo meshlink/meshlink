@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <dirent.h>
 
 #include "meshlink.h"
 #include "utils.h"
@@ -40,5 +41,15 @@ int main() {
 	// Destroy the mesh.
 
 	assert(meshlink_destroy("encrypted_conf"));
-	assert(access("encrypted_conf", F_OK) == -1 && errno == ENOENT);
+
+	DIR *dir = opendir("encrypted_conf");
+	assert(dir);
+	struct dirent *ent;
+
+	while((ent = readdir(dir))) {
+		fprintf(stderr, "%s\n", ent->d_name);
+		assert(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."));
+	}
+
+	closedir(dir);
 }
