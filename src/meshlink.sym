@@ -9,6 +9,7 @@ devtool_trybind_probe
 meshlink_add_address
 meshlink_add_external_address
 meshlink_blacklist
+meshlink_blacklist_by_name
 meshlink_channel_aio_fd_receive
 meshlink_channel_aio_fd_send
 meshlink_channel_aio_receive
@@ -27,6 +28,7 @@ meshlink_enable_discovery
 meshlink_encrypted_key_rotate
 meshlink_errno
 meshlink_export
+meshlink_forget_node
 meshlink_get_all_nodes
 meshlink_get_all_nodes_by_dev_class
 meshlink_get_all_nodes_by_submesh
@@ -79,3 +81,4 @@ meshlink_strerror
 meshlink_submesh_open
 meshlink_verify
 meshlink_whitelist
+meshlink_whitelist_by_name

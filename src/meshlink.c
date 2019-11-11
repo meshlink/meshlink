@@ -1904,17 +1904,17 @@ meshlink_node_t *meshlink_get_node(meshlink_handle_t *mesh, const char *name) {
 		return NULL;
 	}
 
-	meshlink_node_t *node = NULL;
+	node_t *n = NULL;
 
 	pthread_mutex_lock(&mesh->mutex);
-	node = (meshlink_node_t *)lookup_node(mesh, (char *)name); // TODO: make lookup_node() use const
+	n = lookup_node(mesh, (char *)name); // TODO: make lookup_node() use const
 	pthread_mutex_unlock(&mesh->mutex);
 
-	if(!node) {
+	if(!n) {
 		meshlink_errno = MESHLINK_ENOENT;
 	}
 
-	return node;
+	return (meshlink_node_t *)n;
 }
 
 meshlink_submesh_t *meshlink_get_submesh(meshlink_handle_t *mesh, const char *name) {
@@ -1975,8 +1975,8 @@ static meshlink_node_t **meshlink_get_all_nodes_by_condition(meshlink_handle_t *
 	*nmemb = 0;
 
 	for splay_each(node_t, n, mesh->nodes) {
-		if(true == search_node(n, condition)) {
-			*nmemb = *nmemb + 1;
+		if(search_node(n, condition)) {
+			++*nmemb;
 		}
 	}
 
@@ -1992,7 +1992,7 @@ static meshlink_node_t **meshlink_get_all_nodes_by_condition(meshlink_handle_t *
 		meshlink_node_t **p = result;
 
 		for splay_each(node_t, n, mesh->nodes) {
-			if(true == search_node(n, condition)) {
+			if(search_node(n, condition)) {
 				*p++ = (meshlink_node_t *)n;
 			}
 		}
@@ -2837,27 +2837,15 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 	return true;
 }
 
-bool meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
-	if(!mesh || !node) {
-		meshlink_errno = MESHLINK_EINVAL;
-		return false;
-	}
-
-	pthread_mutex_lock(&mesh->mutex);
-
-	node_t *n;
-	n = (node_t *)node;
-
+static bool blacklist(meshlink_handle_t *mesh, node_t *n) {
 	if(n == mesh->self) {
-		logger(mesh, MESHLINK_ERROR, "%s blacklisting itself?\n", node->name);
+		logger(mesh, MESHLINK_ERROR, "%s blacklisting itself?\n", n->name);
 		meshlink_errno = MESHLINK_EINVAL;
-		pthread_mutex_unlock(&mesh->mutex);
 		return false;
 	}
 
 	if(n->status.blacklisted) {
-		logger(mesh, MESHLINK_DEBUG, "Node %s already blacklisted\n", node->name);
-		pthread_mutex_unlock(&mesh->mutex);
+		logger(mesh, MESHLINK_DEBUG, "Node %s already blacklisted\n", n->name);
 		return true;
 	}
 
@@ -2880,16 +2868,81 @@ bool meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	n->mtuprobes = 0;
 	n->status.udp_confirmed = false;
 
-	if(!node_write_config(mesh, n)) {
+	/* Graph updates will suppress status updates for blacklisted nodes, so we need to
+	 * manually call the status callback if necessary.
+	 */
+	if(n->status.reachable && mesh->node_status_cb) {
+		mesh->node_status_cb(mesh, (meshlink_node_t *)n, false);
+	}
+
+	return node_write_config(mesh, n) && config_sync(mesh, "current");
+}
+
+bool meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	if(!mesh || !node) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	pthread_mutex_lock(&mesh->mutex);
+
+	if(!blacklist(mesh, (node_t *)node)) {
 		pthread_mutex_unlock(&mesh->mutex);
 		return false;
 	}
 
+	pthread_mutex_unlock(&mesh->mutex);
+
 	logger(mesh, MESHLINK_DEBUG, "Blacklisted %s.\n", node->name);
+	return true;
+}
+
+bool meshlink_blacklist_by_name(meshlink_handle_t *mesh, const char *name) {
+	if(!mesh || !name) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	pthread_mutex_lock(&mesh->mutex);
+
+	node_t *n = lookup_node(mesh, (char *)name);
+
+	if(!n) {
+		n = new_node();
+		n->name = xstrdup(name);
+		node_add(mesh, n);
+	}
+
+	if(!blacklist(mesh, (node_t *)n)) {
+		pthread_mutex_unlock(&mesh->mutex);
+		return false;
+	}
 
 	pthread_mutex_unlock(&mesh->mutex);
 
-	return config_sync(mesh, "current");
+	logger(mesh, MESHLINK_DEBUG, "Blacklisted %s.\n", name);
+	return true;
+}
+
+static bool whitelist(meshlink_handle_t *mesh, node_t *n) {
+	if(n == mesh->self) {
+		logger(mesh, MESHLINK_ERROR, "%s whitelisting itself?\n", n->name);
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	if(!n->status.blacklisted) {
+		logger(mesh, MESHLINK_DEBUG, "Node %s was already whitelisted\n", n->name);
+		return true;
+	}
+
+	n->status.blacklisted = false;
+
+	if(n->status.reachable) {
+		update_node_status(mesh, n);
+	}
+
+	return node_write_config(mesh, n) && config_sync(mesh, "current");
 }
 
 bool meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
@@ -2900,41 +2953,102 @@ bool meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 
 	pthread_mutex_lock(&mesh->mutex);
 
-	node_t *n = (node_t *)node;
-
-	if(n == mesh->self) {
-		logger(mesh, MESHLINK_ERROR, "%s whitelisting itself?\n", node->name);
-		meshlink_errno = MESHLINK_EINVAL;
+	if(!whitelist(mesh, (node_t *)node)) {
 		pthread_mutex_unlock(&mesh->mutex);
 		return false;
 	}
-
-	if(!n->status.blacklisted) {
-		logger(mesh, MESHLINK_DEBUG, "Node %s was already whitelisted\n", node->name);
-		pthread_mutex_unlock(&mesh->mutex);
-		return true;
-	}
-
-	n->status.blacklisted = false;
-
-	if(n->status.reachable) {
-		update_node_status(mesh, n);
-	}
-
-	if(!node_write_config(mesh, n)) {
-		pthread_mutex_unlock(&mesh->mutex);
-		return false;
-	}
-
-	logger(mesh, MESHLINK_DEBUG, "Whitelisted %s.\n", node->name);
 
 	pthread_mutex_unlock(&mesh->mutex);
 
-	return config_sync(mesh, "current");
+	logger(mesh, MESHLINK_DEBUG, "Whitelisted %s.\n", node->name);
+	return true;
+}
+
+bool meshlink_whitelist_by_name(meshlink_handle_t *mesh, const char *name) {
+	if(!mesh || !name) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	pthread_mutex_lock(&mesh->mutex);
+
+	node_t *n = lookup_node(mesh, (char *)name);
+
+	if(!n) {
+		n = new_node();
+		n->name = xstrdup(name);
+		node_add(mesh, n);
+	}
+
+	if(!whitelist(mesh, (node_t *)n)) {
+		pthread_mutex_unlock(&mesh->mutex);
+		return false;
+	}
+
+	pthread_mutex_unlock(&mesh->mutex);
+
+	logger(mesh, MESHLINK_DEBUG, "Whitelisted %s.\n", name);
+	return true;
 }
 
 void meshlink_set_default_blacklist(meshlink_handle_t *mesh, bool blacklist) {
 	mesh->default_blacklist = blacklist;
+}
+
+bool meshlink_forget_node(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	if(!mesh || !node) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	node_t *n = (node_t *)node;
+
+	pthread_mutex_lock(&mesh->mutex);
+
+	/* Check that the node is not reachable */
+	if(n->status.reachable || n->connection) {
+		pthread_mutex_unlock(&mesh->mutex);
+		logger(mesh, MESHLINK_WARNING, "Could not forget %s: still reachable", n->name);
+		return false;
+	}
+
+	/* Check that we don't have any active UTCP connections */
+	if(n->utcp && utcp_is_active(n->utcp)) {
+		pthread_mutex_unlock(&mesh->mutex);
+		logger(mesh, MESHLINK_WARNING, "Could not forget %s: active UTCP connections", n->name);
+		return false;
+	}
+
+	/* Check that we have no active connections to this node */
+	for list_each(connection_t, c, mesh->connections) {
+		if(c->node == n) {
+			pthread_mutex_unlock(&mesh->mutex);
+			logger(mesh, MESHLINK_WARNING, "Could not forget %s: active connection", n->name);
+			return false;
+		}
+	}
+
+	/* Remove any pending outgoings to this node */
+	if(mesh->outgoings) {
+		for list_each(outgoing_t, outgoing, mesh->outgoings) {
+			if(outgoing->node == n) {
+				list_delete_node(mesh->outgoings, node);
+			}
+		}
+	}
+
+	/* Delete the config file for this node */
+	if(!config_delete(mesh, "current", n->name)) {
+		pthread_mutex_unlock(&mesh->mutex);
+		return false;
+	}
+
+	/* Delete the node struct and any remaining edges referencing this node */
+	node_del(mesh, n);
+
+	pthread_mutex_unlock(&mesh->mutex);
+
+	return config_sync(mesh, "current");
 }
 
 /* Hint that a hostname may be found at an address

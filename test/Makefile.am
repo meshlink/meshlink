@@ -1,6 +1,7 @@
 TESTS = \
 	basic \
 	basicpp \
+	blacklist \
 	channels \
 	channels-aio \
 	channels-aio-fd \
@@ -30,6 +31,7 @@ AM_LDFLAGS = $(PTHREAD_LIBS)
 check_PROGRAMS = \
 	basic \
 	basicpp \
+	blacklist \
 	channels \
 	channels-aio \
 	channels-aio-fd \
@@ -57,6 +59,9 @@ basic_LDADD = ../src/libmeshlink.la
 
 basicpp_SOURCES = basicpp.cpp utils.c utils.h
 basicpp_LDADD = ../src/libmeshlink.la
+
+blacklist_SOURCES = blacklist.c utils.c utils.h
+blacklist_LDADD = ../src/libmeshlink.la
 
 channels_SOURCES = channels.c utils.c utils.h
 channels_LDADD = ../src/libmeshlink.la

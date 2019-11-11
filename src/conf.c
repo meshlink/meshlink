@@ -736,6 +736,27 @@ bool config_write(meshlink_handle_t *mesh, const char *conf_subdir, const char *
 	return true;
 }
 
+/// Delete a host configuration file.
+bool config_delete(meshlink_handle_t *mesh, const char *conf_subdir, const char *name) {
+	assert(conf_subdir);
+	assert(name);
+
+	if(!mesh->confbase) {
+		return true;
+	}
+
+	char path[PATH_MAX];
+	make_host_path(mesh, conf_subdir, name, path, sizeof(path));
+
+	if(unlink(path) && errno != ENOENT) {
+		logger(mesh, MESHLINK_ERROR, "Failed to unlink `%s': %s", path, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return false;
+	}
+
+	return true;
+}
+
 /// Read the main configuration file.
 bool main_config_read(meshlink_handle_t *mesh, const char *conf_subdir, config_t *config, void *key) {
 	assert(conf_subdir);

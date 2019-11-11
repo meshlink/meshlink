@@ -51,6 +51,7 @@ extern bool main_config_write(struct meshlink_handle *mesh, const char *conf_sub
 extern bool config_exists(struct meshlink_handle *mesh, const char *conf_subdir, const char *name) __attribute__((__warn_unused_result__));
 extern bool config_read(struct meshlink_handle *mesh, const char *conf_subdir, const char *name, struct config_t *, void *key) __attribute__((__warn_unused_result__));
 extern bool config_write(struct meshlink_handle *mesh, const char *conf_subdir, const char *name, const struct config_t *, void *key) __attribute__((__warn_unused_result__));
+extern bool config_delete(struct meshlink_handle *mesh, const char *conf_subdir, const char *name) __attribute__((__warn_unused_result__));
 extern bool config_scan_all(struct meshlink_handle *mesh, const char *conf_subdir, const char *conf_type, config_scan_action_t action, void *arg) __attribute__((__warn_unused_result__));
 
 extern bool invitation_read(struct meshlink_handle *mesh, const char *conf_subdir, const char *name, struct config_t *, void *key) __attribute__((__warn_unused_result__));

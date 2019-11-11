@@ -999,6 +999,28 @@ extern char *meshlink_export(struct meshlink_handle *mesh) __attribute__((__warn
  */
 extern bool meshlink_import(struct meshlink_handle *mesh, const char *data) __attribute__((__warn_unused_result__));
 
+/// Forget any information about a node.
+/** This function allows the local node to forget any information it has about a node,
+ *  and if possible will remove any data it has stored on disk about the node.
+ *
+ *  Any open channels to this node must be closed before calling this function.
+ *
+ *  After this call returns, the node handle is invalid and may no longer be used, regardless
+ *  of the return value of this call.
+ *
+ *  Note that this function does not prevent MeshLink from actually forgetting about a node,
+ *  or re-learning information about a node at a later point in time. It is merely a hint that
+ *  the application does not care about this node anymore and that any resources kept could be
+ *  cleaned up.
+ *
+ *  \memberof meshlink_node
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A pointer to a struct meshlink_node describing the node to be forgotten.
+ *
+ *  @return             This function returns true if all currently known data about the node has been forgotten, false otherwise.
+ */
+extern bool meshlink_forget_node(struct meshlink_handle *mesh, struct meshlink_node *node);
+
 /// Blacklist a node from the mesh.
 /** This function causes the local node to blacklist another node.
  *  The local node will drop any existing connections to that node,
@@ -1012,6 +1034,21 @@ extern bool meshlink_import(struct meshlink_handle *mesh, const char *data) __at
  */
 extern bool meshlink_blacklist(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
 
+/// Blacklist a node from the mesh by name.
+/** This function causes the local node to blacklist another node by name.
+ *  The local node will drop any existing connections to that node,
+ *  and will not send data to it nor accept any data received from it any more.
+ *
+ *  If no node by the given name is known, it is created.
+ *
+ *  \memberof meshlink_node
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param name         The name of the node to blacklist.
+ *
+ *  @return             This function returns true if the node has been blacklisted, false otherwise.
+ */
+extern bool meshlink_blacklist_by_name(struct meshlink_handle *mesh, const char *name) __attribute__((__warn_unused_result__));
+
 /// Whitelist a node on the mesh.
 /** This function causes the local node to whitelist a previously blacklisted node.
  *  The local node will allow connections to and from that node,
@@ -1024,6 +1061,22 @@ extern bool meshlink_blacklist(struct meshlink_handle *mesh, struct meshlink_nod
  *  @return             This function returns true if the node has been whitelisted, false otherwise.
  */
 extern bool meshlink_whitelist(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
+
+/// Whitelist a node on the mesh by name.
+/** This function causes the local node to whitelist a node by name.
+ *  The local node will allow connections to and from that node,
+ *  and will send data to it and accept any data received from it.
+ *
+ *  If no node by the given name is known, it is created.
+ *  This is useful if new nodes are blacklisted by default.
+ *
+ *  \memberof meshlink_node
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A pointer to a struct meshlink_node describing the node to be whitelisted.
+ *
+ *  @return             This function returns true if the node has been whitelisted, false otherwise.
+ */
+extern bool meshlink_whitelist_by_name(struct meshlink_handle *mesh, const char *name) __attribute__((__warn_unused_result__));
 
 /// Set whether new nodes are blacklisted by default.
 /** This function sets the blacklist behaviour for newly discovered nodes.
