@@ -58,7 +58,7 @@ int main() {
 		assert(asprintf(&path, "blacklist_conf.%d", i) != -1 && path);
 
 		assert(meshlink_destroy(path));
-		mesh[i] = meshlink_open(path, name[i], "trio", DEV_CLASS_BACKBONE);
+		mesh[i] = meshlink_open(path, name[i], "blacklist", DEV_CLASS_BACKBONE);
 		assert(mesh[i]);
 		free(path);
 
@@ -177,4 +177,12 @@ int main() {
 	// Check that bar has no config file for baz
 	assert(access("blacklist_conf.2/current/hosts/bar", F_OK) == 0);
 	assert(access("blacklist_conf.1/current/hosts/baz", F_OK) != 0 && errno == ENOENT);
+
+	// Check that we remember xyzzy but not quux after reopening the mesh
+	mesh[0] = meshlink_open("blacklist_conf.0", "foo", "blacklist", DEV_CLASS_BACKBONE);
+	assert(mesh[0]);
+	assert(meshlink_get_node(mesh[0], "xyzzy"));
+	assert(!meshlink_get_node(mesh[0], "quux"));
+
+	meshlink_close(mesh[0]);
 }
