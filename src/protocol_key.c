@@ -354,7 +354,7 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 			/* Inform all other nodes we want to communicate with and which are reachable via this connection */
 			for splay_each(node_t, n, mesh->nodes) {
-				if(n->nexthop == c->node) {
+				if(n->nexthop != c->node) {
 					continue;
 				}
 
