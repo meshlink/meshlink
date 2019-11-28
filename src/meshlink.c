@@ -662,7 +662,7 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 	}
 
 	/* Ensure the configuration directory metadata is on disk */
-	if(!config_sync(mesh, "current")) {
+	if(!config_sync(mesh, "current") || !sync_path(mesh->confbase)) {
 		return false;
 	}
 
