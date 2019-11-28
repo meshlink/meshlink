@@ -397,7 +397,7 @@ bool config_rename(meshlink_handle_t *mesh, const char *old_conf_subdir, const c
 	snprintf(old_path, sizeof(old_path), "%s" SLASH "%s", mesh->confbase, old_conf_subdir);
 	snprintf(new_path, sizeof(new_path), "%s" SLASH "%s", mesh->confbase, new_conf_subdir);
 
-	return rename(old_path, new_path) == 0;
+	return rename(old_path, new_path) == 0 && sync_path(mesh->confbase);
 }
 
 bool config_sync(meshlink_handle_t *mesh, const char *conf_subdir) {
