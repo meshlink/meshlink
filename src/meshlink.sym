@@ -31,6 +31,7 @@ meshlink_export
 meshlink_forget_node
 meshlink_get_all_nodes
 meshlink_get_all_nodes_by_dev_class
+meshlink_get_all_nodes_by_last_reachable
 meshlink_get_all_nodes_by_submesh
 meshlink_get_external_address
 meshlink_get_external_address_for_family

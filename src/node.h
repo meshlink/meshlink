@@ -76,7 +76,6 @@ typedef struct node_t {
 	struct meshlink_handle *mesh;           /* The mesh this node belongs to */
 	struct submesh_t *submesh;              /* Nodes Sub-Mesh Handle*/
 
-	time_t last_state_change;
 	time_t last_req_key;
 
 	struct ecdsa *ecdsa;                    /* His public ECDSA key */
@@ -89,6 +88,9 @@ typedef struct node_t {
 	sockaddr_t recent[MAX_RECENT];                   /* Recently seen addresses */
 
 	// Graph-related member variables
+	time_t last_reachable;
+	time_t last_unreachable;
+
 	int distance;
 	struct node_t *nexthop;                 /* nearest node from us to him */
 	struct edge_t *prevedge;                /* nearest node from him to us */

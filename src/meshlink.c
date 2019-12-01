@@ -1501,6 +1501,8 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 
 	pthread_cond_wait(&mesh->cond, &mesh->mutex);
 	mesh->threadstarted = true;
+	mesh->self->last_reachable = time(NULL);
+	mesh->self->status.dirty = true;
 
 	pthread_mutex_unlock(&mesh->mutex);
 	return true;
@@ -1514,6 +1516,11 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	pthread_mutex_lock(&mesh->mutex);
 	logger(mesh, MESHLINK_DEBUG, "meshlink_stop called\n");
+
+	if(mesh->self) {
+		mesh->self->last_unreachable = time(NULL);
+		mesh->self->status.dirty = true;
+	}
 
 	// Shut down the main thread
 	event_loop_stop(&mesh->loop);
@@ -2025,6 +2032,31 @@ static bool search_node_by_submesh(const node_t *node, const void *condition) {
 	return false;
 }
 
+struct time_range {
+	time_t start;
+	time_t end;
+};
+
+static bool search_node_by_last_reachable(const node_t *node, const void *condition) {
+	const struct time_range *range = condition;
+	time_t start = node->last_reachable;
+	time_t end = node->last_unreachable;
+
+	if(end < start) {
+		end = time(NULL);
+
+		if(end < start) {
+			start = end;
+		}
+	}
+
+	if(range->end >= range->start) {
+		return start <= range->end && end >= range->start;
+	} else {
+		return start > range->start || end < range->end;
+	}
+}
+
 meshlink_node_t **meshlink_get_all_nodes_by_dev_class(meshlink_handle_t *mesh, dev_class_t devclass, meshlink_node_t **nodes, size_t *nmemb) {
 	if(!mesh || devclass < 0 || devclass >= DEV_CLASS_COUNT || !nmemb) {
 		meshlink_errno = MESHLINK_EINVAL;
@@ -2041,6 +2073,17 @@ meshlink_node_t **meshlink_get_all_nodes_by_submesh(meshlink_handle_t *mesh, mes
 	}
 
 	return meshlink_get_all_nodes_by_condition(mesh, submesh, nodes, nmemb, search_node_by_submesh);
+}
+
+meshlink_node_t **meshlink_get_all_nodes_by_last_reachable(meshlink_handle_t *mesh, time_t start, time_t end, meshlink_node_t **nodes, size_t *nmemb) {
+	if(!mesh || !nmemb) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	struct time_range range = {start, end};
+
+	return meshlink_get_all_nodes_by_condition(mesh, &range, nodes, nmemb, search_node_by_last_reachable);
 }
 
 dev_class_t meshlink_get_node_dev_class(meshlink_handle_t *mesh, meshlink_node_t *node) {
@@ -2713,6 +2756,9 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 	for(uint32_t i = 0; i < count; i++) {
 		packmsg_add_sockaddr(&out, &mesh->self->recent[i]);
 	}
+
+	packmsg_add_int64(&out, 0);
+	packmsg_add_int64(&out, 0);
 
 	pthread_mutex_unlock(&mesh->mutex);
 

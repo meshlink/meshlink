@@ -42,8 +42,8 @@ static const char meshlink_invitation_label[] = "MeshLink invitation";
 static const char meshlink_tcp_label[] = "MeshLink TCP";
 static const char meshlink_udp_label[] = "MeshLink UDP";
 
-#define MESHLINK_CONFIG_VERSION 1
-#define MESHLINK_INVITATION_VERSION 1
+#define MESHLINK_CONFIG_VERSION 2
+#define MESHLINK_INVITATION_VERSION 2
 
 struct CattaServer;
 struct CattaSServiceBrowser;

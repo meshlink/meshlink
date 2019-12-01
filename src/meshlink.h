@@ -712,6 +712,30 @@ extern struct meshlink_node **meshlink_get_all_nodes_by_dev_class(struct meshlin
  */
 extern struct meshlink_node **meshlink_get_all_nodes_by_submesh(struct meshlink_handle *mesh, struct meshlink_submesh *submesh, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
 
+/// Get the list of all nodes by time they were last reachable.
+/** This function returns a list with handles for all the nodes whose last known reachability time overlaps with the given time range.
+ *  If the range includes 0, it will count nodes that were never online.
+ *  If start is bigger than end, the result will be inverted.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param start        Start time.
+ *  @param end          End time.
+ *  @param nodes        A pointer to a previously allocated array of pointers to struct meshlink_node, or NULL in which case MeshLink will allocate a new array.
+ *                      The application can supply an array it allocated itself with malloc, or the return value from the previous call to this function (which is the preferred way).
+ *                      The application is allowed to call free() on the array whenever it wishes.
+ *                      The pointers in the array are valid until meshlink_close() is called.
+ *  @param nmemb        A pointer to a variable holding the number of nodes that were reachable within the period given by @a start and @a end.
+ *                      In case the @a nodes argument is not NULL, MeshLink might call realloc() on the array to change its size.
+ *                      The contents of this variable will be changed to reflect the new size of the array.
+ *
+ *  @return             A pointer to an array containing pointers to all known nodes that were reachable within the period given by @a start and @a end.
+ *                      If the @a nodes argument was not NULL, then the return value can either be the same value or a different value.
+ *                      If it is a new value, the old value of @a nodes should not be used anymore.
+ *                      If the new value is NULL, then the old array will have been freed by MeshLink.
+ */
+extern struct meshlink_node **meshlink_get_all_nodes_by_last_reachable(struct meshlink_handle *mesh, time_t start, time_t end, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
+
 /// Get the node's device class.
 /** This function returns the device class of the given node.
  *
