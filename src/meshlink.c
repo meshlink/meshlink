@@ -2700,7 +2700,7 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 
 	uint32_t count = 0;
 
-	for(uint32_t i = 0; i < 5; i++) {
+	for(uint32_t i = 0; i < MAX_RECENT; i++) {
 		if(mesh->self->recent[i].sa.sa_family) {
 			count++;
 		} else {
@@ -3063,7 +3063,7 @@ void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const
 	pthread_mutex_lock(&mesh->mutex);
 
 	node_t *n = (node_t *)node;
-	memmove(n->recent + 1, n->recent, 4 * sizeof(*n->recent));
+	memmove(n->recent + 1, n->recent, (MAX_RECENT - 1) * sizeof(*n->recent));
 	memcpy(n->recent, addr, SALEN(*addr));
 
 	if(!node_write_config(mesh, n)) {

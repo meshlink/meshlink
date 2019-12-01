@@ -40,6 +40,8 @@ typedef struct node_status_t {
 	uint16_t want_udp: 1;               /* 1 if we want working UDP because we have data to send */
 } node_status_t;
 
+#define MAX_RECENT 5
+
 typedef struct node_t {
 	// Public member variables
 	char *name;                             /* name of this node */
@@ -84,7 +86,7 @@ typedef struct node_t {
 	time_t last_successfull_connection;
 
 	char *canonical_address;                /* The canonical address of this node, if known */
-	sockaddr_t recent[5];                   /* Recently seen addresses */
+	sockaddr_t recent[MAX_RECENT];                   /* Recently seen addresses */
 
 	// Graph-related member variables
 	int distance;
