@@ -868,6 +868,18 @@ static void add_local_addresses(meshlink_handle_t *mesh) {
 }
 
 static bool meshlink_setup(meshlink_handle_t *mesh) {
+	if(!config_destroy(mesh->confbase, "new")) {
+		logger(mesh, MESHLINK_ERROR, "Could not delete configuration in %s/new: %s\n", mesh->confbase, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return false;
+	}
+
+	if(!config_destroy(mesh->confbase, "old")) {
+		logger(mesh, MESHLINK_ERROR, "Could not delete configuration in %s/old: %s\n", mesh->confbase, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return false;
+	}
+
 	if(!config_init(mesh, "current")) {
 		logger(mesh, MESHLINK_ERROR, "Could not set up configuration in %s/current: %s\n", mesh->confbase, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
@@ -1683,7 +1695,6 @@ bool meshlink_destroy(const char *confbase) {
 
 	fclose(lockfile);
 
-	/* TODO: do we need to remove confbase? Potential race condition? */
 	if(!sync_path(confbase)) {
 		logger(NULL, MESHLINK_ERROR, "Cannot sync directory %s: %s\n", confbase, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;

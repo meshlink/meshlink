@@ -45,6 +45,8 @@ int main() {
 	// Make sure we can start and stop the mesh again.
 
 	assert(meshlink_start(mesh));
+	assert(meshlink_start(mesh));
+	meshlink_stop(mesh);
 	meshlink_stop(mesh);
 
 	// Close the mesh and open it again, now with a different name parameter.
@@ -66,6 +68,28 @@ int main() {
 	meshlink_stop(mesh);
 	meshlink_close(mesh);
 
+	// Check that messing with the config directory will create a new instance.
+
+	assert(unlink("basic_conf/current/meshlink.conf") == 0);
+	mesh = meshlink_open("basic_conf", "bar", "basic", DEV_CLASS_BACKBONE);
+	assert(mesh);
+	assert(!meshlink_get_node(mesh, "foo"));
+	self = meshlink_get_self(mesh);
+	assert(self);
+	assert(!strcmp(self->name, "bar"));
+	assert(access("basic_conf/new", X_OK) == -1 && errno == ENOENT);
+	meshlink_close(mesh);
+
+	assert(rename("basic_conf/current", "basic_conf/new") == 0);
+	mesh = meshlink_open("basic_conf", "baz", "basic", DEV_CLASS_BACKBONE);
+	assert(mesh);
+	assert(!meshlink_get_node(mesh, "bar"));
+	self = meshlink_get_self(mesh);
+	assert(self);
+	assert(!strcmp(self->name, "baz"));
+	assert(access("basic_conf/new", X_OK) == -1 && errno == ENOENT);
+	meshlink_close(mesh);
+
 	// Destroy the mesh.
 
 	assert(meshlink_destroy("basic_conf"));
@@ -81,4 +105,8 @@ int main() {
 	}
 
 	closedir(dir);
+
+	// Check that we can destroy it again.
+
+	assert(meshlink_destroy("basic_conf"));
 }
