@@ -164,7 +164,7 @@ static int socket_in_netns(int domain, int type, int protocol, int netns) {
 // Find out what local address a socket would use if we connect to the given address.
 // We do this using connect() on a UDP socket, so the kernel has to resolve the address
 // of both endpoints, but this will actually not send any UDP packet.
-static bool getlocaladdr(char *destaddr, struct sockaddr *sn, socklen_t *sl, int netns) {
+static bool getlocaladdr(char *destaddr, sockaddr_t *sa, socklen_t *salen, int netns) {
 	struct addrinfo *rai = NULL;
 	const struct addrinfo hint = {
 		.ai_family = AF_UNSPEC,
@@ -191,7 +191,7 @@ static bool getlocaladdr(char *destaddr, struct sockaddr *sn, socklen_t *sl, int
 
 	freeaddrinfo(rai);
 
-	if(getsockname(sock, sn, sl)) {
+	if(getsockname(sock, &sa->sa, salen)) {
 		closesocket(sock);
 		return false;
 	}
@@ -201,14 +201,14 @@ static bool getlocaladdr(char *destaddr, struct sockaddr *sn, socklen_t *sl, int
 }
 
 static bool getlocaladdrname(char *destaddr, char *host, socklen_t hostlen, int netns) {
-	struct sockaddr_storage sn;
-	socklen_t sl = sizeof(sn);
+	sockaddr_t sa;
+	socklen_t salen = sizeof(sa);
 
-	if(!getlocaladdr(destaddr, (struct sockaddr *)&sn, &sl, netns)) {
+	if(!getlocaladdr(destaddr, &sa, &salen, netns)) {
 		return false;
 	}
 
-	if(getnameinfo((struct sockaddr *)&sn, sl, host, hostlen, NULL, 0, NI_NUMERICHOST | NI_NUMERICSERV)) {
+	if(getnameinfo(&sa.sa, salen, host, hostlen, NULL, 0, NI_NUMERICHOST | NI_NUMERICSERV)) {
 		return false;
 	}
 
@@ -846,24 +846,24 @@ static struct timeval idle(event_loop_t *loop, void *data) {
 
 // Get our local address(es) by simulating connecting to an Internet host.
 static void add_local_addresses(meshlink_handle_t *mesh) {
-	struct sockaddr_storage sn;
-	sn.ss_family = AF_UNKNOWN;
-	socklen_t sl = sizeof(sn);
+	sockaddr_t sa;
+	sa.storage.ss_family = AF_UNKNOWN;
+	socklen_t salen = sizeof(sa);
 
 	// IPv4 example.org
 
-	if(getlocaladdr("93.184.216.34", (struct sockaddr *)&sn, &sl, mesh->netns)) {
-		((struct sockaddr_in *)&sn)->sin_port = ntohs(atoi(mesh->myport));
-		meshlink_hint_address(mesh, (meshlink_node_t *)mesh->self, (struct sockaddr *)&sn);
+	if(getlocaladdr("93.184.216.34", &sa, &salen, mesh->netns)) {
+		sa.in.sin_port = ntohs(atoi(mesh->myport));
+		node_add_recent_address(mesh, mesh->self, &sa);
 	}
 
 	// IPv6 example.org
 
-	sl = sizeof(sn);
+	salen = sizeof(sa);
 
-	if(getlocaladdr("2606:2800:220:1:248:1893:25c8:1946", (struct sockaddr *)&sn, &sl, mesh->netns)) {
-		((struct sockaddr_in6 *)&sn)->sin6_port = ntohs(atoi(mesh->myport));
-		meshlink_hint_address(mesh, (meshlink_node_t *)mesh->self, (struct sockaddr *)&sn);
+	if(getlocaladdr("2606:2800:220:1:248:1893:25c8:1946", &sa, &salen, mesh->netns)) {
+		sa.in6.sin6_port = ntohs(atoi(mesh->myport));
+		node_add_recent_address(mesh, mesh->self, &sa);
 	}
 }
 
@@ -1540,7 +1540,7 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	// Send ourselves a UDP packet to kick the event loop
 	for(int i = 0; i < mesh->listen_sockets; i++) {
 		sockaddr_t sa;
-		socklen_t salen = sizeof(sa.sa);
+		socklen_t salen = sizeof(sa);
 
 		if(getsockname(mesh->listen_socket[i].udp.fd, &sa.sa, &salen) == -1) {
 			logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "getsockname", sockstrerror(sockerrno));
