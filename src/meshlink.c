@@ -393,58 +393,66 @@ static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
 
 	remove_duplicate_hostnames(hostname, port, 4);
 
-	if(!(flags & MESHLINK_INVITE_NUMERIC)) {
-		for(int i = 0; i < 4; i++) {
-			if(!hostname[i]) {
-				continue;
-			}
+	// Resolve the hostnames
+	for(int i = 0; i < 4; i++) {
+		if(!hostname[i]) {
+			continue;
+		}
 
-			// Convert what we have to a sockaddr
-			struct addrinfo *ai_in, *ai_out;
-			struct addrinfo hint = {
-				.ai_family = AF_UNSPEC,
-				.ai_flags = AI_NUMERICSERV,
-				.ai_socktype = SOCK_STREAM,
-			};
-			int err = getaddrinfo(hostname[i], port[i], &hint, &ai_in);
+		// Convert what we have to a sockaddr
+		struct addrinfo *ai_in, *ai_out;
+		struct addrinfo hint = {
+			.ai_family = AF_UNSPEC,
+			.ai_flags = AI_NUMERICSERV,
+			.ai_socktype = SOCK_STREAM,
+		};
+		int err = getaddrinfo(hostname[i], port[i], &hint, &ai_in);
 
-			if(err || !ai_in) {
-				continue;
-			}
+		if(err || !ai_in) {
+			continue;
+		}
 
-			// Convert it to a hostname
-			char resolved_host[NI_MAXHOST];
-			char resolved_port[NI_MAXSERV];
-			err = getnameinfo(ai_in->ai_addr, ai_in->ai_addrlen, resolved_host, sizeof resolved_host, resolved_port, sizeof resolved_port, NI_NUMERICSERV);
+		// Remember the address
+		node_add_recent_address(mesh, mesh->self, (sockaddr_t *)ai_in->ai_addr);
 
-			if(err || !is_valid_hostname(resolved_host)) {
-				freeaddrinfo(ai_in);
-				continue;
-			}
+		if(flags & MESHLINK_INVITE_NUMERIC) {
+			// We don't need to do any further conversion
+			freeaddrinfo(ai_in);
+			continue;
+		}
 
-			// Convert the hostname back to a sockaddr
-			hint.ai_family = ai_in->ai_family;
-			err = getaddrinfo(resolved_host, resolved_port, &hint, &ai_out);
+		// Convert it to a hostname
+		char resolved_host[NI_MAXHOST];
+		char resolved_port[NI_MAXSERV];
+		err = getnameinfo(ai_in->ai_addr, ai_in->ai_addrlen, resolved_host, sizeof resolved_host, resolved_port, sizeof resolved_port, NI_NUMERICSERV);
 
-			if(err || !ai_out) {
-				freeaddrinfo(ai_in);
-				continue;
-			}
+		if(err || !is_valid_hostname(resolved_host)) {
+			freeaddrinfo(ai_in);
+			continue;
+		}
 
-			// Check if it's still the same sockaddr
-			if(ai_in->ai_addrlen != ai_out->ai_addrlen || memcmp(ai_in->ai_addr, ai_out->ai_addr, ai_in->ai_addrlen)) {
-				freeaddrinfo(ai_in);
-				freeaddrinfo(ai_out);
-				continue;
-			}
+		// Convert the hostname back to a sockaddr
+		hint.ai_family = ai_in->ai_family;
+		err = getaddrinfo(resolved_host, resolved_port, &hint, &ai_out);
 
-			// Yes: replace the hostname with the resolved one
-			free(hostname[i]);
-			hostname[i] = xstrdup(resolved_host);
+		if(err || !ai_out) {
+			freeaddrinfo(ai_in);
+			continue;
+		}
 
+		// Check if it's still the same sockaddr
+		if(ai_in->ai_addrlen != ai_out->ai_addrlen || memcmp(ai_in->ai_addr, ai_out->ai_addr, ai_in->ai_addrlen)) {
 			freeaddrinfo(ai_in);
 			freeaddrinfo(ai_out);
+			continue;
 		}
+
+		// Yes: replace the hostname with the resolved one
+		free(hostname[i]);
+		hostname[i] = xstrdup(resolved_host);
+
+		freeaddrinfo(ai_in);
+		freeaddrinfo(ai_out);
 	}
 
 	// Remove duplicates again, since IPv4 and IPv6 addresses might map to the same hostname
@@ -455,13 +463,6 @@ static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
 		if(!hostname[i]) {
 			continue;
 		}
-
-		// Ensure we have the same addresses in our own host config file.
-		char *tmphostport;
-		xasprintf(&tmphostport, "%s %s", hostname[i], port[i]);
-		/// TODO: FIX
-		//config_add_string(&mesh->config, "Address", tmphostport);
-		free(tmphostport);
 
 		// Append the address to the hostport string
 		char *newhostport;
@@ -2372,7 +2373,7 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 
 	// Check validity of the new node's name
 	if(!check_id(name)) {
-		logger(mesh, MESHLINK_DEBUG, "Invalid name for node.\n");
+		logger(mesh, MESHLINK_ERROR, "Invalid name for node.\n");
 		meshlink_errno = MESHLINK_EINVAL;
 		pthread_mutex_unlock(&mesh->mutex);
 		return NULL;
@@ -2380,7 +2381,7 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 
 	// Ensure no host configuration file with that name exists
 	if(config_exists(mesh, "current", name)) {
-		logger(mesh, MESHLINK_DEBUG, "A host config file for %s already exists!\n", name);
+		logger(mesh, MESHLINK_ERROR, "A host config file for %s already exists!\n", name);
 		meshlink_errno = MESHLINK_EEXIST;
 		pthread_mutex_unlock(&mesh->mutex);
 		return NULL;
@@ -2388,7 +2389,7 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 
 	// Ensure no other nodes know about this name
 	if(meshlink_get_node(mesh, name)) {
-		logger(mesh, MESHLINK_DEBUG, "A node with name %s is already known!\n", name);
+		logger(mesh, MESHLINK_ERROR, "A node with name %s is already known!\n", name);
 		meshlink_errno = MESHLINK_EEXIST;
 		pthread_mutex_unlock(&mesh->mutex);
 		return NULL;
@@ -2398,7 +2399,7 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 	char *address = get_my_hostname(mesh, flags);
 
 	if(!address) {
-		logger(mesh, MESHLINK_DEBUG, "No Address known for ourselves!\n");
+		logger(mesh, MESHLINK_ERROR, "No Address known for ourselves!\n");
 		meshlink_errno = MESHLINK_ERESOLV;
 		pthread_mutex_unlock(&mesh->mutex);
 		return NULL;
@@ -2408,6 +2409,15 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 		meshlink_errno = MESHLINK_EINTERNAL;
 		pthread_mutex_unlock(&mesh->mutex);
 		return NULL;
+	}
+
+	// If we changed our own host config file, write it out now
+	if(mesh->self->status.dirty) {
+		if(!node_write_config(mesh, mesh->self)) {
+			logger(mesh, MESHLINK_ERROR, "Could not write our own host conifg file!\n");
+			pthread_mutex_unlock(&mesh->mutex);
+			return NULL;
+		}
 	}
 
 	char hash[64];

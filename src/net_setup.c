@@ -260,8 +260,6 @@ bool node_write_config(meshlink_handle_t *mesh, node_t *n) {
 		return false;
 	}
 
-
-
 	return true;
 }
 
