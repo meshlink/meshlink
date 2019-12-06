@@ -3120,11 +3120,11 @@ void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const
 	pthread_mutex_lock(&mesh->mutex);
 
 	node_t *n = (node_t *)node;
-	memmove(n->recent + 1, n->recent, (MAX_RECENT - 1) * sizeof(*n->recent));
-	memcpy(n->recent, addr, SALEN(*addr));
 
-	if(!node_write_config(mesh, n)) {
-		logger(mesh, MESHLINK_DEBUG, "Could not update %s\n", n->name);
+	if(node_add_recent_address(mesh, n, (sockaddr_t *)addr)) {
+		if(!node_write_config(mesh, n)) {
+			logger(mesh, MESHLINK_DEBUG, "Could not update %s\n", n->name);
+		}
 	}
 
 	pthread_mutex_unlock(&mesh->mutex);
