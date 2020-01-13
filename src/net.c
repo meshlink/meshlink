@@ -118,6 +118,10 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 		int pingtimeout = c->node ? mesh->dev_class_traits[c->node->devclass].pingtimeout : default_timeout;
 		int pinginterval = c->node ? mesh->dev_class_traits[c->node->devclass].pinginterval : default_interval;
 
+		if(c->outgoing && c->outgoing->timeout < 5) {
+			pingtimeout = 1;
+		}
+
 		// Also make sure that if outstanding key requests for the UDP counterpart of a connection has timed out, we restart it.
 		if(c->node) {
 			if(c->node->status.waitingforkey && c->node->last_req_key + pingtimeout <= mesh->loop.now.tv_sec) {
@@ -148,7 +152,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 	}
 
 	timeout_set(&mesh->loop, data, &(struct timeval) {
-		default_timeout, prng(mesh, TIMER_FUDGE)
+		1, prng(mesh, TIMER_FUDGE)
 	});
 }
 
@@ -701,7 +705,7 @@ void retry(meshlink_handle_t *mesh) {
 */
 void main_loop(meshlink_handle_t *mesh) {
 	timeout_add(&mesh->loop, &mesh->pingtimer, timeout_handler, &mesh->pingtimer, &(struct timeval) {
-		default_timeout, prng(mesh, TIMER_FUDGE)
+		1, prng(mesh, TIMER_FUDGE)
 	});
 	timeout_add(&mesh->loop, &mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval) {
 		0, 0

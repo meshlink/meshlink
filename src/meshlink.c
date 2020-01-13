@@ -3807,6 +3807,22 @@ void meshlink_set_dev_class_timeouts(meshlink_handle_t *mesh, dev_class_t devcla
 	pthread_mutex_unlock(&mesh->mutex);
 }
 
+void meshlink_set_dev_class_fast_retry_period(meshlink_handle_t *mesh, dev_class_t devclass, int fast_retry_period) {
+	if(!mesh || devclass < 0 || devclass >= DEV_CLASS_COUNT) {
+		meshlink_errno = EINVAL;
+		return;
+	}
+
+	if(fast_retry_period < 0) {
+		meshlink_errno = EINVAL;
+		return;
+	}
+
+	pthread_mutex_lock(&mesh->mutex);
+	mesh->dev_class_traits[devclass].fast_retry_period = fast_retry_period;
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
 void handle_network_change(meshlink_handle_t *mesh, bool online) {
 	(void)online;
 

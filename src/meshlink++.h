@@ -990,7 +990,20 @@ public:
 	 *  @param pingtimeout   The required time within which a peer should respond, in seconds. The default is 5.
 	 *                       The timeout must be smaller than the interval.
 	 */
-	void set_dev_class_timeouts(dev_class_t devclass, int pinginterval, int pingtimeout);
+	void set_dev_class_timeouts(dev_class_t devclass, int pinginterval, int pingtimeout) {
+		meshlink_set_dev_class_timeouts(handle, devclass, pinginterval, pingtimeout);
+	}
+
+	/// Set device class fast retry period
+	/** This sets the fast retry period for a given device class.
+	 *  During this period after the last time the mesh becomes unreachable, connections are tried once a second.
+	 *
+	 *  @param devclass           The device class to update
+	 *  @param fast_retry_period  The period during which fast connection retries are done. The default is 0.
+	 */
+	void set_dev_class_fast_retry_period(dev_class_t devclass, int fast_retry_period) {
+		meshlink_set_dev_class_fast_retry_period(handle, devclass, fast_retry_period);
+	}
 
 private:
 	// non-copyable:

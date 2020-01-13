@@ -82,6 +82,7 @@ struct meshlink_open_params {
 typedef struct {
 	int pinginterval;
 	int pingtimeout;
+	int fast_retry_period;
 	unsigned int min_connects;
 	unsigned int max_connects;
 	int edge_weight;
@@ -101,6 +102,7 @@ struct meshlink_handle {
 	meshlink_log_level_t log_level;
 
 	// The most important network-related members come first
+	int reachable;
 	int listen_sockets;
 	listen_socket_t listen_socket[MAXSOCKETS];
 
@@ -128,6 +130,7 @@ struct meshlink_handle {
 	time_t connection_burst_time;
 	time_t last_config_check;
 	time_t last_hard_try;
+	time_t last_unreachable;
 	timeout_t pingtimer;
 	timeout_t periodictimer;
 

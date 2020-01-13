@@ -1524,6 +1524,17 @@ extern bool meshlink_encrypted_key_rotate(struct meshlink_handle *mesh, const vo
  */
 extern void meshlink_set_dev_class_timeouts(struct meshlink_handle *mesh, dev_class_t devclass, int pinginterval, int pingtimeout);
 
+/// Set device class fast retry period
+/** This sets the fast retry period for a given device class.
+ *  During this period after the last time the mesh becomes unreachable, connections are tried once a second.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh               A handle which represents an instance of MeshLink.
+ *  @param devclass           The device class to update
+ *  @param fast_retry_period  The period during which fast connection retries are done. The default is 0.
+ */
+extern void meshlink_set_dev_class_fast_retry_period(struct meshlink_handle *mesh, dev_class_t devclass, int fast_retry_period);
+
 #ifdef __cplusplus
 }
 #endif

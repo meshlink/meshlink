@@ -136,7 +136,13 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 static void check_reachability(meshlink_handle_t *mesh) {
 	/* Check reachability status. */
 
+	int reachable = -1; /* Don't count ourself */
+
 	for splay_each(node_t, n, mesh->nodes) {
+		if(n->status.visited) {
+			reachable++;
+		}
+
 		/* Check for nodes that have changed session_id */
 		if(n->status.visited && n->prevedge && n->prevedge->reverse->session_id != n->session_id) {
 			n->session_id = n->prevedge->reverse->session_id;
@@ -206,6 +212,20 @@ static void check_reachability(meshlink_handle_t *mesh) {
 				utcp_offline(n->utcp, !n->status.reachable);
 			}
 		}
+	}
+
+	if(mesh->reachable != reachable) {
+		if(!reachable) {
+			mesh->last_unreachable = mesh->loop.now.tv_sec;
+
+			if(mesh->threadstarted) {
+				timeout_set(&mesh->loop, &mesh->periodictimer, &(struct timeval) {
+					0, prng(mesh, TIMER_FUDGE)
+				});
+			}
+		}
+
+		mesh->reachable = reachable;
 	}
 }
 

@@ -246,14 +246,18 @@ static void retry_outgoing_handler(event_loop_t *loop, void *data) {
 }
 
 void retry_outgoing(meshlink_handle_t *mesh, outgoing_t *outgoing) {
-	outgoing->timeout += 5;
+	if(!mesh->reachable && mesh->loop.now.tv_sec < mesh->last_unreachable + mesh->dev_class_traits[mesh->devclass].fast_retry_period) {
+		outgoing->timeout = 1;
+	} else {
+		outgoing->timeout += 5;
+	}
 
 	if(outgoing->timeout > mesh->maxtimeout) {
 		outgoing->timeout = mesh->maxtimeout;
 	}
 
 	timeout_add(&mesh->loop, &outgoing->ev, retry_outgoing_handler, outgoing, &(struct timeval) {
-		outgoing->timeout, rand() % 100000
+		outgoing->timeout, prng(mesh, TIMER_FUDGE)
 	});
 
 	logger(mesh, MESHLINK_INFO, "Trying to re-establish outgoing connection in %d seconds", outgoing->timeout);
