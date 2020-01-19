@@ -37,10 +37,18 @@ int main() {
 	assert(self);
 	assert(!strcmp(self->name, "foo"));
 
+	// Check that we are reachable.
+
+	assert(meshlink_get_node_reachability(mesh, self, NULL, NULL));
+
 	// Start and stop the mesh.
 
 	assert(meshlink_start(mesh));
 	meshlink_stop(mesh);
+
+	// Check that we are still reachable.
+
+	assert(meshlink_get_node_reachability(mesh, self, NULL, NULL));
 
 	// Make sure we can start and stop the mesh again.
 

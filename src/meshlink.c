@@ -2143,6 +2143,31 @@ meshlink_submesh_t *meshlink_get_node_submesh(meshlink_handle_t *mesh, meshlink_
 	return s;
 }
 
+bool meshlink_get_node_reachability(struct meshlink_handle *mesh, struct meshlink_node *node, time_t *last_reachable, time_t *last_unreachable) {
+	if(!mesh || !node) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	node_t *n = (node_t *)node;
+	bool reachable;
+
+	pthread_mutex_lock(&mesh->mutex);
+	reachable = n->status.reachable;
+
+	if(last_reachable) {
+		*last_reachable = n->last_reachable;
+	}
+
+	if(last_unreachable) {
+		*last_unreachable = n->last_unreachable;
+	}
+
+	pthread_mutex_unlock(&mesh->mutex);
+
+	return reachable;
+}
+
 bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len, void *signature, size_t *siglen) {
 	if(!mesh || !data || !len || !signature || !siglen) {
 		meshlink_errno = MESHLINK_EINVAL;

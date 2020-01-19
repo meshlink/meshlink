@@ -388,6 +388,20 @@ public:
 		return (node *)meshlink_get_node(handle, name);
 	}
 
+	/// Get a node's reachability status.
+	/** This function returns the current reachability of a given node, and the times of the last state changes.
+	 *  If a given state change never happened, the time returned will be 0.
+	 *
+	 *  @param node              A pointer to a meshlink::node describing the node.
+	 *  @param last_reachable    A pointer to a time_t variable that will be filled in with the last time the node became reachable.
+	 *  @param last_unreachable  A pointer to a time_t variable that will be filled in with the last time the node became unreachable.
+	 *
+	 *  @return                  This function returns true if the node is currently reachable, false otherwise.
+	 */
+	bool get_node_reachability(node *node, time_t *last_reachable = NULL, time_t *last_unreachable = NULL) {
+		return meshlink_get_node_reachability(handle, node, last_reachable, last_unreachable);
+	}
+
 	/// Get a handle for a specific submesh.
 	/** This function returns a handle for the submesh with the given name.
 	 *
