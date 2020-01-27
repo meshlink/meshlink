@@ -412,11 +412,8 @@ bool setup_myself(meshlink_handle_t *mesh) {
 	/* Done */
 
 	mesh->self->nexthop = mesh->self;
-	mesh->self->status.reachable = true;
 
 	node_add(mesh, mesh->self);
-
-	graph(mesh);
 
 	if(!config_scan_all(mesh, "current", "hosts", load_node, NULL)) {
 		logger(mesh, MESHLINK_WARNING, "Could not scan all host config files");

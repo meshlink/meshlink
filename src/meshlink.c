@@ -37,6 +37,7 @@
 #include "ed25519/sha512.h"
 #include "discovery.h"
 #include "devtools.h"
+#include "graph.h"
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
@@ -1527,8 +1528,9 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 
 	pthread_cond_wait(&mesh->cond, &mesh->mutex);
 	mesh->threadstarted = true;
-	mesh->self->last_reachable = time(NULL);
-	mesh->self->status.dirty = true;
+
+	// Ensure we are considered reachable
+	graph(mesh);
 
 	pthread_mutex_unlock(&mesh->mutex);
 	return true;
@@ -1542,11 +1544,6 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	pthread_mutex_lock(&mesh->mutex);
 	logger(mesh, MESHLINK_DEBUG, "meshlink_stop called\n");
-
-	if(mesh->self) {
-		mesh->self->last_unreachable = time(NULL);
-		mesh->self->status.dirty = true;
-	}
 
 	// Shut down the main thread
 	event_loop_stop(&mesh->loop);
@@ -1586,6 +1583,11 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	}
 
 	exit_outgoings(mesh);
+
+	// Ensure we are considered unreachable
+	if(mesh->nodes) {
+		graph(mesh);
+	}
 
 	// Try to write out any changed node config files, ignore errors at this point.
 	if(mesh->nodes) {

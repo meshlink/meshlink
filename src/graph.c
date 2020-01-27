@@ -72,7 +72,7 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 
 	/* Begin with mesh->self */
 
-	mesh->self->status.visited = true;
+	mesh->self->status.visited = mesh->threadstarted;
 	mesh->self->nexthop = mesh->self;
 	mesh->self->prevedge = NULL;
 	mesh->self->distance = 0;
