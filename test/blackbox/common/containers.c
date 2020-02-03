@@ -30,7 +30,7 @@
 #include "common_handlers.h"
 
 char *lxc_path = NULL;
-char *choose_arch;
+extern char *choose_arch;
 static char container_ips[10][100];
 
 /* Return the handle to an existing container after finding it by container name */
