@@ -186,7 +186,7 @@ void test_case_mesh_random_port_bindings_02(void **state) {
     Test Steps:
     1. Open a node and start the instance.
     2. Call meshlink_set_port() with port 10000
-    3. When try bind succeds block the port using devtool_trybind_probe() callback.
+    3. When try bind succeeds block the port using devtool_trybind_probe() callback.
 
     Expected Result:
     The meshlink_set_port() API should fail.

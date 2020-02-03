@@ -129,7 +129,7 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			}
 
 			if(!s) {
-				fprintf(stderr, "Group is not yet creted!\n");
+				fprintf(stderr, "Group is not yet created!\n");
 				return;
 			}
 		}

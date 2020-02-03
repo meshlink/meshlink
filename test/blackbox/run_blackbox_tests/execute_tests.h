@@ -58,7 +58,7 @@ extern bool change_state(node_status_t *status, mesh_event_t currentEv);
 extern void signal_node_start(node_status_t *node_status, int start, int end, char *node_ids[]);
 
 /// Checks for the completion of nodes state machines.
-/** This function checks wheather the nodes state machines have reached their maximum state indexes
+/** This function checks whether the nodes state machines have reached their maximum state indexes
  *
  *  @param status           Pointer to array of status handles of target nodes.
  *  @param length               Number of nodes to check.

@@ -129,7 +129,7 @@ typedef struct packmsg_input {
  *  \memberof packmsg_output
  *
  * This function checks if all operations performed on the output buffer so far
- * have all completed succesfully, and the buffer contains a valid PackMessage message.
+ * have all completed successfully, and the buffer contains a valid PackMessage message.
  *
  * \param buf  A pointer to an output buffer iterator.
  *
@@ -166,7 +166,7 @@ static inline size_t packmsg_output_size(const packmsg_output_t *buf, const uint
  *  \memberof packmsg_input
  *
  * This function checks if all operations performed on the input buffer so far
- * have all completed succesfully, and the buffer contains a valid PackMessage message.
+ * have all completed successfully, and the buffer contains a valid PackMessage message.
  *
  * \param buf  A pointer to an input buffer iterator.
  *
@@ -730,8 +730,8 @@ static inline uint8_t packmsg_peek_hdr_(const packmsg_input_t *buf) {
 /** \brief Get a NIL from the input.
  *  \memberof packmsg_input
  *
- * This function does not return anything, but will invalidate the input interator
- * if no NIL was succesfully consumed from the input.
+ * This function does not return anything, but will invalidate the input iterator
+ * if no NIL was successfully consumed from the input.
  *
  * \param buf  A pointer to an input buffer iterator.
  */
@@ -1096,7 +1096,7 @@ static inline char *packmsg_get_str_dup(packmsg_input_t *buf) {
  *
  * This function copies a string from the input another buffer provided by the application.
  * The buffer must be long enough to hold the complete string plus a terminating NUL-byte.
- * If the buffer is not long enough, or another error occured,
+ * If the buffer is not long enough, or another error occurred,
  * a single NUL-byte will be written to the start of the buffer (if its size is at least one byte).
  *
  * \param buf   A pointer to an input buffer iterator.
@@ -1444,8 +1444,8 @@ static inline uint32_t packmsg_get_array(packmsg_input_t *buf) {
  *
  * This enum describes the type of an element in a PackMessage message.
  * In case of integers and floating point values, the type normally represents
- * the smallest type that can succesfully hold the value of the element;
- * i.e. an element of type PACKMSG_INT32 can only succesfully be read by
+ * the smallest type that can successfully hold the value of the element;
+ * i.e. an element of type PACKMSG_INT32 can only successfully be read by
  * packmsg_get_int32() or packmsg_get_int64(). However, the converse it not true;
  * for an element of type PACKMSG_INT32, there is no guarantee
  * that the value is larger than would fit into an int16_t.

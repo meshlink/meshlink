@@ -134,7 +134,7 @@ static void test_case_submesh_02(void **state) {
     2. Generate invites to app1node1, app2node1, corenode2, app1node2 and app2node2
         from corenode1 to join corenode1.
     3. After Join is successful start channels from all nodes and exchange data on channels
-    4. Try to fetch the list of all nodes and check if the nodes in other submesh doesnot
+    4. Try to fetch the list of all nodes and check if the nodes in other submesh does not
        appear in the list.
     5. Try fetch all the nodes with a submesh handle and check only if both the nodes joining
        the submesh are present.

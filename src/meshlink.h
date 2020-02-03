@@ -173,7 +173,7 @@ extern void meshlink_open_params_free(meshlink_open_params_t *params);
  *  @param params   A pointer to a meshlink_open_params_t which must have been created earlier with meshlink_open_params_init().
  *  @param netns    A filedescriptor that must point to a valid network namespace, or -1 to have MeshLink use the same namespace as the calling thread.
  *
- *  @return         This function will return true if the open parameters have been succesfully updated, false otherwise.
+ *  @return         This function will return true if the open parameters have been successfully updated, false otherwise.
  */
 extern bool meshlink_open_params_set_netns(meshlink_open_params_t *params, int netns) __attribute__((__warn_unused_result__));
 
@@ -184,7 +184,7 @@ extern bool meshlink_open_params_set_netns(meshlink_open_params_t *params, int n
  *  @param key      A pointer to a key, or NULL in case no encryption should be used.
  *  @param keylen   The length of the given key, or 0 in case no encryption should be used.
  *
- *  @return         This function will return true if the open parameters have been succesfully updated, false otherwise.
+ *  @return         This function will return true if the open parameters have been successfully updated, false otherwise.
  */
 extern bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const void *key, size_t keylen) __attribute__((__warn_unused_result__));
 
@@ -514,7 +514,7 @@ extern void meshlink_set_log_cb(struct meshlink_handle *mesh, meshlink_log_level
 
 /// A callback for receiving error conditions encountered by the MeshLink thread.
 /** @param mesh      A handle which represents an instance of MeshLink, or NULL.
- *  @param errno     The error code describing what kind of error occured.
+ *  @param errno     The error code describing what kind of error occurred.
  */
 typedef void (*meshlink_error_cb_t)(struct meshlink_handle *mesh, meshlink_errno_t meshlink_errno);
 
