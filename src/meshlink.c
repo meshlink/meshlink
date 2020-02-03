@@ -2428,7 +2428,7 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 	}
 
 	// Ensure no other nodes know about this name
-	if(meshlink_get_node(mesh, name)) {
+	if(lookup_node(mesh, name)) {
 		logger(mesh, MESHLINK_ERROR, "A node with name %s is already known!\n", name);
 		meshlink_errno = MESHLINK_EEXIST;
 		pthread_mutex_unlock(&mesh->mutex);
