@@ -668,6 +668,10 @@ static bool finalize_join(meshlink_handle_t *mesh, const void *buf, uint16_t len
 			}
 		}
 
+		/* Clear the reachability times, since we ourself have never seen these nodes yet */
+		n->last_reachable = 0;
+		n->last_unreachable = 0;
+
 		if(!node_write_config(mesh, n)) {
 			free_node(n);
 			return false;
