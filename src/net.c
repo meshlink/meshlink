@@ -639,11 +639,6 @@ void retry(meshlink_handle_t *mesh) {
 		});
 	}
 
-#if defined(HAVE_IFADDRS_H) && defined(HAVE_GETIFADDRS) && defined(HAVE_FREEIFADDRS)
-	struct ifaddrs *ifa = NULL;
-	getifaddrs(&ifa);
-#endif
-
 	/* For active connections, check if their addresses are still valid.
 	 * If yes, reset their ping timers, otherwise terminate them. */
 	for list_each(connection_t, c, mesh->connections) {
@@ -655,12 +650,6 @@ void retry(meshlink_handle_t *mesh) {
 			c->last_ping_time = 0;
 		}
 
-#if defined(HAVE_IFADDRS_H) && defined(HAVE_GETIFADDRS) && defined(HAVE_FREEIFADDRS)
-
-		if(!ifa) {
-			continue;
-		}
-
 		sockaddr_t sa;
 		socklen_t salen = sizeof(sa);
 
@@ -668,31 +657,32 @@ void retry(meshlink_handle_t *mesh) {
 			continue;
 		}
 
-		bool found = false;
+		switch(sa.sa.sa_family) {
+		case AF_INET:
+			sa.in.sin_port = 0;
+			break;
 
-		for(struct ifaddrs *ifap = ifa; ifap; ifap = ifap->ifa_next) {
-			if(ifap->ifa_addr && !sockaddrcmp_noport(&sa, (sockaddr_t *)ifap->ifa_addr)) {
-				found = true;
-				break;
-			}
+		case AF_INET6:
+			sa.in6.sin6_port = 0;
+			break;
 
+		default:
+			continue;
 		}
 
-		if(!found) {
+		int sock = socket(sa.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
+
+		if(sock != -1) {
+			continue;
+		}
+
+		if(bind(sock, &sa.sa, salen) && errno == EADDRNOTAVAIL) {
 			logger(mesh, MESHLINK_DEBUG, "Local address for connection to %s no longer valid, terminating", c->name);
 			terminate_connection(mesh, c, c->status.active);
 		}
 
-#endif
+		closesocket(sock);
 	}
-
-#if defined(HAVE_IFADDRS_H) && defined(HAVE_GETIFADDRS) && defined(HAVE_FREEIFADDRS)
-
-	if(ifa) {
-		freeifaddrs(ifa);
-	}
-
-#endif
 
 	/* Kick the ping timeout handler */
 	timeout_set(&mesh->loop, &mesh->pingtimer, &(struct timeval) {
