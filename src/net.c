@@ -639,7 +639,7 @@ void retry(meshlink_handle_t *mesh) {
 		});
 	}
 
-#ifdef HAVE_IFADDRS_H
+#if defined(HAVE_IFADDRS_H) && defined(HAVE_GETIFADDRS) && defined(HAVE_FREEIFADDRS)
 	struct ifaddrs *ifa = NULL;
 	getifaddrs(&ifa);
 #endif
@@ -655,7 +655,7 @@ void retry(meshlink_handle_t *mesh) {
 			c->last_ping_time = 0;
 		}
 
-#ifdef HAVE_IFADDRS_H
+#if defined(HAVE_IFADDRS_H) && defined(HAVE_GETIFADDRS) && defined(HAVE_FREEIFADDRS)
 
 		if(!ifa) {
 			continue;
@@ -686,7 +686,7 @@ void retry(meshlink_handle_t *mesh) {
 #endif
 	}
 
-#ifdef HAVE_IFADDRS_H
+#if defined(HAVE_IFADDRS_H) && defined(HAVE_GETIFADDRS) && defined(HAVE_FREEIFADDRS)
 
 	if(ifa) {
 		freeifaddrs(ifa);

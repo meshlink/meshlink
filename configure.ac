@@ -134,7 +134,7 @@ AC_CHECK_TYPES([struct sockaddr_storage], ,AC_MSG_ERROR([System must support str
 
 dnl Checks for library functions.
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS([asprintf fchmod fork gettimeofday random select setns strdup usleep getifaddrs],
+AC_CHECK_FUNCS([asprintf fchmod fork gettimeofday random select setns strdup usleep getifaddrs freeifaddrs],
   [], [], [#include "$srcdir/src/have.h"]
 )
 
