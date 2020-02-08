@@ -287,6 +287,21 @@ char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int fami
 	return hostname;
 }
 
+static bool is_localaddr(sockaddr_t *sa) {
+	switch(sa->sa.sa_family) {
+	case AF_INET:
+		return *(uint8_t *)(&sa->in.sin_addr.s_addr) == 127;
+
+	case AF_INET6: {
+		uint16_t first = sa->in6.sin6_addr.s6_addr[0] << 8 | sa->in6.sin6_addr.s6_addr[1];
+		return first == 0 || (first & 0xffc0) == 0xfe80;
+	}
+
+	default:
+		return false;
+	}
+}
+
 char *meshlink_get_local_address_for_family(meshlink_handle_t *mesh, int family) {
 	(void)mesh;
 
@@ -299,6 +314,34 @@ char *meshlink_get_local_address_for_family(meshlink_handle_t *mesh, int family)
 	} else if(family == AF_INET6) {
 		success = getlocaladdrname("2606:2800:220:1:248:1893:25c8:1946", localaddr, sizeof(localaddr), mesh->netns);
 	}
+
+#ifdef HAVE_GETIFADDRS
+
+	if(!success) {
+		struct ifaddrs *ifa = NULL;
+		getifaddrs(&ifa);
+
+		for(struct ifaddrs *ifap = ifa; ifap; ifap = ifap->ifa_next) {
+			sockaddr_t *sa = (sockaddr_t *)ifap->ifa_addr;
+
+			if(sa->sa.sa_family != family) {
+				continue;
+			}
+
+			if(is_localaddr(sa)) {
+				continue;
+			}
+
+			if(!getnameinfo(&sa->sa, SALEN(sa->sa), localaddr, sizeof(localaddr), NULL, 0, NI_NUMERICHOST | NI_NUMERICSERV)) {
+				success = true;
+				break;
+			}
+		}
+
+		freeifaddrs(ifa);
+	}
+
+#endif
 
 	if(!success) {
 		meshlink_errno = MESHLINK_ENETWORK;
