@@ -230,17 +230,20 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	char *submesh_name = packmsg_get_str_dup(&in);
 
 	if(!strcmp(submesh_name, CORE_MESH)) {
+		free(submesh_name);
 		c->submesh = NULL;
 	} else {
 		if(!check_id(submesh_name)) {
 			logger(mesh, MESHLINK_ERROR, "Invalid invitation file %s\n", cookie);
-			abort();
+			free(submesh_name);
 			return false;
 		}
 
 		c->submesh = lookup_or_create_submesh(mesh, submesh_name);
+		free(submesh_name);
 
 		if(!c->submesh) {
+			logger(mesh, MESHLINK_ERROR, "Unknown submesh in invitation file %s\n", cookie);
 			return false;
 		}
 	}
@@ -249,7 +252,6 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	sptps_send_record(&c->sptps, 0, config.buf, config.len);
 
 	config_free(&config);
-	free(submesh_name);
 
 	c->status.invitation_used = true;
 
