@@ -192,17 +192,6 @@ struct meshlink_handle {
 	char *catta_servicetype;
 	unsigned int catta_interfaces;
 
-	// State used for meshlink_join()
-	int sock;
-	char cookie[18], hash[18];
-	bool success;
-	sptps_t sptps;
-	char *data;
-	size_t thedatalen;
-	size_t blen;
-	char line[4096];
-	char buffer[4096];
-
 	// Proxy configuration, currently not exposed.
 	char *proxyhost;
 	char *proxyport;
