@@ -168,7 +168,7 @@ struct meshlink_handle {
 
 	bool default_blacklist;
 	bool discovery;         // Whether Catta is enabled or not
-
+	bool inviter_commits_first;
 
 	// Configuration
 	char *confbase;

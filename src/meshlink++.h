@@ -1019,6 +1019,17 @@ public:
 		meshlink_set_dev_class_fast_retry_period(handle, devclass, fast_retry_period);
 	}
 
+	/// Set which order invitations are committed
+	/** This determines in which order configuration files are written to disk during an invitation.
+	 *  By default, the invitee saves the configuration to disk first, then the inviter.
+	 *  By calling this function with @a inviter_commits_first set to true, the order is reversed.
+	 *
+	 *  @param inviter_commits_first  If true, then the node that invited a peer will commit data to disk first.
+	 */
+	void set_inviter_commits_first(bool inviter_commits_first) {
+		meshlink_set_inviter_commits_first(handle, inviter_commits_first);
+	}
+
 private:
 	// non-copyable:
 	mesh(const mesh &) /* TODO: C++11: = delete */;

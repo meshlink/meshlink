@@ -775,21 +775,44 @@ static bool invitation_receive(void *handle, uint8_t type, const void *msg, uint
 	join_state_t *state = handle;
 	meshlink_handle_t *mesh = state->mesh;
 
-	switch(type) {
-	case SPTPS_HANDSHAKE:
-		return sptps_send_record(&state->sptps, 0, state->cookie, 18);
+	if(mesh->inviter_commits_first) {
+		switch(type) {
+		case SPTPS_HANDSHAKE:
+			return sptps_send_record(&state->sptps, 2, state->cookie, 18 + 32);
 
-	case 0:
-		return finalize_join(state, msg, len);
+		case 1:
+			break;
 
-	case 1:
-		logger(mesh, MESHLINK_DEBUG, "Invitation successfully accepted.\n");
-		shutdown(state->sock, SHUT_RDWR);
-		state->success = true;
-		break;
+		case 0:
+			if(!finalize_join(state, msg, len)) {
+				return false;
+			}
 
-	default:
-		return false;
+			logger(mesh, MESHLINK_DEBUG, "Invitation successfully accepted.\n");
+			shutdown(state->sock, SHUT_RDWR);
+			state->success = true;
+			break;
+
+		default:
+			return false;
+		}
+	} else {
+		switch(type) {
+		case SPTPS_HANDSHAKE:
+			return sptps_send_record(&state->sptps, 0, state->cookie, 18);
+
+		case 0:
+			return finalize_join(state, msg, len);
+
+		case 1:
+			logger(mesh, MESHLINK_DEBUG, "Invitation successfully accepted.\n");
+			shutdown(state->sock, SHUT_RDWR);
+			state->success = true;
+			break;
+
+		default:
+			return false;
+		}
 	}
 
 	return true;
@@ -2645,6 +2668,10 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 
 	if(!b64decode(slash, state.hash, 18) || !b64decode(slash + 24, state.cookie, 18)) {
 		goto invalid;
+	}
+
+	if(mesh->inviter_commits_first) {
+		memcpy(state.cookie + 18, ecdsa_get_public_key(mesh->private_key), 32);
 	}
 
 	// Generate a throw-away key for the invitation.
