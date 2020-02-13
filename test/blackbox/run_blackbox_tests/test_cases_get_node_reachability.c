@@ -72,6 +72,10 @@ static bool test_get_node_reachability_07(void);
 
 /* Node reachable status callback which signals the respective conditional varibale */
 static void meshlink_node_reachable_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable_status) {
+	if(meshlink_get_self(mesh) == node) {
+		return;
+	}
+
 	if(!strcasecmp(mesh->name, NUT)) {
 		if(!strcasecmp(node->name, PEER)) {
 			peer_reachable_status = reachable_status;
@@ -83,6 +87,9 @@ static void meshlink_node_reachable_status_cb(meshlink_handle_t *mesh, meshlink_
 			set_sync_flag(&nut_reachable_status_cond, true);
 		}
 	}
+
+	// Reset the node reachability status callback, as the two nodes making a simultaneous connection to each other, and then one connection will win and cause the other one to be disconnected.
+	meshlink_set_node_status_cb(mesh, NULL);
 }
 
 static void meshlink_node_reachable_status_cb_2(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable_status) {
@@ -537,6 +544,8 @@ static bool test_get_node_reachability_04(void) {
 	sleep(2);
 	set_sync_flag(&peer_reachable_status_cond, false);
 	set_sync_flag(&nut_reachable_status_cond, false);
+	meshlink_set_node_status_cb(mesh, meshlink_node_reachable_status_cb);
+	meshlink_set_node_status_cb(mesh_peer, meshlink_node_reachable_status_cb);
 	assert_true(meshlink_start(mesh));
 	assert_true(meshlink_start(mesh_peer));
 
@@ -550,13 +559,13 @@ static bool test_get_node_reachability_04(void) {
 	status = meshlink_get_node_reachability(mesh, peer_handle, &last_reachable, &last_unreachable);
 	assert_true(status);
 	assert_int_not_equal(last_reachable, last_peer_reachable);
-	assert_int_equal(last_unreachable, last_peer_unreachable);
+	assert_true(last_unreachable >= last_peer_unreachable);
 	last_peer_reachable = last_reachable;
 
 	status = meshlink_get_node_reachability(mesh_peer, nut_handle, &last_reachable, &last_unreachable);
 	assert_true(status);
 	assert_int_not_equal(last_reachable, last_nut_reachable);
-	assert_int_equal(last_unreachable, last_nut_unreachable);
+	assert_true(last_unreachable >= last_nut_unreachable);
 	last_nut_reachable = last_reachable;
 
 	// Reinitialize the node instances of both peer and NUT
@@ -611,12 +620,12 @@ static bool test_get_node_reachability_04(void) {
 	status = meshlink_get_node_reachability(mesh, peer_handle, &last_reachable, &last_unreachable);
 	assert_true(status);
 	assert_int_not_equal(last_reachable, last_peer_reachable);
-	assert_int_equal(last_unreachable, last_peer_unreachable);
+	assert_true(last_unreachable >= last_peer_unreachable);
 
 	status = meshlink_get_node_reachability(mesh_peer, nut_handle, &last_reachable, &last_unreachable);
 	assert_true(status);
 	assert_int_not_equal(last_reachable, last_nut_reachable);
-	assert_int_equal(last_unreachable, last_nut_unreachable);
+	assert_true(last_unreachable >= last_nut_unreachable);
 
 	// Cleanup
 
