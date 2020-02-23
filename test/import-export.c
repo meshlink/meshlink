@@ -56,7 +56,13 @@ int main() {
 	assert(data);
 
 	assert(meshlink_import(mesh1, data));
+
+	// Check that importing twice is fine
+	assert(meshlink_import(mesh1, data));
 	free(data);
+
+	// Check that importing garbage is not fine
+	assert(!meshlink_import(mesh1, "Garbage\n"));
 
 	// Check that foo knows bar, but that it is not reachable.
 
