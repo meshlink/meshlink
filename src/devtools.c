@@ -39,8 +39,14 @@ static void keyrotate_nop_probe(int stage) {
 	return;
 }
 
+static void inviter_commits_first_nop_probe(bool stage) {
+	(void)stage;
+	return;
+}
+
 void (*devtool_trybind_probe)(void) = trybind_nop_probe;
 void (*devtool_keyrotate_probe)(int stage) = keyrotate_nop_probe;
+void (*devtool_set_inviter_commits_first)(bool inviter_commited_first) = inviter_commits_first_nop_probe;
 
 /* Return an array of edges in the current network graph.
  * Data captures the current state and will not be updated.

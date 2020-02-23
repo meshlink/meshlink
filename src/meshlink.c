@@ -743,6 +743,10 @@ static bool finalize_join(join_state_t *state, const void *buf, uint16_t len) {
 		return false;
 	}
 
+	if(!mesh->inviter_commits_first) {
+		devtool_set_inviter_commits_first(false);
+	}
+
 	sptps_send_record(&state->sptps, 1, ecdsa_get_public_key(mesh->private_key), 32);
 
 	logger(mesh, MESHLINK_DEBUG, "Configuration stored in: %s\n", mesh->confbase);

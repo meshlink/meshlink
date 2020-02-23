@@ -166,4 +166,14 @@ extern void (*devtool_trybind_probe)(void);
  */
 extern void (*devtool_keyrotate_probe)(int stage);
 
+/// Debug function pointer variable for asserting inviter/invitee committing sequence
+/** This function pointer variable is a userspace tracepoint or debugger callback which
+ *  invokes either after inviter writing invitees host file into the disk
+ *  or after invitee writing it's main config file and host config files that inviter sent into
+ *  the disk.
+ *
+ *  @param inviter_commited_first       true if inviter committed first else false if invitee committed first the other host file into the disk.
+ */
+extern void (*devtool_set_inviter_commits_first)(bool inviter_commited_first);
+
 #endif

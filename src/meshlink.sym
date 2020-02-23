@@ -5,6 +5,7 @@ devtool_get_all_submeshes
 devtool_get_node_status
 devtool_keyrotate_probe
 devtool_open_in_netns
+devtool_set_inviter_commits_first
 devtool_trybind_probe
 meshlink_add_address
 meshlink_add_external_address
