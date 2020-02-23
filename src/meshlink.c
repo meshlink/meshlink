@@ -2279,7 +2279,7 @@ bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len, void *
 }
 
 bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len, const void *signature, size_t siglen) {
-	if(!mesh || !data || !len || !signature) {
+	if(!mesh || !source || !data || !len || !signature) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
