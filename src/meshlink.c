@@ -1558,9 +1558,6 @@ static void *meshlink_main_loop(void *arg) {
 }
 
 bool meshlink_start(meshlink_handle_t *mesh) {
-	assert(mesh->self);
-	assert(mesh->private_key);
-
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -1570,6 +1567,8 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 
 	pthread_mutex_lock(&mesh->mutex);
 
+	assert(mesh->self);
+	assert(mesh->private_key);
 	assert(mesh->self->ecdsa);
 	assert(!memcmp((uint8_t *)mesh->self->ecdsa + 64, (uint8_t *)mesh->private_key + 64, 32));
 
