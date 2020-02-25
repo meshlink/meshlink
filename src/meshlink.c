@@ -537,26 +537,33 @@ static bool try_bind(int port) {
 		return false;
 	}
 
-	//while(ai) {
+	bool success = false;
+
 	for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
+		if(!(aip->ai_family == AF_INET || aip->ai_family == AF_INET6)) {
+			continue;
+		}
+
 		int fd = socket(aip->ai_family, SOCK_STREAM, IPPROTO_TCP);
 
-		if(!fd) {
-			freeaddrinfo(ai);
-			return false;
+		if(fd == -1) {
+			success = false;
+			break;
 		}
 
 		int result = bind(fd, aip->ai_addr, aip->ai_addrlen);
 		closesocket(fd);
 
 		if(result) {
-			freeaddrinfo(ai);
-			return false;
+			success = false;
+			break;
+		} else {
+			success = true;
 		}
 	}
 
 	freeaddrinfo(ai);
-	return true;
+	return success;
 }
 
 static int check_port(meshlink_handle_t *mesh) {
