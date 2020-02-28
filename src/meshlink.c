@@ -540,6 +540,8 @@ static bool try_bind(int port) {
 	bool success = false;
 
 	for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
+		/* Try to bind to TCP. */
+
 		int tcp_fd = socket(aip->ai_family, SOCK_STREAM, IPPROTO_TCP);
 
 		if(tcp_fd == -1) {
@@ -550,24 +552,33 @@ static bool try_bind(int port) {
 		closesocket(tcp_fd);
 
 		if(result) {
-			continue;
+			if(errno == EADDRINUSE) {
+				/* If this port is in use for any address family, avoid it. */
+				success = false;
+				break;
+			} else {
+				continue;
+			}
 		}
+
+		/* If TCP worked, then we require that UDP works as well. */
 
 		int udp_fd = socket(aip->ai_family, SOCK_DGRAM, IPPROTO_UDP);
 
 		if(udp_fd == -1) {
-			continue;
+			success = false;
+			break;
 		}
 
 		result = bind(udp_fd, aip->ai_addr, aip->ai_addrlen);
 		closesocket(udp_fd);
 
 		if(result) {
-			continue;
-		} else {
-			success = true;
+			success = false;
 			break;
 		}
+
+		success = true;
 	}
 
 	freeaddrinfo(ai);
