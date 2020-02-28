@@ -540,25 +540,33 @@ static bool try_bind(int port) {
 	bool success = false;
 
 	for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
-		if(!(aip->ai_family == AF_INET || aip->ai_family == AF_INET6)) {
+		int tcp_fd = socket(aip->ai_family, SOCK_STREAM, IPPROTO_TCP);
+
+		if(tcp_fd == -1) {
 			continue;
 		}
 
-		int fd = socket(aip->ai_family, SOCK_STREAM, IPPROTO_TCP);
-
-		if(fd == -1) {
-			success = false;
-			break;
-		}
-
-		int result = bind(fd, aip->ai_addr, aip->ai_addrlen);
-		closesocket(fd);
+		int result = bind(tcp_fd, aip->ai_addr, aip->ai_addrlen);
+		closesocket(tcp_fd);
 
 		if(result) {
-			success = false;
-			break;
+			continue;
+		}
+
+		int udp_fd = socket(aip->ai_family, SOCK_DGRAM, IPPROTO_UDP);
+
+		if(udp_fd == -1) {
+			continue;
+		}
+
+		result = bind(udp_fd, aip->ai_addr, aip->ai_addrlen);
+		closesocket(udp_fd);
+
+		if(result) {
+			continue;
 		} else {
 			success = true;
+			break;
 		}
 	}
 
