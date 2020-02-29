@@ -174,6 +174,7 @@ struct meshlink_handle {
 	char *confbase;
 	FILE *lockfile;
 	void *config_key;
+	char *external_address_url;
 
 	// Thread management
 	pthread_t thread;

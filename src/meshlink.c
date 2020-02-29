@@ -221,12 +221,42 @@ char *meshlink_get_external_address(meshlink_handle_t *mesh) {
 }
 
 char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int family) {
-	char *hostname = NULL;
+	const char *url = mesh->external_address_url;
+
+	if(!url) {
+		url = "http://meshlink.io/host.cgi";
+	}
+
+	/* Find the hostname part between the slashes */
+	if(strncmp(url, "http://", 7)) {
+		abort();
+		meshlink_errno = MESHLINK_EINTERNAL;
+		return NULL;
+	}
+
+	const char *begin = url + 7;
+
+	const char *end = strchr(begin, '/');
+
+	if(!end) {
+		end = begin + strlen(begin);
+	}
+
+	/* Make a copy */
+	char host[end - begin + 1];
+	strncpy(host, begin, end - begin);
+	host[end - begin] = 0;
+
+	char *port = strchr(host, ':');
+
+	if(port) {
+		*port++ = 0;
+	}
 
 	logger(mesh, MESHLINK_DEBUG, "Trying to discover externally visible hostname...\n");
-	struct addrinfo *ai = str2addrinfo("meshlink.io", "80", SOCK_STREAM);
-	static const char request[] = "GET http://www.meshlink.io/host.cgi HTTP/1.0\r\n\r\n";
+	struct addrinfo *ai = str2addrinfo(host, port ? port : "80", SOCK_STREAM);
 	char line[256];
+	char *hostname = NULL;
 
 	for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
 		if(family != AF_UNSPEC && aip->ai_family != family) {
@@ -245,7 +275,9 @@ char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int fami
 		}
 
 		if(s >= 0) {
-			send(s, request, sizeof(request) - 1, 0);
+			send(s, "GET ", 4, 0);
+			send(s, url, strlen(url), 0);
+			send(s, " HTTP/1.0\r\n\r\n", 13, 0);
 			int len = recv(s, line, sizeof(line) - 1, MSG_WAITALL);
 
 			if(len > 0) {
@@ -1754,6 +1786,7 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	free(mesh->appname);
 	free(mesh->confbase);
 	free(mesh->config_key);
+	free(mesh->external_address_url);
 	ecdsa_free(mesh->private_key);
 
 	main_config_unlock(mesh);
@@ -3983,6 +4016,23 @@ extern void meshlink_set_inviter_commits_first(struct meshlink_handle *mesh, boo
 
 	pthread_mutex_lock(&mesh->mutex);
 	mesh->inviter_commits_first = inviter_commits_first;
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
+void meshlink_set_external_address_discovery_url(struct meshlink_handle *mesh, const char *url) {
+	if(!mesh) {
+		meshlink_errno = EINVAL;
+		return;
+	}
+
+	if(url && (strncmp(url, "http://", 7) || strchr(url, ' '))) {
+		meshlink_errno = EINVAL;
+		return;
+	}
+
+	pthread_mutex_lock(&mesh->mutex);
+	free(mesh->external_address_url);
+	mesh->external_address_url = url ? xstrdup(url) : NULL;
 	pthread_mutex_unlock(&mesh->mutex);
 }
 

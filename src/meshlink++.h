@@ -1030,6 +1030,17 @@ public:
 		meshlink_set_inviter_commits_first(handle, inviter_commits_first);
 	}
 
+	/// Set the URL used to discover the host's external address
+	/** For generating invitation URLs, MeshLink can look up the externally visible address of the local node.
+	 *  It does so by querying an external service. By default, this is http://meshlink.io/host.cgi.
+	 *  Only URLs starting with http:// are supported.
+	 *
+	 *  @param url   The URL to use for external address queries, or NULL to revert back to the default URL.
+	 */
+	void set_external_address_discovery_url(const char *url) {
+		meshlink_set_external_address_discovery_url(handle, url);
+	}
+
 private:
 	// non-copyable:
 	mesh(const mesh &) /* TODO: C++11: = delete */;

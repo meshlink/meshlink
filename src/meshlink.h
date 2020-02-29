@@ -1562,6 +1562,17 @@ extern void meshlink_set_dev_class_fast_retry_period(struct meshlink_handle *mes
  */
 extern void meshlink_set_inviter_commits_first(struct meshlink_handle *mesh, bool inviter_commits_first);
 
+/// Set the URL used to discover the host's external address
+/** For generating invitation URLs, MeshLink can look up the externally visible address of the local node.
+ *  It does so by querying an external service. By default, this is http://meshlink.io/host.cgi.
+ *  Only URLs starting with http:// are supported.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh  A handle which represents an instance of MeshLink.
+ *  @param url   The URL to use for external address queries, or NULL to revert back to the default URL.
+ */
+extern void meshlink_set_external_address_discovery_url(struct meshlink_handle *mesh, const char *url);
+
 #ifdef __cplusplus
 }
 #endif
