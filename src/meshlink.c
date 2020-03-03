@@ -2769,6 +2769,8 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 					state.sock = -1;
 					continue;
 				}
+
+				break;
 			}
 
 			freeaddrinfo(ai);
