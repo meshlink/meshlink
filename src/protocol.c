@@ -129,7 +129,6 @@ void forward_request(meshlink_handle_t *mesh, connection_t *from, submesh_t *s, 
 
 bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	assert(request);
-	assert(*request);
 
 	if(c->outgoing && mesh->proxytype == PROXY_HTTP && c->allow_request == ID) {
 		if(!request[0] || request[0] == '\r') {
