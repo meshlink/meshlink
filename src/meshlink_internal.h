@@ -175,6 +175,7 @@ struct meshlink_handle {
 	FILE *lockfile;
 	void *config_key;
 	char *external_address_url;
+	struct list_t *invitation_addresses;
 
 	// Thread management
 	pthread_t thread;

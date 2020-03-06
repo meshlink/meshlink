@@ -421,9 +421,14 @@ void remove_duplicate_hostnames(char *host[], char *port[], int n) {
 
 // This gets the hostname part for use in invitation URLs
 static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
-	char *hostname[4] = {NULL};
-	char *port[4] = {NULL};
+	int count = 4 + (mesh->invitation_addresses ? mesh->invitation_addresses->count : 0);
+	int n = 0;
+	char *hostname[count];
+	char *port[count];
 	char *hostport = NULL;
+
+	memset(hostname, 0, sizeof(hostname));
+	memset(port, 0, sizeof(port));
 
 	if(!(flags & (MESHLINK_INVITE_LOCAL | MESHLINK_INVITE_PUBLIC))) {
 		flags |= MESHLINK_INVITE_LOCAL | MESHLINK_INVITE_PUBLIC;
@@ -433,30 +438,47 @@ static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
 		flags |= MESHLINK_INVITE_IPV4 | MESHLINK_INVITE_IPV6;
 	}
 
+	// Add all explicitly set invitation addresses
+	if(mesh->invitation_addresses) {
+		for list_each(char, combo, mesh->invitation_addresses) {
+			hostname[n] = xstrdup(combo);
+			char *colon = strchr(hostname[n], ':');
+
+			if(colon) {
+				*colon = 0;
+				port[n] = colon + 1;
+			}
+
+			n++;
+		}
+	}
+
 	// Add local addresses if requested
 	if(flags & MESHLINK_INVITE_LOCAL) {
 		if(flags & MESHLINK_INVITE_IPV4) {
-			hostname[0] = meshlink_get_local_address_for_family(mesh, AF_INET);
+			hostname[n++] = meshlink_get_local_address_for_family(mesh, AF_INET);
 		}
 
 		if(flags & MESHLINK_INVITE_IPV6) {
-			hostname[1] = meshlink_get_local_address_for_family(mesh, AF_INET6);
+			hostname[n++] = meshlink_get_local_address_for_family(mesh, AF_INET6);
 		}
 	}
 
 	// Add public/canonical addresses if requested
 	if(flags & MESHLINK_INVITE_PUBLIC) {
 		// Try the CanonicalAddress first
-		get_canonical_address(mesh->self, &hostname[2], &port[2]);
+		get_canonical_address(mesh->self, &hostname[n], &port[n]);
 
-		if(!hostname[2]) {
+		if(!hostname[n] && count == 4) {
 			if(flags & MESHLINK_INVITE_IPV4) {
-				hostname[2] = meshlink_get_external_address_for_family(mesh, AF_INET);
+				hostname[n++] = meshlink_get_external_address_for_family(mesh, AF_INET);
 			}
 
 			if(flags & MESHLINK_INVITE_IPV6) {
-				hostname[3] = meshlink_get_external_address_for_family(mesh, AF_INET6);
+				hostname[n++] = meshlink_get_external_address_for_family(mesh, AF_INET6);
 			}
+		} else {
+			n++;
 		}
 	}
 
@@ -1789,6 +1811,10 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	free(mesh->external_address_url);
 	ecdsa_free(mesh->private_key);
 
+	if(mesh->invitation_addresses) {
+		list_delete_list(mesh->invitation_addresses);
+	}
+
 	main_config_unlock(mesh);
 
 	pthread_mutex_unlock(&mesh->mutex);
@@ -2420,6 +2446,64 @@ bool meshlink_set_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *no
 	return config_sync(mesh, "current");
 }
 
+bool meshlink_add_invitation_address(struct meshlink_handle *mesh, const char *address, const char *port) {
+	if(!mesh || !address) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	if(!is_valid_hostname(address)) {
+		logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s\n", address);
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	if(port && !is_valid_port(port)) {
+		logger(mesh, MESHLINK_DEBUG, "Invalid character in port: %s\n", address);
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	char *combo;
+
+	if(port) {
+		if(strchr(address, ':')) {
+			xasprintf(&combo, "[%s]:%s", address, port);
+		} else {
+			xasprintf(&combo, "%s:%s", address, port);
+		}
+	} else {
+		combo = xstrdup(address);
+	}
+
+	pthread_mutex_lock(&mesh->mutex);
+
+	if(!mesh->invitation_addresses) {
+		mesh->invitation_addresses = list_alloc((list_action_t)free);
+	}
+
+	list_insert_tail(mesh->invitation_addresses, combo);
+	pthread_mutex_unlock(&mesh->mutex);
+
+	return true;
+}
+
+void meshlink_clear_invitation_addresses(struct meshlink_handle *mesh) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	pthread_mutex_lock(&mesh->mutex);
+
+	if(mesh->invitation_addresses) {
+		list_delete_list(mesh->invitation_addresses);
+		mesh->invitation_addresses = NULL;
+	}
+
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
 bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
 	return meshlink_set_canonical_address(mesh, (meshlink_node_t *)mesh->self, address, NULL);
 }
@@ -2436,7 +2520,7 @@ bool meshlink_add_external_address(meshlink_handle_t *mesh) {
 		return false;
 	}
 
-	bool rval = meshlink_add_address(mesh, address);
+	bool rval = meshlink_set_canonical_address(mesh, (meshlink_node_t *)mesh->self, address, NULL);
 	free(address);
 
 	return rval;

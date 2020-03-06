@@ -43,8 +43,8 @@ int main() {
 
 	// Import and export both side's data
 
-	assert(meshlink_add_address(mesh1, "localhost"));
-	assert(meshlink_add_address(mesh2, "localhost"));
+	assert(meshlink_set_canonical_address(mesh1, meshlink_get_self(mesh1), "localhost", NULL));
+	assert(meshlink_set_canonical_address(mesh2, meshlink_get_self(mesh2), "localhost", NULL));
 
 	char *data = meshlink_export(mesh1);
 	assert(data);

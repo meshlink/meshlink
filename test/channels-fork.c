@@ -96,7 +96,7 @@ static int main1(int rfd, int wfd) {
 
 	meshlink_enable_discovery(mesh, false);
 
-	assert(meshlink_add_address(mesh, "localhost"));
+	assert(meshlink_set_canonical_address(mesh, meshlink_get_self(mesh), "localhost", NULL));
 
 	char *data = meshlink_export(mesh);
 	assert(data);
@@ -152,7 +152,7 @@ static int main2(int rfd, int wfd) {
 
 	meshlink_enable_discovery(mesh, false);
 
-	assert(meshlink_add_address(mesh, "localhost"));
+	assert(meshlink_set_canonical_address(mesh, meshlink_get_self(mesh), "localhost", NULL));
 
 	char *data = meshlink_export(mesh);
 	assert(data);

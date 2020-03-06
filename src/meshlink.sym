@@ -9,6 +9,7 @@ devtool_set_inviter_commits_first
 devtool_trybind_probe
 meshlink_add_address
 meshlink_add_external_address
+meshlink_add_invitation_address
 meshlink_blacklist
 meshlink_blacklist_by_name
 meshlink_channel_aio_fd_receive
@@ -23,6 +24,7 @@ meshlink_channel_open
 meshlink_channel_open_ex
 meshlink_channel_send
 meshlink_channel_shutdown
+meshlink_clear_invitation_addresses
 meshlink_close
 meshlink_destroy
 meshlink_enable_discovery

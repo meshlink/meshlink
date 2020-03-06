@@ -810,8 +810,32 @@ extern bool meshlink_verify(struct meshlink_handle *mesh, struct meshlink_node *
  */
 extern bool meshlink_set_canonical_address(struct meshlink_handle *mesh, struct meshlink_node *node, const char *address, const char *port) __attribute__((__warn_unused_result__));
 
+/// Add an invitation address for the local node.
+/** This function adds an address for the local node, which will be used only for invitation URLs.
+ *  This address is not stored permanently.
+ *  Multiple addresses can be added using multiple calls to this function.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param address      A nul-terminated C string containing the address, which can be either in numeric format or a hostname.
+ *  @param port         A nul-terminated C string containing the port, which can be either in numeric or symbolic format.
+ *                      If it is NULL, the listening port's number will be used.
+ *
+ *  @return             This function returns true if the address was added, false otherwise.
+ */
+extern bool meshlink_add_invitation_address(struct meshlink_handle *mesh, const char *address, const char *port) __attribute__((__warn_unused_result__));
+
+/// Clears all invitation address for the local node.
+/** This function removes all addresses added with meshlink_add_invitation_address().
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ */
+extern void meshlink_clear_invitation_addresses(struct meshlink_handle *mesh);
+
 /// Add an Address for the local node.
 /** This function adds an Address for the local node, which will be used for invitation URLs.
+ *  @deprecated This function is deprecated, use meshlink_set_canonical_address() and/or meshlink_add_invitation_address().
  *
  *  \memberof meshlink_handle
  *  @param mesh         A handle which represents an instance of MeshLink.
@@ -819,7 +843,7 @@ extern bool meshlink_set_canonical_address(struct meshlink_handle *mesh, struct 
  *
  *  @return             This function returns true if the address was added, false otherwise.
  */
-extern bool meshlink_add_address(struct meshlink_handle *mesh, const char *address) __attribute__((__warn_unused_result__));
+extern bool meshlink_add_address(struct meshlink_handle *mesh, const char *address) __attribute__((__warn_unused_result__, __deprecated__("use meshlink_set_canonical_address() and/or meshlink_add_invitation_address() instead")));
 
 /// Try to discover the external address for the local node.
 /** This function performs tries to discover the local node's external address
@@ -897,7 +921,7 @@ extern char *meshlink_get_local_address_for_family(struct meshlink_handle *mesh,
 /// Try to discover the external address for the local node, and add it to its list of addresses.
 /** This function is equivalent to:
  *
- *    meshlink_add_address(mesh, meshlink_get_external_address(mesh));
+ *    meshlink_set_canonical_address(mesh, meshlink_get_self(mesh), meshlink_get_external_address(mesh), NULL);
  *
  *  Read the description of meshlink_get_external_address() for the limitations of this function.
  *

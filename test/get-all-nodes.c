@@ -64,7 +64,7 @@ int main() {
 
 	for(int i = 0; i < 3; i++) {
 		meshlink_enable_discovery(mesh[i], false);
-		assert(meshlink_add_address(mesh[i], "localhost"));
+		assert(meshlink_set_canonical_address(mesh[i], meshlink_get_self(mesh[i]), "localhost", NULL));
 		char *data = meshlink_export(mesh[i]);
 		assert(data);
 

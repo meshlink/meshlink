@@ -486,11 +486,10 @@ public:
 		return meshlink_set_canonical_address(handle, node, address, port);
 	}
 
-	/// Set the canonical Address for the local node.
-	/** This function sets the canonical Address for the local node.
-	 *  This address is stored permanently until it is changed by another call to this function,
-	 *  unlike other addresses associated with a node,
-	 *  such as those added with meshlink_hint_address() or addresses discovered at runtime.
+	/// Add an invitation address for the local node.
+	/** This function adds an address for the local node, which will be used only for invitation URLs.
+	 *  This address is not stored permanently.
+	 *  Multiple addresses can be added using multiple calls to this function.
 	 *
 	 *  @param address      A nul-terminated C string containing the address, which can be either in numeric format or a hostname.
 	 *  @param port         A nul-terminated C string containing the port, which can be either in numeric or symbolic format.
@@ -498,19 +497,27 @@ public:
 	 *
 	 *  @return             This function returns true if the address was added, false otherwise.
 	 */
-	bool set_canonical_address(const char *address, const char *port = NULL) {
-		return meshlink_set_canonical_address(handle, get_self(), address, port);
+	bool add_invitation_address(const char *address, const char *port) {
+		return meshlink_add_invitation_address(handle, address, port);
+	}
+
+	/// Clears all invitation address for the local node.
+	/** This function removes all addresses added with meshlink_add_invitation_address().
+	 */
+	void clear_invitation_addresses() {
+		return meshlink_clear_invitation_addresses(handle);
 	}
 
 	/// Add an Address for the local node.
 	/** This function adds an Address for the local node, which will be used for invitation URLs.
+	 *  @deprecated This function is deprecated, use set_canonical_address() and/or add_invitation_address().
 	 *
 	 *  @param address      A string containing the address, which can be either in numeric format or a hostname.
 	 *
 	 *  @return             This function returns true if the address was added, false otherwise.
 	 */
-	bool add_address(const char *address) {
-		return meshlink_add_address(handle, address);
+	bool add_address(const char *address) __attribute__((__deprecated__("use set_canonical_address() and/or add_invitation_address() instead"))) {
+		return meshlink_set_canonical_address(handle, get_self(), address, NULL);
 	}
 
 	/** This function performs tries to discover the local node's external address
