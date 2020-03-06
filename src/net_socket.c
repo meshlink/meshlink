@@ -72,65 +72,17 @@ static void configure_tcp(connection_t *c) {
 #endif
 }
 
-static bool bind_to_address(meshlink_handle_t *mesh, connection_t *c) {
-	int s = -1;
-
-	for(int i = 0; i < mesh->listen_sockets && mesh->listen_socket[i].bindto; i++) {
-		if(mesh->listen_socket[i].sa.sa.sa_family != c->address.sa.sa_family) {
-			continue;
-		}
-
-		if(s >= 0) {
-			return false;
-		}
-
-		s = i;
-	}
-
-	if(s < 0) {
-		return false;
-	}
-
-	sockaddr_t sa = mesh->listen_socket[s].sa;
-
-	if(sa.sa.sa_family == AF_INET) {
-		sa.in.sin_port = 0;
-	} else if(sa.sa.sa_family == AF_INET6) {
-		sa.in6.sin6_port = 0;
-	}
-
-	if(bind(c->socket, &sa.sa, SALEN(sa.sa))) {
-		logger(mesh, MESHLINK_WARNING, "Can't bind outgoing socket: %s", strerror(errno));
-		return false;
-	}
-
-	return true;
-}
-
-int setup_listen_socket(const sockaddr_t *sa) {
-	int nfd;
-	char *addrstr;
-	int option;
-
-	nfd = socket(sa->sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
-
-	if(nfd < 0) {
-		logger(NULL, MESHLINK_ERROR, "Creating metasocket failed: %s", sockstrerror(sockerrno));
-		return -1;
-	}
-
+bool setup_listen_socket(meshlink_handle_t *mesh, int nfd, int sa_family) {
 #ifdef FD_CLOEXEC
 	fcntl(nfd, F_SETFD, FD_CLOEXEC);
 #endif
 
-	/* Optimize TCP settings */
-
-	option = 1;
+	int option = 1;
 	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
 
 #if defined(IPV6_V6ONLY)
 
-	if(sa->sa.sa_family == AF_INET6) {
+	if(sa_family == AF_INET6) {
 		setsockopt(nfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
 	}
 
@@ -138,35 +90,15 @@ int setup_listen_socket(const sockaddr_t *sa) {
 #warning IPV6_V6ONLY not defined
 #endif
 
-	if(bind(nfd, &sa->sa, SALEN(sa->sa))) {
-		closesocket(nfd);
-		addrstr = sockaddr2hostname(sa);
-		logger(NULL, MESHLINK_ERROR, "Can't bind to %s/tcp: %s", addrstr, sockstrerror(sockerrno));
-		free(addrstr);
-		return -1;
-	}
-
 	if(listen(nfd, 3)) {
-		closesocket(nfd);
-		logger(NULL, MESHLINK_ERROR, "System call `%s' failed: %s", "listen", sockstrerror(sockerrno));
-		return -1;
+		logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "listen", sockstrerror(sockerrno));
+		return false;
 	}
 
-	return nfd;
+	return true;
 }
 
-int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
-	int nfd;
-	char *addrstr;
-	int option;
-
-	nfd = socket(sa->sa.sa_family, SOCK_DGRAM, IPPROTO_UDP);
-
-	if(nfd < 0) {
-		logger(mesh, MESHLINK_ERROR, "Creating UDP socket failed: %s", sockstrerror(sockerrno));
-		return -1;
-	}
-
+bool setup_vpn_in_socket(meshlink_handle_t *mesh, int nfd, int sa_family) {
 #ifdef FD_CLOEXEC
 	fcntl(nfd, F_SETFD, FD_CLOEXEC);
 #endif
@@ -179,7 +111,7 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 			closesocket(nfd);
 			logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "fcntl",
 			       strerror(errno));
-			return -1;
+			return false;
 		}
 	}
 #elif defined(WIN32)
@@ -189,18 +121,18 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 		if(ioctlsocket(nfd, FIONBIO, &arg) != 0) {
 			closesocket(nfd);
 			logger(mesh, MESHLINK_ERROR, "Call to `%s' failed: %s", "ioctlsocket", sockstrerror(sockerrno));
-			return -1;
+			return false;
 		}
 	}
 #endif
 
-	option = 1;
+	int option = 1;
 	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
 	setsockopt(nfd, SOL_SOCKET, SO_BROADCAST, (void *)&option, sizeof(option));
 
 #if defined(IPV6_V6ONLY)
 
-	if(sa->sa.sa_family == AF_INET6) {
+	if(sa_family == AF_INET6) {
 		setsockopt(nfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
 	}
 
@@ -226,15 +158,7 @@ int setup_vpn_in_socket(meshlink_handle_t *mesh, const sockaddr_t *sa) {
 	setsockopt(nfd, IPPROTO_IPV6, IPV6_DONTFRAG, (void *)&option, sizeof(option));
 #endif
 
-	if(bind(nfd, &sa->sa, SALEN(sa->sa))) {
-		closesocket(nfd);
-		addrstr = sockaddr2hostname(sa);
-		logger(mesh, MESHLINK_ERROR, "Can't bind to %s/udp: %s", addrstr, sockstrerror(sockerrno));
-		free(addrstr);
-		return -1;
-	}
-
-	return nfd;
+	return true;
 } /* int setup_vpn_in_socket */
 
 static void retry_outgoing_handler(event_loop_t *loop, void *data) {
@@ -561,8 +485,6 @@ begin:
 	}
 
 #endif
-
-	bind_to_address(mesh, c);
 
 	/* Connect */
 

@@ -84,8 +84,8 @@ extern void handle_incoming_vpn_data(struct event_loop_t *loop, void *, int);
 extern void finish_connecting(struct meshlink_handle *mesh, struct connection_t *);
 extern void do_outgoing_connection(struct meshlink_handle *mesh, struct outgoing_t *);
 extern void handle_new_meta_connection(struct event_loop_t *loop, void *, int);
-extern int setup_listen_socket(const sockaddr_t *) __attribute__((__warn_unused_result__));
-extern int setup_vpn_in_socket(struct meshlink_handle *mesh, const sockaddr_t *) __attribute__((__warn_unused_result__));
+extern bool setup_listen_socket(struct meshlink_handle *mesh, int fd, int sa_family) __attribute__((__warn_unused_result__));
+extern bool setup_vpn_in_socket(struct meshlink_handle *mesh, int fd, int sa_family) __attribute__((__warn_unused_result__));
 extern bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len);
 extern bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t len) __attribute__((__warn_unused_result__));
 extern void send_packet(struct meshlink_handle *mesh, struct node_t *, struct vpn_packet_t *);
@@ -106,6 +106,7 @@ extern bool node_write_config(struct meshlink_handle *mesh, struct node_t *) __a
 extern void send_mtu_probe(struct meshlink_handle *mesh, struct node_t *);
 extern void handle_meta_connection_data(struct meshlink_handle *mesh, struct connection_t *);
 extern void retry(struct meshlink_handle *mesh);
+extern int check_port(struct meshlink_handle *mesh);
 
 #ifndef HAVE_MINGW
 #define closesocket(s) close(s)

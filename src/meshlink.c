@@ -639,7 +639,7 @@ static bool try_bind(int port) {
 	return success;
 }
 
-static int check_port(meshlink_handle_t *mesh) {
+int check_port(meshlink_handle_t *mesh) {
 	for(int i = 0; i < 1000; i++) {
 		int port = 0x1000 + prng(mesh, 0x8000);
 

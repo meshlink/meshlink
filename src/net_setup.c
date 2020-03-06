@@ -304,22 +304,7 @@ static bool load_node(meshlink_handle_t *mesh, const char *name, void *priv) {
 /*
   Add listening sockets.
 */
-static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bindto) {
-	char *port = mesh->myport;
-
-	if(address) {
-		char *space = strchr(address, ' ');
-
-		if(space) {
-			*space++ = 0;
-			port = space;
-		}
-
-		if(!strcmp(address, "*")) {
-			*address = 0;
-		}
-	}
-
+static bool add_listen_sockets(meshlink_handle_t *mesh) {
 	struct addrinfo *ai;
 
 	struct addrinfo hint = {
@@ -329,9 +314,7 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 		.ai_flags = AI_PASSIVE,
 	};
 
-	int err = getaddrinfo(address && *address ? address : NULL, port, &hint, &ai);
-
-	free(address);
+	int err = getaddrinfo(NULL, mesh->myport, &hint, &ai);
 
 	if(err || !ai) {
 		logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "getaddrinfo", err == EAI_SYSTEM ? strerror(err) : gai_strerror(err));
@@ -344,11 +327,12 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 		// Ignore duplicate addresses
 		bool found = false;
 
-		for(int i = 0; i < mesh->listen_sockets; i++)
+		for(int i = 0; i < mesh->listen_sockets; i++) {
 			if(!memcmp(&mesh->listen_socket[i].sa, aip->ai_addr, aip->ai_addrlen)) {
 				found = true;
 				break;
 			}
+		}
 
 		if(found) {
 			continue;
@@ -359,17 +343,47 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 			return false;
 		}
 
-		int tcp_fd = setup_listen_socket((sockaddr_t *) aip->ai_addr);
+		/* Try to bind to TCP */
 
-		if(tcp_fd < 0) {
+		int tcp_fd = socket(aip->ai_family, SOCK_STREAM, IPPROTO_TCP);
+
+		if(tcp_fd == -1) {
 			continue;
 		}
 
-		int udp_fd = setup_vpn_in_socket(mesh, (sockaddr_t *) aip->ai_addr);
+		if(bind(tcp_fd, aip->ai_addr, aip->ai_addrlen)) {
+			closesocket(tcp_fd);
 
-		if(udp_fd < 0) {
-			close(tcp_fd);
-			continue;
+			if(errno == EADDRINUSE) {
+				/* If this port is in use for any address family, avoid it. */
+				success = false;
+				break;
+			} else {
+				continue;
+			}
+		}
+
+		if(!setup_listen_socket(mesh, tcp_fd, aip->ai_family)) {
+			closesocket(tcp_fd);
+			success = false;
+			break;
+		}
+
+		/* If TCP worked, then we require that UDP works as well. */
+
+		int udp_fd = socket(aip->ai_family, SOCK_DGRAM, IPPROTO_UDP);
+
+		if(udp_fd == -1) {
+			closesocket(tcp_fd);
+			success = false;
+			break;
+		}
+
+		if(bind(udp_fd, aip->ai_addr, aip->ai_addrlen) || !setup_vpn_in_socket(mesh, udp_fd, aip->ai_family)) {
+			closesocket(tcp_fd);
+			closesocket(udp_fd);
+			success = false;
+			break;
 		}
 
 		io_add(&mesh->loop, &mesh->listen_socket[mesh->listen_sockets].tcp, handle_new_meta_connection, &mesh->listen_socket[mesh->listen_sockets], tcp_fd, IO_READ);
@@ -381,7 +395,6 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 			free(hostname);
 		}
 
-		mesh->listen_socket[mesh->listen_sockets].bindto = bindto;
 		memcpy(&mesh->listen_socket[mesh->listen_sockets].sa, aip->ai_addr, aip->ai_addrlen);
 		memcpy(&mesh->listen_socket[mesh->listen_sockets].broadcast_sa, aip->ai_addr, aip->ai_addrlen);
 
@@ -398,6 +411,18 @@ static bool add_listen_address(meshlink_handle_t *mesh, char *address, bool bind
 	}
 
 	freeaddrinfo(ai);
+
+	if(!success) {
+		for(int i = 0; i < mesh->listen_sockets; i++) {
+			io_del(&mesh->loop, &mesh->listen_socket[i].tcp);
+			io_del(&mesh->loop, &mesh->listen_socket[i].udp);
+			close(mesh->listen_socket[i].tcp.fd);
+			close(mesh->listen_socket[i].udp.fd);
+		}
+
+		mesh->listen_sockets = 0;
+	}
+
 	return success;
 }
 
@@ -423,17 +448,17 @@ bool setup_myself(meshlink_handle_t *mesh) {
 
 	mesh->listen_sockets = 0;
 
-	if(!add_listen_address(mesh, NULL, NULL)) {
+	if(!add_listen_sockets(mesh)) {
 		if(strcmp(mesh->myport, "0")) {
-			logger(mesh, MESHLINK_INFO, "Could not bind to port %s, asking OS to choose one for us", mesh->myport);
-			free(mesh->myport);
-			mesh->myport = strdup("0");
+			logger(mesh, MESHLINK_WARNING, "Could not bind to port %s, trying to find an alternative port", mesh->myport);
 
-			if(!mesh->myport) {
-				return false;
+			if(!check_port(mesh)) {
+				logger(mesh, MESHLINK_WARNING, "Could not bind to any port, trying to bind to port 0");
+				free(mesh->myport);
+				mesh->myport = xstrdup("0");
 			}
 
-			if(!add_listen_address(mesh, NULL, NULL)) {
+			if(!add_listen_sockets(mesh)) {
 				return false;
 			}
 		} else {
