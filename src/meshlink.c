@@ -446,7 +446,7 @@ static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
 
 			if(colon) {
 				*colon = 0;
-				port[n] = colon + 1;
+				port[n] = xstrdup(colon + 1);
 			}
 
 			n++;
