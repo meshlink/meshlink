@@ -510,8 +510,10 @@ static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
 			continue;
 		}
 
-		// Remember the address
-		node_add_recent_address(mesh, mesh->self, (sockaddr_t *)ai_in->ai_addr);
+		// Remember the address(es)
+		for(struct addrinfo *aip = ai_in; aip; aip = aip->ai_next) {
+			node_add_recent_address(mesh, mesh->self, (sockaddr_t *)aip->ai_addr);
+		}
 
 		if(flags & MESHLINK_INVITE_NUMERIC) {
 			// We don't need to do any further conversion
