@@ -51,6 +51,7 @@ int main() {
 	meshlink_set_node_status_cb(mesh1, status_cb);
 
 	assert(meshlink_set_canonical_address(mesh1, meshlink_get_self(mesh1), "localhost", NULL));
+
 	char *baz_url = meshlink_invite(mesh1, NULL, "baz");
 	assert(baz_url);
 
@@ -139,6 +140,40 @@ int main() {
 
 	assert(meshlink_join(mesh3, quux_url));
 	free(quux_url);
+
+	// Check that adding duplicate addresses get removed correctly
+
+	assert(meshlink_add_invitation_address(mesh1, "localhost", portstr + 1));
+	corge_url = meshlink_invite(mesh1, NULL, "corge");
+	assert(corge_url);
+	char *localhost = strstr(corge_url, "localhost");
+	assert(localhost);
+	assert(!strstr(localhost + 1, "localhost"));
+	free(corge_url);
+
+	// Check that resetting and adding multiple, different invitation address works
+
+	meshlink_clear_invitation_addresses(mesh1);
+	assert(meshlink_add_invitation_address(mesh1, "1.invalid.", NULL));
+	assert(meshlink_add_invitation_address(mesh1, "2.invalid.", NULL));
+	assert(meshlink_add_invitation_address(mesh1, "3.invalid.", NULL));
+	assert(meshlink_add_invitation_address(mesh1, "4.invalid.", NULL));
+	assert(meshlink_add_invitation_address(mesh1, "5.invalid.", NULL));
+	char *grault_url = meshlink_invite(mesh1, NULL, "grault");
+	assert(grault_url);
+	fprintf(stderr, "%s\n", grault_url);
+	localhost = strstr(grault_url, "localhost");
+	assert(localhost);
+	char *invalid1 = strstr(grault_url, "1.invalid.");
+	assert(invalid1);
+	char *invalid5 = strstr(grault_url, "5.invalid.");
+	assert(invalid5);
+
+	// Check that explicitly added invitation addresses come before others, in the order they were specified.
+
+	assert(invalid1 < invalid5);
+	assert(invalid5 < localhost);
+	free(grault_url);
 
 	// Clean up.
 
