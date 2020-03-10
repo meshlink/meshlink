@@ -389,7 +389,7 @@ static bool add_listen_sockets(meshlink_handle_t *mesh) {
 		io_add(&mesh->loop, &mesh->listen_socket[mesh->listen_sockets].tcp, handle_new_meta_connection, &mesh->listen_socket[mesh->listen_sockets], tcp_fd, IO_READ);
 		io_add(&mesh->loop, &mesh->listen_socket[mesh->listen_sockets].udp, handle_incoming_vpn_data, &mesh->listen_socket[mesh->listen_sockets], udp_fd, IO_READ);
 
-		if(mesh->log_level >= MESHLINK_INFO) {
+		if(mesh->log_level <= MESHLINK_INFO) {
 			char *hostname = sockaddr2hostname((sockaddr_t *) aip->ai_addr);
 			logger(mesh, MESHLINK_INFO, "Listening on %s", hostname);
 			free(hostname);

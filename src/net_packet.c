@@ -559,7 +559,7 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 
 		if(n) {
 			update_node_udp(mesh, n, &from);
-		} else if(mesh->log_level >= MESHLINK_WARNING) {
+		} else if(mesh->log_level <= MESHLINK_WARNING) {
 			hostname = sockaddr2hostname(&from);
 			logger(mesh, MESHLINK_WARNING, "Received UDP packet from unknown source %s", hostname);
 			free(hostname);
