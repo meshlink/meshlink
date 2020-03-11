@@ -489,7 +489,7 @@ static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
 		}
 	}
 
-	remove_duplicate_hostnames(hostname, port, 4);
+	remove_duplicate_hostnames(hostname, port, n);
 
 	// Resolve the hostnames
 	for(int i = 0; i < n; i++) {
