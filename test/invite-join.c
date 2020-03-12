@@ -154,17 +154,16 @@ int main() {
 	// Check that resetting and adding multiple, different invitation address works
 
 	meshlink_clear_invitation_addresses(mesh1);
-	assert(meshlink_add_invitation_address(mesh1, "1.invalid.", NULL));
+	assert(meshlink_add_invitation_address(mesh1, "1.invalid.", "12345"));
 	assert(meshlink_add_invitation_address(mesh1, "2.invalid.", NULL));
 	assert(meshlink_add_invitation_address(mesh1, "3.invalid.", NULL));
 	assert(meshlink_add_invitation_address(mesh1, "4.invalid.", NULL));
 	assert(meshlink_add_invitation_address(mesh1, "5.invalid.", NULL));
 	char *grault_url = meshlink_invite(mesh1, NULL, "grault");
 	assert(grault_url);
-	fprintf(stderr, "%s\n", grault_url);
 	localhost = strstr(grault_url, "localhost");
 	assert(localhost);
-	char *invalid1 = strstr(grault_url, "1.invalid.");
+	char *invalid1 = strstr(grault_url, "1.invalid.:12345");
 	assert(invalid1);
 	char *invalid5 = strstr(grault_url, "5.invalid.");
 	assert(invalid5);

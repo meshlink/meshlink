@@ -442,11 +442,11 @@ static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
 	if(mesh->invitation_addresses) {
 		for list_each(char, combo, mesh->invitation_addresses) {
 			hostname[n] = xstrdup(combo);
-			char *colon = strrchr(hostname[n], ':');
+			char *slash = strrchr(hostname[n], '/');
 
-			if(colon) {
-				*colon = 0;
-				port[n] = xstrdup(colon + 1);
+			if(slash) {
+				*slash = 0;
+				port[n] = xstrdup(slash + 1);
 			}
 
 			n++;
@@ -2469,7 +2469,7 @@ bool meshlink_add_invitation_address(struct meshlink_handle *mesh, const char *a
 	char *combo;
 
 	if(port) {
-		xasprintf(&combo, "%s:%s", address, port);
+		xasprintf(&combo, "%s/%s", address, port);
 	} else {
 		combo = xstrdup(address);
 	}
