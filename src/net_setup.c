@@ -301,6 +301,117 @@ static bool load_node(meshlink_handle_t *mesh, const char *name, void *priv) {
 	return true;
 }
 
+static int setup_tcp_listen_socket(meshlink_handle_t *mesh, const struct addrinfo *aip) {
+	int nfd = socket(aip->ai_family, SOCK_STREAM, IPPROTO_TCP);
+
+	if(nfd == -1) {
+		return -1;
+	}
+
+#ifdef FD_CLOEXEC
+	fcntl(nfd, F_SETFD, FD_CLOEXEC);
+#endif
+
+	int option = 1;
+	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
+
+#if defined(IPV6_V6ONLY)
+
+	if(aip->ai_family == AF_INET6) {
+		setsockopt(nfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
+	}
+
+#else
+#warning IPV6_V6ONLY not defined
+#endif
+
+	if(bind(nfd, aip->ai_addr, aip->ai_addrlen)) {
+		closesocket(nfd);
+		return -1;
+	}
+
+	if(listen(nfd, 3)) {
+		logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "listen", sockstrerror(sockerrno));
+		closesocket(nfd);
+		return -1;
+	}
+
+	return nfd;
+}
+
+static int setup_udp_socket(meshlink_handle_t *mesh, const struct addrinfo *aip) {
+	int nfd = socket(aip->ai_family, SOCK_DGRAM, IPPROTO_UDP);
+
+	if(nfd == -1) {
+		return -1;
+	}
+
+#ifdef FD_CLOEXEC
+	fcntl(nfd, F_SETFD, FD_CLOEXEC);
+#endif
+
+#ifdef O_NONBLOCK
+	int flags = fcntl(nfd, F_GETFL);
+
+	if(fcntl(nfd, F_SETFL, flags | O_NONBLOCK) < 0) {
+		closesocket(nfd);
+		logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "fcntl", strerror(errno));
+		return -1;
+	}
+
+#elif defined(WIN32)
+	unsigned long arg = 1;
+
+	if(ioctlsocket(nfd, FIONBIO, &arg) != 0) {
+		closesocket(nfd);
+		logger(mesh, MESHLINK_ERROR, "Call to `%s' failed: %s", "ioctlsocket", sockstrerror(sockerrno));
+		return -1;
+	}
+
+#endif
+
+	int option = 1;
+	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
+	setsockopt(nfd, SOL_SOCKET, SO_BROADCAST, (void *)&option, sizeof(option));
+
+#if defined(IPV6_V6ONLY)
+
+	if(aip->ai_family == AF_INET6) {
+		setsockopt(nfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&option, sizeof(option));
+	}
+
+#endif
+
+#if defined(IP_DONTFRAG) && !defined(IP_DONTFRAGMENT)
+#define IP_DONTFRAGMENT IP_DONTFRAG
+#endif
+
+#if defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DO)
+	option = IP_PMTUDISC_DO;
+	setsockopt(nfd, IPPROTO_IP, IP_MTU_DISCOVER, (void *)&option, sizeof(option));
+#elif defined(IP_DONTFRAGMENT)
+	option = 1;
+	setsockopt(nfd, IPPROTO_IP, IP_DONTFRAGMENT, (void *)&option, sizeof(option));
+#endif
+
+	if(aip->ai_family == AF_INET6) {
+#if defined(IPV6_MTU_DISCOVER) && defined(IPV6_PMTUDISC_DO)
+		option = IPV6_PMTUDISC_DO;
+		setsockopt(nfd, IPPROTO_IPV6, IPV6_MTU_DISCOVER, (void *)&option, sizeof(option));
+#elif defined(IPV6_DONTFRAG)
+		option = 1;
+		setsockopt(nfd, IPPROTO_IPV6, IPV6_DONTFRAG, (void *)&option, sizeof(option));
+#endif
+	}
+
+	if(bind(nfd, aip->ai_addr, aip->ai_addrlen)) {
+		closesocket(nfd);
+		return -1;
+	}
+
+	return nfd;
+}
+
 /*
   Add listening sockets.
 */
@@ -345,15 +456,9 @@ static bool add_listen_sockets(meshlink_handle_t *mesh) {
 
 		/* Try to bind to TCP */
 
-		int tcp_fd = socket(aip->ai_family, SOCK_STREAM, IPPROTO_TCP);
+		int tcp_fd = setup_tcp_listen_socket(mesh, aip);
 
 		if(tcp_fd == -1) {
-			continue;
-		}
-
-		if(bind(tcp_fd, aip->ai_addr, aip->ai_addrlen)) {
-			closesocket(tcp_fd);
-
 			if(errno == EADDRINUSE) {
 				/* If this port is in use for any address family, avoid it. */
 				success = false;
@@ -363,25 +468,12 @@ static bool add_listen_sockets(meshlink_handle_t *mesh) {
 			}
 		}
 
-		if(!setup_listen_socket(mesh, tcp_fd, aip->ai_family)) {
-			closesocket(tcp_fd);
-			success = false;
-			break;
-		}
-
 		/* If TCP worked, then we require that UDP works as well. */
 
-		int udp_fd = socket(aip->ai_family, SOCK_DGRAM, IPPROTO_UDP);
+		int udp_fd = setup_udp_socket(mesh, aip);
 
 		if(udp_fd == -1) {
 			closesocket(tcp_fd);
-			success = false;
-			break;
-		}
-
-		if(bind(udp_fd, aip->ai_addr, aip->ai_addrlen) || !setup_vpn_in_socket(mesh, udp_fd, aip->ai_family)) {
-			closesocket(tcp_fd);
-			closesocket(udp_fd);
 			success = false;
 			break;
 		}

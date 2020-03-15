@@ -84,8 +84,6 @@ extern void handle_incoming_vpn_data(struct event_loop_t *loop, void *, int);
 extern void finish_connecting(struct meshlink_handle *mesh, struct connection_t *);
 extern void do_outgoing_connection(struct meshlink_handle *mesh, struct outgoing_t *);
 extern void handle_new_meta_connection(struct event_loop_t *loop, void *, int);
-extern bool setup_listen_socket(struct meshlink_handle *mesh, int fd, int sa_family) __attribute__((__warn_unused_result__));
-extern bool setup_vpn_in_socket(struct meshlink_handle *mesh, int fd, int sa_family) __attribute__((__warn_unused_result__));
 extern bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len);
 extern bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t len) __attribute__((__warn_unused_result__));
 extern void send_packet(struct meshlink_handle *mesh, struct node_t *, struct vpn_packet_t *);
