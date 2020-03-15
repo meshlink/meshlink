@@ -301,7 +301,7 @@ static bool load_node(meshlink_handle_t *mesh, const char *name, void *priv) {
 	return true;
 }
 
-static int setup_tcp_listen_socket(meshlink_handle_t *mesh, const struct addrinfo *aip) {
+int setup_tcp_listen_socket(meshlink_handle_t *mesh, const struct addrinfo *aip) {
 	int nfd = socket(aip->ai_family, SOCK_STREAM, IPPROTO_TCP);
 
 	if(nfd == -1) {
@@ -339,7 +339,7 @@ static int setup_tcp_listen_socket(meshlink_handle_t *mesh, const struct addrinf
 	return nfd;
 }
 
-static int setup_udp_socket(meshlink_handle_t *mesh, const struct addrinfo *aip) {
+int setup_udp_listen_socket(meshlink_handle_t *mesh, const struct addrinfo *aip) {
 	int nfd = socket(aip->ai_family, SOCK_DGRAM, IPPROTO_UDP);
 
 	if(nfd == -1) {
@@ -470,7 +470,7 @@ static bool add_listen_sockets(meshlink_handle_t *mesh) {
 
 		/* If TCP worked, then we require that UDP works as well. */
 
-		int udp_fd = setup_udp_socket(mesh, aip);
+		int udp_fd = setup_udp_listen_socket(mesh, aip);
 
 		if(udp_fd == -1) {
 			closesocket(tcp_fd);
