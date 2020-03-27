@@ -1954,22 +1954,12 @@ void meshlink_set_error_cb(struct meshlink_handle *mesh, meshlink_error_cb_t cb)
 	pthread_mutex_unlock(&mesh->mutex);
 }
 
-bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
+static vpn_packet_t *prepare_packet(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
 	meshlink_packethdr_t *hdr;
 
-	// Validate arguments
-	if(!mesh || !destination || len >= MAXSIZE - sizeof(*hdr)) {
+	if(len >= MAXSIZE - sizeof(*hdr)) {
 		meshlink_errno = MESHLINK_EINVAL;
-		return false;
-	}
-
-	if(!len) {
-		return true;
-	}
-
-	if(!data) {
-		meshlink_errno = MESHLINK_EINVAL;
-		return false;
+		return NULL;
 	}
 
 	node_t *n = (node_t *)destination;
@@ -1977,7 +1967,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 	if(n->status.blacklisted) {
 		logger(mesh, MESHLINK_ERROR, "Node %s blacklisted, dropping packet\n", n->name);
 		meshlink_errno = MESHLINK_EBLACKLISTED;
-		return false;
+		return NULL;
 	}
 
 	// Prepare the packet
@@ -1985,7 +1975,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 
 	if(!packet) {
 		meshlink_errno = MESHLINK_ENOMEM;
-		return false;
+		return NULL;
 	}
 
 	packet->probe = false;
@@ -2000,6 +1990,52 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 	strncpy((char *)hdr->source, mesh->self->name, (sizeof(hdr)->source) - 1);
 
 	memcpy(packet->data + sizeof(*hdr), data, len);
+
+	return packet;
+}
+
+static bool meshlink_send_immediate(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
+	assert(mesh);
+	assert(destination);
+	assert(data);
+	assert(len);
+
+	// Prepare the packet
+	vpn_packet_t *packet = prepare_packet(mesh, destination, data, len);
+
+	if(!packet) {
+		return false;
+	}
+
+	// Send it immediately
+	route(mesh, mesh->self, packet);
+	free(packet);
+
+	return true;
+}
+
+bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
+	// Validate arguments
+	if(!mesh || !destination) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	if(!len) {
+		return true;
+	}
+
+	if(!data) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	// Prepare the packet
+	vpn_packet_t *packet = prepare_packet(mesh, destination, data, len);
+
+	if(!packet) {
+		return false;
+	}
 
 	// Queue it
 	if(!meshlink_queue_push(&mesh->outpacketqueue, packet)) {
@@ -3518,7 +3554,7 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
 	}
 
 	meshlink_handle_t *mesh = n->mesh;
-	return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? (ssize_t)len : -1;
+	return meshlink_send_immediate(mesh, (meshlink_node_t *)n, data, len) ? (ssize_t)len : -1;
 }
 
 void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb) {
