@@ -2008,6 +2008,8 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 		return false;
 	}
 
+	logger(mesh, MESHLINK_DEBUG, "Adding packet of %zu bytes to packet queue", len);
+
 	// Notify event loop
 	signal_trigger(&mesh->loop, &mesh->datafromapp);
 
@@ -2017,17 +2019,16 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 void meshlink_send_from_queue(event_loop_t *loop, void *data) {
 	(void)loop;
 	meshlink_handle_t *mesh = data;
-	vpn_packet_t *packet = meshlink_queue_pop(&mesh->outpacketqueue);
 
-	if(!packet) {
-		return;
+	logger(mesh, MESHLINK_DEBUG, "Flushing the packet queue");
+
+	for(vpn_packet_t *packet; (packet = meshlink_queue_pop(&mesh->outpacketqueue));) {
+		logger(mesh, MESHLINK_DEBUG, "Removing packet of %d bytes from packet queue", packet->len);
+		mesh->self->in_packets++;
+		mesh->self->in_bytes += packet->len;
+		route(mesh, mesh->self, packet);
+		free(packet);
 	}
-
-	mesh->self->in_packets++;
-	mesh->self->in_bytes += packet->len;
-	route(mesh, mesh->self, packet);
-
-	free(packet);
 }
 
 ssize_t meshlink_get_pmtu(meshlink_handle_t *mesh, meshlink_node_t *destination) {

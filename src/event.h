@@ -52,6 +52,7 @@ typedef struct timeout_t {
 typedef struct signal_t {
 	struct splay_node_t node;
 	int signum;
+	bool set;
 	signal_cb_t cb;
 	void *data;
 } signal_t;

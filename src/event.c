@@ -171,6 +171,7 @@ static void signalio_handler(event_loop_t *loop, void *data, int flags) {
 	});
 
 	if(sig) {
+		sig->set = false;
 		sig->cb(loop, sig->data);
 	}
 }
@@ -195,7 +196,12 @@ static void pipe_exit(event_loop_t *loop) {
 }
 
 void signal_trigger(event_loop_t *loop, signal_t *sig) {
+	if(sig->set) {
+		return;
+	}
+
 	uint8_t signum = sig->signum;
+	sig->set = true;
 	write(loop->pipefd[1], &signum, 1);
 	return;
 }
@@ -206,6 +212,7 @@ void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, u
 	sig->cb = cb;
 	sig->data = data;
 	sig->signum = signum;
+	sig->set = false;
 	sig->node.data = sig;
 
 	if(loop->pipefd[0] == -1) {
