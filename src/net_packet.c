@@ -370,7 +370,7 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 
 	/* Send it via TCP if it is a handshake packet, TCPOnly is in use, or this packet is larger than the MTU. */
 
-	if(type >= SPTPS_HANDSHAKE || (type != PKT_PROBE && len > to->minmtu)) {
+	if(type >= SPTPS_HANDSHAKE || (type != PKT_PROBE && (len - 21) > to->minmtu)) {
 		char buf[len * 4 / 3 + 5];
 		b64encode(data, buf, len);
 
@@ -433,8 +433,8 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 		return true;
 	}
 
-	if(len > MTU) {
-		logger(mesh, MESHLINK_ERROR, "Packet from %s larger than maximum supported size (%d > %d)", from->name, len, MTU);
+	if(len > MAXSIZE) {
+		logger(mesh, MESHLINK_ERROR, "Packet from %s larger than maximum supported size (%d > %d)", from->name, len, MAXSIZE);
 		return false;
 	}
 

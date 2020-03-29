@@ -993,6 +993,17 @@ public:
 		return meshlink_channel_get_recvq(handle, channel);
 	}
 
+	/// Get the maximum segment size of a channel.
+	/** This returns the amount of bytes that can be sent at once for channels with UDP semantics.
+	 *
+	 *  @param channel      A handle for the channel.
+	 *
+	 *  @return             The amount of bytes in the receive buffer.
+	 */
+	size_t channel_get_mss(channel *channel) {
+		return meshlink_channel_get_mss(handle, channel);
+	};
+
 	/// Enable or disable zeroconf discovery of local peers
 	/** This controls whether zeroconf discovery using the Catta library will be
 	 *  enabled to search for peers on the local network. By default, it is enabled.

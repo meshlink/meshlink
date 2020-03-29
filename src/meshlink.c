@@ -3672,6 +3672,7 @@ void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_ac
 	for splay_each(node_t, n, mesh->nodes) {
 		if(!n->utcp && n != mesh->self) {
 			n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+			utcp_set_mtu(n->utcp, n->mtu - sizeof(meshlink_packethdr_t));
 		}
 	}
 
@@ -3720,6 +3721,7 @@ meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_n
 
 	if(!n->utcp) {
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+		utcp_set_mtu(n->utcp, n->mtu - sizeof(meshlink_packethdr_t));
 		mesh->receive_cb = channel_receive;
 
 		if(!n->utcp) {
@@ -4007,6 +4009,15 @@ size_t meshlink_channel_get_recvq(meshlink_handle_t *mesh, meshlink_channel_t *c
 	return utcp_get_recvq(channel->c);
 }
 
+size_t meshlink_channel_get_mss(meshlink_handle_t *mesh, meshlink_channel_t *channel) {
+	if(!mesh || !channel) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return -1;
+	}
+
+	return utcp_get_mss(channel->node->utcp);
+}
+
 void meshlink_set_node_channel_timeout(meshlink_handle_t *mesh, meshlink_node_t *node, int timeout) {
 	if(!mesh || !node) {
 		meshlink_errno = MESHLINK_EINVAL;
@@ -4019,6 +4030,7 @@ void meshlink_set_node_channel_timeout(meshlink_handle_t *mesh, meshlink_node_t 
 
 	if(!n->utcp) {
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+		utcp_set_mtu(n->utcp, n->mtu - sizeof(meshlink_packethdr_t));
 	}
 
 	utcp_set_user_timeout(n->utcp, timeout);
@@ -4029,6 +4041,7 @@ void meshlink_set_node_channel_timeout(meshlink_handle_t *mesh, meshlink_node_t 
 void update_node_status(meshlink_handle_t *mesh, node_t *n) {
 	if(n->status.reachable && mesh->channel_accept_cb && !n->utcp) {
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+		utcp_set_mtu(n->utcp, n->mtu - sizeof(meshlink_packethdr_t));
 	}
 
 	if(mesh->node_status_cb) {
@@ -4041,6 +4054,8 @@ void update_node_status(meshlink_handle_t *mesh, node_t *n) {
 }
 
 void update_node_pmtu(meshlink_handle_t *mesh, node_t *n) {
+	utcp_set_mtu(n->utcp, (n->minmtu > MINMTU ? n->minmtu : MINMTU) - sizeof(meshlink_packethdr_t));
+
 	if(mesh->node_pmtu_cb && !n->status.blacklisted) {
 		mesh->node_pmtu_cb(mesh, (meshlink_node_t *)n, n->minmtu);
 	}

@@ -23,17 +23,20 @@
 #include "event.h"
 #include "sockaddr.h"
 
+/* Maximum size of SPTPS payload */
 #ifdef ENABLE_JUMBOGRAMS
-#define MTU 9018        /* 9000 bytes payload + 14 bytes ethernet header + 4 bytes VLAN tag */
+#define MTU 8951        /* 9000 bytes payload - 28 bytes IP+UDP header - 21 bytes SPTPS header+MAC */
 #else
-#define MTU 1518        /* 1500 bytes payload + 14 bytes ethernet header + 4 bytes VLAN tag */
+#define MTU 1451        /* 1500 bytes payload - 28 bytes IP+UDP - 21 bytes SPTPS header+MAC */
 #endif
 
-/* MAXSIZE is the maximum size of an encapsulated packet: MTU + seqno + HMAC + compressor overhead */
-#define MAXSIZE (MTU + 4 + 32 + MTU/64 + 20)
+#define MINMTU 527      /* 576 minimum recommended Internet MTU - 28 bytes IP+UDP - 21 bytes SPTPS header+MAC */
 
-/* MAXBUFSIZE is the maximum size of a request: enough for a MAXSIZEd packet or a 8192 bits RSA key */
-#define MAXBUFSIZE ((MAXSIZE > 2048 ? MAXSIZE : 2048) + 128)
+/* MAXSIZE is the maximum size of an encapsulated packet */
+#define MAXSIZE (MTU + 64)
+
+/* MAXBUFSIZE is the maximum size of a request: enough for a base64 encoded MAXSIZEd packet plus request header */
+#define MAXBUFSIZE ((MAXSIZE * 8) / 6 + 128)
 
 typedef struct vpn_packet_t {
 	uint16_t probe: 1;

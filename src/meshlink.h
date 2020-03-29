@@ -1504,6 +1504,17 @@ extern size_t meshlink_channel_get_sendq(struct meshlink_handle *mesh, struct me
  */
 extern size_t meshlink_channel_get_recvq(struct meshlink_handle *mesh, struct meshlink_channel *channel) __attribute__((__warn_unused_result__));
 
+/// Get the maximum segment size of a channel.
+/** This returns the amount of bytes that can be sent at once for channels with UDP semantics.
+ *
+ *  \memberof meshlink_channel
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ *
+ *  @return             The amount of bytes in the receive buffer.
+ */
+extern size_t meshlink_channel_get_mss(struct meshlink_handle *mesh, struct meshlink_channel *channel) __attribute__((__warn_unused_result__));
+
 /// Set the connection timeout used for channels to the given node.
 /** This sets the timeout after which unresponsive channels will be reported as closed.
  *  The timeout is set for all current and future channels to the given node.
