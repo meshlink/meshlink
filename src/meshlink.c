@@ -24,6 +24,7 @@
 #include "ecdsagen.h"
 #include "logger.h"
 #include "meshlink_internal.h"
+#include "net.h"
 #include "netutl.h"
 #include "node.h"
 #include "submesh.h"
@@ -1456,6 +1457,7 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 	mesh->submeshes = NULL;
 	mesh->log_cb = global_log_cb;
 	mesh->log_level = global_log_level;
+	mesh->packet = xmalloc(sizeof(vpn_packet_t));
 
 	randomize(&mesh->prng_state, sizeof(mesh->prng_state));
 
@@ -1805,6 +1807,7 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	free(mesh->confbase);
 	free(mesh->config_key);
 	free(mesh->external_address_url);
+	free(mesh->packet);
 	ecdsa_free(mesh->private_key);
 
 	if(mesh->invitation_addresses) {
@@ -1962,12 +1965,12 @@ void meshlink_set_error_cb(struct meshlink_handle *mesh, meshlink_error_cb_t cb)
 	pthread_mutex_unlock(&mesh->mutex);
 }
 
-static vpn_packet_t *prepare_packet(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
+static bool prepare_packet(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len, vpn_packet_t *packet) {
 	meshlink_packethdr_t *hdr;
 
 	if(len >= MAXSIZE - sizeof(*hdr)) {
 		meshlink_errno = MESHLINK_EINVAL;
-		return NULL;
+		return false;
 	}
 
 	node_t *n = (node_t *)destination;
@@ -1975,17 +1978,10 @@ static vpn_packet_t *prepare_packet(meshlink_handle_t *mesh, meshlink_node_t *de
 	if(n->status.blacklisted) {
 		logger(mesh, MESHLINK_ERROR, "Node %s blacklisted, dropping packet\n", n->name);
 		meshlink_errno = MESHLINK_EBLACKLISTED;
-		return NULL;
+		return false;
 	}
 
 	// Prepare the packet
-	vpn_packet_t *packet = malloc(sizeof(*packet));
-
-	if(!packet) {
-		meshlink_errno = MESHLINK_ENOMEM;
-		return NULL;
-	}
-
 	packet->probe = false;
 	packet->tcp = false;
 	packet->len = len + sizeof(*hdr);
@@ -1999,7 +1995,7 @@ static vpn_packet_t *prepare_packet(meshlink_handle_t *mesh, meshlink_node_t *de
 
 	memcpy(packet->data + sizeof(*hdr), data, len);
 
-	return packet;
+	return true;
 }
 
 static bool meshlink_send_immediate(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
@@ -2009,15 +2005,12 @@ static bool meshlink_send_immediate(meshlink_handle_t *mesh, meshlink_node_t *de
 	assert(len);
 
 	// Prepare the packet
-	vpn_packet_t *packet = prepare_packet(mesh, destination, data, len);
-
-	if(!packet) {
+	if(!prepare_packet(mesh, destination, data, len, mesh->packet)) {
 		return false;
 	}
 
 	// Send it immediately
-	route(mesh, mesh->self, packet);
-	free(packet);
+	route(mesh, mesh->self, mesh->packet);
 
 	return true;
 }
@@ -2039,10 +2032,15 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 	}
 
 	// Prepare the packet
-	vpn_packet_t *packet = prepare_packet(mesh, destination, data, len);
+	vpn_packet_t *packet = malloc(sizeof(*packet));
 
 	if(!packet) {
+		meshlink_errno = MESHLINK_ENOMEM;
 		return false;
+	}
+
+	if(!prepare_packet(mesh, destination, data, len, packet)) {
+		free(packet);
 	}
 
 	// Queue it

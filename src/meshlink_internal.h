@@ -99,6 +99,7 @@ struct meshlink_handle {
 	struct node_t *self;
 	meshlink_log_cb_t log_cb;
 	meshlink_log_level_t log_level;
+	void *packet;
 
 	// The most important network-related members come first
 	int reachable;
