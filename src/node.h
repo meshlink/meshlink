@@ -85,7 +85,8 @@ typedef struct node_t {
 	time_t last_successfull_connection;
 
 	char *canonical_address;                /* The canonical address of this node, if known */
-	sockaddr_t recent[MAX_RECENT];                   /* Recently seen addresses */
+	sockaddr_t recent[MAX_RECENT];          /* Recently seen addresses */
+	sockaddr_t catta_address;               /* Latest address seen by Catta */
 
 	// Graph-related member variables
 	time_t last_reachable;

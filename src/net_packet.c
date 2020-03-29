@@ -308,6 +308,12 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 		return;
 	}
 
+	/* If we have learned an address via Catta, try this once every batch */
+	if(mesh->udp_choice == 1 && n->catta_address.sa.sa_family != AF_UNSPEC) {
+		*sa = &n->catta_address;
+		goto check_socket;
+	}
+
 	/* Otherwise, address are found in edges to this node.
 	   So we pick a random edge and a random socket. */
 
@@ -327,6 +333,7 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 		*sock = prng(mesh, mesh->listen_sockets);
 	}
 
+check_socket:
 	/* Make sure we have a suitable socket for the chosen address */
 	if(mesh->listen_socket[*sock].sa.sa.sa_family != (*sa)->sa.sa_family) {
 		for(int i = 0; i < mesh->listen_sockets; i++) {
