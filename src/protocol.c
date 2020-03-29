@@ -207,7 +207,7 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 	}
 
 	if(left) {
-		timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timeval) {
+		timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timespec) {
 			10, prng(mesh, TIMER_FUDGE)
 		});
 	}
@@ -228,7 +228,7 @@ bool seen_request(meshlink_handle_t *mesh, const char *request) {
 		new->firstseen = mesh->loop.now.tv_sec;
 
 		if(!mesh->past_request_tree->head) {
-			timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timeval) {
+			timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timespec) {
 				10, prng(mesh, TIMER_FUDGE)
 			});
 		}
@@ -242,7 +242,7 @@ void init_requests(meshlink_handle_t *mesh) {
 	assert(!mesh->past_request_tree);
 
 	mesh->past_request_tree = splay_alloc_tree((splay_compare_t) past_request_compare, (splay_action_t) free_past_request);
-	timeout_add(&mesh->loop, &mesh->past_request_timeout, age_past_requests, NULL, &(struct timeval) {
+	timeout_add(&mesh->loop, &mesh->past_request_timeout, age_past_requests, NULL, &(struct timespec) {
 		0, 0
 	});
 }

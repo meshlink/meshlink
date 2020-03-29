@@ -151,7 +151,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 		}
 	}
 
-	timeout_set(&mesh->loop, data, &(struct timeval) {
+	timeout_set(&mesh->loop, data, &(struct timespec) {
 		1, prng(mesh, TIMER_FUDGE)
 	});
 }
@@ -346,7 +346,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 	if(mesh->contradicting_del_edge > 100 && mesh->contradicting_add_edge > 100) {
 		logger(mesh, MESHLINK_WARNING, "Possible node with same Name as us! Sleeping %d seconds.", mesh->sleeptime);
-		usleep(mesh->sleeptime * 1000000LL);
+		struct timespec ts = {mesh->sleeptime, 0};
+		clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, NULL);
 		mesh->sleeptime *= 2;
 
 		if(mesh->sleeptime < 0) {
@@ -616,7 +617,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 		}
 	}
 
-	timeout_set(&mesh->loop, data, &(struct timeval) {
+	timeout_set(&mesh->loop, data, &(struct timespec) {
 		timeout, prng(mesh, TIMER_FUDGE)
 	});
 }
@@ -633,10 +634,11 @@ void retry(meshlink_handle_t *mesh) {
 	for list_each(outgoing_t, outgoing, mesh->outgoings) {
 		outgoing->timeout = 0;
 
-		if(outgoing->ev.cb)
-			timeout_set(&mesh->loop, &outgoing->ev, &(struct timeval) {
-			0, 0
-		});
+		if(outgoing->ev.cb) {
+			timeout_set(&mesh->loop, &outgoing->ev, &(struct timespec) {
+				0, 0
+			});
+		}
 	}
 
 	/* For active connections, check if their addresses are still valid.
@@ -685,7 +687,7 @@ void retry(meshlink_handle_t *mesh) {
 	}
 
 	/* Kick the ping timeout handler */
-	timeout_set(&mesh->loop, &mesh->pingtimer, &(struct timeval) {
+	timeout_set(&mesh->loop, &mesh->pingtimer, &(struct timespec) {
 		0, 0
 	});
 }
@@ -694,10 +696,10 @@ void retry(meshlink_handle_t *mesh) {
   this is where it all happens...
 */
 void main_loop(meshlink_handle_t *mesh) {
-	timeout_add(&mesh->loop, &mesh->pingtimer, timeout_handler, &mesh->pingtimer, &(struct timeval) {
+	timeout_add(&mesh->loop, &mesh->pingtimer, timeout_handler, &mesh->pingtimer, &(struct timespec) {
 		1, prng(mesh, TIMER_FUDGE)
 	});
-	timeout_add(&mesh->loop, &mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timeval) {
+	timeout_add(&mesh->loop, &mesh->periodictimer, periodic_handler, &mesh->periodictimer, &(struct timespec) {
 		0, 0
 	});
 

@@ -28,34 +28,6 @@ extern int asprintf(char **, const char *, ...);
 extern int vasprintf(char **, const char *, va_list ap);
 #endif
 
-#ifndef HAVE_GETTIMEOFDAY
-extern int gettimeofday(struct timeval *, void *);
-#endif
-
-#ifndef HAVE_USLEEP
-extern int usleep(long long usec);
-#endif
-
-#ifndef timeradd
-#define timeradd(a, b, r)\
-	do {\
-		(r)->tv_sec = (a)->tv_sec + (b)->tv_sec;\
-		(r)->tv_usec = (a)->tv_usec + (b)->tv_usec;\
-		if((r)->tv_usec >= 1000000)\
-			(r)->tv_sec++, (r)->tv_usec -= 1000000;\
-	} while (0)
-#endif
-
-#ifndef timersub
-#define timersub(a, b, r)\
-	do {\
-		(r)->tv_sec = (a)->tv_sec - (b)->tv_sec;\
-		(r)->tv_usec = (a)->tv_usec - (b)->tv_usec;\
-		if((r)->tv_usec < 0)\
-			(r)->tv_sec--, (r)->tv_usec += 1000000;\
-	} while (0)
-#endif
-
 #ifdef HAVE_MINGW
 #define mkdir(a, b) mkdir(a)
 #ifndef SHUT_RDWR

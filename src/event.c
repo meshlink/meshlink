@@ -26,39 +26,68 @@
 #include "utils.h"
 #include "xalloc.h"
 
+#ifndef EVENT_CLOCK
+#if defined(CLOCK_MONOTONIC_RAW) && defined(__x86_64__)
+#define EVENT_CLOCK CLOCK_MONOTONIC_RAW
+#else
+#define EVENT_CLOCK CLOCK_MONOTONIC
+#endif
+#endif
+
+static void timespec_add(const struct timespec *a, const struct timespec *b, struct timespec *r) {
+	r->tv_sec = a->tv_sec + b->tv_sec;
+	r->tv_nsec = a->tv_nsec + b->tv_nsec;
+
+	if(r->tv_nsec > 1000000000) {
+		r->tv_sec++, r->tv_nsec -= 1000000000;
+	}
+}
+
+static void timespec_sub(const struct timespec *a, const struct timespec *b, struct timespec *r) {
+	r->tv_sec = a->tv_sec - b->tv_sec;
+	r->tv_nsec = a->tv_nsec - b->tv_nsec;
+
+	if(r->tv_nsec < 0) {
+		r->tv_sec--, r->tv_nsec += 1000000000;
+	}
+}
+
+static bool timespec_lt(const struct timespec *a, const struct timespec *b) {
+	if(a->tv_sec == b->tv_sec) {
+		return a->tv_nsec < b->tv_nsec;
+	} else {
+		return a->tv_sec < b->tv_sec;
+	}
+}
+
+static void timespec_clear(struct timespec *a) {
+	a->tv_sec = 0;
+}
+
+static bool timespec_isset(const struct timespec *a) {
+	return a->tv_sec;
+}
+
 static int io_compare(const io_t *a, const io_t *b) {
 	return a->fd - b->fd;
 }
 
 static int timeout_compare(const timeout_t *a, const timeout_t *b) {
-	struct timeval diff;
-	timersub(&a->tv, &b->tv, &diff);
-
-	if(diff.tv_sec < 0) {
+	if(a->tv.tv_sec < b->tv.tv_sec) {
 		return -1;
-	}
-
-	if(diff.tv_sec > 0) {
+	} else if(a->tv.tv_sec > b->tv.tv_sec) {
 		return 1;
-	}
-
-	if(diff.tv_usec < 0) {
+	} else if(a->tv.tv_nsec < b->tv.tv_nsec) {
 		return -1;
-	}
-
-	if(diff.tv_usec > 0) {
+	} else if(a->tv.tv_nsec > b->tv.tv_nsec) {
 		return 1;
-	}
-
-	if(a < b) {
+	} else if(a < b) {
 		return -1;
-	}
-
-	if(a > b) {
+	} else if(a > b) {
 		return 1;
+	} else {
+		return 0;
 	}
-
-	return 0;
 }
 
 void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int flags) {
@@ -105,7 +134,7 @@ void io_del(event_loop_t *loop, io_t *io) {
 	io->cb = NULL;
 }
 
-void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *data, struct timeval *tv) {
+void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *data, struct timespec *tv) {
 	timeout->cb = cb;
 	timeout->data = data;
 	timeout->node.data = timeout;
@@ -113,18 +142,18 @@ void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *
 	timeout_set(loop, timeout, tv);
 }
 
-void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv) {
+void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timespec *tv) {
 	assert(timeout->cb);
 
-	if(timerisset(&timeout->tv)) {
+	if(timespec_isset(&timeout->tv)) {
 		splay_unlink_node(&loop->timeouts, &timeout->node);
 	}
 
 	if(!loop->now.tv_sec) {
-		gettimeofday(&loop->now, NULL);
+		clock_gettime(EVENT_CLOCK, &loop->now);
 	}
 
-	timeradd(&loop->now, tv, &timeout->tv);
+	timespec_add(&loop->now, tv, &timeout->tv);
 
 	if(!splay_insert_node(&loop->timeouts, &timeout->node)) {
 		abort();
@@ -135,9 +164,7 @@ void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv) {
 
 static void timeout_disable(event_loop_t *loop, timeout_t *timeout) {
 	splay_unlink_node(&loop->timeouts, &timeout->node);
-	timeout->tv = (struct timeval) {
-		0, 0
-	};
+	timespec_clear(&timeout->tv);
 }
 
 void timeout_del(event_loop_t *loop, timeout_t *timeout) {
@@ -145,7 +172,7 @@ void timeout_del(event_loop_t *loop, timeout_t *timeout) {
 		return;
 	}
 
-	if(timerisset(&timeout->tv)) {
+	if(timespec_isset(&timeout->tv)) {
 		timeout_disable(loop, timeout);
 	}
 
@@ -249,18 +276,17 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 	fd_set writable;
 
 	while(loop->running) {
-		gettimeofday(&loop->now, NULL);
-		struct timeval diff, it, *tv = NULL;
+		clock_gettime(EVENT_CLOCK, &loop->now);
+		struct timespec it, ts = {3600, 0};
 
 		while(loop->timeouts.head) {
 			timeout_t *timeout = loop->timeouts.head->data;
-			timersub(&timeout->tv, &loop->now, &diff);
 
-			if(diff.tv_sec < 0) {
+			if(timespec_lt(&timeout->tv, &loop->now)) {
 				timeout_disable(loop, timeout);
 				timeout->cb(loop, timeout->data);
 			} else {
-				tv = &diff;
+				timespec_sub(&timeout->tv, &loop->now, &ts);
 				break;
 			}
 		}
@@ -268,8 +294,8 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		if(loop->idle_cb) {
 			it = loop->idle_cb(loop, loop->idle_data);
 
-			if(it.tv_sec >= 0 && (!tv || timercmp(&it, tv, <))) {
-				tv = &it;
+			if(it.tv_sec >= 0 && timespec_lt(&it, &ts)) {
+				ts = it;
 			}
 		}
 
@@ -286,11 +312,16 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		// release mesh mutex during select
 		pthread_mutex_unlock(mutex);
 
-		int n = select(fds, &readable, &writable, NULL, tv);
+#ifdef HAVE_PSELECT
+		int n = pselect(fds, &readable, &writable, NULL, &ts, NULL);
+#else
+		struct timeval tv = {ts.tv_sec, ts.tv_nsec / 1000};
+		int n = select(fds, &readable, &writable, NULL, (struct timeval *)&tv);
+#endif
 
 		pthread_mutex_lock(mutex);
 
-		gettimeofday(&loop->now, NULL);
+		clock_gettime(EVENT_CLOCK, &loop->now);
 
 		if(n < 0) {
 			if(sockwouldblock(errno)) {
@@ -353,7 +384,7 @@ void event_loop_init(event_loop_t *loop) {
 	loop->signals.compare = (splay_compare_t)signal_compare;
 	loop->pipefd[0] = -1;
 	loop->pipefd[1] = -1;
-	gettimeofday(&loop->now, NULL);
+	clock_gettime(EVENT_CLOCK, &loop->now);
 }
 
 void event_loop_exit(event_loop_t *loop) {

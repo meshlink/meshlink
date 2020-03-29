@@ -148,13 +148,13 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 	n->status.broadcast = false;
 
 end:
-	timeout_set(&mesh->loop, &n->mtutimeout, &(struct timeval) {
+	timeout_set(&mesh->loop, &n->mtutimeout, &(struct timespec) {
 		timeout, prng(mesh, TIMER_FUDGE)
 	});
 }
 
 void send_mtu_probe(meshlink_handle_t *mesh, node_t *n) {
-	timeout_add(&mesh->loop, &n->mtutimeout, send_mtu_probe_handler, n, &(struct timeval) {
+	timeout_add(&mesh->loop, &n->mtutimeout, send_mtu_probe_handler, n, &(struct timespec) {
 		1, 0
 	});
 	send_mtu_probe_handler(&mesh->loop, n);

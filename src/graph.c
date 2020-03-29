@@ -177,7 +177,7 @@ static void check_reachability(meshlink_handle_t *mesh) {
 				if(n->status.reachable) {
 					logger(mesh, MESHLINK_DEBUG, "Node %s became reachable", n->name);
 					bool first_time_reachable = !n->last_reachable;
-					n->last_reachable = mesh->loop.now.tv_sec;
+					n->last_reachable = time(NULL);
 
 					if(first_time_reachable) {
 						if(!node_write_config(mesh, n)) {
@@ -187,7 +187,7 @@ static void check_reachability(meshlink_handle_t *mesh) {
 					}
 				} else {
 					logger(mesh, MESHLINK_DEBUG, "Node %s became unreachable", n->name);
-					n->last_unreachable = mesh->loop.now.tv_sec;
+					n->last_unreachable = time(NULL);
 				}
 			}
 
@@ -229,7 +229,7 @@ static void check_reachability(meshlink_handle_t *mesh) {
 			mesh->last_unreachable = mesh->loop.now.tv_sec;
 
 			if(mesh->threadstarted) {
-				timeout_set(&mesh->loop, &mesh->periodictimer, &(struct timeval) {
+				timeout_set(&mesh->loop, &mesh->periodictimer, &(struct timespec) {
 					0, prng(mesh, TIMER_FUDGE)
 				});
 			}

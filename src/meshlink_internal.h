@@ -127,7 +127,6 @@ struct meshlink_handle {
 	int contradicting_del_edge;
 	int sleeptime;
 	time_t connection_burst_time;
-	time_t last_config_check;
 	time_t last_hard_try;
 	time_t last_unreachable;
 	timeout_t pingtimer;
@@ -260,6 +259,6 @@ static inline int prng(meshlink_handle_t *mesh, uint64_t max) {
 }
 
 /// Fudge value of ~0.1 seconds, in microseconds.
-static const unsigned int TIMER_FUDGE = 0x20000;
+static const unsigned int TIMER_FUDGE = 0x8000000;
 
 #endif

@@ -995,10 +995,18 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 	return true;
 }
 
-static struct timeval idle(event_loop_t *loop, void *data) {
+static bool timespec_lt(const struct timespec *a, const struct timespec *b) {
+	if(a->tv_sec == b->tv_sec) {
+		return a->tv_nsec < b->tv_nsec;
+	} else {
+		return a->tv_sec < b->tv_sec;
+	}
+}
+
+static struct timespec idle(event_loop_t *loop, void *data) {
 	(void)loop;
 	meshlink_handle_t *mesh = data;
-	struct timeval t, tmin = {3600, 0};
+	struct timespec t, tmin = {3600, 0};
 
 	for splay_each(node_t, n, mesh->nodes) {
 		if(!n->utcp) {
@@ -1007,7 +1015,7 @@ static struct timeval idle(event_loop_t *loop, void *data) {
 
 		t = utcp_timeout(n->utcp);
 
-		if(timercmp(&t, &tmin, <)) {
+		if(timespec_lt(&t, &tmin)) {
 			tmin = t;
 		}
 	}
@@ -3234,7 +3242,7 @@ static bool blacklist(meshlink_handle_t *mesh, node_t *n) {
 	n->status.udp_confirmed = false;
 
 	if(n->status.reachable) {
-		n->last_unreachable = mesh->loop.now.tv_sec;
+		n->last_unreachable = time(NULL);
 	}
 
 	/* Graph updates will suppress status updates for blacklisted nodes, so we need to
@@ -3308,7 +3316,7 @@ static bool whitelist(meshlink_handle_t *mesh, node_t *n) {
 	n->status.blacklisted = false;
 
 	if(n->status.reachable) {
-		n->last_reachable = mesh->loop.now.tv_sec;
+		n->last_reachable = time(NULL);
 		update_node_status(mesh, n);
 	}
 

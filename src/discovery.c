@@ -257,7 +257,7 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 						c->outgoing->timeout = 0;
 
 						if(c->outgoing->ev.cb) {
-							timeout_set(&mesh->loop, &c->outgoing->ev, &(struct timeval) {
+							timeout_set(&mesh->loop, &c->outgoing->ev, &(struct timespec) {
 								0, 0
 							});
 						}

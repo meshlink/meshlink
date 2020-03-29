@@ -32,7 +32,7 @@ typedef struct event_loop_t event_loop_t;
 typedef void (*io_cb_t)(event_loop_t *loop, void *data, int flags);
 typedef void (*timeout_cb_t)(event_loop_t *loop, void *data);
 typedef void (*signal_cb_t)(event_loop_t *loop, void *data);
-typedef struct timeval(*idle_cb_t)(event_loop_t *loop, void *data);
+typedef struct timespec(*idle_cb_t)(event_loop_t *loop, void *data);
 
 typedef struct io_t {
 	struct splay_node_t node;
@@ -44,7 +44,7 @@ typedef struct io_t {
 
 typedef struct timeout_t {
 	struct splay_node_t node;
-	struct timeval tv;
+	struct timespec tv;
 	timeout_cb_t cb;
 	void *data;
 } timeout_t;
@@ -63,7 +63,7 @@ struct event_loop_t {
 	volatile bool running;
 	bool deletion;
 
-	struct timeval now;
+	struct timespec now;
 
 	splay_tree_t timeouts;
 	idle_cb_t idle_cb;
@@ -82,9 +82,9 @@ extern void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd,
 extern void io_del(event_loop_t *loop, io_t *io);
 extern void io_set(event_loop_t *loop, io_t *io, int flags);
 
-extern void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *data, struct timeval *tv);
+extern void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *data, struct timespec *tv);
 extern void timeout_del(event_loop_t *loop, timeout_t *timeout);
-extern void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timeval *tv);
+extern void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timespec *tv);
 
 extern void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum);
 extern void signal_trigger(event_loop_t *loop, signal_t *sig);
