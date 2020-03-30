@@ -334,6 +334,7 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 	}
 
 check_socket:
+
 	/* Make sure we have a suitable socket for the chosen address */
 	if(mesh->listen_socket[*sock].sa.sa.sa_family != (*sa)->sa.sa_family) {
 		for(int i = 0; i < mesh->listen_sockets; i++) {

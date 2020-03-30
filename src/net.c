@@ -626,6 +626,8 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				sptps_stop(&n->sptps);
 				n->status.waitingforkey = false;
 				n->last_req_key = 0;
+			} else {
+				n->last_req_key = mesh->loop.now.tv_sec;
 			}
 		}
 	}
