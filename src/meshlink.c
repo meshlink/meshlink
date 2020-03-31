@@ -4162,6 +4162,15 @@ void meshlink_set_external_address_discovery_url(struct meshlink_handle *mesh, c
 	pthread_mutex_unlock(&mesh->mutex);
 }
 
+void meshlink_set_scheduling_granularity(struct meshlink_handle *mesh, long granularity) {
+	if(!mesh || granularity < 0) {
+		meshlink_errno = EINVAL;
+		return;
+	}
+
+	utcp_set_clock_granularity(granularity);
+}
+
 void handle_network_change(meshlink_handle_t *mesh, bool online) {
 	(void)online;
 
@@ -4189,6 +4198,7 @@ void call_error_cb(meshlink_handle_t *mesh, meshlink_errno_t meshlink_errno) {
 
 static void __attribute__((constructor)) meshlink_init(void) {
 	crypto_init();
+	utcp_set_clock_granularity(10000);
 }
 
 static void __attribute__((destructor)) meshlink_exit(void) {

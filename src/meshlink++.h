@@ -619,6 +619,18 @@ public:
 		meshlink_set_invitation_timeout(handle, timeout);
 	}
 
+	/// Set the scheduling granularity of the application
+	/** This should be set to the effective scheduling granularity for the application.
+	 *  This depends on the scheduling granularity of the operating system, the application's
+	 *  process priority and whether it is running as realtime or not.
+	 *  The default value is 10000 (10 milliseconds).
+	 *
+	 *  @param granularity  The scheduling granularity of the application in microseconds.
+	 */
+	void set_granularity(long granularity) {
+		meshlink_set_scheduling_granularity(handle, granularity);
+	}
+
 	/// Invite another node into the mesh.
 	/** This function generates an invitation that can be used by another node to join the same mesh as the local node.
 	 *  The generated invitation is a string containing a URL.

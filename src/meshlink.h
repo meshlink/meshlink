@@ -1608,6 +1608,18 @@ extern void meshlink_set_inviter_commits_first(struct meshlink_handle *mesh, boo
  */
 extern void meshlink_set_external_address_discovery_url(struct meshlink_handle *mesh, const char *url);
 
+/// Set the scheduling granularity of the application
+/** This should be set to the effective scheduling granularity for the application.
+ *  This depends on the scheduling granularity of the operating system, the application's
+ *  process priority and whether it is running as realtime or not.
+ *  The default value is 10000 (10 milliseconds).
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param granularity  The scheduling granularity of the application in microseconds.
+ */
+extern void meshlink_set_scheduling_granularity(struct meshlink_handle *mesh, long granularity);
+
 #ifdef __cplusplus
 }
 #endif
