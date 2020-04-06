@@ -226,6 +226,45 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 
 /* VPN packet I/O */
 
+#ifdef HAVE_RECVMMSG
+#define MAX_MMSG 16
+
+struct mmsgs {
+	struct mmsghdr hdrs[MAX_MMSG];
+	struct iovec iovs[MAX_MMSG];
+	sockaddr_t addrs[MAX_MMSG];
+	vpn_packet_t pkts[MAX_MMSG];
+};
+
+static void init_mmsg_array(struct mmsgs *mmsgs) {
+	for(int i = 0; i < MAX_MMSG; i++) {
+		mmsgs->hdrs[i].msg_hdr.msg_name = &mmsgs->addrs[i];
+		mmsgs->hdrs[i].msg_hdr.msg_namelen = sizeof(mmsgs->addrs[i]);
+		mmsgs->hdrs[i].msg_hdr.msg_iov = &mmsgs->iovs[i];
+		mmsgs->hdrs[i].msg_hdr.msg_iovlen = 1;
+		mmsgs->iovs[i].iov_base = mmsgs->pkts[i].data;
+		mmsgs->iovs[i].iov_len = MAXSIZE;
+	}
+}
+
+void init_mmsg(meshlink_handle_t *mesh) {
+	mesh->in_mmsgs = xzalloc(sizeof(*mesh->in_mmsgs));
+	mesh->out_mmsgs = xzalloc(sizeof(*mesh->out_mmsgs));
+
+	init_mmsg_array(mesh->in_mmsgs);
+	init_mmsg_array(mesh->out_mmsgs);
+
+}
+
+void exit_mmsg(meshlink_handle_t *mesh) {
+	free(mesh->out_mmsgs);
+	free(mesh->in_mmsgs);
+
+	mesh->out_mmsgs = NULL;
+	mesh->in_mmsgs = NULL;
+}
+#endif
+
 static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	logger(mesh, MESHLINK_DEBUG, "Received packet of %d bytes from %s", packet->len, n->name);
 
@@ -533,42 +572,18 @@ static node_t *try_harder(meshlink_handle_t *mesh, const sockaddr_t *from, const
 	return n;
 }
 
-void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
-	(void)flags;
-	meshlink_handle_t *mesh = loop->data;
-	listen_socket_t *ls = data;
-	vpn_packet_t pkt;
-	char *hostname;
-	sockaddr_t from;
-	socklen_t fromlen = sizeof(from);
-	node_t *n;
-	int len;
+static void handle_one_incoming(meshlink_handle_t *mesh, listen_socket_t *ls, vpn_packet_t *pkt, sockaddr_t *from) {
+	sockaddrunmap(from); /* Some braindead IPv6 implementations do stupid things. */
 
-	memset(&from, 0, sizeof(from));
-
-	len = recvfrom(ls->udp.fd, pkt.data, MAXSIZE, 0, &from.sa, &fromlen);
-
-	if(len <= 0 || len > MAXSIZE) {
-		if(!sockwouldblock(sockerrno)) {
-			logger(mesh, MESHLINK_ERROR, "Receiving packet failed: %s", sockstrerror(sockerrno));
-		}
-
-		return;
-	}
-
-	pkt.len = len;
-
-	sockaddrunmap(&from); /* Some braindead IPv6 implementations do stupid things. */
-
-	n = lookup_node_udp(mesh, &from);
+	node_t *n = lookup_node_udp(mesh, from);
 
 	if(!n) {
-		n = try_harder(mesh, &from, &pkt);
+		n = try_harder(mesh, from, pkt);
 
 		if(n) {
-			update_node_udp(mesh, n, &from);
+			update_node_udp(mesh, n, from);
 		} else if(mesh->log_level <= MESHLINK_WARNING) {
-			hostname = sockaddr2hostname(&from);
+			char *hostname = sockaddr2hostname(from);
 			logger(mesh, MESHLINK_WARNING, "Received UDP packet from unknown source %s", hostname);
 			free(hostname);
 			return;
@@ -584,5 +599,49 @@ void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
 
 	n->sock = ls - mesh->listen_socket;
 
-	receive_udppacket(mesh, n, &pkt);
+	receive_udppacket(mesh, n, pkt);
+}
+
+void handle_incoming_vpn_data(event_loop_t *loop, void *data, int flags) {
+	(void)flags;
+	meshlink_handle_t *mesh = loop->data;
+	listen_socket_t *ls = data;
+
+#ifdef HAVE_RECVMMSG
+	struct mmsgs *mmsgs = mesh->in_mmsgs;
+	int count = recvmmsg(ls->udp.fd, mmsgs->hdrs, MAX_MMSG, 0, NULL);
+
+	if(count <= 0 || count > MAX_MMSG) {
+		if(!sockwouldblock(sockerrno)) {
+			logger(mesh, MESHLINK_ERROR, "Receiving packets failed: %s", sockstrerror(sockerrno));
+		}
+
+		return;
+	}
+
+	for(int i = 0; i < count; i++) {
+		mmsgs->pkts[i].len = mmsgs->hdrs[i].msg_len;
+		handle_one_incoming(mesh, ls, &mmsgs->pkts[i], &mmsgs->addrs[i]);
+		mmsgs->hdrs[i].msg_hdr.msg_namelen = sizeof(mmsgs->addrs[i]);
+	}
+
+#else
+	vpn_packet_t pkt;
+	sockaddr_t from;
+	socklen_t fromlen = sizeof(from);
+	memset(&from, 0, sizeof(from));
+
+	ssize_t len = recvfrom(ls->udp.fd, pkt.data, MAXSIZE, 0, &from.sa, &fromlen);
+
+	if(len <= 0 || len > MAXSIZE) {
+		if(!sockwouldblock(sockerrno)) {
+			logger(mesh, MESHLINK_ERROR, "Receiving packet failed: %s", sockstrerror(sockerrno));
+		}
+
+		return;
+	}
+
+	pkt.len = len;
+	handle_one_incoming(mesh, ls, &pkt, &from);
+#endif
 }

@@ -126,7 +126,7 @@ MeshLink_ATTRIBUTE(__warn_unused_result__)
 
 dnl Checks for library functions.
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS([asprintf fchmod fork gettimeofday random pselect select setns strdup usleep getifaddrs freeifaddrs],
+AC_CHECK_FUNCS([asprintf fchmod fork gettimeofday random pselect recvmmsg select setns strdup usleep getifaddrs freeifaddrs],
   [], [], [#include "$srcdir/src/have.h"]
 )
 

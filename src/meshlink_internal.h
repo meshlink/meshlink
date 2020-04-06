@@ -92,6 +92,10 @@ struct meshlink_handle {
 	meshlink_log_cb_t log_cb;
 	meshlink_log_level_t log_level;
 	void *packet;
+#ifdef HAVE_RECVMMSG
+	struct mmsgs *in_mmsgs;
+	struct mmsgs *out_mmsgs;
+#endif
 
 	// The most important network-related members come first
 	int reachable;

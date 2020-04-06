@@ -82,6 +82,10 @@ typedef struct outgoing_t {
 
 extern void init_outgoings(struct meshlink_handle *mesh);
 extern void exit_outgoings(struct meshlink_handle *mesh);
+#ifdef HAVE_RECVMMSG
+extern void init_mmsg(struct meshlink_handle *mesh);
+extern void exit_mmsg(struct meshlink_handle *mesh);
+#endif
 
 extern void retry_outgoing(struct meshlink_handle *mesh, outgoing_t *);
 extern void handle_incoming_vpn_data(struct event_loop_t *loop, void *, int);

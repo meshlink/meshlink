@@ -1652,6 +1652,7 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 		return false;
 	}
 
+	init_mmsg(mesh);
 	init_outgoings(mesh);
 	init_adns(mesh);
 
@@ -1726,6 +1727,7 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	exit_adns(mesh);
 	exit_outgoings(mesh);
+	exit_mmsg(mesh);
 
 	// Ensure we are considered unreachable
 	if(mesh->nodes) {
