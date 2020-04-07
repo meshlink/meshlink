@@ -63,6 +63,7 @@ typedef struct outgoing_t {
 	struct node_t *node;
 	enum {
 		OUTGOING_START,
+		OUTGOING_CANONICAL_RESOLVE,
 		OUTGOING_CANONICAL,
 		OUTGOING_RECENT,
 		OUTGOING_KNOWN,

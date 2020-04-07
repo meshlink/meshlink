@@ -19,6 +19,7 @@
 
 #include "system.h"
 
+#include "adns.h"
 #include "conf.h"
 #include "connection.h"
 #include "list.h"
@@ -240,25 +241,26 @@ static void free_known_addresses(struct addrinfo *ai) {
 	}
 }
 
-static struct addrinfo *get_canonical_address(node_t *n) {
-	if(!n->canonical_address) {
-		return false;
+static void canonical_resolve_cb(meshlink_handle_t *mesh, char *host, char *serv, void *data, struct addrinfo *ai, int err) {
+	(void)serv;
+	(void)err;
+	node_t *n = data;
+
+	free(host);
+	free(serv);
+
+	for list_each(outgoing_t, outgoing, mesh->outgoings) {
+		if(outgoing->node == n) {
+			if(outgoing->state == OUTGOING_CANONICAL_RESOLVE) {
+				outgoing->ai = ai;
+				outgoing->aip = NULL;
+				outgoing->state = OUTGOING_CANONICAL;
+				do_outgoing_connection(mesh, outgoing);
+			}
+
+			return;
+		}
 	}
-
-	char *address = xstrdup(n->canonical_address);
-	char *port = strchr(address, ' ');
-
-	if(!port) {
-		free(address);
-		return false;
-	}
-
-	*port++ = 0;
-
-	struct addrinfo *ai = str2addrinfo(address, port, SOCK_STREAM);
-	free(address);
-
-	return ai;
 }
 
 static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgoing) {
@@ -268,12 +270,32 @@ static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgo
 
 	if(outgoing->state == OUTGOING_START) {
 		start = true;
-		outgoing->state = OUTGOING_CANONICAL;
+		outgoing->state = OUTGOING_CANONICAL_RESOLVE;
+	}
+
+	if(outgoing->state == OUTGOING_CANONICAL_RESOLVE) {
+		node_t *n = outgoing->node;
+
+		if(n->canonical_address) {
+			char *address = xstrdup(n->canonical_address);
+			char *port = strchr(address, ' ');
+
+			if(port) {
+				*port++ = 0;
+				port = xstrdup(port);
+			} else {
+				port = xstrdup(mesh->myport);
+			}
+
+			adns_queue(mesh, address, port, canonical_resolve_cb, outgoing->node, 2);
+			return false;
+		} else {
+			outgoing->state = OUTGOING_RECENT;
+		}
 	}
 
 	if(outgoing->state == OUTGOING_CANONICAL) {
 		if(!outgoing->aip) {
-			outgoing->ai = get_canonical_address(outgoing->node);
 			outgoing->aip = outgoing->ai;
 		} else {
 			outgoing->aip = outgoing->aip->ai_next;
@@ -283,7 +305,10 @@ static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgo
 			return true;
 		}
 
-		freeaddrinfo(outgoing->ai);
+		if(outgoing->ai) {
+			freeaddrinfo(outgoing->ai);
+		}
+
 		outgoing->ai = NULL;
 		outgoing->aip = NULL;
 		outgoing->state = OUTGOING_RECENT;
@@ -336,7 +361,9 @@ void do_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
 begin:
 
 	if(!get_next_outgoing_address(mesh, outgoing)) {
-		if(outgoing->state == OUTGOING_NO_KNOWN_ADDRESSES) {
+		if(outgoing->state == OUTGOING_CANONICAL_RESOLVE) {
+			/* We are waiting for a callback from the ADNS thread */
+		} else if(outgoing->state == OUTGOING_NO_KNOWN_ADDRESSES) {
 			logger(mesh, MESHLINK_ERROR, "No known addresses for %s", outgoing->node->name);
 		} else {
 			logger(mesh, MESHLINK_ERROR, "Could not set up a meta connection to %s", outgoing->node->name);
