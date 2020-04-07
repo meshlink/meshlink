@@ -333,9 +333,6 @@ static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgo
 }
 
 void do_outgoing_connection(meshlink_handle_t *mesh, outgoing_t *outgoing) {
-	struct addrinfo *proxyai = NULL;
-	int result;
-
 begin:
 
 	if(!get_next_outgoing_address(mesh, outgoing)) {
@@ -354,35 +351,26 @@ begin:
 
 	memcpy(&c->address, outgoing->aip->ai_addr, outgoing->aip->ai_addrlen);
 
-	char *hostname = sockaddr2hostname(&c->address);
-
-	logger(mesh, MESHLINK_INFO, "Trying to connect to %s at %s", outgoing->node->name, hostname);
-
-	if(!mesh->proxytype) {
-		c->socket = socket(c->address.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
-		configure_tcp(c);
-	} else {
-		proxyai = str2addrinfo(mesh->proxyhost, mesh->proxyport, SOCK_STREAM);
-
-		if(!proxyai) {
-			free_connection(c);
-			free(hostname);
-			goto begin;
-		}
-
-		logger(mesh, MESHLINK_INFO, "Using proxy at %s port %s", mesh->proxyhost, mesh->proxyport);
-		c->socket = socket(proxyai->ai_family, SOCK_STREAM, IPPROTO_TCP);
-		configure_tcp(c);
+	if(mesh->log_level <= MESHLINK_INFO) {
+		char *hostname = sockaddr2hostname(&c->address);
+		logger(mesh, MESHLINK_INFO, "Trying to connect to %s at %s", outgoing->node->name, hostname);
+		free(hostname);
 	}
 
+	c->socket = socket(c->address.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
+
 	if(c->socket == -1) {
-		logger(mesh, MESHLINK_ERROR, "Creating socket for %s at %s failed: %s", c->name, hostname, sockstrerror(sockerrno));
+		if(mesh->log_level <= MESHLINK_ERROR) {
+			char *hostname = sockaddr2hostname(&c->address);
+			logger(mesh, MESHLINK_ERROR, "Creating socket for %s at %s failed: %s", c->name, hostname, sockstrerror(sockerrno));
+			free(hostname);
+		}
+
 		free_connection(c);
-		free(hostname);
 		goto begin;
 	}
 
-	free(hostname);
+	configure_tcp(c);
 
 #ifdef FD_CLOEXEC
 	fcntl(c->socket, F_SETFD, FD_CLOEXEC);
@@ -399,17 +387,16 @@ begin:
 
 	/* Connect */
 
-	if(!mesh->proxytype) {
-		result = connect(c->socket, &c->address.sa, SALEN(c->address.sa));
-	} else {
-		result = connect(c->socket, proxyai->ai_addr, proxyai->ai_addrlen);
-		freeaddrinfo(proxyai);
-	}
+	int result = connect(c->socket, &c->address.sa, SALEN(c->address.sa));
 
 	if(result == -1 && !sockinprogress(sockerrno)) {
-		logger(mesh, MESHLINK_ERROR, "Could not connect to %s: %s", outgoing->node->name, sockstrerror(sockerrno));
-		free_connection(c);
+		if(mesh->log_level <= MESHLINK_ERROR) {
+			char *hostname = sockaddr2hostname(&c->address);
+			logger(mesh, MESHLINK_ERROR, "Could not connect to %s: %s", outgoing->node->name, sockstrerror(sockerrno));
+			free(hostname);
+		}
 
+		free_connection(c);
 		goto begin;
 	}
 

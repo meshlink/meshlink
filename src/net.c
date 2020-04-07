@@ -92,13 +92,6 @@ void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report)
 	if(outgoing) {
 		do_outgoing_connection(mesh, outgoing);
 	}
-
-#ifndef HAVE_MINGW
-	/* Clean up dead proxy processes */
-
-	while(waitpid(-1, NULL, WNOHANG) > 0);
-
-#endif
 }
 
 /*
