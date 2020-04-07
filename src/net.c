@@ -610,7 +610,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 	for splay_each(node_t, n, mesh->nodes) {
 		if(n->status.dirty) {
-			if(node_write_config(mesh, n)) {
+			if(!node_write_config(mesh, n)) {
 				logger(mesh, MESHLINK_DEBUG, "Could not update %s", n->name);
 			}
 
