@@ -20,6 +20,7 @@
 #include "system.h"
 
 #include <pthread.h>
+#include <stdatomic.h>
 
 #include "adns.h"
 #include "logger.h"
@@ -81,13 +82,13 @@ static void adns_cb_handler(event_loop_t *loop, void *data) {
 	}
 }
 
-extern void init_adns(meshlink_handle_t *mesh) {
+void init_adns(meshlink_handle_t *mesh) {
 	signal_add(&mesh->loop, &mesh->adns_signal, adns_cb_handler, mesh, 1);
 	meshlink_queue_init(&mesh->adns_queue);
 	pthread_create(&mesh->adns_thread, NULL, adns_loop, mesh);
 }
 
-extern void exit_adns(meshlink_handle_t *mesh) {
+void exit_adns(meshlink_handle_t *mesh) {
 	if(!mesh->adns_signal.cb) {
 		return;
 	}
@@ -111,7 +112,7 @@ extern void exit_adns(meshlink_handle_t *mesh) {
 	signal_del(&mesh->loop, &mesh->adns_signal);
 }
 
-extern void adns_queue(meshlink_handle_t *mesh, char *host, char *serv, adns_cb_t cb, void *data, int timeout) {
+void adns_queue(meshlink_handle_t *mesh, char *host, char *serv, adns_cb_t cb, void *data, int timeout) {
 	adns_item_t *item = xmalloc(sizeof(*item));
 	item->cb = cb;
 	item->data = data;
@@ -126,4 +127,89 @@ extern void adns_queue(meshlink_handle_t *mesh, char *host, char *serv, adns_cb_
 	}
 
 	pthread_cond_signal(&mesh->adns_cond);
+}
+
+struct adns_blocking_info {
+	meshlink_handle_t *mesh;
+	pthread_mutex_t mutex;
+	pthread_cond_t cond;
+	char *host;
+	char *serv;
+	struct addrinfo *ai;
+	bool done;
+};
+
+void *adns_blocking_handler(void *data) {
+	struct adns_blocking_info *info = data;
+
+	logger(info->mesh, MESHLINK_DEBUG, "Resolving %s port %s", info->host, info->serv);
+
+	if(getaddrinfo(info->host, info->serv, NULL, &info->ai)) {
+		info->ai = NULL;
+	}
+
+	pthread_mutex_lock(&info->mutex);
+
+	bool cleanup = info->done;
+
+	if(!info->done) {
+		info->done = true;
+		pthread_cond_signal(&info->cond);
+	}
+
+	pthread_mutex_unlock(&info->mutex);
+
+	if(cleanup) {
+		free(info->host);
+		free(info->serv);
+		free(info);
+	}
+
+	return NULL;
+}
+
+struct addrinfo *adns_blocking_request(meshlink_handle_t *mesh, char *host, char *serv, int timeout) {
+	struct adns_blocking_info *info = xzalloc(sizeof(*info));
+
+	info->mesh = mesh;
+	info->host = host;
+	info->serv = serv;
+
+	struct timespec deadline;
+	clock_gettime(CLOCK_REALTIME, &deadline);
+	deadline.tv_sec += timeout;
+
+	pthread_t thread;
+
+	if(pthread_create(&thread, NULL, adns_blocking_handler, info)) {
+		free(info->host);
+		free(info->serv);
+		free(info);
+		return NULL;
+	} else {
+		pthread_detach(thread);
+	}
+
+	pthread_mutex_lock(&info->mutex);
+	pthread_cond_timedwait(&info->cond, &info->mutex, &deadline);
+
+	struct addrinfo *result = NULL;
+	bool cleanup = info->done;
+
+	if(info->done) {
+		result = info->ai;
+	} else {
+		logger(mesh, MESHLINK_WARNING, "Deadline passed for DNS request %s port %s", host, serv);
+		info->done = true;
+	}
+
+	pthread_mutex_unlock(&info->mutex);
+
+	if(cleanup) {
+		free(info->host);
+		free(info->serv);
+		free(info);
+	}
+
+	return result;
 }
