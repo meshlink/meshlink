@@ -173,6 +173,7 @@ static bool getlocaladdr(char *destaddr, sockaddr_t *sa, socklen_t *salen, int n
 		.ai_family = AF_UNSPEC,
 		.ai_socktype = SOCK_DGRAM,
 		.ai_protocol = IPPROTO_UDP,
+		.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV,
 	};
 
 	if(getaddrinfo(destaddr, "80", &hint, &rai) || !rai) {
@@ -256,7 +257,7 @@ char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int fami
 	}
 
 	logger(mesh, MESHLINK_DEBUG, "Trying to discover externally visible hostname...\n");
-	struct addrinfo *ai = str2addrinfo(host, port ? port : "80", SOCK_STREAM);
+	struct addrinfo *ai = adns_blocking_request(mesh, xstrdup(host), xstrdup(port ? port : "80"), 5);
 	char line[256];
 	char *hostname = NULL;
 
@@ -500,15 +501,9 @@ static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
 		}
 
 		// Convert what we have to a sockaddr
-		struct addrinfo *ai_in, *ai_out;
-		struct addrinfo hint = {
-			.ai_family = AF_UNSPEC,
-			.ai_flags = AI_NUMERICSERV,
-			.ai_socktype = SOCK_STREAM,
-		};
-		int err = getaddrinfo(hostname[i], port[i], &hint, &ai_in);
+		struct addrinfo *ai_in = adns_blocking_request(mesh, xstrdup(hostname[i]), xstrdup(port[i]), 5);
 
-		if(err || !ai_in) {
+		if(!ai_in) {
 			continue;
 		}
 
@@ -517,44 +512,8 @@ static char *get_my_hostname(meshlink_handle_t *mesh, uint32_t flags) {
 			node_add_recent_address(mesh, mesh->self, (sockaddr_t *)aip->ai_addr);
 		}
 
-		if(flags & MESHLINK_INVITE_NUMERIC) {
-			// We don't need to do any further conversion
-			freeaddrinfo(ai_in);
-			continue;
-		}
-
-		// Convert it to a hostname
-		char resolved_host[NI_MAXHOST];
-		char resolved_port[NI_MAXSERV];
-		err = getnameinfo(ai_in->ai_addr, ai_in->ai_addrlen, resolved_host, sizeof resolved_host, resolved_port, sizeof resolved_port, NI_NUMERICSERV);
-
-		if(err || !is_valid_hostname(resolved_host)) {
-			freeaddrinfo(ai_in);
-			continue;
-		}
-
-		// Convert the hostname back to a sockaddr
-		hint.ai_family = ai_in->ai_family;
-		err = getaddrinfo(resolved_host, resolved_port, &hint, &ai_out);
-
-		if(err || !ai_out) {
-			freeaddrinfo(ai_in);
-			continue;
-		}
-
-		// Check if it's still the same sockaddr
-		if(ai_in->ai_addrlen != ai_out->ai_addrlen || memcmp(ai_in->ai_addr, ai_out->ai_addr, ai_in->ai_addrlen)) {
-			freeaddrinfo(ai_in);
-			freeaddrinfo(ai_out);
-			continue;
-		}
-
-		// Yes: replace the hostname with the resolved one
-		free(hostname[i]);
-		hostname[i] = xstrdup(resolved_host);
-
 		freeaddrinfo(ai_in);
-		freeaddrinfo(ai_out);
+		continue;
 	}
 
 	// Remove duplicates again, since IPv4 and IPv6 addresses might map to the same hostname
@@ -2895,7 +2854,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 		}
 
 		// Connect to the meshlink daemon mentioned in the URL.
-		struct addrinfo *ai = str2addrinfo(address, port, SOCK_STREAM);
+		struct addrinfo *ai = adns_blocking_request(mesh, xstrdup(address), xstrdup(port), 5);
 
 		if(ai) {
 			for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
