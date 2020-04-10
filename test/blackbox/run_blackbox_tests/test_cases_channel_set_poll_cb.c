@@ -26,18 +26,34 @@
 #include "../common/containers.h"
 #include "../common/test_step.h"
 #include "../common/common_handlers.h"
+#include "../../utils.h"
 #include <assert.h>
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <setjmp.h>
 #include <cmocka.h>
 #include <pthread.h>
+#include <linux/limits.h>
 
 /* Modify this to change the logging level of Meshlink */
 #define TEST_MESHLINK_LOG_LEVEL MESHLINK_DEBUG
 /* Modify this to change the port number */
 #define PORT 8000
+
+#define NUT                         "nut"
+#define PEER                        "peer"
+#define TEST_POLL_CB                "test_poll_cb"
+#define create_path(confbase, node_name, test_case_no)   assert(snprintf(confbase, sizeof(confbase), TEST_POLL_CB "_%ld_%s_%02d", (long) getpid(), node_name, test_case_no) > 0)
+
+typedef struct test_cb_data {
+	size_t cb_data_len;
+	size_t cb_total_data_len;
+	int total_cb_count;
+	void (*cb_handler)(void);
+	bool cb_flag;
+} test_cb_t;
 
 static void test_case_channel_set_poll_cb_01(void **state);
 static bool test_steps_channel_set_poll_cb_01(void);
@@ -45,6 +61,8 @@ static void test_case_channel_set_poll_cb_02(void **state);
 static bool test_steps_channel_set_poll_cb_02(void);
 static void test_case_channel_set_poll_cb_03(void **state);
 static bool test_steps_channel_set_poll_cb_03(void);
+static void test_case_channel_set_poll_cb_04(void **state);
+static bool test_steps_channel_set_poll_cb_04(void);
 static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len);
 
 static black_box_state_t test_case_channel_set_poll_cb_01_state = {
@@ -55,6 +73,9 @@ static black_box_state_t test_case_channel_set_poll_cb_02_state = {
 };
 static black_box_state_t test_case_channel_set_poll_cb_03_state = {
 	.test_case_name = "test_case_channel_set_poll_cb_03",
+};
+static black_box_state_t test_case_channel_set_poll_cb_04_state = {
+	.test_case_name = "test_case_channel_set_poll_cb_04",
 };
 
 static bool polled;
@@ -249,6 +270,237 @@ static bool test_steps_channel_set_poll_cb_03(void) {
 	return true;
 }
 
+static test_cb_t poll_cb_data;
+static test_cb_t recv_cb_data;
+static meshlink_handle_t *mesh;
+
+/* Peer node channel receive callback's internal handler function - Blocks for 2 seconds whenever it gets invoked */
+static void recv_cb_data_handler(void) {
+	static int poll_cb_last_count;
+
+	// Sleep for 1 second to allow NUT's callback to invoke already scheduled callbacks
+	// i.e, this sleeps prevents a condition where if the flag is set assuming that
+	// further callbacks are invalid then pending poll callbacks can misinterpreted as invalid.
+	// TODO: Fix this race condition in the test case without sleep()
+
+	sleep(1);
+
+	// Make sure there is change in the cumulative poll callbacks count
+
+	if(!poll_cb_last_count) {
+		poll_cb_last_count = poll_cb_data.total_cb_count;
+	} else {
+		assert(poll_cb_data.total_cb_count > poll_cb_last_count);
+	}
+
+	// Set the receive callback block flag and reset it back after 2 seconds sleep
+
+	recv_cb_data.cb_flag = true;
+	sleep(2);
+	recv_cb_data.cb_flag = false;
+}
+
+/* Peer node channel receive callback's internal handler function - Stops the NUT's instance and
+    resets it's own internal handler */
+static void recv_cb_data_handler2(void) {
+
+	// Stop the NUT's meshlink instance, set the receive callback flag indicating that further
+	// poll callbacks are considered to be invalid
+
+	meshlink_stop(mesh);
+	recv_cb_data.cb_flag = true;
+
+	// Reset the callback handler (i.e, this is a one-time operation)
+
+	recv_cb_data.cb_handler = NULL;
+}
+
+/* Peer node channel receive callback's internal handler function - Blocks for straight 5 seconds and
+    resets it's own internal handler */
+static void recv_cb_data_handler3(void) {
+	sleep(5);
+	recv_cb_data.cb_handler = NULL;
+	recv_cb_data.cb_flag = false;
+}
+
+/* NUT channel poll callback's internal handler function - Assert on peer node receive callback's flag */
+static void poll_cb_data_handler(void) {
+	assert_false(recv_cb_data.cb_flag);
+}
+
+/* Peer node's receive callback handler */
+static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+	(void)mesh;
+	(void)channel;
+	(void)data;
+
+	// printf("Received %zu bytes\n", len);
+	(recv_cb_data.total_cb_count)++;
+	recv_cb_data.cb_total_data_len += len;
+	recv_cb_data.cb_data_len = len;
+
+	if(recv_cb_data.cb_handler) {
+		recv_cb_data.cb_handler();
+	}
+}
+
+/* NUT's poll callback handler */
+static void poll_cb2(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+	(void)mesh;
+	(void)channel;
+
+	// printf("Poll len: %zu\n", len);
+	assert(len);
+	(poll_cb_data.total_cb_count)++;
+	poll_cb_data.cb_total_data_len += len;
+	poll_cb_data.cb_data_len = len;
+
+	if(poll_cb_data.cb_handler) {
+		(poll_cb_data.cb_handler)();
+	}
+}
+
+/* Peer node's accept callback handler */
+static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	(void)port;
+	(void)data;
+	(void)len;
+
+	channel->node->priv = channel;
+	meshlink_set_channel_receive_cb(mesh, channel, receive_cb);
+	return true;
+}
+
+/* Execute meshlink_channel_set_poll_cb Test Case # 4 - Corner cases */
+static void test_case_channel_set_poll_cb_04(void **state) {
+	execute_test(test_steps_channel_set_poll_cb_04, state);
+}
+/* Test Steps for meshlink_channel_set_poll_cb Test Case # 4
+
+    Test Scenarios:
+        1. Validate that Node-Under-Test never invokes the poll callback from a silent channel, here 65 seconds
+        2. Send some data on to the data channel and block the reader end of the channel for a while where
+            at that instance nUT should not invokes any periodic callbacks. Once the peer node unblocks it's
+            instance it should continue to invokes callbacks.
+            This should repeat until the NUT channel sends it's complete data or the poll callback invokes with
+            max default size as length.
+        3. Send a big packet of maximum send buffer size where length becomes 0 bytes, still NUT channel
+            should not invoke 0 length callback. Make sure by blocking the receiver and assert on the poll callback.
+        4. NUT channel should not invoke the poll callback after self node going offline or due to it's reachability status.
+        5. Modify the channel send buffer queue size which should be the new poll callback size further.
+*/
+static bool test_steps_channel_set_poll_cb_04(void) {
+	char nut_confbase[PATH_MAX];
+	char peer_confbase[PATH_MAX];
+	create_path(nut_confbase, NUT, 4);
+	create_path(peer_confbase, PEER, 4);
+
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
+	mesh = meshlink_open(nut_confbase, NUT, TEST_POLL_CB, DEV_CLASS_STATIONARY);
+	assert_non_null(mesh);
+	meshlink_handle_t *mesh_peer = meshlink_open(peer_confbase, PEER, TEST_POLL_CB, DEV_CLASS_STATIONARY);
+	assert_non_null(mesh_peer);
+
+	link_meshlink_pair(mesh, mesh_peer);
+	meshlink_set_channel_accept_cb(mesh_peer, accept_cb);
+
+	assert_true(meshlink_start(mesh));
+	assert_true(meshlink_start(mesh_peer));
+	meshlink_node_t *node = meshlink_get_node(mesh, PEER);
+
+	/* 1. Accept and stay idle for 65 seconds */
+
+	bzero(&poll_cb_data, sizeof(poll_cb_data));
+	bzero(&recv_cb_data, sizeof(recv_cb_data));
+
+	meshlink_channel_t *channel = meshlink_channel_open(mesh, node, PORT, NULL, NULL, 0);
+	assert_non_null(channel);
+	meshlink_set_channel_poll_cb(mesh, channel, poll_cb2);
+	sleep(65);
+	assert_int_equal(poll_cb_data.total_cb_count, 1);
+	assert_int_not_equal(poll_cb_data.cb_data_len, 0);
+	size_t default_max_size = poll_cb_data.cb_data_len;
+
+	// Send 7 MSS size packet
+
+	char *buffer = malloc(default_max_size);
+	assert_non_null(buffer);
+	size_t send_size = default_max_size;
+	bzero(&poll_cb_data, sizeof(poll_cb_data));
+	bzero(&recv_cb_data, sizeof(recv_cb_data));
+
+	size_t mss_size = meshlink_channel_get_mss(mesh, channel);
+	assert_int_not_equal(mss_size, -1);
+
+	if(mss_size * 7 <= default_max_size) {
+		send_size = mss_size * 7;
+	}
+
+	/* 2. Validate whether poll callback is invoked in case of channel is holding data in send buffer for a while */
+
+	bzero(&poll_cb_data, sizeof(poll_cb_data));
+	bzero(&recv_cb_data, sizeof(recv_cb_data));
+	poll_cb_data.cb_handler = poll_cb_data_handler;
+	recv_cb_data.cb_handler = recv_cb_data_handler;
+	assert_int_equal(meshlink_channel_send(mesh, channel, buffer, send_size), send_size);
+	assert_after(poll_cb_data.cb_data_len == default_max_size, 60);
+	assert_int_equal(recv_cb_data.cb_total_data_len, send_size);
+
+	/* 3. On sending max send buffer sized packed on a channel should not invoke callback with length 0 */
+
+	bzero(&poll_cb_data, sizeof(poll_cb_data));
+	bzero(&recv_cb_data, sizeof(recv_cb_data));
+	poll_cb_data.cb_handler = poll_cb_data_handler;
+	recv_cb_data.cb_handler = recv_cb_data_handler3;
+	recv_cb_data.cb_flag = true;
+	assert_int_equal(meshlink_channel_send(mesh, channel, buffer, default_max_size), default_max_size);
+	assert_after(poll_cb_data.cb_data_len == default_max_size, 60);
+
+
+	/* 4. Poll callback should not be invoked when the self node is offline and it has data in it's buffer */
+
+	bzero(&recv_cb_data, sizeof(recv_cb_data));
+	recv_cb_data.cb_handler = recv_cb_data_handler2;
+	poll_cb_data.cb_handler = poll_cb_data_handler;
+	assert_int_equal(meshlink_channel_send(mesh, channel, buffer, send_size), send_size);
+	assert_after(recv_cb_data.cb_flag, 20);
+	sleep(2);
+	assert_int_equal(meshlink_channel_send(mesh, channel, buffer, 50), 50);
+	sleep(2);
+	recv_cb_data.cb_flag = false;
+	assert_true(meshlink_start(mesh));
+	assert_after(poll_cb_data.cb_data_len == default_max_size, 10);
+
+	/* 5. Changing the sendq size should reflect on the poll callback length */
+
+	bzero(&poll_cb_data, sizeof(poll_cb_data));
+	bzero(&recv_cb_data, sizeof(recv_cb_data));
+
+	size_t new_size = meshlink_channel_get_mss(mesh, channel) * 3;
+	assert_int_not_equal(new_size, -1);
+	meshlink_set_channel_sndbuf(mesh, channel, new_size);
+	assert_after(new_size == poll_cb_data.cb_data_len, 5);
+	send_size = new_size / 2;
+	assert_int_equal(meshlink_channel_send(mesh, channel, buffer, send_size), send_size);
+	assert_after(new_size == poll_cb_data.cb_data_len, 5);
+
+	/* If peer node's channel is closed/freed but the host node is not freed then poll callback with length 0 is expected */
+
+	/*assert_int_not_equal(poll_cb_data.cb_total_data_len, 0);
+
+	meshlink_node_t *channel_peer = node_peer->priv;
+	meshlink_channel_close(mesh_peer, channel_peer);
+	assert_after(!poll_cb_data.cb_data_len, 60);*/
+
+	// Cleanup
+
+	free(buffer);
+	meshlink_close(mesh);
+	meshlink_close(mesh_peer);
+	assert_true(meshlink_destroy(nut_confbase));
+	assert_true(meshlink_destroy(peer_confbase));
+	return true;
+}
 
 int test_meshlink_set_channel_poll_cb(void) {
 	const struct CMUnitTest blackbox_channel_set_poll_cb_tests[] = {
@@ -257,7 +509,9 @@ int test_meshlink_set_channel_poll_cb(void) {
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_set_poll_cb_02, NULL, NULL,
 		                (void *)&test_case_channel_set_poll_cb_02_state),
 		cmocka_unit_test_prestate_setup_teardown(test_case_channel_set_poll_cb_03, NULL, NULL,
-		                (void *)&test_case_channel_set_poll_cb_03_state)
+		                (void *)&test_case_channel_set_poll_cb_03_state),
+		cmocka_unit_test_prestate_setup_teardown(test_case_channel_set_poll_cb_04, NULL, NULL,
+		                (void *)&test_case_channel_set_poll_cb_04_state)
 	};
 	total_tests += sizeof(blackbox_channel_set_poll_cb_tests) / sizeof(blackbox_channel_set_poll_cb_tests[0]);
 
