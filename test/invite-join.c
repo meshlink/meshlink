@@ -28,6 +28,9 @@ int main() {
 	assert(meshlink_destroy("invite_join_conf.1"));
 	assert(meshlink_destroy("invite_join_conf.2"));
 	assert(meshlink_destroy("invite_join_conf.3"));
+	assert(meshlink_destroy("invite_join_conf.4"));
+	assert(meshlink_destroy("invite_join_conf.5"));
+	assert(meshlink_destroy("invite_join_conf.6"));
 
 	// Open thee new meshlink instance.
 
@@ -174,8 +177,114 @@ int main() {
 	assert(invalid5 < localhost);
 	free(grault_url);
 
+	// Check inviting nodes into a submesh
+
+	assert(!meshlink_get_node_submesh(mesh1, meshlink_get_self(mesh1)));
+
+	meshlink_handle_t *mesh4 = meshlink_open("invite_join_conf.4", "four", "invite-join", DEV_CLASS_BACKBONE);
+	meshlink_handle_t *mesh5 = meshlink_open("invite_join_conf.5", "five", "invite-join", DEV_CLASS_BACKBONE);
+	meshlink_handle_t *mesh6 = meshlink_open("invite_join_conf.6", "six", "invite-join", DEV_CLASS_BACKBONE);
+	assert(mesh4);
+	assert(mesh5);
+	assert(mesh6);
+
+	meshlink_enable_discovery(mesh4, false);
+	meshlink_enable_discovery(mesh5, false);
+	meshlink_enable_discovery(mesh6, false);
+
+	meshlink_submesh_t *submesh1 = meshlink_submesh_open(mesh1, "submesh1");
+	meshlink_submesh_t *submesh2 = meshlink_submesh_open(mesh1, "submesh2");
+	assert(submesh1);
+	assert(submesh2);
+
+	char *four_url = meshlink_invite(mesh1, submesh1, mesh4->name);
+	char *five_url = meshlink_invite(mesh1, submesh1, mesh5->name);
+	char *six_url = meshlink_invite(mesh1, submesh2, mesh6->name);
+	assert(four_url);
+	assert(five_url);
+	assert(six_url);
+
+	assert(meshlink_join(mesh4, four_url));
+	assert(meshlink_join(mesh5, five_url));
+	assert(meshlink_join(mesh6, six_url));
+
+	free(four_url);
+	free(five_url);
+	free(six_url);
+
+	assert(meshlink_start(mesh2));
+	assert(meshlink_start(mesh4));
+	assert(meshlink_start(mesh5));
+	assert(meshlink_start(mesh6));
+
+	// Check that each node knows in which submesh it is
+
+	meshlink_submesh_t *mesh4_submesh = meshlink_get_node_submesh(mesh4, meshlink_get_self(mesh4));
+	meshlink_submesh_t *mesh5_submesh = meshlink_get_node_submesh(mesh4, meshlink_get_self(mesh5));
+	meshlink_submesh_t *mesh6_submesh = meshlink_get_node_submesh(mesh6, meshlink_get_self(mesh6));
+	assert(mesh4_submesh);
+	assert(mesh5_submesh);
+	assert(mesh6_submesh);
+	assert(!strcmp(mesh4_submesh->name, "submesh1"));
+	assert(!strcmp(mesh5_submesh->name, "submesh1"));
+	assert(!strcmp(mesh6_submesh->name, "submesh2"));
+
+	// Wait for nodes to connect, and check that foo sees the right submeshes
+
+	sleep(2);
+	meshlink_node_t *mesh1_four = meshlink_get_node(mesh1, mesh4->name);
+	meshlink_node_t *mesh1_six = meshlink_get_node(mesh1, mesh6->name);
+	assert(meshlink_get_node_submesh(mesh1, meshlink_get_self(mesh1)) == NULL);
+	assert(meshlink_get_node_submesh(mesh1, mesh1_four) == submesh1);
+	assert(meshlink_get_node_submesh(mesh1, mesh1_six) == submesh2);
+
+	// Check that the new invitees still have the right submesh information
+
+	meshlink_node_t *mesh4_four = meshlink_get_node(mesh4, mesh4->name);
+	meshlink_node_t *mesh4_five = meshlink_get_node(mesh4, mesh5->name);
+	meshlink_node_t *mesh6_six = meshlink_get_node(mesh6, mesh6->name);
+	assert(meshlink_get_node_submesh(mesh4, mesh4_four) == mesh4_submesh);
+	assert(meshlink_get_node_submesh(mesh4, mesh4_five) == mesh4_submesh);
+	assert(meshlink_get_node_submesh(mesh6, mesh6_six) == mesh6_submesh);
+
+	// Check that bar can see all the nodes in submeshes and vice versa
+
+	assert(meshlink_get_node(mesh2, mesh4->name));
+	assert(meshlink_get_node(mesh2, mesh5->name));
+	assert(meshlink_get_node(mesh2, mesh6->name));
+	assert(meshlink_get_node(mesh4, mesh2->name));
+	assert(meshlink_get_node(mesh5, mesh2->name));
+	assert(meshlink_get_node(mesh6, mesh2->name));
+
+	// Check that four and five can see each other
+
+	assert(meshlink_get_node(mesh4, mesh5->name));
+	assert(meshlink_get_node(mesh5, mesh4->name));
+
+	// Check that the nodes in different submeshes cannot see each other
+
+	assert(!meshlink_get_node(mesh4, mesh6->name));
+	assert(!meshlink_get_node(mesh5, mesh6->name));
+	assert(!meshlink_get_node(mesh6, mesh4->name));
+	assert(!meshlink_get_node(mesh6, mesh5->name));
+
+	// Check that bar sees the right submesh information for the nodes in submeshes
+
+	meshlink_submesh_t *mesh2_four_submesh = meshlink_get_node_submesh(mesh2, meshlink_get_node(mesh2, mesh4->name));
+	meshlink_submesh_t *mesh2_five_submesh = meshlink_get_node_submesh(mesh2, meshlink_get_node(mesh2, mesh5->name));
+	meshlink_submesh_t *mesh2_six_submesh = meshlink_get_node_submesh(mesh2, meshlink_get_node(mesh2, mesh6->name));
+	assert(mesh2_four_submesh);
+	assert(mesh2_five_submesh);
+	assert(mesh2_six_submesh);
+	assert(!strcmp(mesh2_four_submesh->name, "submesh1"));
+	assert(!strcmp(mesh2_five_submesh->name, "submesh1"));
+	assert(!strcmp(mesh2_six_submesh->name, "submesh2"));
+
 	// Clean up.
 
+	meshlink_close(mesh6);
+	meshlink_close(mesh5);
+	meshlink_close(mesh4);
 	meshlink_close(mesh3);
 	meshlink_close(mesh2);
 	meshlink_close(mesh1);

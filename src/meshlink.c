@@ -665,24 +665,28 @@ static bool finalize_join(join_state_t *state, const void *buf, uint16_t len) {
 	}
 
 	char *name = packmsg_get_str_dup(&in);
-	packmsg_skip_element(&in); /* submesh */
+	char *submesh_name = packmsg_get_str_dup(&in);
 	dev_class_t devclass = packmsg_get_int32(&in);
 	uint32_t count = packmsg_get_array(&in);
 
-	if(!name) {
-		logger(mesh, MESHLINK_DEBUG, "No Name found in invitation!\n");
+	if(!name || !check_id(name)) {
+		logger(mesh, MESHLINK_DEBUG, "No valid Name found in invitation!\n");
+		free(name);
+		free(submesh_name);
 		return false;
 	}
 
-	if(!check_id(name)) {
-		logger(mesh, MESHLINK_DEBUG, "Invalid Name found in invitation: %s!\n", name);
+	if(!submesh_name || (strcmp(submesh_name, CORE_MESH) && !check_id(submesh_name))) {
+		logger(mesh, MESHLINK_DEBUG, "No valid Submesh found in invitation!\n");
 		free(name);
+		free(submesh_name);
 		return false;
 	}
 
 	if(!count) {
 		logger(mesh, MESHLINK_ERROR, "Incomplete invitation file!\n");
 		free(name);
+		free(submesh_name);
 		return false;
 	}
 
@@ -690,6 +694,8 @@ static bool finalize_join(join_state_t *state, const void *buf, uint16_t len) {
 	free(mesh->self->name);
 	mesh->name = name;
 	mesh->self->name = xstrdup(name);
+	mesh->self->submesh = strcmp(submesh_name, CORE_MESH) ? lookup_or_create_submesh(mesh, submesh_name) : NULL;
+	free(submesh_name);
 	mesh->self->devclass = devclass == DEV_CLASS_UNKNOWN ? mesh->devclass : devclass;
 
 	// Initialize configuration directory
