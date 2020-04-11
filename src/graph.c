@@ -158,7 +158,7 @@ static void check_reachability(meshlink_handle_t *mesh) {
 				n->status.validkey = false;
 				sptps_stop(&n->sptps);
 				n->status.waitingforkey = false;
-				n->last_req_key = 0;
+				n->last_req_key = -3600;
 
 				n->status.udp_confirmed = false;
 				n->maxmtu = MTU;
@@ -196,7 +196,7 @@ static void check_reachability(meshlink_handle_t *mesh) {
 			n->status.validkey = false;
 			sptps_stop(&n->sptps);
 			n->status.waitingforkey = false;
-			n->last_req_key = 0;
+			n->last_req_key = -3600;
 
 			n->status.udp_confirmed = false;
 			n->maxmtu = MTU;

@@ -632,7 +632,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 				n->status.validkey = false;
 				sptps_stop(&n->sptps);
 				n->status.waitingforkey = false;
-				n->last_req_key = 0;
+				n->last_req_key = -3600;
 			} else {
 				n->last_req_key = mesh->loop.now.tv_sec;
 			}
@@ -671,7 +671,7 @@ void retry(meshlink_handle_t *mesh) {
 		}
 
 		if(!c->status.pinged) {
-			c->last_ping_time = 0;
+			c->last_ping_time = -3600;
 		}
 
 		sockaddr_t sa;

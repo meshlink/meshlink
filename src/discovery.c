@@ -263,7 +263,7 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 							});
 						}
 
-						c->last_ping_time = 0;
+						c->last_ping_time = -3600;
 					}
 
 				} else {

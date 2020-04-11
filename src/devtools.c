@@ -353,9 +353,9 @@ void devtool_force_sptps_renewal(meshlink_handle_t *mesh, meshlink_node_t *node)
 	node_t *n = (node_t *)node;
 	connection_t *c = n->connection;
 
-	n->last_req_key = 0;
+	n->last_req_key = -3600;
 
 	if(c) {
-		c->last_key_renewal = 0;
+		c->last_key_renewal = -3600;
 	}
 }
