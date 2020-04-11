@@ -23,6 +23,7 @@
 #include <stdatomic.h>
 
 #include "adns.h"
+#include "devtools.h"
 #include "logger.h"
 #include "xalloc.h"
 
@@ -48,6 +49,7 @@ static void *adns_loop(void *data) {
 
 		if(time(NULL) < item->deadline) {
 			logger(mesh, MESHLINK_DEBUG, "Resolving %s port %s", item->host, item->serv);
+			devtool_adns_resolve_probe();
 			int result = getaddrinfo(item->host, item->serv, NULL, &item->ai);
 
 			if(result) {
@@ -143,6 +145,7 @@ void *adns_blocking_handler(void *data) {
 	struct adns_blocking_info *info = data;
 
 	logger(info->mesh, MESHLINK_DEBUG, "Resolving %s port %s", info->host, info->serv);
+	devtool_adns_resolve_probe();
 
 	if(getaddrinfo(info->host, info->serv, NULL, &info->ai)) {
 		info->ai = NULL;

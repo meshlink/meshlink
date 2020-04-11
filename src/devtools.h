@@ -166,6 +166,9 @@ extern void (*devtool_trybind_probe)(void);
  */
 extern void (*devtool_keyrotate_probe)(int stage);
 
+/// Debug function pointer variable for asynchronous DNS resolving
+extern void (*devtool_adns_resolve_probe)(void);
+
 /// Debug function pointer variable for asserting inviter/invitee committing sequence
 /** This function pointer variable is a userspace tracepoint or debugger callback which
  *  invokes either after inviter writing invitees host file into the disk
