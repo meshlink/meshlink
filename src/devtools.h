@@ -169,6 +169,14 @@ extern void (*devtool_keyrotate_probe)(int stage);
 /// Debug function pointer variable for asynchronous DNS resolving
 extern void (*devtool_adns_resolve_probe)(void);
 
+/// Debug function pointer variable for SPTPS key renewal
+/** This function pointer variable is a userspace tracepoint or debugger callback for
+ *  SPTPS key renewal.
+ *
+ *  @param node The node whose SPTPS key(s) are being renewed
+ */
+extern void (*devtool_sptps_renewal_probe)(meshlink_node_t *node);
+
 /// Debug function pointer variable for asserting inviter/invitee committing sequence
 /** This function pointer variable is a userspace tracepoint or debugger callback which
  *  invokes either after inviter writing invitees host file into the disk

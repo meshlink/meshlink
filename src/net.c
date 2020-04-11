@@ -22,6 +22,7 @@
 #include "utils.h"
 #include "conf.h"
 #include "connection.h"
+#include "devtools.h"
 #include "graph.h"
 #include "logger.h"
 #include "meshlink_internal.h"
@@ -124,6 +125,8 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 		}
 
 		if(c->status.active && c->last_key_renewal + 3600 < mesh->loop.now.tv_sec) {
+			devtool_sptps_renewal_probe((meshlink_node_t *)c->node);
+
 			if(!sptps_force_kex(&c->sptps)) {
 				logger(mesh, MESHLINK_ERROR, "SPTPS key renewal for connection with %s failed", c->name);
 				terminate_connection(mesh, c, true);
@@ -622,6 +625,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 
 		if(n->status.validkey && n->last_req_key + 3600 < mesh->loop.now.tv_sec) {
 			logger(mesh, MESHLINK_DEBUG, "SPTPS key renewal for node %s", n->name);
+			devtool_sptps_renewal_probe((meshlink_node_t *)n);
 
 			if(!sptps_force_kex(&n->sptps)) {
 				logger(mesh, MESHLINK_ERROR, "SPTPS key renewal for node %s failed", n->name);

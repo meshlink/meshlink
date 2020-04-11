@@ -44,10 +44,16 @@ static void inviter_commits_first_nop_probe(bool stage) {
 	return;
 }
 
+static void sptps_renewal_nop_probe(meshlink_node_t *node) {
+	(void)node;
+	return;
+}
+
 void (*devtool_trybind_probe)(void) = nop_probe;
 void (*devtool_keyrotate_probe)(int stage) = keyrotate_nop_probe;
 void (*devtool_set_inviter_commits_first)(bool inviter_commited_first) = inviter_commits_first_nop_probe;
 void (*devtool_adns_resolve_probe)(void) = nop_probe;
+void (*devtool_sptps_renewal_probe)(meshlink_node_t *node) = sptps_renewal_nop_probe;
 
 /* Return an array of edges in the current network graph.
  * Data captures the current state and will not be updated.
@@ -336,4 +342,20 @@ meshlink_handle_t *devtool_open_in_netns(const char *confbase, const char *name,
 	meshlink_open_params_free(params);
 
 	return handle;
+}
+
+void devtool_force_sptps_renewal(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	if(!mesh || !node) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	node_t *n = (node_t *)node;
+	connection_t *c = n->connection;
+
+	n->last_req_key = 0;
+
+	if(c) {
+		c->last_key_renewal = 0;
+	}
 }
