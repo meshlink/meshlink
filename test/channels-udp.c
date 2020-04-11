@@ -55,10 +55,10 @@ static void client_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chann
 	// We expect always the same amount of data from the server.
 	assert(mesh->priv);
 	struct client *client = mesh->priv;
-	assert(len == 512 || len == 2000);
+	assert(len == 512 || len == 65536);
 	client->received += len;
 
-	if(len == 2000) {
+	if(len == 65536) {
 		client->got_large_packet = true;
 	}
 }
@@ -140,11 +140,12 @@ int main() {
 		assert(clients[i].channel);
 	}
 
-	// Send a packet larger than the MTU
+	// Check that we can send up to 65535 bytes without errors
 
-	char large_data[2000] = "";
+	char large_data[65536] = "";
 
 	for(int i = 0; i < 3; i++) {
+		assert(meshlink_channel_send(server, channels[i], large_data, sizeof(large_data) + 1) == -1);
 		assert(meshlink_channel_send(server, channels[i], large_data, sizeof(large_data)) == sizeof(large_data));
 	}
 
@@ -183,7 +184,7 @@ int main() {
 
 	for(int i = 0; i < 3; i++) {
 		assert(clients[i].received >= 1000000);
-		assert(clients[i].received <= 1282000);
+		assert(clients[i].received <= 1345536);
 		assert(clients[i].got_large_packet);
 	}
 
