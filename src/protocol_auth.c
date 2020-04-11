@@ -365,6 +365,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	/* Activate this connection */
 
 	c->allow_request = ALL;
+	c->last_key_renewal = mesh->loop.now.tv_sec;
 	c->status.active = true;
 
 	logger(mesh, MESHLINK_INFO, "Connection with %s activated", c->name);

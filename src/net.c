@@ -123,6 +123,16 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 			}
 		}
 
+		if(c->status.active && c->last_key_renewal + 3600 < mesh->loop.now.tv_sec) {
+			if(!sptps_force_kex(&c->sptps)) {
+				logger(mesh, MESHLINK_ERROR, "SPTPS key renewal for connection with %s failed", c->name);
+				terminate_connection(mesh, c, true);
+				continue;
+			} else {
+				c->last_key_renewal = mesh->loop.now.tv_sec;
+			}
+		}
+
 		if(c->last_ping_time + pingtimeout <= mesh->loop.now.tv_sec) {
 			if(c->status.active) {
 				if(c->status.pinged) {
