@@ -41,11 +41,14 @@ int main() {
 		// Close the mesh and open it again, now with a different name parameter.
 
 		mesh.close();
-		assert(mesh.open("basicpp_conf", "bar", "basicpp", DEV_CLASS_BACKBONE));
+		assert(!mesh.open("basicpp_conf", "bar", "basicpp", DEV_CLASS_BACKBONE));
+
+		// Open it without giving a name.
+
+		assert(mesh.open("basicpp_conf", nullptr, "basicpp", DEV_CLASS_BACKBONE));
 
 		// Check that the name is ignored now, and that we still are "foo".
 
-		assert(!mesh.get_node("bar"));
 		self = mesh.get_self();
 		assert(self);
 		assert(!strcmp(self->name, "foo"));

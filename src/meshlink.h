@@ -151,6 +151,7 @@ extern const char *meshlink_strerror(meshlink_errno_t err) __attribute__((__warn
  *                  After the function returns, the application is free to overwrite or free @a confbase.
  *  @param name     The name which this instance of the application will use in the mesh.
  *                  After the function returns, the application is free to overwrite or free @a name.
+ *                  If NULL is passed as the name, the name used last time the MeshLink instance was initialized is used.
  *  @param appname  The application name which will be used in the mesh.
  *                  After the function returns, the application is free to overwrite or free @a name.
  *  @param devclass The device class which will be used in the mesh.
@@ -228,6 +229,7 @@ extern struct meshlink_handle *meshlink_open_ex(const meshlink_open_params_t *pa
  *                  After the function returns, the application is free to overwrite or free @a confbase.
  *  @param name     The name which this instance of the application will use in the mesh.
  *                  After the function returns, the application is free to overwrite or free @a name.
+ *                  If NULL is passed as the name, the name used last time the MeshLink instance was initialized is used.
  *  @param appname  The application name which will be used in the mesh.
  *                  After the function returns, the application is free to overwrite or free @a name.
  *  @param devclass The device class which will be used in the mesh.
@@ -257,6 +259,7 @@ extern struct meshlink_handle *meshlink_open(const char *confbase, const char *n
  *                  After the function returns, the application is free to overwrite or free @a confbase.
  *  @param name     The name which this instance of the application will use in the mesh.
  *                  After the function returns, the application is free to overwrite or free @a name.
+ *                  If NULL is passed as the name, the name used last time the MeshLink instance was initialized is used.
  *  @param appname  The application name which will be used in the mesh.
  *                  After the function returns, the application is free to overwrite or free @a name.
  *  @param devclass The device class which will be used in the mesh.

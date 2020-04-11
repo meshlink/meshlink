@@ -1083,9 +1083,6 @@ static bool meshlink_read_config(meshlink_handle_t *mesh) {
 		return false;
 	}
 
-#if 0
-
-	// TODO: check this?
 	if(mesh->name && strcmp(mesh->name, name)) {
 		logger(NULL, MESHLINK_ERROR, "Configuration is for a different name (%s)!", name);
 		meshlink_errno = MESHLINK_ESTORAGE;
@@ -1093,8 +1090,6 @@ static bool meshlink_read_config(meshlink_handle_t *mesh) {
 		config_free(&config);
 		return false;
 	}
-
-#endif
 
 	free(mesh->name);
 	mesh->name = name;
@@ -1153,13 +1148,7 @@ meshlink_open_params_t *meshlink_open_params_init(const char *confbase, const ch
 		return NULL;
 	}
 
-	if(!name || !*name) {
-		logger(NULL, MESHLINK_ERROR, "No name given!\n");
-		meshlink_errno = MESHLINK_EINVAL;
-		return NULL;
-	};
-
-	if(!check_id(name)) {
+	if(name && !check_id(name)) {
 		logger(NULL, MESHLINK_ERROR, "Invalid name given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
@@ -1174,7 +1163,7 @@ meshlink_open_params_t *meshlink_open_params_init(const char *confbase, const ch
 	meshlink_open_params_t *params = xzalloc(sizeof * params);
 
 	params->confbase = xstrdup(confbase);
-	params->name = xstrdup(name);
+	params->name = name ? xstrdup(name) : NULL;
 	params->appname = xstrdup(appname);
 	params->devclass = devclass;
 	params->netns = -1;
@@ -1347,6 +1336,36 @@ meshlink_handle_t *meshlink_open_encrypted(const char *confbase, const char *nam
 }
 
 meshlink_handle_t *meshlink_open_ephemeral(const char *name, const char *appname, dev_class_t devclass) {
+	if(!name) {
+		logger(NULL, MESHLINK_ERROR, "No name given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(!check_id(name)) {
+		logger(NULL, MESHLINK_ERROR, "Invalid name given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(!appname || !*appname) {
+		logger(NULL, MESHLINK_ERROR, "No appname given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(strchr(appname, ' ')) {
+		logger(NULL, MESHLINK_ERROR, "Invalid appname given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(devclass < 0 || devclass >= DEV_CLASS_COUNT) {
+		logger(NULL, MESHLINK_ERROR, "Invalid devclass given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
 	/* Create a temporary struct on the stack, to avoid allocating and freeing one. */
 	meshlink_open_params_t params;
 	memset(&params, 0, sizeof(params));
@@ -1360,11 +1379,9 @@ meshlink_handle_t *meshlink_open_ephemeral(const char *name, const char *appname
 }
 
 meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
-	// Validate arguments provided by the application
-	bool usingname = false;
-
 	logger(NULL, MESHLINK_DEBUG, "meshlink_open called\n");
 
+	// Validate arguments provided by the application
 	if(!params->appname || !*params->appname) {
 		logger(NULL, MESHLINK_ERROR, "No appname given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
@@ -1377,18 +1394,10 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 		return NULL;
 	}
 
-	if(!params->name || !*params->name) {
-		logger(NULL, MESHLINK_ERROR, "No name given!\n");
-		//return NULL;
-	} else { //check name only if there is a name != NULL
-
-		if(!check_id(params->name)) {
-			logger(NULL, MESHLINK_ERROR, "Invalid name given!\n");
-			meshlink_errno = MESHLINK_EINVAL;
-			return NULL;
-		} else {
-			usingname = true;
-		}
+	if(params->name && !check_id(params->name)) {
+		logger(NULL, MESHLINK_ERROR, "Invalid name given!\n");
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
 	}
 
 	if(params->devclass < 0 || params->devclass >= DEV_CLASS_COUNT) {
@@ -1427,9 +1436,7 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 
 	memcpy(mesh->dev_class_traits, default_class_traits, sizeof(default_class_traits));
 
-	if(usingname) {
-		mesh->name = xstrdup(params->name);
-	}
+	mesh->name = params->name ? xstrdup(params->name) : NULL;
 
 	// Hash the key
 	if(params->key) {
@@ -1464,6 +1471,13 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 	// If no configuration exists yet, create it.
 
 	if(!meshlink_confbase_exists(mesh)) {
+		if(!mesh->name) {
+			logger(NULL, MESHLINK_ERROR, "No configuration files found!\n");
+			meshlink_close(mesh);
+			meshlink_errno = MESHLINK_ESTORAGE;
+			return NULL;
+		}
+
 		if(!meshlink_setup(mesh)) {
 			logger(NULL, MESHLINK_ERROR, "Cannot create initial configuration\n");
 			meshlink_close(mesh);

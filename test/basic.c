@@ -16,10 +16,16 @@
 int main() {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
-	// Open a new meshlink instance.
+	// Check that the first time we need to supply a name
 
 	assert(meshlink_destroy("basic_conf"));
-	meshlink_handle_t *mesh = meshlink_open("basic_conf", "foo", "basic", DEV_CLASS_BACKBONE);
+
+	meshlink_handle_t *mesh = meshlink_open("basic_conf", NULL, "basic", DEV_CLASS_BACKBONE);
+	assert(!mesh);
+
+	// Open a new meshlink instance.
+
+	mesh = meshlink_open("basic_conf", "foo", "basic", DEV_CLASS_BACKBONE);
 	assert(mesh);
 
 	// Check that we can't open a second instance of the same node.
@@ -74,10 +80,17 @@ int main() {
 
 	meshlink_close(mesh);
 	mesh = meshlink_open("basic_conf", "bar", "basic", DEV_CLASS_BACKBONE);
+	assert(!mesh);
+
+	// Open it without providing a name
+
+	mesh = meshlink_open("basic_conf", NULL, "basic", DEV_CLASS_BACKBONE);
 	assert(mesh);
 
 	self = meshlink_get_self(mesh);
 	assert(self);
+	assert(!strcmp(mesh->name, "foo"));
+	assert(!strcmp(self->name, "foo"));
 
 	// Check that we remembered we were reachable
 
