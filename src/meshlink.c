@@ -975,6 +975,10 @@ static struct timespec idle(event_loop_t *loop, void *data) {
 	meshlink_handle_t *mesh = data;
 	struct timespec t, tmin = {3600, 0};
 
+#ifdef HAVE_SENDMMSG
+	flush_mmsg(mesh);
+#endif
+
 	for splay_each(node_t, n, mesh->nodes) {
 		if(!n->utcp) {
 			continue;
@@ -1652,7 +1656,9 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 		return false;
 	}
 
+#if defined(HAVE_RECVMMSG) || defined(HAVE_SENDMMSG)
 	init_mmsg(mesh);
+#endif
 	init_outgoings(mesh);
 	init_adns(mesh);
 
@@ -1727,7 +1733,9 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 
 	exit_adns(mesh);
 	exit_outgoings(mesh);
+#if defined(HAVE_RECVMMSG) || defined(HAVE_SENDMMSG)
 	exit_mmsg(mesh);
+#endif
 
 	// Ensure we are considered unreachable
 	if(mesh->nodes) {

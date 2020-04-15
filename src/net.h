@@ -82,9 +82,12 @@ typedef struct outgoing_t {
 
 extern void init_outgoings(struct meshlink_handle *mesh);
 extern void exit_outgoings(struct meshlink_handle *mesh);
-#ifdef HAVE_RECVMMSG
+#if defined(HAVE_RECVMMSG) || defined(HAVE_SENDMMSG)
 extern void init_mmsg(struct meshlink_handle *mesh);
 extern void exit_mmsg(struct meshlink_handle *mesh);
+#endif
+#ifdef HAVE_SENDMMSG
+extern void flush_mmsg(struct meshlink_handle *mesh);
 #endif
 
 extern void retry_outgoing(struct meshlink_handle *mesh, outgoing_t *);

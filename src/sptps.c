@@ -95,7 +95,12 @@ static void warning(sptps_t *s, const char *format, ...) {
 
 // Send a record (datagram version, accepts all record types, handles encryption and authentication).
 static bool send_record_priv_datagram(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
-	char buffer[len + 21UL];
+	char *buffer = s->outbuf;
+	char local_buffer[len + 21UL];
+
+	if(!buffer || (len + 21UL) > s->outbuflen) {
+		buffer = local_buffer;
+	}
 
 	// Create header with sequence number, length and record type
 	uint32_t seqno = s->outseqno++;
@@ -585,21 +590,21 @@ bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 
 	while(len) {
 		// First read the 2 length bytes.
-		if(s->buflen < 2) {
-			size_t toread = 2 - s->buflen;
+		if(s->inbuflen < 2) {
+			size_t toread = 2 - s->inbuflen;
 
 			if(toread > len) {
 				toread = len;
 			}
 
-			memcpy(s->inbuf + s->buflen, ptr, toread);
+			memcpy(s->inbuf + s->inbuflen, ptr, toread);
 
-			s->buflen += toread;
+			s->inbuflen += toread;
 			len -= toread;
 			ptr += toread;
 
 			// Exit early if we don't have the full length.
-			if(s->buflen < 2) {
+			if(s->inbuflen < 2) {
 				return true;
 			}
 
@@ -622,19 +627,19 @@ bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 		}
 
 		// Read up to the end of the record.
-		size_t toread = s->reclen + (s->instate ? 19UL : 3UL) - s->buflen;
+		size_t toread = s->reclen + (s->instate ? 19UL : 3UL) - s->inbuflen;
 
 		if(toread > len) {
 			toread = len;
 		}
 
-		memcpy(s->inbuf + s->buflen, ptr, toread);
-		s->buflen += toread;
+		memcpy(s->inbuf + s->inbuflen, ptr, toread);
+		s->inbuflen += toread;
 		len -= toread;
 		ptr += toread;
 
 		// If we don't have a whole record, exit.
-		if(s->buflen < s->reclen + (s->instate ? 19UL : 3UL)) {
+		if(s->inbuflen < s->reclen + (s->instate ? 19UL : 3UL)) {
 			return true;
 		}
 
@@ -670,7 +675,7 @@ bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 			return error(s, EIO, "Invalid record type %d", type);
 		}
 
-		s->buflen = 0;
+		s->inbuflen = 0;
 	}
 
 	return true;
@@ -721,7 +726,7 @@ bool sptps_start(sptps_t *s, void *handle, bool initiator, bool datagram, ecdsa_
 			return error(s, errno, strerror(errno));
 		}
 
-		s->buflen = 0;
+		s->inbuflen = 0;
 	}
 
 	memcpy(s->label, label, labellen);
@@ -751,4 +756,10 @@ bool sptps_stop(sptps_t *s) {
 	free(s->decrypted_buffer);
 	memset(s, 0, sizeof(*s));
 	return true;
+}
+
+// Set the buffer to use for outgoing packets.
+void sptps_set_send_buffer(sptps_t *s, void *data, size_t len) {
+	s->outbuf = data;
+	s->outbuflen = len;
 }

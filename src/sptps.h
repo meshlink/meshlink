@@ -53,13 +53,16 @@ typedef struct sptps {
 
 	// Main member variables
 	char *inbuf;
-	size_t buflen;
+	size_t inbuflen;
 
 	chacha_poly1305_ctx_t *incipher;
 	uint32_t replaywin;
 	uint32_t inseqno;
 	uint32_t received;
 	uint16_t reclen;
+
+	char *outbuf;
+	size_t outbuflen;
 
 	chacha_poly1305_ctx_t *outcipher;
 	uint32_t outseqno;
@@ -96,5 +99,6 @@ extern bool sptps_send_record(sptps_t *s, uint8_t type, const void *data, uint16
 extern bool sptps_receive_data(sptps_t *s, const void *data, size_t len) __attribute__((__warn_unused_result__));
 extern bool sptps_force_kex(sptps_t *s) __attribute__((__warn_unused_result__));
 extern bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len) __attribute__((__warn_unused_result__));
+extern void sptps_set_send_buffer(sptps_t *s, void *data, size_t len);
 
 #endif
