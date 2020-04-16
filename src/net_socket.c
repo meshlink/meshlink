@@ -283,12 +283,14 @@ static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgo
 			if(port) {
 				*port++ = 0;
 				port = xstrdup(port);
+				adns_queue(mesh, address, port, canonical_resolve_cb, outgoing->node, 2);
+				return false;
 			} else {
-				port = xstrdup(mesh->myport);
+				logger(mesh, MESHLINK_ERROR, "Canonical address for %s is missing port number", n->name);
+				free(address);
+				outgoing->state = OUTGOING_RECENT;
 			}
 
-			adns_queue(mesh, address, port, canonical_resolve_cb, outgoing->node, 2);
-			return false;
 		} else {
 			outgoing->state = OUTGOING_RECENT;
 		}

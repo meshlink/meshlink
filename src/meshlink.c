@@ -2424,13 +2424,20 @@ bool meshlink_set_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *no
 	}
 
 	if(!is_valid_hostname(address)) {
-		logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s\n", address);
+		logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s", address);
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
 
+	if((node_t *)node != mesh->self && !port) {
+		logger(mesh, MESHLINK_DEBUG, "Missing port number!");
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+
+	}
+
 	if(port && !is_valid_port(port)) {
-		logger(mesh, MESHLINK_DEBUG, "Invalid character in port: %s\n", address);
+		logger(mesh, MESHLINK_DEBUG, "Invalid character in port: %s", address);
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
@@ -3042,7 +3049,15 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 	packmsg_add_int32(&out, mesh->self->devclass);
 	packmsg_add_bool(&out, mesh->self->status.blacklisted);
 	packmsg_add_bin(&out, ecdsa_get_public_key(mesh->private_key), 32);
-	packmsg_add_str(&out, mesh->self->canonical_address ? mesh->self->canonical_address : "");
+
+	if(mesh->self->canonical_address && !strchr(mesh->self->canonical_address, ' ')) {
+		char *canonical_address = NULL;
+		xasprintf(&canonical_address, "%s %s", mesh->self->canonical_address, mesh->myport);
+		packmsg_add_str(&out, canonical_address);
+		free(canonical_address);
+	} else {
+		packmsg_add_str(&out, mesh->self->canonical_address ? mesh->self->canonical_address : "");
+	}
 
 	uint32_t count = 0;
 
