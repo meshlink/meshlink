@@ -3549,6 +3549,17 @@ static void channel_accept(struct utcp_connection *utcp_connection, uint16_t por
 	}
 }
 
+static void channel_retransmit(struct utcp_connection *utcp_connection) {
+	node_t *n = utcp_connection->utcp->priv;
+	meshlink_handle_t *mesh = n->mesh;
+
+	if(n->mtuprobes == 31) {
+		timeout_set(&mesh->loop, &n->mtutimeout, &(struct timespec) {
+			0, 0
+		});
+	}
+}
+
 static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
 	node_t *n = utcp->priv;
 
@@ -3668,6 +3679,7 @@ void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_ac
 		if(!n->utcp && n != mesh->self) {
 			n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
 			utcp_set_mtu(n->utcp, n->mtu - sizeof(meshlink_packethdr_t));
+			utcp_set_retransmit_cb(n->utcp, channel_retransmit);
 		}
 	}
 
@@ -3717,6 +3729,7 @@ meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_n
 	if(!n->utcp) {
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
 		utcp_set_mtu(n->utcp, n->mtu - sizeof(meshlink_packethdr_t));
+		utcp_set_retransmit_cb(n->utcp, channel_retransmit);
 		mesh->receive_cb = channel_receive;
 
 		if(!n->utcp) {
@@ -4026,6 +4039,7 @@ void meshlink_set_node_channel_timeout(meshlink_handle_t *mesh, meshlink_node_t 
 	if(!n->utcp) {
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
 		utcp_set_mtu(n->utcp, n->mtu - sizeof(meshlink_packethdr_t));
+		utcp_set_retransmit_cb(n->utcp, channel_retransmit);
 	}
 
 	utcp_set_user_timeout(n->utcp, timeout);
@@ -4037,6 +4051,7 @@ void update_node_status(meshlink_handle_t *mesh, node_t *n) {
 	if(n->status.reachable && mesh->channel_accept_cb && !n->utcp) {
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
 		utcp_set_mtu(n->utcp, n->mtu - sizeof(meshlink_packethdr_t));
+		utcp_set_retransmit_cb(n->utcp, channel_retransmit);
 	}
 
 	if(mesh->node_status_cb) {
