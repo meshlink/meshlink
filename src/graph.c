@@ -228,7 +228,7 @@ static void check_reachability(meshlink_handle_t *mesh) {
 		if(!reachable) {
 			mesh->last_unreachable = mesh->loop.now.tv_sec;
 
-			if(mesh->threadstarted) {
+			if(mesh->threadstarted && mesh->periodictimer.cb) {
 				timeout_set(&mesh->loop, &mesh->periodictimer, &(struct timespec) {
 					0, prng(mesh, TIMER_FUDGE)
 				});
