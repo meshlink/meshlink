@@ -47,4 +47,39 @@ const char *winerror(int);
 
 unsigned int bitfield_to_int(const void *bitfield, size_t size) __attribute__((__warn_unused_result__));
 
+static inline void timespec_add(const struct timespec *a, const struct timespec *b, struct timespec *r) {
+	r->tv_sec = a->tv_sec + b->tv_sec;
+	r->tv_nsec = a->tv_nsec + b->tv_nsec;
+
+	if(r->tv_nsec > 1000000000) {
+		r->tv_sec++, r->tv_nsec -= 1000000000;
+	}
+}
+
+static inline void timespec_sub(const struct timespec *a, const struct timespec *b, struct timespec *r) {
+	r->tv_sec = a->tv_sec - b->tv_sec;
+	r->tv_nsec = a->tv_nsec - b->tv_nsec;
+
+	if(r->tv_nsec < 0) {
+		r->tv_sec--, r->tv_nsec += 1000000000;
+	}
+}
+
+static inline bool timespec_lt(const struct timespec *a, const struct timespec *b) {
+	if(a->tv_sec == b->tv_sec) {
+		return a->tv_nsec < b->tv_nsec;
+	} else {
+		return a->tv_sec < b->tv_sec;
+	}
+}
+
+static inline void timespec_clear(struct timespec *a) {
+	a->tv_sec = 0;
+	a->tv_nsec = 0;
+}
+
+static inline bool timespec_isset(const struct timespec *a) {
+	return a->tv_sec || a->tv_nsec;
+}
+
 #endif
