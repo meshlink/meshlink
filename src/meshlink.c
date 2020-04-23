@@ -1021,14 +1021,6 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 	return true;
 }
 
-static bool timespec_lt(const struct timespec *a, const struct timespec *b) {
-	if(a->tv_sec == b->tv_sec) {
-		return a->tv_nsec < b->tv_nsec;
-	} else {
-		return a->tv_sec < b->tv_sec;
-	}
-}
-
 static struct timespec idle(event_loop_t *loop, void *data) {
 	(void)loop;
 	meshlink_handle_t *mesh = data;
