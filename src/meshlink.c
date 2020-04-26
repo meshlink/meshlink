@@ -2200,7 +2200,6 @@ static bool prepare_packet(meshlink_handle_t *mesh, meshlink_node_t *destination
 
 	// Prepare the packet
 	packet->probe = false;
-	packet->tcp = false;
 	packet->len = len + sizeof(*hdr);
 
 	hdr = (meshlink_packethdr_t *)packet->data;
@@ -4038,8 +4037,8 @@ static void channel_retransmit(struct utcp_connection *utcp_connection) {
 	node_t *n = utcp_connection->utcp->priv;
 	meshlink_handle_t *mesh = n->mesh;
 
-	if(n->mtuprobes == 31 && n->mtutimeout.cb) {
-		timeout_set(&mesh->loop, &n->mtutimeout, &(struct timespec) {
+	if(n->mtuprobes == -1 && n->udp_ping_timeout.cb) {
+		timeout_set(&mesh->loop, &n->udp_ping_timeout, &(struct timespec) {
 			0, 0
 		});
 	}

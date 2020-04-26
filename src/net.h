@@ -107,11 +107,12 @@ bool node_read_from_config(struct meshlink_handle *mesh, struct node_t *, const 
 bool read_ecdsa_public_key(struct meshlink_handle *mesh, struct connection_t *) __attribute__((__warn_unused_result__));
 bool read_ecdsa_private_key(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
 bool node_write_config(struct meshlink_handle *mesh, struct node_t *, bool new_key) __attribute__((__warn_unused_result__));
-void send_mtu_probe(struct meshlink_handle *mesh, struct node_t *);
 void handle_meta_connection_data(struct meshlink_handle *mesh, struct connection_t *);
 void retry(struct meshlink_handle *mesh);
 int check_port(struct meshlink_handle *mesh);
 void flush_meta(struct meshlink_handle *mesh, struct connection_t *);
+void send_udppacket(struct meshlink_handle *mesh, struct node_t *, struct vpn_packet_t *);
+void choose_udp_address(struct meshlink_handle *mesh, const struct node_t *n, const union sockaddr_t **sa, int *sock, union sockaddr_t *sa_buf);
 
 #ifndef HAVE_MINGW
 #define closesocket(s) close(s)

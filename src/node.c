@@ -76,10 +76,6 @@ void free_node(node_t *n) {
 	ecdsa_free(n->ecdsa);
 	sptps_stop(&n->sptps);
 
-	if(n->mtutimeout.cb) {
-		abort();
-	}
-
 	free(n->name);
 	free(n->canonical_address);
 
@@ -92,7 +88,7 @@ void node_add(meshlink_handle_t *mesh, node_t *n) {
 }
 
 void node_del(meshlink_handle_t *mesh, node_t *n) {
-	timeout_del(&mesh->loop, &n->mtutimeout);
+	timeout_del(&mesh->loop, &n->udp_ping_timeout);
 
 	for splay_each(edge_t, e, n->edge_tree) {
 		edge_del(mesh, e);

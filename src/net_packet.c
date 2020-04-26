@@ -27,217 +27,14 @@
 #include "meshlink_internal.h"
 #include "net.h"
 #include "netutl.h"
+#include "pmtu.h"
 #include "protocol.h"
 #include "route.h"
 #include "sptps.h"
 #include "utils.h"
 #include "xalloc.h"
 
-int keylifetime = 0;
-
-static void send_udppacket(meshlink_handle_t *mesh, node_t *, vpn_packet_t *);
-
-#define MAX_SEQNO 1073741824
-#define PROBE_OVERHEAD (SPTPS_DATAGRAM_OVERHEAD + 40)
-
-/* mtuprobes == 1..30: initial discovery, send bursts with 1 second interval
-   mtuprobes ==    31: sleep pinginterval seconds
-   mtuprobes ==    32: send 1 burst, sleep pingtimeout second
-   mtuprobes ==    33: no response from other side, restart PMTU discovery process
-
-   Probes are sent in batches of at least three, with random sizes between the
-   lower and upper boundaries for the MTU thus far discovered.
-
-   After the initial discovery, a fourth packet is added to each batch with a
-   size larger than the currently known PMTU, to test if the PMTU has increased.
-
-   In case local discovery is enabled, another packet is added to each batch,
-   which will be broadcast to the local network.
-
-*/
-
-static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
-	meshlink_handle_t *mesh = loop->data;
-	node_t *n = data;
-	int timeout = 1;
-
-	n->mtuprobes++;
-
-	if(!n->status.reachable || !n->status.validkey) {
-		logger(mesh, MESHLINK_INFO, "Trying to send MTU probe to unreachable or rekeying node %s", n->name);
-		n->mtuprobes = 0;
-		return;
-	}
-
-	if(n->mtuprobes > 32) {
-		if(!n->minmtu) {
-			n->mtuprobes = 31;
-			timeout = mesh->dev_class_traits[n->devclass].pinginterval;
-			goto end;
-		}
-
-		logger(mesh, MESHLINK_INFO, "%s did not respond to UDP ping, restarting PMTU discovery", n->name);
-		n->status.udp_confirmed = false;
-		n->mtuprobes = 1;
-		n->minmtu = 0;
-		n->maxmtu = MTU;
-
-		update_node_pmtu(mesh, n);
-	}
-
-	if(n->mtuprobes >= 10 && n->mtuprobes < 32 && !n->minmtu) {
-		logger(mesh, MESHLINK_INFO, "No response to MTU probes from %s", n->name);
-		n->mtuprobes = 31;
-	}
-
-	if(n->mtuprobes == 30 || (n->mtuprobes < 30 && n->minmtu >= n->maxmtu)) {
-		if(n->minmtu > n->maxmtu) {
-			n->minmtu = n->maxmtu;
-			update_node_pmtu(mesh, n);
-		} else {
-			n->maxmtu = n->minmtu;
-		}
-
-		n->mtu = n->minmtu;
-		logger(mesh, MESHLINK_INFO, "Fixing MTU of %s to %d after %d probes", n->name, n->mtu, n->mtuprobes);
-		n->mtuprobes = 31;
-	}
-
-	if(n->mtuprobes == 31) {
-		if(!n->minmtu && n->status.want_udp && n->nexthop && n->nexthop->connection) {
-			/* Send a dummy ANS_KEY to try to update the reflexive UDP address */
-			send_request(mesh, n->nexthop->connection, NULL, "%d %s %s . -1 -1 -1 0", ANS_KEY, mesh->self->name, n->name);
-			n->status.want_udp = false;
-		}
-
-		timeout = mesh->dev_class_traits[n->devclass].pinginterval;
-		goto end;
-	} else if(n->mtuprobes == 32) {
-		timeout = mesh->dev_class_traits[n->devclass].pingtimeout;
-	}
-
-	for(int i = 0; i < 5; i++) {
-		int len;
-
-		if(i == 0) {
-			if(n->mtuprobes < 30 || n->maxmtu + 8 >= MTU) {
-				continue;
-			}
-
-			len = n->maxmtu + 8;
-		} else if(n->maxmtu <= n->minmtu) {
-			len = n->maxmtu;
-		} else {
-			len = n->minmtu + 1 + prng(mesh, n->maxmtu - n->minmtu);
-		}
-
-		if(len < 64) {
-			len = 64;
-		}
-
-		vpn_packet_t packet;
-		packet.probe = true;
-		memset(packet.data, 0, 14);
-		randomize(packet.data + 14, len - 14);
-		packet.len = len;
-		n->status.broadcast = i >= 4 && n->mtuprobes <= 10 && n->prevedge;
-
-		logger(mesh, MESHLINK_DEBUG, "Sending MTU probe length %d to %s", len, n->name);
-
-		n->out_meta += packet.len + PROBE_OVERHEAD;
-		send_udppacket(mesh, n, &packet);
-	}
-
-	n->status.broadcast = false;
-
-end:
-	timeout_set(&mesh->loop, &n->mtutimeout, &(struct timespec) {
-		timeout, prng(mesh, TIMER_FUDGE)
-	});
-}
-
-void send_mtu_probe(meshlink_handle_t *mesh, node_t *n) {
-	timeout_add(&mesh->loop, &n->mtutimeout, send_mtu_probe_handler, n, &(struct timespec) {
-		1, 0
-	});
-	send_mtu_probe_handler(&mesh->loop, n);
-}
-
-static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet, uint16_t len) {
-	n->in_meta += len + PROBE_OVERHEAD;
-
-	if(len < 64) {
-		logger(mesh, MESHLINK_WARNING, "Got too short MTU probe length %d from %s", packet->len, n->name);
-		return;
-	}
-
-	logger(mesh, MESHLINK_DEBUG, "Got MTU probe length %d from %s", packet->len, n->name);
-
-	if(!packet->data[0]) {
-		/* It's a probe request, send back a reply */
-
-		packet->data[0] = 1;
-
-		/* Temporarily set udp_confirmed, so that the reply is sent
-		   back exactly the way it came in. */
-
-		bool udp_confirmed = n->status.udp_confirmed;
-		n->status.udp_confirmed = true;
-		logger(mesh, MESHLINK_DEBUG, "Sending MTU probe reply %d to %s", packet->len, n->name);
-		n->out_meta += packet->len + PROBE_OVERHEAD;
-		send_udppacket(mesh, n, packet);
-		n->status.udp_confirmed = udp_confirmed;
-	} else {
-		/* It's a valid reply: now we know bidirectional communication
-		   is possible using the address and socket that the reply
-		   packet used. */
-
-		if(!n->status.udp_confirmed) {
-			char *address, *port;
-			sockaddr2str(&n->address, &address, &port);
-
-			if(n->nexthop && n->nexthop->connection) {
-				send_request(mesh, n->nexthop->connection, NULL, "%d %s %s . -1 -1 -1 0 %s %s", ANS_KEY, n->name, n->name, address, port);
-			} else {
-				logger(mesh, MESHLINK_WARNING, "Cannot send reflexive address to %s via %s", n->name, n->nexthop ? n->nexthop->name : n->name);
-			}
-
-			free(address);
-			free(port);
-			n->status.udp_confirmed = true;
-		}
-
-		/* If we haven't established the PMTU yet, restart the discovery process. */
-
-		if(n->mtuprobes > 30) {
-			if(len == n->maxmtu + 8) {
-				logger(mesh, MESHLINK_INFO, "Increase in PMTU to %s detected, restarting PMTU discovery", n->name);
-				n->maxmtu = MTU;
-				n->mtuprobes = 10;
-				return;
-			}
-
-			if(n->minmtu) {
-				n->mtuprobes = 30;
-			} else {
-				n->mtuprobes = 1;
-			}
-		}
-
-		/* If applicable, raise the minimum supported MTU */
-
-		if(len > n->maxmtu) {
-			len = n->maxmtu;
-		}
-
-		if(n->minmtu < len) {
-			n->minmtu = len;
-			update_node_pmtu(mesh, n);
-		}
-	}
-}
-
-/* VPN packet I/O */
+/* Packet I/O */
 
 static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	logger(mesh, MESHLINK_DEBUG, "Received packet of %d bytes from %s", packet->len, n->name);
@@ -314,7 +111,7 @@ static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 	return;
 }
 
-static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const sockaddr_t **sa, int *sock, sockaddr_t *sa_buf) {
+void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const sockaddr_t **sa, int *sock, sockaddr_t *sa_buf) {
 	/* Latest guess */
 	*sa = &n->address;
 	*sock = n->sock;
@@ -406,7 +203,7 @@ static void choose_broadcast_address(meshlink_handle_t *mesh, const node_t *n, c
 	*sa = broadcast_sa;
 }
 
-static void send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
+void send_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
 	if(!n->status.reachable) {
 		logger(mesh, MESHLINK_INFO, "Trying to send UDP packet to unreachable node %s", n->name);
 		return;
@@ -461,13 +258,13 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	}
 
 	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
-		if(sockmsgsize(sockerrno)) {
-			if(to->maxmtu >= len) {
-				to->maxmtu = len - 1;
+		if(sockmsgsize(sockerrno) && len > 21) {
+			if(to->maxmtu >= len - 21) {
+				to->maxmtu = len - 22;
 			}
 
-			if(to->mtu >= len) {
-				to->mtu = len - 1;
+			if(to->mtu >= len - 21) {
+				to->mtu = len - 22;
 			}
 		} else {
 			logger(mesh, MESHLINK_WARNING, "Error sending UDP SPTPS packet to %s: %s", to->name, sockstrerror(sockerrno));
@@ -510,7 +307,7 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 		inpkt.len = len;
 		inpkt.probe = true;
 		memcpy(inpkt.data, data, len);
-		mtu_probe_h(mesh, from, &inpkt, len);
+		udp_probe_h(mesh, from, &inpkt, len);
 		return true;
 	} else {
 		inpkt.probe = false;
@@ -552,6 +349,7 @@ void send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	n->status.want_udp = true;
 
 	send_sptps_packet(mesh, n, packet);
+	keepalive(mesh, n, true);
 	return;
 }
 

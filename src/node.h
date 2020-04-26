@@ -70,8 +70,11 @@ typedef struct node_t {
 	uint64_t out_meta;                      /* Bytes sent on meta-connections, heartbeat packets etc. */
 
 	// MTU probes
-	timeout_t mtutimeout;                   /* Probe event */
+	timeout_t udp_ping_timeout;             /* UDP probe event */
+	struct timespec last_mtu_probe_sent;    /* Time that the last MTU probe was sent */
+	struct timespec last_udp_probe_sent;    /* Time that the last UDP probe was sent */
 	int mtuprobes;                          /* Number of probes */
+	uint16_t last_mtu_len;                  /* Size of the last sent probe */
 	uint16_t mtu;                           /* Maximum size of packets to send to this node */
 	uint16_t maxmtu;                        /* Probed maximum MTU */
 

@@ -26,6 +26,7 @@
 #include "netutl.h"
 #include "node.h"
 #include "prf.h"
+#include "pmtu.h"
 #include "protocol.h"
 #include "sptps.h"
 #include "utils.h"
@@ -496,7 +497,7 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			update_node_udp(mesh, from, &sa);
 		}
 
-		send_mtu_probe(mesh, from);
+		keepalive(mesh, from, true);
 	}
 
 	return true;
