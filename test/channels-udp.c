@@ -169,12 +169,16 @@ int main(void) {
 		fprintf(stderr, "%s received %zu\n", clients[i].mesh->name, clients[i].received);
 	}
 
+	bool got_large_packet = false;
+
 	for(int i = 0; i < 3; i++) {
 		size_t max_received = SMALL_SIZE * SMALL_COUNT + LARGE_SIZE;
 		assert(clients[i].received >= max_received / 2);
 		assert(clients[i].received <= max_received);
-		assert(clients[i].got_large_packet);
+		got_large_packet |= clients[i].got_large_packet;
 	}
+
+	assert(got_large_packet);
 
 	// Clean up.
 

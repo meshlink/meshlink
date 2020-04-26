@@ -29,6 +29,7 @@
 #include "meta.h"
 #include "net.h"
 #include "netutl.h"
+#include "pmtu.h"
 #include "protocol.h"
 #include "sptps.h"
 #include "xalloc.h"
@@ -128,6 +129,8 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 			if(c->node->status.waitingforkey && c->node->last_req_key + pingtimeout < mesh->loop.now.tv_sec) {
 				send_req_key(mesh, c->node);
 			}
+
+			keepalive(mesh, c->node, false);
 		}
 
 		if(c->status.active && c->last_key_renewal + 3600 < mesh->loop.now.tv_sec) {
@@ -161,6 +164,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 			}
 
 			terminate_connection(mesh, c, c->status.active);
+			continue;
 		}
 	}
 
