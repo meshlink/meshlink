@@ -217,8 +217,6 @@ static void try_udp(meshlink_handle_t *mesh, node_t *n) {
 
 	int interval = n->status.udp_confirmed ? 10 : 2;
 
-	logger(mesh, MESHLINK_DEBUG, "try_udp(%s) %d %d\n", n->name, (int)elapsed.tv_sec, interval);
-
 	if(elapsed.tv_sec >= interval) {
 		n->last_udp_probe_sent = mesh->loop.now;
 		send_udp_probe_packet(mesh, n, MIN_PROBE_SIZE);
@@ -300,8 +298,6 @@ static uint16_t choose_initial_maxmtu(meshlink_handle_t *mesh, node_t *n) {
 */
 
 static void try_pmtu(meshlink_handle_t *mesh, node_t *n) {
-	logger(mesh, MESHLINK_DEBUG, "try_pmtu(%s) %d %d\n", n->name, n->mtuprobes, n->status.udp_confirmed);
-
 	if(!n->status.udp_confirmed) {
 		n->mtuprobes = 0;
 		n->minmtu = 0;
@@ -384,8 +380,6 @@ static void try_pmtu(meshlink_handle_t *mesh, node_t *n) {
  */
 
 void keepalive(meshlink_handle_t *mesh, node_t *n, bool traffic) {
-	logger(mesh, MESHLINK_DEBUG, "keepalive(%s) %d %d\n", n->name, n->status.reachable, n->status.validkey);
-
 	if(!n->status.reachable || !n->status.validkey) {
 		return;
 	}
