@@ -176,12 +176,12 @@ void udp_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet, uint1
 
 	/* If applicable, raise the minimum supported PMTU */
 
-	try_fix_mtu(mesh, n);
-
 	if(n->minmtu < len) {
 		n->minmtu = len;
 		update_node_pmtu(mesh, n);
 	}
+
+	try_fix_mtu(mesh, n);
 }
 
 static void send_udp_probe_packet(meshlink_handle_t *mesh, node_t *n, int len) {
@@ -336,8 +336,6 @@ static void try_pmtu(meshlink_handle_t *mesh, node_t *n) {
 
 	n->last_mtu_probe_sent = mesh->loop.now;
 
-	try_fix_mtu(mesh, n);
-
 	if(n->mtuprobes < -3) {
 		/* We lost three PMTU probes, restart discovery */
 		logger(mesh, MESHLINK_INFO, "Decrease in PMTU to %s detected, restarting PMTU discovery", n->name);
@@ -377,6 +375,8 @@ static void try_pmtu(meshlink_handle_t *mesh, node_t *n) {
 		send_udp_probe_packet(mesh, n, len);
 		n->mtuprobes++;
 	}
+
+	try_fix_mtu(mesh, n);
 }
 
 /* Keep the connection to the given node alive.
