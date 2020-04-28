@@ -1950,7 +1950,7 @@ void meshlink_set_error_cb(struct meshlink_handle *mesh, meshlink_error_cb_t cb)
 static bool prepare_packet(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len, vpn_packet_t *packet) {
 	meshlink_packethdr_t *hdr;
 
-	if(len >= MAXSIZE - sizeof(*hdr)) {
+	if(len > MAXSIZE - sizeof(*hdr)) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
@@ -1972,8 +1972,8 @@ static bool prepare_packet(meshlink_handle_t *mesh, meshlink_node_t *destination
 	memset(hdr, 0, sizeof(*hdr));
 	// leave the last byte as 0 to make sure strings are always
 	// null-terminated if they are longer than the buffer
-	strncpy((char *)hdr->destination, destination->name, (sizeof(hdr)->destination) - 1);
-	strncpy((char *)hdr->source, mesh->self->name, (sizeof(hdr)->source) - 1);
+	strncpy((char *)hdr->destination, destination->name, sizeof(hdr->destination) - 1);
+	strncpy((char *)hdr->source, mesh->self->name, sizeof(hdr->source) - 1);
 
 	memcpy(packet->data + sizeof(*hdr), data, len);
 
@@ -2023,6 +2023,7 @@ bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const 
 
 	if(!prepare_packet(mesh, destination, data, len, packet)) {
 		free(packet);
+		return false;
 	}
 
 	// Queue it
