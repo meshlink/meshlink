@@ -64,10 +64,6 @@ static void timespec_clear(struct timespec *a) {
 	a->tv_sec = 0;
 }
 
-static bool timespec_isset(const struct timespec *a) {
-	return a->tv_sec;
-}
-
 static int io_compare(const io_t *a, const io_t *b) {
 	return a->fd - b->fd;
 }
@@ -137,7 +133,6 @@ void io_del(event_loop_t *loop, io_t *io) {
 void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *data, struct timespec *tv) {
 	timeout->cb = cb;
 	timeout->data = data;
-	timeout->node.data = timeout;
 
 	timeout_set(loop, timeout, tv);
 }
@@ -145,8 +140,10 @@ void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *
 void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timespec *tv) {
 	assert(timeout->cb);
 
-	if(timespec_isset(&timeout->tv)) {
+	if(timeout->node.data) {
 		splay_unlink_node(&loop->timeouts, &timeout->node);
+	} else {
+		timeout->node.data = timeout;
 	}
 
 	if(!loop->now.tv_sec) {
@@ -163,7 +160,11 @@ void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timespec *tv) {
 }
 
 static void timeout_disable(event_loop_t *loop, timeout_t *timeout) {
-	splay_unlink_node(&loop->timeouts, &timeout->node);
+	if(timeout->node.data) {
+		splay_unlink_node(&loop->timeouts, &timeout->node);
+		timeout->node.data = NULL;
+	}
+
 	timespec_clear(&timeout->tv);
 }
 
@@ -172,7 +173,7 @@ void timeout_del(event_loop_t *loop, timeout_t *timeout) {
 		return;
 	}
 
-	if(timespec_isset(&timeout->tv)) {
+	if(timeout->node.data) {
 		timeout_disable(loop, timeout);
 	}
 
