@@ -3915,7 +3915,11 @@ bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_t *chan
 
 	/* Ensure the poll callback is set, and call it right now to push data if possible */
 	utcp_set_poll_cb(channel->c, channel_poll);
-	channel_poll(channel->c, len);
+	size_t todo = MIN(len, utcp_get_rcvbuf_free(channel->c));
+
+	if(todo) {
+		channel_poll(channel->c, todo);
+	}
 
 	pthread_mutex_unlock(&mesh->mutex);
 
@@ -3952,7 +3956,11 @@ bool meshlink_channel_aio_fd_send(meshlink_handle_t *mesh, meshlink_channel_t *c
 
 	/* Ensure the poll callback is set, and call it right now to push data if possible */
 	utcp_set_poll_cb(channel->c, channel_poll);
-	channel_poll(channel->c, len);
+	size_t left = utcp_get_rcvbuf_free(channel->c);
+
+	if(left) {
+		channel_poll(channel->c, left);
+	}
 
 	pthread_mutex_unlock(&mesh->mutex);
 
