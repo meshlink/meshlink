@@ -223,6 +223,7 @@ typedef struct meshlink_aio_buffer {
 struct meshlink_channel {
 	struct node_t *node;
 	void *priv;
+	bool in_callback;
 
 	struct utcp_connection *c;
 	meshlink_aio_buffer_t *aio_send;
