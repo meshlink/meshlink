@@ -3538,6 +3538,10 @@ static ssize_t channel_recv(struct utcp_connection *connection, const void *data
 			ssize_t result = write(aio->fd, p, todo);
 
 			if(result <= 0) {
+				if(result < 0 && errno == EINTR) {
+					continue;
+				}
+
 				/* Writing to fd failed, cancel just this AIO buffer. */
 				logger(mesh, MESHLINK_ERROR, "Writing to AIO fd %d failed: %s", aio->fd, strerror(errno));
 
@@ -3678,6 +3682,10 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 				todo = result;
 				sent = utcp_send(connection, buf, todo);
 			} else {
+				if(result < 0 && errno == EINTR) {
+					continue;
+				}
+
 				/* Reading from fd failed, cancel just this AIO buffer. */
 				if(result != 0) {
 					logger(mesh, MESHLINK_ERROR, "Reading from AIO fd %d failed: %s", aio->fd, strerror(errno));
