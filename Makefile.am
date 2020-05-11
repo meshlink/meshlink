@@ -6,7 +6,7 @@ if CATTA
 MAYBE_CATTA = catta
 endif
 
-SUBDIRS = $(MAYBE_CATTA) src doc test examples
+SUBDIRS = $(MAYBE_CATTA) src test examples
 
 DIST_SUBDIRS = $(SUBDIRS)
 
@@ -14,7 +14,12 @@ ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = \
 	COPYING.README \
-	README.android
+	README.android \
+	$(DX_CONFIG)
+
+@DX_RULES@
+
+MOSTLYCLEANFILES = $(DX_CLEANFILES)
 
 ChangeLog:
 	git log > ChangeLog

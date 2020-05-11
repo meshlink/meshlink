@@ -764,7 +764,7 @@ public:
 	 *  This is useful if new nodes are blacklisted by default.
 	 *
 	 *  \memberof meshlink_node
-	 *  @param node         A pointer to a struct meshlink_node describing the node to be whitelisted.
+	 *  @param name         The name of the node to whitelist.
 	 *
 	 *  @return             This function returns true if the node has been whitelisted, false otherwise.
 	 */
@@ -815,7 +815,7 @@ public:
 	/** This sets the timeout after which unresponsive channels will be reported as closed.
 	 *  The timeout is set for all current and future channels to the given node.
 	 *
-	 *  @param channel      A handle for the channel.
+	 *  @param node         The node to set the channel timeout for.
 	 *  @param timeout      The timeout in seconds after which unresponsive channels will be reported as closed.
 	 *                      The default is 60 seconds.
 	 */

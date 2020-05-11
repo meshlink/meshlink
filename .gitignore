@@ -19,9 +19,11 @@ tags
 /aclocal.m4
 /aminclude.am
 /ar-lib
+/build
 /compile
 /configure
 /depcomp
+/doxygen-doc
 /install-sh
 /missing
 /libtool

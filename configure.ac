@@ -2,6 +2,8 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
 AC_INIT([MeshLink], [0.1])
+DX_PS_FEATURE(OFF)
+DX_INIT_DOXYGEN([MeshLink], [$(top_srcdir)/Doxyfile])
 AM_INIT_AUTOMAKE([std-options subdir-objects nostdinc silent-rules -Wall])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
@@ -141,7 +143,6 @@ AC_CACHE_SAVE
 AC_CONFIG_FILES([
 	 Makefile
 	 src/Makefile
-	 doc/Makefile
 	 test/Makefile
 	 test/blackbox/Makefile
 	 test/blackbox/run_blackbox_tests/Makefile

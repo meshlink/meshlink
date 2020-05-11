@@ -1139,7 +1139,7 @@ extern bool meshlink_whitelist(struct meshlink_handle *mesh, struct meshlink_nod
  *
  *  \memberof meshlink_node
  *  @param mesh         A handle which represents an instance of MeshLink.
- *  @param node         A pointer to a struct meshlink_node describing the node to be whitelisted.
+ *  @param name         The name of the node to whitelist.
  *
  *  @return             This function returns true if the node has been whitelisted, false otherwise.
  */
@@ -1524,7 +1524,7 @@ extern size_t meshlink_channel_get_mss(struct meshlink_handle *mesh, struct mesh
  *
  *  \memberof meshlink_node
  *  @param mesh         A handle which represents an instance of MeshLink.
- *  @param channel      A handle for the channel.
+ *  @param node         A pointer to a struct meshlink_node describing the node to set the channel connection timeout for.
  *  @param timeout      The timeout in seconds after which unresponsive channels will be reported as closed.
  *                      The default is 60 seconds.
  */

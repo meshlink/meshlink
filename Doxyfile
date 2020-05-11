@@ -1,11 +1,11 @@
-PROJECT_NAME            = MeshLink
-PROJECT_NUMBER          = 0.1
+PROJECT_NAME            = $(PROJECT)
+PROJECT_NUMBER          = $(VERSION)
 PROJECT_BRIEF           = "Mesh networking library"
-OUTPUT_DIRECTORY        = .
-INPUT                   = ../src/meshlink.h \
-                          ../src/meshlink++.h
+OUTPUT_DIRECTORY        = $(DOCDIR)
+INPUT                   = $(SRCDIR)/src/meshlink.h \
+                          $(SRCDIR)/src/meshlink++.h
 LATEX_BATCHMODE         = YES
-GENERATE_MAN            = YES
+GENERATE_MAN            = NO
 EXTRACT_ALL             = YES
 WARNINGS                = YES
 WARN_IF_UNDOCUMENTED    = YES
