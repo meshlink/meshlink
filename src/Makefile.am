@@ -64,6 +64,7 @@ libmeshlink_la_SOURCES = \
 	netutl.c netutl.h \
 	node.c node.h \
 	submesh.c submesh.h \
+	packmsg.h \
 	prf.c prf.h \
 	protocol.c protocol.h \
 	protocol_auth.c \

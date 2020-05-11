@@ -14,3 +14,5 @@
 /sign-verify
 /trio
 /*.[0123456789]
+/channels_aio_fd.in
+/channels_aio_fd.out*

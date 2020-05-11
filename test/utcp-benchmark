@@ -65,9 +65,9 @@ kill $(jobs -p) 2>/dev/null
 
 # Test using UTCP
 ip netns exec utcp-right tcpdump -i utcp-right -w $LOG_PREFIX-utcp.pcap udp port 9999 2>/dev/null &
-ip netns exec utcp-left ./test 9999 2>$LOG_PREFIX-server.txt >/dev/null &
+ip netns exec utcp-left ../src/utcp-test 9999 2>$LOG_PREFIX-server.txt >/dev/null &
 sleep 0.1
-head -c $SIZE /dev/zero | ip netns exec utcp-right time ./test 192.168.1.1 9999 2>$LOG_PREFIX-client.txt >/dev/null
+head -c $SIZE /dev/zero | ip netns exec utcp-right time ../src/utcp-test 192.168.1.1 9999 2>$LOG_PREFIX-client.txt >/dev/null
 sleep 0.1
 kill $(jobs -p) 2>/dev/null
 
