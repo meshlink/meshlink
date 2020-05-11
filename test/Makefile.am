@@ -18,7 +18,9 @@ TESTS = \
 	invite-join \
 	sign-verify \
 	trio \
-	trio2
+	trio2 \
+	utcp-benchmark \
+	utcp-benchmark-stream
 
 if BLACKBOX_TESTS
 SUBDIRS = blackbox
@@ -49,6 +51,7 @@ check_PROGRAMS = \
 	import-export \
 	invite-join \
 	sign-verify \
+	stream \
 	trio \
 	trio2
 

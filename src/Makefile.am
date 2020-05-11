@@ -26,10 +26,11 @@ chacha_poly1305_SOURCES = \
 	chacha-poly1305/poly1305.c chacha-poly1305/poly1305.h
 
 utcp_SOURCES = \
-	utcp/utcp.c utcp/utcp.h \
-	utcp/utcp_priv.h
+	utcp.c utcp.h \
+	utcp_priv.h
 
 lib_LTLIBRARIES = libmeshlink.la
+noinst_PROGRAMS = utcp-test
 
 pkginclude_HEADERS = meshlink++.h meshlink.h
 
@@ -80,6 +81,10 @@ libmeshlink_la_SOURCES = \
 	devtools.c devtools.h \
 	$(ed25519_SOURCES) \
 	$(chacha_poly1305_SOURCES) \
+	$(utcp_SOURCES)
+
+utcp_test_SOURCES = \
+	utcp-test.c \
 	$(utcp_SOURCES)
 
 EXTRA_libmeshlink_la_DEPENDENCIES = $(srcdir)/meshlink.sym

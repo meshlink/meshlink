@@ -2,6 +2,3 @@
 	path = catta
 	url = ../catta
 	branch = develop
-[submodule "src/utcp"]
-	path = src/utcp
-	url = ../utcp

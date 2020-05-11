@@ -1,0 +1,80 @@
+#!/bin/bash
+set -e
+
+# Require root permissions
+test "$(id -u)" = "0" || exit 77
+
+# Configuration
+LOG_PREFIX=/dev/shm/utcp-benchmark-log
+SIZE=10000000
+
+# Network parameters
+# Some realistic values:
+# - Gbit LAN connection: RATE=1gbit DELAY=0.4ms JITTER=0.04ms LOSS=0%
+# - Fast WAN connection: RATE=100mbit DELAY=50ms JITTER=3ms LOSS=0%
+# - 5GHz WiFi connection: RATE=90mbit DELAY=5ms JITTER=1ms LOSS=0%
+RATE=100mbit
+DELAY=10ms
+JITTER=1ms
+LOSS=0.1%
+
+# Maximum achievable bandwidth is limited to BUFSIZE / (2 * DELAY)
+# The Linux kernel has a default maximum send buffer of 4 MiB
+#export BUFSIZE=4194304
+
+# Remove old log files
+rm -f $LOG_PREFIX-* 2>/dev/null
+
+# Clean up old namespaces
+ip link del utcp-left 2>/dev/null || true
+ip link del utcp-right 2>/dev/null || true
+ip netns delete utcp-left 2>/dev/null || true
+ip netns delete utcp-right 2>/dev/null || true
+
+# Set up the left namespace
+ip netns add utcp-left
+ip link add name utcp-left type veth peer name utcp-right
+ip link set utcp-left netns utcp-left
+
+ip netns exec utcp-left ethtool -K utcp-left tso off
+ip netns exec utcp-left ip link set dev lo up
+ip netns exec utcp-left ip addr add dev utcp-left 192.168.1.1/24
+ip netns exec utcp-left ip link set utcp-left up
+
+#ip netns exec utcp-left tc qdisc del dev utcp-left root
+ip netns exec utcp-left tc qdisc add dev utcp-left root netem rate $RATE delay $DELAY $JITTER loss random $LOSS
+
+# Set up the right namespace
+ip netns add utcp-right
+ip link set utcp-right netns utcp-right
+
+ip netns exec utcp-right ethtool -K utcp-right tso off
+ip netns exec utcp-right ip link set dev lo up
+ip netns exec utcp-right ip addr add dev utcp-right 192.168.1.2/24
+ip netns exec utcp-right ip link set utcp-right up
+
+#ip netns exec utcp-right tc qdisc del dev utcp-right root
+ip netns exec utcp-right tc qdisc add dev utcp-right root netem rate $RATE delay $DELAY $JITTER loss random $LOSS
+# Test using kernel TCP
+ip netns exec utcp-right tcpdump -i utcp-right -w $LOG_PREFIX-socat.pcap port 9999 2>/dev/null &
+ip netns exec utcp-left socat TCP4-LISTEN:9999 - >/dev/null &
+sleep 0.1
+head -c $SIZE /dev/zero | ip netns exec utcp-right time socat - TCP4:192.168.1.1:9999 2>$LOG_PREFIX-socat-client.txt >/dev/null
+sleep 0.1
+kill $(jobs -p) 2>/dev/null
+
+# Test using UTCP
+ip netns exec utcp-right tcpdump -i utcp-right -w $LOG_PREFIX-utcp.pcap udp port 9999 2>/dev/null &
+ip netns exec utcp-left ./test 9999 2>$LOG_PREFIX-server.txt >/dev/null &
+sleep 0.1
+head -c $SIZE /dev/zero | ip netns exec utcp-right time ./test 192.168.1.1 9999 2>$LOG_PREFIX-client.txt >/dev/null
+sleep 0.1
+kill $(jobs -p) 2>/dev/null
+
+# Print timing statistics
+echo "Regular TCP:"
+tail -2 $LOG_PREFIX-socat-client.txt
+
+echo
+echo "UTCP:"
+tail -3 $LOG_PREFIX-client.txt

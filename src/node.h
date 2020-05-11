@@ -23,7 +23,7 @@
 #include "event.h"
 #include "sockaddr.h"
 #include "sptps.h"
-#include "utcp/utcp.h"
+#include "utcp.h"
 #include "submesh.h"
 
 typedef struct node_status_t {
