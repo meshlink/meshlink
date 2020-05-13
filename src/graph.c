@@ -126,8 +126,8 @@ static void sssp_bfs(meshlink_handle_t *mesh) {
 			list_insert_tail(todo_list, e->to);
 		}
 
-		next = node->next; /* Because the list_insert_tail() above could have added something extra for us! */
-		list_delete_node(todo_list, node);
+		list_next = list_node->next; /* Because the list_insert_tail() above could have added something extra for us! */
+		list_delete_node(todo_list, list_node);
 	}
 
 	list_free(todo_list);

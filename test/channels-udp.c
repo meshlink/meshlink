@@ -100,7 +100,7 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 	return false;
 }
 
-int main() {
+int main(void) {
 	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_cb);
 
 	// Open four new meshlink instance, the server and three peers.

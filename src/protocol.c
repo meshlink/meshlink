@@ -42,7 +42,7 @@ static bool (*request_handlers[])(meshlink_handle_t *, connection_t *, const cha
 
 /* Request names */
 
-static char (*request_name[]) = {
+static const char *request_name[] = {
 	"ID", "METAKEY", "CHALLENGE", "CHAL_REPLY", "ACK",
 	"STATUS", "ERROR", "TERMREQ",
 	"PING", "PONG",
@@ -66,7 +66,7 @@ bool check_id(const char *id) {
 /* Generic request routines - takes care of logging and error
    detection as well */
 
-bool send_request(meshlink_handle_t *mesh, connection_t *c, submesh_t *s, const char *format, ...) {
+bool send_request(meshlink_handle_t *mesh, connection_t *c, const submesh_t *s, const char *format, ...) {
 	assert(c);
 	assert(format);
 	assert(*format);
@@ -106,7 +106,7 @@ bool send_request(meshlink_handle_t *mesh, connection_t *c, submesh_t *s, const 
 	}
 }
 
-void forward_request(meshlink_handle_t *mesh, connection_t *from, submesh_t *s, const char *request) {
+void forward_request(meshlink_handle_t *mesh, connection_t *from, const submesh_t *s, const char *request) {
 	assert(from);
 	assert(request);
 	assert(*request);
@@ -180,7 +180,7 @@ static void age_past_requests(event_loop_t *loop, void *data) {
 
 	for splay_each(past_request_t, p, mesh->past_request_tree) {
 		if(p->firstseen + request_timeout <= mesh->loop.now.tv_sec) {
-			splay_delete_node(mesh->past_request_tree, node), deleted++;
+			splay_delete_node(mesh->past_request_tree, splay_node), deleted++;
 		} else {
 			left++;
 		}

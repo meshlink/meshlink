@@ -167,7 +167,7 @@ static int socket_in_netns(int domain, int type, int protocol, int netns) {
 // Find out what local address a socket would use if we connect to the given address.
 // We do this using connect() on a UDP socket, so the kernel has to resolve the address
 // of both endpoints, but this will actually not send any UDP packet.
-static bool getlocaladdr(char *destaddr, sockaddr_t *sa, socklen_t *salen, int netns) {
+static bool getlocaladdr(const char *destaddr, sockaddr_t *sa, socklen_t *salen, int netns) {
 	struct addrinfo *rai = NULL;
 	const struct addrinfo hint = {
 		.ai_family = AF_UNSPEC,
@@ -204,7 +204,7 @@ static bool getlocaladdr(char *destaddr, sockaddr_t *sa, socklen_t *salen, int n
 	return true;
 }
 
-static bool getlocaladdrname(char *destaddr, char *host, socklen_t hostlen, int netns) {
+static bool getlocaladdrname(const char *destaddr, char *host, socklen_t hostlen, int netns) {
 	sockaddr_t sa;
 	socklen_t salen = sizeof(sa);
 
@@ -386,7 +386,7 @@ char *meshlink_get_local_address_for_family(meshlink_handle_t *mesh, int family)
 	return xstrdup(localaddr);
 }
 
-void remove_duplicate_hostnames(char *host[], char *port[], int n) {
+static void remove_duplicate_hostnames(char *host[], char *port[], int n) {
 	for(int i = 0; i < n; i++) {
 		if(!host[i]) {
 			continue;
@@ -710,39 +710,39 @@ static bool finalize_join(join_state_t *state, const void *buf, uint16_t len) {
 	// Write host config files
 	for(uint32_t i = 0; i < count; i++) {
 		const void *data;
-		uint32_t len = packmsg_get_bin_raw(&in, &data);
+		uint32_t data_len = packmsg_get_bin_raw(&in, &data);
 
-		if(!len) {
+		if(!data_len) {
 			logger(mesh, MESHLINK_ERROR, "Incomplete invitation file!\n");
 			return false;
 		}
 
-		packmsg_input_t in2 = {data, len};
-		uint32_t version = packmsg_get_uint32(&in2);
-		char *name = packmsg_get_str_dup(&in2);
+		packmsg_input_t in2 = {data, data_len};
+		uint32_t version2 = packmsg_get_uint32(&in2);
+		char *name2 = packmsg_get_str_dup(&in2);
 
-		if(!packmsg_input_ok(&in2) || version != MESHLINK_CONFIG_VERSION || !check_id(name)) {
-			free(name);
+		if(!packmsg_input_ok(&in2) || version2 != MESHLINK_CONFIG_VERSION || !check_id(name2)) {
+			free(name2);
 			packmsg_input_invalidate(&in);
 			break;
 		}
 
-		if(!check_id(name)) {
-			free(name);
+		if(!check_id(name2)) {
+			free(name2);
 			break;
 		}
 
-		if(!strcmp(name, mesh->name)) {
+		if(!strcmp(name2, mesh->name)) {
 			logger(mesh, MESHLINK_DEBUG, "Secondary chunk would overwrite our own host config file.\n");
-			free(name);
+			free(name2);
 			meshlink_errno = MESHLINK_EPEER;
 			return false;
 		}
 
 		node_t *n = new_node();
-		n->name = name;
+		n->name = name2;
 
-		config_t config = {data, len};
+		config_t config = {data, data_len};
 
 		if(!node_read_from_config(mesh, n, &config)) {
 			free_node(n);
@@ -888,7 +888,7 @@ static bool recvline(join_state_t *state) {
 	return true;
 }
 
-static bool sendline(int fd, char *format, ...) {
+static bool sendline(int fd, const char *format, ...) {
 	char buffer[4096];
 	char *p = buffer;
 	int blen = 0;
@@ -3136,14 +3136,14 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 	pthread_mutex_lock(&mesh->mutex);
 
 	while(count--) {
-		const void *data;
-		uint32_t len = packmsg_get_bin_raw(&in, &data);
+		const void *data2;
+		uint32_t len2 = packmsg_get_bin_raw(&in, &data2);
 
-		if(!len) {
+		if(!len2) {
 			break;
 		}
 
-		packmsg_input_t in2 = {data, len};
+		packmsg_input_t in2 = {data2, len2};
 		uint32_t version = packmsg_get_uint32(&in2);
 		char *name = packmsg_get_str_dup(&in2);
 
@@ -3169,7 +3169,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 		n = new_node();
 		n->name = name;
 
-		config_t config = {data, len};
+		config_t config = {data2, len2};
 
 		if(!node_read_from_config(mesh, n, &config)) {
 			free_node(n);
@@ -3406,7 +3406,7 @@ bool meshlink_forget_node(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	if(mesh->outgoings) {
 		for list_each(outgoing_t, outgoing, mesh->outgoings) {
 			if(outgoing->node == n) {
-				list_delete_node(mesh->outgoings, node);
+				list_delete_node(mesh->outgoings, list_node);
 			}
 		}
 	}
@@ -4281,7 +4281,7 @@ void handle_network_change(meshlink_handle_t *mesh, bool online) {
 	retry(mesh);
 }
 
-void call_error_cb(meshlink_handle_t *mesh, meshlink_errno_t meshlink_errno) {
+void call_error_cb(meshlink_handle_t *mesh, meshlink_errno_t cb_errno) {
 	// We should only call the callback function if we are in the background thread.
 	if(!mesh->error_cb) {
 		return;
@@ -4292,7 +4292,7 @@ void call_error_cb(meshlink_handle_t *mesh, meshlink_errno_t meshlink_errno) {
 	}
 
 	if(mesh->thread == pthread_self()) {
-		mesh->error_cb(mesh, meshlink_errno);
+		mesh->error_cb(mesh, cb_errno);
 	}
 }
 

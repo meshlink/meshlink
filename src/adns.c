@@ -141,7 +141,7 @@ struct adns_blocking_info {
 	bool done;
 };
 
-void *adns_blocking_handler(void *data) {
+static void *adns_blocking_handler(void *data) {
 	struct adns_blocking_info *info = data;
 
 	logger(info->mesh, MESHLINK_DEBUG, "Resolving %s port %s", info->host, info->serv);

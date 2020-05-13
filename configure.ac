@@ -75,6 +75,7 @@ AS_IF([test "x$enable_hardening" != "xno"],
    esac
    AX_CHECK_LINK_FLAG([-Wl,-z,relro], [LDFLAGS="$LDFLAGS -Wl,-z,relro"])
    AX_CHECK_LINK_FLAG([-Wl,-z,now], [LDFLAGS="$LDFLAGS -Wl,-z,now"])
+   AX_CHECK_COMPILE_FLAG([-Wextra -pedantic -Wreturn-type -Wold-style-definition -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wshadow -Wbad-function-cast -Wwrite-strings -fdiagnostics-show-option -fstrict-aliasing -Wmissing-noreturn], [CPPFLAGS="$CPPFLAGS -Wextra -pedantic -Wreturn-type -Wold-style-definition -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wshadow -Wbad-function-cast -Wwrite-strings -fdiagnostics-show-option -fno-strict-aliasing -Wmissing-noreturn"])
   ]
 );
 

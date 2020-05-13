@@ -71,7 +71,7 @@ struct devtool_edge {
  *                      value. If the new values is NULL, then the old array
  *                      will have been freed by Meshlink.
  */
-extern devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *edges, size_t *nmemb);
+devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *edges, size_t *nmemb);
 
 /// Export a list of edges to a file in JSON format.
 /*  @param mesh         A handle which represents an instance of MeshLink.
@@ -79,7 +79,7 @@ extern devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_ed
  *
  *  @return             True in case of success, false otherwise.
  */
-extern bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream);
+bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream);
 
 /// The status of a node.
 typedef struct devtool_node_status devtool_node_status_t;
@@ -116,7 +116,7 @@ struct devtool_node_status {
  *                      The contents of this variable will be changed to reflect
  *                      the current status of the node.
  */
-extern void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, devtool_node_status_t *status);
+void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, devtool_node_status_t *status);
 
 /// Get the list of all submeshes of a meshlink instance.
 /** This function returns an array of submesh handles.
@@ -130,7 +130,7 @@ extern void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *no
  *                      The contents of this variable will be changed to indicate
  *                      the number if array elements.
  */
-extern meshlink_submesh_t **devtool_get_all_submeshes(meshlink_handle_t *mesh, meshlink_submesh_t **submeshes, size_t *nmemb);
+meshlink_submesh_t **devtool_get_all_submeshes(meshlink_handle_t *mesh, meshlink_submesh_t **submeshes, size_t *nmemb);
 
 /// Open a MeshLink instance in a given network namespace.
 /** This function opens MeshLink in the given network namespace.
@@ -147,7 +147,7 @@ extern meshlink_submesh_t **devtool_get_all_submeshes(meshlink_handle_t *mesh, m
  *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink, or NULL in case of an error.
  *                  The pointer is valid until meshlink_close() is called.
  */
-extern meshlink_handle_t *devtool_open_in_netns(const char *confbase, const char *name, const char *appname, dev_class_t devclass, int netns);
+meshlink_handle_t *devtool_open_in_netns(const char *confbase, const char *name, const char *appname, dev_class_t devclass, int netns);
 
 /// Debug function pointer variable for set port API
 /** This function pointer variable is a userspace tracepoint or debugger callback for
@@ -176,6 +176,14 @@ extern void (*devtool_adns_resolve_probe)(void);
  *  @param node The node whose SPTPS key(s) are being renewed
  */
 extern void (*devtool_sptps_renewal_probe)(meshlink_node_t *node);
+
+/// Force renewal of SPTPS sessions with the given node.
+/** This causes the SPTPS sessions for both the UDP and TCP connections to renew their keys.
+ *
+ *  @param mesh A handle which represents an instance of MeshLink.
+ *  @param node The node whose SPTPS key(s) should be renewed
+ */
+void devtool_force_sptps_renewal(meshlink_handle_t *mesh, meshlink_node_t *node);
 
 /// Debug function pointer variable for asserting inviter/invitee committing sequence
 /** This function pointer variable is a userspace tracepoint or debugger callback which

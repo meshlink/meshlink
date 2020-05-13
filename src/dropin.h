@@ -21,8 +21,8 @@
 */
 
 #ifndef HAVE_ASPRINTF
-extern int asprintf(char **, const char *, ...);
-extern int vasprintf(char **, const char *, va_list ap);
+int asprintf(char **, const char *, ...);
+int vasprintf(char **, const char *, va_list ap);
 #endif
 
 #ifdef HAVE_MINGW

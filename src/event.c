@@ -364,13 +364,6 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 	return true;
 }
 
-void event_flush_output(event_loop_t *loop) {
-	for splay_each(io_t, io, &loop->ios)
-		if(FD_ISSET(io->fd, &loop->writefds)) {
-			io->cb(loop, io->data, IO_WRITE);
-		}
-}
-
 void event_loop_start(event_loop_t *loop) {
 	loop->running = true;
 }
@@ -394,14 +387,14 @@ void event_loop_exit(event_loop_t *loop) {
 	assert(!loop->signals.count);
 
 	for splay_each(io_t, io, &loop->ios) {
-		splay_unlink_node(&loop->ios, node);
+		splay_unlink_node(&loop->ios, splay_node);
 	}
 
 	for splay_each(timeout_t, timeout, &loop->timeouts) {
-		splay_unlink_node(&loop->timeouts, node);
+		splay_unlink_node(&loop->timeouts, splay_node);
 	}
 
 	for splay_each(signal_t, signal, &loop->signals) {
-		splay_unlink_node(&loop->signals, node);
+		splay_unlink_node(&loop->signals, splay_node);
 	}
 }

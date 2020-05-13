@@ -18,7 +18,7 @@ static void handle_duplicate(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	assert(meshlink_blacklist(mesh, node));
 }
 
-int main() {
+int main(void) {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	// Open meshlink instances
@@ -34,7 +34,7 @@ int main() {
 		mesh[i] = meshlink_open(dirname, name[i], "duplicate", DEV_CLASS_BACKBONE);
 		assert(mesh[i]);
 
-		assert(meshlink_add_address(mesh[i], "localhost"));
+		assert(meshlink_set_canonical_address(mesh[i], meshlink_get_self(mesh[i]), "localhost", NULL));
 		meshlink_enable_discovery(mesh[i], false);
 
 		meshlink_set_node_duplicate_cb(mesh[i], handle_duplicate);

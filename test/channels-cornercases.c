@@ -79,7 +79,7 @@ static void poll_cb2(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_
 	set_sync_flag(channel->priv, true);
 }
 
-int main() {
+int main(void) {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	meshlink_handle_t *a, *b;

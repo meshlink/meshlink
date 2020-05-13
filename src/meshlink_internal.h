@@ -238,14 +238,14 @@ typedef struct meshlink_packethdr {
 	uint8_t source[16];
 } __attribute__((__packed__)) meshlink_packethdr_t;
 
-extern void meshlink_send_from_queue(event_loop_t *loop, void *mesh);
-extern void update_node_status(meshlink_handle_t *mesh, struct node_t *n);
-extern void update_node_pmtu(meshlink_handle_t *mesh, struct node_t *n);
+void meshlink_send_from_queue(event_loop_t *loop, void *mesh);
+void update_node_status(meshlink_handle_t *mesh, struct node_t *n);
+void update_node_pmtu(meshlink_handle_t *mesh, struct node_t *n);
 extern meshlink_log_level_t global_log_level;
 extern meshlink_log_cb_t global_log_cb;
-extern void handle_duplicate_node(meshlink_handle_t *mesh, struct node_t *n);
-extern void handle_network_change(meshlink_handle_t *mesh, bool online);
-extern void call_error_cb(meshlink_handle_t *mesh, meshlink_errno_t meshlink_errno);
+void handle_duplicate_node(meshlink_handle_t *mesh, struct node_t *n);
+void handle_network_change(meshlink_handle_t *mesh, bool online);
+void call_error_cb(meshlink_handle_t *mesh, meshlink_errno_t meshlink_errno);
 
 /// Per-instance PRNG
 static inline int prng(meshlink_handle_t *mesh, uint64_t max) {

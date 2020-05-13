@@ -20,6 +20,6 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-extern void graph(struct meshlink_handle *mesh);
+void graph(struct meshlink_handle *mesh);
 
 #endif

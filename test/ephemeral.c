@@ -10,7 +10,7 @@
 #include "meshlink.h"
 #include "utils.h"
 
-int main() {
+int main(void) {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	// Open two ephemeral meshlink instance.

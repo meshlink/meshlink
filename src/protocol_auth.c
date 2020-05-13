@@ -298,7 +298,7 @@ static void send_everything(meshlink_handle_t *mesh, connection_t *c) {
 	/* Send all known subnets and edges */
 
 	for splay_each(node_t, n, mesh->nodes) {
-		for splay_each(edge_t, e, n->edge_tree) {
+		for inner_splay_each(edge_t, e, n->edge_tree) {
 			send_add_edge(mesh, c, e, 0);
 		}
 	}

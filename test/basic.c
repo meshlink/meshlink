@@ -13,7 +13,7 @@
 #include "meshlink.h"
 #include "utils.h"
 
-int main() {
+int main(void) {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	// Check that the first time we need to supply a name

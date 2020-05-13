@@ -22,7 +22,7 @@
 
 #include <stdbool.h>
 
-extern bool discovery_start(meshlink_handle_t *mesh);
-extern void discovery_stop(meshlink_handle_t *mesh);
+bool discovery_start(meshlink_handle_t *mesh);
+void discovery_stop(meshlink_handle_t *mesh);
 
 #endif

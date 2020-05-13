@@ -3,7 +3,7 @@
 
 /*
     crypto.h -- header for crypto.c
-    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2020 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,8 +20,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-extern void crypto_init();
-extern void crypto_exit();
-extern void randomize(void *, size_t);
+void crypto_init(void);
+void crypto_exit(void);
+void randomize(void *buf, size_t len);
 
 #endif

@@ -2455,8 +2455,8 @@ void utcp_offline(struct utcp *utcp, bool offline) {
 	}
 }
 
-void utcp_set_retransmit_cb(struct utcp *utcp, utcp_retransmit_t retransmit) {
-	utcp->retransmit = retransmit;
+void utcp_set_retransmit_cb(struct utcp *utcp, utcp_retransmit_t cb) {
+	utcp->retransmit = cb;
 }
 
 void utcp_set_clock_granularity(long granularity) {

@@ -44,35 +44,35 @@ typedef struct list_t {
 
 /* (De)constructors */
 
-extern list_t *list_alloc(list_action_t) __attribute__((__malloc__));
-extern void list_free(list_t *);
+list_t *list_alloc(list_action_t) __attribute__((__malloc__));
+void list_free(list_t *);
 
 /* Insertion and deletion */
 
-extern list_node_t *list_insert_head(list_t *, void *);
-extern list_node_t *list_insert_tail(list_t *, void *);
+list_node_t *list_insert_head(list_t *, void *);
+list_node_t *list_insert_tail(list_t *, void *);
 
-extern void list_delete(list_t *, const void *);
+void list_delete(list_t *, const void *);
 
-extern void list_delete_node(list_t *, list_node_t *);
+void list_delete_node(list_t *, list_node_t *);
 
-extern void list_delete_head(list_t *);
-extern void list_delete_tail(list_t *);
+void list_delete_head(list_t *);
+void list_delete_tail(list_t *);
 
 /* Head/tail lookup */
 
-extern void *list_get_head(list_t *);
-extern void *list_get_tail(list_t *);
+void *list_get_head(list_t *);
+void *list_get_tail(list_t *);
 
 /* Fast list deletion */
 
-extern void list_delete_list(list_t *);
+void list_delete_list(list_t *);
 
 /* Traversing */
 
-extern void list_foreach(list_t *, list_action_t);
-extern void list_foreach_node(list_t *, list_action_node_t);
+void list_foreach(list_t *, list_action_t);
+void list_foreach_node(list_t *, list_action_node_t);
 
-#define list_each(type, item, list) (type *item = (type *)1; item; item = NULL) for(list_node_t *node = (list)->head, *next; item = node ? node->data : NULL, next = node ? node->next : NULL, node; node = next)
+#define list_each(type, item, list) (type *item = (type *)1; item; item = NULL) for(list_node_t *list_node = (list)->head, *list_next; item = list_node ? list_node->data : NULL, list_next = list_node ? list_node->next : NULL, list_node; list_node = list_next)
 
 #endif

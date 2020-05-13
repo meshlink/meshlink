@@ -23,18 +23,18 @@
 #include "net.h"
 #include "packmsg.h"
 
-extern struct addrinfo *str2addrinfo(const char *, const char *, int) __attribute__((__malloc__));
-extern sockaddr_t str2sockaddr(const char *, const char *);
-extern void sockaddr2str(const sockaddr_t *, char **, char **);
-extern char *sockaddr2hostname(const sockaddr_t *) __attribute__((__malloc__));
-extern int sockaddrcmp(const sockaddr_t *, const sockaddr_t *) __attribute__((__warn_unused_result__));
-extern int sockaddrcmp_noport(const sockaddr_t *, const sockaddr_t *) __attribute__((__warn_unused_result__));
-extern void sockaddrunmap(sockaddr_t *);
-extern void sockaddrfree(sockaddr_t *);
-extern void sockaddrcpy(sockaddr_t *, const sockaddr_t *);
-extern void sockaddrcpy_setport(sockaddr_t *, const sockaddr_t *, uint16_t port);
+struct addrinfo *str2addrinfo(const char *, const char *, int) __attribute__((__malloc__));
+sockaddr_t str2sockaddr(const char *, const char *);
+void sockaddr2str(const sockaddr_t *, char **, char **);
+char *sockaddr2hostname(const sockaddr_t *) __attribute__((__malloc__));
+int sockaddrcmp(const sockaddr_t *, const sockaddr_t *) __attribute__((__warn_unused_result__));
+int sockaddrcmp_noport(const sockaddr_t *, const sockaddr_t *) __attribute__((__warn_unused_result__));
+void sockaddrunmap(sockaddr_t *);
+void sockaddrfree(sockaddr_t *);
+void sockaddrcpy(sockaddr_t *, const sockaddr_t *);
+void sockaddrcpy_setport(sockaddr_t *, const sockaddr_t *, uint16_t port);
 
-extern void packmsg_add_sockaddr(struct packmsg_output *out, const sockaddr_t *);
-extern sockaddr_t packmsg_get_sockaddr(struct packmsg_input *in) __attribute__((__warn_unused_result__));
+void packmsg_add_sockaddr(struct packmsg_output *out, const sockaddr_t *);
+sockaddr_t packmsg_get_sockaddr(struct packmsg_input *in) __attribute__((__warn_unused_result__));
 
 #endif

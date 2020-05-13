@@ -70,39 +70,39 @@ typedef struct past_request_t {
 
 /* Basic functions */
 
-extern bool send_request(struct meshlink_handle *mesh, struct connection_t *, struct submesh_t *s, const char *, ...) __attribute__((__format__(printf, 4, 5)));
-extern void forward_request(struct meshlink_handle *mesh, struct connection_t *, struct submesh_t *, const char *);
-extern bool receive_request(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool check_id(const char *);
+bool send_request(struct meshlink_handle *mesh, struct connection_t *, const struct submesh_t *s, const char *, ...) __attribute__((__format__(printf, 4, 5)));
+void forward_request(struct meshlink_handle *mesh, struct connection_t *, const struct submesh_t *, const char *);
+bool receive_request(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool check_id(const char *);
 
-extern void init_requests(struct meshlink_handle *mesh);
-extern void exit_requests(struct meshlink_handle *mesh);
-extern bool seen_request(struct meshlink_handle *mesh, const char *);
+void init_requests(struct meshlink_handle *mesh);
+void exit_requests(struct meshlink_handle *mesh);
+bool seen_request(struct meshlink_handle *mesh, const char *);
 
 /* Requests */
 
-extern bool send_id(struct meshlink_handle *mesh, struct connection_t *);
-extern bool send_ack(struct meshlink_handle *mesh, struct connection_t *);
-extern bool send_ping(struct meshlink_handle *mesh, struct connection_t *);
-extern bool send_pong(struct meshlink_handle *mesh, struct connection_t *);
-extern bool send_add_edge(struct meshlink_handle *mesh, struct connection_t *, const struct edge_t *, int contradictions);
-extern bool send_del_edge(struct meshlink_handle *mesh, struct connection_t *, const struct edge_t *, int contradictions);
-extern bool send_req_key(struct meshlink_handle *mesh, struct node_t *);
+bool send_id(struct meshlink_handle *mesh, struct connection_t *);
+bool send_ack(struct meshlink_handle *mesh, struct connection_t *);
+bool send_ping(struct meshlink_handle *mesh, struct connection_t *);
+bool send_pong(struct meshlink_handle *mesh, struct connection_t *);
+bool send_add_edge(struct meshlink_handle *mesh, struct connection_t *, const struct edge_t *, int contradictions);
+bool send_del_edge(struct meshlink_handle *mesh, struct connection_t *, const struct edge_t *, int contradictions);
+bool send_req_key(struct meshlink_handle *mesh, struct node_t *);
 
 /* Request handlers  */
 
-extern bool id_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool ack_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool status_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool error_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool termreq_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool ping_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool pong_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool add_edge_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool del_edge_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool key_changed_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool req_key_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool ans_key_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
-extern bool tcppacket_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool id_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool ack_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool status_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool error_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool termreq_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool ping_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool pong_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool add_edge_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool del_edge_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool key_changed_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool req_key_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool ans_key_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
+bool tcppacket_h(struct meshlink_handle *mesh, struct connection_t *, const char *);
 
 #endif

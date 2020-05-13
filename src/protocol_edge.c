@@ -37,8 +37,8 @@
 bool send_add_edge(meshlink_handle_t *mesh, connection_t *c, const edge_t *e, int contradictions) {
 	bool x;
 	char *address, *port;
-	char *from_submesh, *to_submesh;
-	submesh_t *s = NULL;
+	const char *from_submesh, *to_submesh;
+	const submesh_t *s = NULL;
 
 	if(c->node && c->node->submesh) {
 		if(!submesh_allows_node(e->from->submesh, c->node)) {

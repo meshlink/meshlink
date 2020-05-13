@@ -317,14 +317,17 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 	/* Otherwise, address are found in edges to this node.
 	   So we pick a random edge and a random socket. */
 
-	int i = 0;
-	int j = prng(mesh, n->edge_tree->count);
 	edge_t *candidate = NULL;
 
-	for splay_each(edge_t, e, n->edge_tree) {
-		if(i++ == j) {
-			candidate = e->reverse;
-			break;
+	{
+		int i = 0;
+		int j = prng(mesh, n->edge_tree->count);
+
+		for splay_each(edge_t, e, n->edge_tree) {
+			if(i++ == j) {
+				candidate = e->reverse;
+				break;
+			}
 		}
 	}
 

@@ -58,8 +58,8 @@ static void debug(const char *format, ...) {
 #define debug(...) do {} while(0)
 #endif
 
-static ssize_t do_recv(struct utcp_connection *c, const void *data, size_t len) {
-	(void)c;
+static ssize_t do_recv(struct utcp_connection *rc, const void *data, size_t len) {
+	(void)rc;
 
 	if(!data || !len) {
 		if(errno) {

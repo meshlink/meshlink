@@ -23,6 +23,6 @@
 #include "net.h"
 #include "node.h"
 
-extern void route(struct meshlink_handle *mesh, struct node_t *, struct vpn_packet_t *);
+void route(struct meshlink_handle *mesh, struct node_t *, struct vpn_packet_t *);
 
 #endif

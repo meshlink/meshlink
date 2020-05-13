@@ -80,37 +80,37 @@ typedef struct outgoing_t {
 #include "connection.h"
 #include "node.h"
 
-extern void init_outgoings(struct meshlink_handle *mesh);
-extern void exit_outgoings(struct meshlink_handle *mesh);
+void init_outgoings(struct meshlink_handle *mesh);
+void exit_outgoings(struct meshlink_handle *mesh);
 
-extern void retry_outgoing(struct meshlink_handle *mesh, outgoing_t *);
-extern void handle_incoming_vpn_data(struct event_loop_t *loop, void *, int);
-extern void finish_connecting(struct meshlink_handle *mesh, struct connection_t *);
-extern void do_outgoing_connection(struct meshlink_handle *mesh, struct outgoing_t *);
-extern void handle_new_meta_connection(struct event_loop_t *loop, void *, int);
-extern int setup_tcp_listen_socket(struct meshlink_handle *mesh, const struct addrinfo *aip) __attribute__((__warn_unused_result__));
-extern int setup_udp_listen_socket(struct meshlink_handle *mesh, const struct addrinfo *aip) __attribute__((__warn_unused_result__));
-extern bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len);
-extern bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t len) __attribute__((__warn_unused_result__));
-extern void send_packet(struct meshlink_handle *mesh, struct node_t *, struct vpn_packet_t *);
-extern char *get_name(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
-extern void load_all_nodes(struct meshlink_handle *mesh);
-extern bool setup_myself_reloadable(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
-extern bool setup_network(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
-extern void reset_outgoing(struct outgoing_t *);
-extern void setup_outgoing_connection(struct meshlink_handle *mesh, struct outgoing_t *);
-extern void close_network_connections(struct meshlink_handle *mesh);
-extern void main_loop(struct meshlink_handle *mesh);
-extern void terminate_connection(struct meshlink_handle *mesh, struct connection_t *, bool);
-extern bool node_read_public_key(struct meshlink_handle *mesh, struct node_t *) __attribute__((__warn_unused_result__));
-extern bool node_read_from_config(struct meshlink_handle *mesh, struct node_t *, const config_t *config) __attribute__((__warn_unused_result__));
-extern bool read_ecdsa_public_key(struct meshlink_handle *mesh, struct connection_t *) __attribute__((__warn_unused_result__));
-extern bool read_ecdsa_private_key(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
-extern bool node_write_config(struct meshlink_handle *mesh, struct node_t *) __attribute__((__warn_unused_result__));
-extern void send_mtu_probe(struct meshlink_handle *mesh, struct node_t *);
-extern void handle_meta_connection_data(struct meshlink_handle *mesh, struct connection_t *);
-extern void retry(struct meshlink_handle *mesh);
-extern int check_port(struct meshlink_handle *mesh);
+void retry_outgoing(struct meshlink_handle *mesh, outgoing_t *);
+void handle_incoming_vpn_data(struct event_loop_t *loop, void *, int);
+void finish_connecting(struct meshlink_handle *mesh, struct connection_t *);
+void do_outgoing_connection(struct meshlink_handle *mesh, struct outgoing_t *);
+void handle_new_meta_connection(struct event_loop_t *loop, void *, int);
+int setup_tcp_listen_socket(struct meshlink_handle *mesh, const struct addrinfo *aip) __attribute__((__warn_unused_result__));
+int setup_udp_listen_socket(struct meshlink_handle *mesh, const struct addrinfo *aip) __attribute__((__warn_unused_result__));
+bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len);
+bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t len) __attribute__((__warn_unused_result__));
+void send_packet(struct meshlink_handle *mesh, struct node_t *, struct vpn_packet_t *);
+char *get_name(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
+void load_all_nodes(struct meshlink_handle *mesh);
+bool setup_myself_reloadable(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
+bool setup_network(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
+void reset_outgoing(struct outgoing_t *);
+void setup_outgoing_connection(struct meshlink_handle *mesh, struct outgoing_t *);
+void close_network_connections(struct meshlink_handle *mesh);
+void main_loop(struct meshlink_handle *mesh);
+void terminate_connection(struct meshlink_handle *mesh, struct connection_t *, bool);
+bool node_read_public_key(struct meshlink_handle *mesh, struct node_t *) __attribute__((__warn_unused_result__));
+bool node_read_from_config(struct meshlink_handle *mesh, struct node_t *, const config_t *config) __attribute__((__warn_unused_result__));
+bool read_ecdsa_public_key(struct meshlink_handle *mesh, struct connection_t *) __attribute__((__warn_unused_result__));
+bool read_ecdsa_private_key(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
+bool node_write_config(struct meshlink_handle *mesh, struct node_t *) __attribute__((__warn_unused_result__));
+void send_mtu_probe(struct meshlink_handle *mesh, struct node_t *);
+void handle_meta_connection_data(struct meshlink_handle *mesh, struct connection_t *);
+void retry(struct meshlink_handle *mesh);
+int check_port(struct meshlink_handle *mesh);
 
 #ifndef HAVE_MINGW
 #define closesocket(s) close(s)

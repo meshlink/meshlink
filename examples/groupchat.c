@@ -80,16 +80,9 @@ static void node_status(meshlink_handle_t *mesh, meshlink_node_t *node, bool rea
 	}
 }
 
-static meshlink_node_t **nodes;
-static size_t nnodes;
-
 static void parse_command(meshlink_handle_t *mesh, char *buf) {
 	char *arg = strchr(buf, ' ');
 	char *arg1 = NULL;
-	meshlink_submesh_t *s = NULL;
-	static meshlink_submesh_t **submesh = NULL;
-	static size_t nmemb = 0;
-	size_t i;
 
 	if(arg) {
 		*arg++ = 0;
@@ -103,30 +96,30 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 	}
 
 	if(!strcasecmp(buf, "invite")) {
-		char *invitation;
-
 		if(!arg) {
 			fprintf(stderr, "/invite requires an argument!\n");
 			return;
 		}
 
+		meshlink_submesh_t *s = NULL;
+
 		if(arg1) {
+			size_t nmemb;
+			meshlink_submesh_t **submeshes = devtool_get_all_submeshes(mesh, NULL, &nmemb);
 
-			submesh = devtool_get_all_submeshes(mesh, submesh, &nmemb);
-
-			if(!submesh || !nmemb) {
+			if(!submeshes || !nmemb) {
 				fprintf(stderr, "Group does not exist!\n");
 				return;
 			}
 
-			for(i = 0; i < nmemb; i++) {
-				if(!strcmp(arg1, submesh[i]->name)) {
-					s = submesh[i];
+			for(size_t i = 0; i < nmemb; i++) {
+				if(!strcmp(arg1, submeshes[i]->name)) {
+					s = submeshes[i];
 					break;
-				} else {
-					s = NULL;
 				}
 			}
+
+			free(submeshes);
 
 			if(!s) {
 				fprintf(stderr, "Group is not yet created!\n");
@@ -134,7 +127,7 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			}
 		}
 
-		invitation = meshlink_invite(mesh, s, arg);
+		char *invitation = meshlink_invite(mesh, s, arg);
 
 		if(!invitation) {
 			fprintf(stderr, "Could not invite '%s': %s\n", arg, meshlink_strerror(meshlink_errno));
@@ -191,7 +184,9 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			return;
 		}
 
-		if(!(s = meshlink_submesh_open(mesh, arg))) {
+		meshlink_submesh_t *s = meshlink_submesh_open(mesh, arg);
+
+		if(!s) {
 			fprintf(stderr, "Could not create group: %s\n", meshlink_strerror(meshlink_errno));
 		} else {
 			fprintf(stderr, "Group '%s' created!\n", s->name);
@@ -256,25 +251,29 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 		meshlink_submesh_t *node_group = NULL;
 
 		if(!arg) {
-			nodes = meshlink_get_all_nodes(mesh, nodes, &nnodes);
+			size_t nnodes;
+			meshlink_node_t **nodes = meshlink_get_all_nodes(mesh, NULL, &nnodes);
 
 			if(!nnodes) {
 				fprintf(stderr, "Could not get list of nodes: %s\n", meshlink_strerror(meshlink_errno));
-			} else {
-				fprintf(stderr, "%lu known nodes:\n", (unsigned long)nnodes);
+				return;
+			}
 
-				for(size_t i = 0; i < nnodes; i++) {
-					fprintf(stderr, " %lu. %s", (unsigned long)i, nodes[i]->name);
+			fprintf(stderr, "%lu known nodes:\n", (unsigned long)nnodes);
 
-					if((node_group = meshlink_get_node_submesh(mesh, nodes[i]))) {
-						fprintf(stderr, "\t%s", node_group->name);
-					}
+			for(size_t i = 0; i < nnodes; i++) {
+				fprintf(stderr, " %lu. %s", (unsigned long)i, nodes[i]->name);
 
-					fprintf(stderr, "\n");
+				if((node_group = meshlink_get_node_submesh(mesh, nodes[i]))) {
+					fprintf(stderr, "\t%s", node_group->name);
 				}
 
 				fprintf(stderr, "\n");
 			}
+
+			fprintf(stderr, "\n");
+
+			free(nodes);
 		} else {
 			meshlink_node_t *node = meshlink_get_node(mesh, arg);
 
@@ -296,45 +295,47 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			return;
 		}
 
-		submesh = devtool_get_all_submeshes(mesh, submesh, &nmemb);
+		size_t nmemb;
+		meshlink_submesh_t **submeshes = devtool_get_all_submeshes(mesh, NULL, &nmemb);
 
-		if(!submesh || !nmemb) {
+		if(!submeshes || !nmemb) {
 			fprintf(stderr, "Group does not exist!\n");
 			return;
 		}
 
-		for(i = 0; i < nmemb; i++) {
-			if(!strcmp(arg, submesh[i]->name)) {
-				s = submesh[i];
+		meshlink_submesh_t *s = NULL;
+
+		for(size_t i = 0; i < nmemb; i++) {
+			if(!strcmp(arg, submeshes[i]->name)) {
+				s = submeshes[i];
 				break;
-			} else {
-				s = NULL;
 			}
 		}
+
+		free(submeshes);
 
 		if(!s) {
 			fprintf(stderr, "Group %s does not exist!\n", arg);
 			return;
 		}
 
-		nodes = meshlink_get_all_nodes_by_submesh(mesh, s, nodes, &nnodes);
+		size_t nnodes;
+		meshlink_node_t **nodes = meshlink_get_all_nodes_by_submesh(mesh, s, NULL, &nnodes);
 
-		if(!nodes) {
+		if(!nodes || !nnodes) {
 			fprintf(stderr, "Group %s does not contain any nodes!\n", arg);
 			return;
 		}
 
-		if(nnodes <= 0) {
-			fprintf(stderr, "Could not get list of nodes for group %s: %s\n", arg, meshlink_strerror(meshlink_errno));
-		} else {
-			fprintf(stderr, "%zu known nodes in group %s:", nnodes, arg);
+		fprintf(stderr, "%zu known nodes in group %s:", nnodes, arg);
 
-			for(size_t i = 0; i < nnodes; i++) {
-				fprintf(stderr, " %s", nodes[i]->name);
-			}
-
-			fprintf(stderr, "\n");
+		for(size_t i = 0; i < nnodes; i++) {
+			fprintf(stderr, " %s", nodes[i]->name);
 		}
+
+		fprintf(stderr, "\n");
+
+		free(nodes);
 	} else if(!strcasecmp(buf, "quit")) {
 		fprintf(stderr, "Bye!\n");
 		fclose(stdin);

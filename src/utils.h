@@ -20,15 +20,15 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-extern int hex2bin(const char *src, void *dst, int length);
-extern int bin2hex(const void *src, char *dst, int length);
+int hex2bin(const char *src, void *dst, int length);
+int bin2hex(const void *src, char *dst, int length);
 
-extern int b64encode(const void *src, char *dst, int length);
-extern int b64encode_urlsafe(const void *src, char *dst, int length);
-extern int b64decode(const char *src, void *dst, int length);
+int b64encode(const void *src, char *dst, int length);
+int b64encode_urlsafe(const void *src, char *dst, int length);
+int b64decode(const char *src, void *dst, int length);
 
 #ifdef HAVE_MINGW
-extern const char *winerror(int);
+const char *winerror(int);
 #define strerror(x) ((x)>0?strerror(x):winerror(GetLastError()))
 #define sockerrno WSAGetLastError()
 #define sockstrerror(x) winerror(x)
@@ -45,6 +45,6 @@ extern const char *winerror(int);
 #define sockinuse(x) ((x) == EADDRINUSE)
 #endif
 
-extern unsigned int bitfield_to_int(const void *bitfield, size_t size) __attribute__((__warn_unused_result__));
+unsigned int bitfield_to_int(const void *bitfield, size_t size) __attribute__((__warn_unused_result__));
 
 #endif

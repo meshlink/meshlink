@@ -27,11 +27,11 @@ typedef struct buffer_t {
 	size_t offset;
 } buffer_t;
 
-extern void buffer_compact(buffer_t *buffer, size_t maxsize);
-extern char *buffer_prepare(buffer_t *buffer, size_t size);
-extern void buffer_add(buffer_t *buffer, const char *data, size_t size);
-extern char *buffer_readline(buffer_t *buffer);
-extern char *buffer_read(buffer_t *buffer, size_t size);
-extern void buffer_clear(buffer_t *buffer);
+void buffer_compact(buffer_t *buffer, size_t maxsize);
+char *buffer_prepare(buffer_t *buffer, size_t size);
+void buffer_add(buffer_t *buffer, const char *data, size_t size);
+char *buffer_readline(buffer_t *buffer);
+char *buffer_read(buffer_t *buffer, size_t size);
+void buffer_clear(buffer_t *buffer);
 
 #endif

@@ -78,25 +78,25 @@ struct event_loop_t {
 	int pipefd[2];
 };
 
-extern void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int flags);
-extern void io_del(event_loop_t *loop, io_t *io);
-extern void io_set(event_loop_t *loop, io_t *io, int flags);
+void io_add(event_loop_t *loop, io_t *io, io_cb_t cb, void *data, int fd, int flags);
+void io_del(event_loop_t *loop, io_t *io);
+void io_set(event_loop_t *loop, io_t *io, int flags);
 
-extern void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *data, struct timespec *tv);
-extern void timeout_del(event_loop_t *loop, timeout_t *timeout);
-extern void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timespec *tv);
+void timeout_add(event_loop_t *loop, timeout_t *timeout, timeout_cb_t cb, void *data, struct timespec *tv);
+void timeout_del(event_loop_t *loop, timeout_t *timeout);
+void timeout_set(event_loop_t *loop, timeout_t *timeout, struct timespec *tv);
 
-extern void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum);
-extern void signal_trigger(event_loop_t *loop, signal_t *sig);
-extern void signal_del(event_loop_t *loop, signal_t *sig);
+void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, uint8_t signum);
+void signal_trigger(event_loop_t *loop, signal_t *sig);
+void signal_del(event_loop_t *loop, signal_t *sig);
 
-extern void idle_set(event_loop_t *loop, idle_cb_t cb, void *data);
+void idle_set(event_loop_t *loop, idle_cb_t cb, void *data);
 
-extern void event_loop_init(event_loop_t *loop);
-extern void event_loop_exit(event_loop_t *loop);
-extern bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) __attribute__((__warn_unused_result__));
-extern void event_loop_flush_output(event_loop_t *loop);
-extern void event_loop_start(event_loop_t *loop);
-extern void event_loop_stop(event_loop_t *loop);
+void event_loop_init(event_loop_t *loop);
+void event_loop_exit(event_loop_t *loop);
+bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) __attribute__((__warn_unused_result__));
+void event_loop_flush_output(event_loop_t *loop);
+void event_loop_start(event_loop_t *loop);
+void event_loop_stop(event_loop_t *loop);
 
 #endif

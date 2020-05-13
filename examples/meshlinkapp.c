@@ -2,17 +2,16 @@
 #include "../src/system.h"
 #include "../src/meshlink.h"
 
-void handle_recv_data(meshlink_handle_t *mesh, meshlink_node_t *source, void *data, size_t len) {
+static void handle_recv_data(meshlink_handle_t *mesh, meshlink_node_t *source, void *data, size_t len) {
 	(void)mesh;
 
 	printf("Received %zu bytes from %s: %s\n", len, source->name, (char *)data);
 }
 
 int main(int argc, char **argv) {
-	char *confbase = argc > 1 ? argv[1] : "/tmp/meshlink/";
-	char *name = argc > 2 ? argv[2] : "foo";
-
-	char *remotename = argc > 3 ? argv[3] : "bar";
+	const char *confbase = argc > 1 ? argv[1] : "/tmp/meshlink/";
+	const char *name = argc > 2 ? argv[2] : "foo";
+	const char *remotename = argc > 3 ? argv[3] : "bar";
 
 	meshlink_handle_t *myhandle;
 

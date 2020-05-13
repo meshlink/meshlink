@@ -334,12 +334,12 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 		/* Append the known UDP address of the from node, if we have a confirmed one */
 		if(!*address && from->status.udp_confirmed && from->address.sa.sa_family != AF_UNSPEC) {
-			char *address, *port;
+			char *reflexive_address, *reflexive_port;
 			logger(mesh, MESHLINK_DEBUG, "Appending reflexive UDP address to ANS_KEY from %s to %s", from->name, to->name);
-			sockaddr2str(&from->address, &address, &port);
-			send_request(mesh, to->nexthop->connection, NULL, "%s %s %s", request, address, port);
-			free(address);
-			free(port);
+			sockaddr2str(&from->address, &reflexive_address, &reflexive_port);
+			send_request(mesh, to->nexthop->connection, NULL, "%s %s %s", request, reflexive_address, reflexive_port);
+			free(reflexive_address);
+			free(reflexive_port);
 			return true;
 		}
 

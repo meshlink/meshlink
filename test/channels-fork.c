@@ -186,7 +186,7 @@ static void alarm_handler(int sig) {
 	assert(0);
 }
 
-int main() {
+int main(void) {
 	int fda[2], fdb[2];
 
 	assert(pipe2(fda, 0) != -1);

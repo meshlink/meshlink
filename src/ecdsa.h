@@ -24,18 +24,18 @@
 typedef struct ecdsa ecdsa_t;
 #endif
 
-extern ecdsa_t *ecdsa_set_private_key(const void *p) __attribute__((__malloc__));
-extern ecdsa_t *ecdsa_set_base64_public_key(const char *p) __attribute__((__malloc__));
-extern ecdsa_t *ecdsa_set_public_key(const void *p) __attribute__((__malloc__));
-extern char *ecdsa_get_base64_public_key(ecdsa_t *ecdsa);
-extern const void *ecdsa_get_public_key(ecdsa_t *ecdsa) __attribute__((__malloc__));
-extern const void *ecdsa_get_private_key(ecdsa_t *ecdsa) __attribute__((__malloc__));
-extern ecdsa_t *ecdsa_read_pem_public_key(FILE *fp) __attribute__((__malloc__));
-extern ecdsa_t *ecdsa_read_pem_private_key(FILE *fp) __attribute__((__malloc__));
-extern size_t ecdsa_size(ecdsa_t *ecdsa);
-extern bool ecdsa_sign(ecdsa_t *ecdsa, const void *in, size_t inlen, void *out) __attribute__((__warn_unused_result__));
-extern bool ecdsa_verify(ecdsa_t *ecdsa, const void *in, size_t inlen, const void *out) __attribute__((__warn_unused_result__));
-extern bool ecdsa_active(ecdsa_t *ecdsa);
-extern void ecdsa_free(ecdsa_t *ecdsa);
+ecdsa_t *ecdsa_set_private_key(const void *p) __attribute__((__malloc__));
+ecdsa_t *ecdsa_set_base64_public_key(const char *p) __attribute__((__malloc__));
+ecdsa_t *ecdsa_set_public_key(const void *p) __attribute__((__malloc__));
+char *ecdsa_get_base64_public_key(ecdsa_t *ecdsa);
+const void *ecdsa_get_public_key(ecdsa_t *ecdsa) __attribute__((__malloc__));
+const void *ecdsa_get_private_key(ecdsa_t *ecdsa) __attribute__((__malloc__));
+ecdsa_t *ecdsa_read_pem_public_key(FILE *fp) __attribute__((__malloc__));
+ecdsa_t *ecdsa_read_pem_private_key(FILE *fp) __attribute__((__malloc__));
+size_t ecdsa_size(ecdsa_t *ecdsa);
+bool ecdsa_sign(ecdsa_t *ecdsa, const void *in, size_t inlen, void *out) __attribute__((__warn_unused_result__));
+bool ecdsa_verify(ecdsa_t *ecdsa, const void *in, size_t inlen, const void *out) __attribute__((__warn_unused_result__));
+bool ecdsa_active(ecdsa_t *ecdsa);
+void ecdsa_free(ecdsa_t *ecdsa);
 
 #endif

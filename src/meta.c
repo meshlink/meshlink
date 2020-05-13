@@ -70,7 +70,7 @@ void broadcast_meta(meshlink_handle_t *mesh, connection_t *from, const char *buf
 		}
 }
 
-void broadcast_submesh_meta(meshlink_handle_t *mesh, connection_t *from, submesh_t *s, const char *buffer, int length) {
+void broadcast_submesh_meta(meshlink_handle_t *mesh, connection_t *from, const submesh_t *s, const char *buffer, int length) {
 	assert(buffer);
 	assert(length);
 

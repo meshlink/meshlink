@@ -85,7 +85,7 @@ static bool hmac_sha512(const char *key, size_t keylen, const char *msg, size_t 
    We use SHA512 instead of MD5 and SHA1.
  */
 
-bool prf(const char *secret, size_t secretlen, char *seed, size_t seedlen, char *out, size_t outlen) {
+bool prf(const char *secret, size_t secretlen, const char *seed, size_t seedlen, char *out, size_t outlen) {
 	assert(secret);
 	assert(secretlen);
 	assert(seed);

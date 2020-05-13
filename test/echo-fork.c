@@ -174,7 +174,7 @@ static int main2(void) {
 }
 
 
-int main() {
+int main(void) {
 	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_cb);
 
 	// Initialize and exchange configuration.
