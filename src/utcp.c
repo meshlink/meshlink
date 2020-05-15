@@ -268,7 +268,7 @@ static ssize_t buffer_put_at(struct buffer *buf, size_t offset, const void *data
 
 	uint32_t realoffset = buf->offset + offset;
 
-	if(buf->size - buf->offset < offset) {
+	if(buf->size - buf->offset <= offset) {
 		// The offset wrapped
 		realoffset -= buf->size;
 	}
@@ -305,7 +305,7 @@ static ssize_t buffer_copy(struct buffer *buf, void *data, size_t offset, size_t
 
 	uint32_t realoffset = buf->offset + offset;
 
-	if(buf->size - buf->offset < offset) {
+	if(buf->size - buf->offset <= offset) {
 		// The offset wrapped
 		realoffset -= buf->size;
 	}
@@ -322,7 +322,11 @@ static ssize_t buffer_copy(struct buffer *buf, void *data, size_t offset, size_t
 }
 
 // Copy data from the buffer without removing it.
-static ssize_t buffer_call(struct buffer *buf, utcp_recv_t cb, void *arg, size_t offset, size_t len) {
+static ssize_t buffer_call(struct utcp_connection *c, struct buffer *buf, size_t offset, size_t len) {
+	if(!c->recv) {
+		return len;
+	}
+
 	// Ensure we don't copy more than is actually stored in the buffer
 	if(offset >= buf->used) {
 		return 0;
@@ -334,20 +338,25 @@ static ssize_t buffer_call(struct buffer *buf, utcp_recv_t cb, void *arg, size_t
 
 	uint32_t realoffset = buf->offset + offset;
 
-	if(buf->size - buf->offset < offset) {
+	if(buf->size - buf->offset <= offset) {
 		// The offset wrapped
 		realoffset -= buf->size;
 	}
 
 	if(buf->size - realoffset < len) {
 		// The data is wrapped
-		ssize_t rx1 = cb(arg, buf->data + realoffset, buf->size - realoffset);
+		ssize_t rx1 = c->recv(c, buf->data + realoffset, buf->size - realoffset);
 
 		if(rx1 < buf->size - realoffset) {
 			return rx1;
 		}
 
-		ssize_t rx2 = cb(arg, buf->data, len - (buf->size - realoffset));
+		// The channel might have been closed by the previous callback
+		if(!c->recv) {
+			return len;
+		}
+
+		ssize_t rx2 = c->recv(c, buf->data, len - (buf->size - realoffset));
 
 		if(rx2 < 0) {
 			return rx2;
@@ -355,7 +364,7 @@ static ssize_t buffer_call(struct buffer *buf, utcp_recv_t cb, void *arg, size_t
 			return rx1 + rx2;
 		}
 	} else {
-		return cb(arg, buf->data + realoffset, len);
+		return c->recv(c, buf->data + realoffset, len);
 	}
 }
 
@@ -365,7 +374,7 @@ static ssize_t buffer_discard(struct buffer *buf, size_t len) {
 		len = buf->used;
 	}
 
-	if(buf->size - buf->offset < len) {
+	if(buf->size - buf->offset <= len) {
 		buf->offset -= buf->size;
 	}
 
@@ -1110,13 +1119,11 @@ static void handle_in_order(struct utcp_connection *c, const void *data, size_t 
 			len = c->sacks[0].offset + c->sacks[0].len;
 			size_t remainder = len - offset;
 
-			if(c->recv) {
-				ssize_t rxd = buffer_call(&c->rcvbuf, c->recv, c, offset, remainder);
+			ssize_t rxd = buffer_call(c, &c->rcvbuf, offset, remainder);
 
-				if(rxd != (ssize_t)remainder) {
-					// TODO: handle the application not accepting all data.
-					abort();
-				}
+			if(rxd != (ssize_t)remainder) {
+				// TODO: handle the application not accepting all data.
+				abort();
 			}
 		}
 	}
@@ -1161,8 +1168,8 @@ static void handle_unreliable(struct utcp_connection *c, const struct hdr *hdr, 
 	}
 
 	// Send the packet if it's the final fragment
-	if(!(hdr->ctl & MF) && c->recv) {
-		buffer_call(&c->rcvbuf, c->recv, c, 0, hdr->wnd + len);
+	if(!(hdr->ctl & MF)) {
+		buffer_call(c, &c->rcvbuf, 0, hdr->wnd + len);
 	}
 
 	c->rcv.nxt = hdr->seq + len;
