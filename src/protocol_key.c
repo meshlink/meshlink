@@ -80,7 +80,9 @@ static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data
 bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 	if(!node_read_public_key(mesh, to)) {
 		logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s", to->name);
-		send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %d", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY);
+		char *pubkey = ecdsa_get_base64_public_key(mesh->private_key);
+		send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_PUBKEY, pubkey);
+		free(pubkey);
 		return true;
 	}
 
@@ -108,6 +110,19 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 
 		if(!from->nexthop || !from->nexthop->connection) {
 			return false;
+		}
+
+		if(!node_read_public_key(mesh, from)) {
+			char hiskey[MAX_STRING_SIZE];
+
+			if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, hiskey) == 1) {
+				from->ecdsa = ecdsa_set_base64_public_key(hiskey);
+
+				if(!from->ecdsa) {
+					logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "REQ_PUBKEY", from->name, "invalid pubkey");
+					return true;
+				}
+			}
 		}
 
 		send_request(mesh, from->nexthop->connection, NULL, "%d %s %s %d %s", REQ_KEY, mesh->self->name, from->name, ANS_PUBKEY, pubkey);
