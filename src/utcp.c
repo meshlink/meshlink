@@ -719,7 +719,7 @@ static void ack(struct utcp_connection *c, bool sendatleastone) {
 			pkt->hdr.ctl |= FIN;
 		}
 
-		if(!c->rtt_start.tv_sec) {
+		if(!c->rtt_start.tv_sec && is_reliable(c)) {
 			// Start RTT measurement
 			clock_gettime(UTCP_CLOCK, &c->rtt_start);
 			c->rtt_seq = pkt->hdr.seq + seglen;
