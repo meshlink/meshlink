@@ -1994,6 +1994,26 @@ static vpn_packet_t *prepare_packet(meshlink_handle_t *mesh, meshlink_node_t *de
 	return packet;
 }
 
+static bool meshlink_send_immediate(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
+	assert(mesh);
+	assert(destination);
+	assert(data);
+	assert(len);
+
+	// Prepare the packet
+	vpn_packet_t *packet = prepare_packet(mesh, destination, data, len);
+
+	if(!packet) {
+		return false;
+	}
+
+	// Send it immediately
+	route(mesh, mesh->self, packet);
+	free(packet);
+
+	return true;
+}
+
 bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
 	// Validate arguments
 	if(!mesh || !destination) {
@@ -3534,7 +3554,7 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
 	}
 
 	meshlink_handle_t *mesh = n->mesh;
-	return meshlink_send(mesh, (meshlink_node_t *)n, data, len) ? (ssize_t)len : -1;
+	return meshlink_send_immediate(mesh, (meshlink_node_t *)n, data, len) ? (ssize_t)len : -1;
 }
 
 void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb) {
