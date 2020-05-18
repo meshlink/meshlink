@@ -4,6 +4,7 @@ TESTS = \
 	blacklist \
 	channels \
 	channels-aio \
+	channels-aio-cornercases \
 	channels-aio-fd \
 	channels-cornercases \
 	channels-failure \
@@ -37,6 +38,7 @@ check_PROGRAMS = \
 	blacklist \
 	channels \
 	channels-aio \
+	channels-aio-cornercases \
 	channels-aio-fd \
 	channels-cornercases \
 	channels-failure \
@@ -73,6 +75,9 @@ channels_LDADD = $(top_builddir)/src/libmeshlink.la
 
 channels_aio_SOURCES = channels-aio.c utils.c utils.h
 channels_aio_LDADD = $(top_builddir)/src/libmeshlink.la
+
+channels_aio_cornercases_SOURCES = channels-aio-cornercases.c utils.c utils.h
+channels_aio_cornercases_LDADD = $(top_builddir)/src/libmeshlink.la
 
 channels_aio_fd_SOURCES = channels-aio-fd.c utils.c utils.h
 channels_aio_fd_LDADD = $(top_builddir)/src/libmeshlink.la
