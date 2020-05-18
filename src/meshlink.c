@@ -3465,7 +3465,7 @@ static bool aio_finish_one(meshlink_handle_t *mesh, meshlink_channel_t *channel,
 
 		if(aio->data) {
 			if(aio->cb.buffer) {
-				aio->cb.buffer(mesh, channel, aio->data, aio->len, aio->priv);
+				aio->cb.buffer(mesh, channel, aio->data, aio->done, aio->priv);
 			}
 		} else {
 			if(aio->cb.fd) {
