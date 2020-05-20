@@ -3675,6 +3675,11 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 		if(aio->data) {
 			sent = utcp_send(connection, (char *)aio->data + aio->done, todo);
 		} else {
+			/* Limit the amount we read at once to avoid stack overflows */
+			if(todo > 65536) {
+				todo = 65536;
+			}
+
 			char buf[todo];
 			ssize_t result = read(aio->fd, buf, todo);
 
