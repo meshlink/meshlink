@@ -1147,7 +1147,7 @@ static void handle_unreliable(struct utcp_connection *c, const struct hdr *hdr, 
 	}
 
 	// Ensure reassembled packet are not larger than 64 kiB
-	if(hdr->wnd >= MAX_UNRELIABLE_SIZE || hdr->wnd + len > MAX_UNRELIABLE_SIZE) {
+	if(hdr->wnd > MAX_UNRELIABLE_SIZE || hdr->wnd + len > MAX_UNRELIABLE_SIZE) {
 		return;
 	}
 
