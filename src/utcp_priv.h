@@ -137,6 +137,7 @@ struct utcp_connection {
 		uint32_t irs;
 	} rcv;
 
+	uint32_t frame_offset;
 	int dupack;
 
 	// Timers
@@ -190,6 +191,7 @@ struct utcp {
 	uint16_t mtu; // The maximum size of a UTCP packet, including headers.
 	uint16_t mss; // The maximum size of the payload of a UTCP packet.
 	int timeout; // sec
+	int flush_timeout; // milliseconds
 
 	// Connection management
 

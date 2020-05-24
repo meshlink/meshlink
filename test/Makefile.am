@@ -9,8 +9,10 @@ TESTS = \
 	channels-cornercases \
 	channels-failure \
 	channels-fork \
+	channels-framed \
 	channels-no-partial \
 	channels-udp \
+	channels-udp-framed \
 	duplicate \
 	encrypted \
 	ephemeral \
@@ -43,8 +45,10 @@ check_PROGRAMS = \
 	channels-cornercases \
 	channels-failure \
 	channels-fork \
+	channels-framed \
 	channels-no-partial \
 	channels-udp \
+	channels-udp-framed \
 	duplicate \
 	echo-fork \
 	encrypted \
@@ -73,6 +77,9 @@ blacklist_LDADD = $(top_builddir)/src/libmeshlink.la
 channels_SOURCES = channels.c utils.c utils.h
 channels_LDADD = $(top_builddir)/src/libmeshlink.la
 
+channels_framed_SOURCES = channels-framed.c utils.c utils.h
+channels_framed_LDADD = $(top_builddir)/src/libmeshlink.la
+
 channels_aio_SOURCES = channels-aio.c utils.c utils.h
 channels_aio_LDADD = $(top_builddir)/src/libmeshlink.la
 
@@ -96,6 +103,9 @@ channels_cornercases_LDADD = $(top_builddir)/src/libmeshlink.la
 
 channels_udp_SOURCES = channels-udp.c utils.c utils.h
 channels_udp_LDADD = $(top_builddir)/src/libmeshlink.la
+
+channels_udp_framed_SOURCES = channels-udp-framed.c utils.c utils.h
+channels_udp_framed_LDADD = $(top_builddir)/src/libmeshlink.la
 
 duplicate_SOURCES = duplicate.c utils.c utils.h
 duplicate_LDADD = $(top_builddir)/src/libmeshlink.la

@@ -13,48 +13,29 @@
 #include "../src/meshlink.h"
 #include "utils.h"
 
-static struct sync_flag accept_flag;
-static struct sync_flag close_flag;
 
 struct client {
 	meshlink_handle_t *mesh;
-	meshlink_channel_t *channel;
 	size_t received;
 	bool got_large_packet;
+	struct sync_flag accept_flag;
+	struct sync_flag close_flag;
 };
 
-static void server_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	(void)data;
-
-	// We expect no data from clients, apart from disconnections.
-	assert(len == 0);
-
-	meshlink_channel_t **c = mesh->priv;
-	int count = 0;
-
-	for(int i = 0; i < 3; i++) {
-		if(c[i] == channel) {
-			c[i] = NULL;
-			meshlink_channel_close(mesh, channel);
-		}
-
-		if(c[i]) {
-			count++;
-		}
-	}
-
-	if(!count) {
-		set_sync_flag(&close_flag, true);
-	}
-}
-
-static void client_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	(void)channel;
 	(void)data;
 
 	// We expect always the same amount of data from the server.
 	assert(mesh->priv);
 	struct client *client = mesh->priv;
+
+	if(!data && len == 0) {
+		set_sync_flag(&client->close_flag, true);
+		meshlink_channel_close(mesh, channel);
+		return;
+	}
+
 	assert(len == 512 || len == 65535);
 	client->received += len;
 
@@ -63,41 +44,19 @@ static void client_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chann
 	}
 }
 
-static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
+static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
+	assert(port == 1);
+	assert(!data);
+	assert(!len);
+	assert(meshlink_channel_get_flags(mesh, channel) == MESHLINK_CHANNEL_UDP);
+
 	assert(mesh->priv);
 	struct client *client = mesh->priv;
 
-	if(reachable && !strcmp(node->name, "server")) {
-		assert(!client->channel);
-		client->channel = meshlink_channel_open_ex(mesh, node, 1, client_receive_cb, NULL, 0, MESHLINK_CHANNEL_UDP);
-		assert(client->channel);
-	}
-}
+	meshlink_set_channel_receive_cb(mesh, channel, receive_cb);
+	set_sync_flag(&client->accept_flag, true);
 
-static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	(void)data;
-	(void)len;
-
-	assert(port == 1);
-	assert(meshlink_channel_get_flags(mesh, channel) == MESHLINK_CHANNEL_UDP);
-	meshlink_set_channel_receive_cb(mesh, channel, server_receive_cb);
-
-	assert(mesh->priv);
-	meshlink_channel_t **c = mesh->priv;
-
-	for(int i = 0; i < 3; i++) {
-		if(c[i] == NULL) {
-			c[i] = channel;
-
-			if(i == 2) {
-				set_sync_flag(&accept_flag, true);
-			}
-
-			return true;
-		}
-	}
-
-	return false;
+	return true;
 }
 
 int main(void) {
@@ -115,7 +74,6 @@ int main(void) {
 	assert(server);
 	meshlink_enable_discovery(server, false);
 	server->priv = channels;
-	meshlink_set_channel_accept_cb(server, accept_cb);
 	assert(meshlink_start(server));
 
 	for(int i = 0; i < 3; i++) {
@@ -126,18 +84,24 @@ int main(void) {
 		assert(clients[i].mesh);
 		clients[i].mesh->priv = &clients[i];
 		meshlink_enable_discovery(clients[i].mesh, false);
+		meshlink_set_channel_accept_cb(clients[i].mesh, accept_cb);
 		link_meshlink_pair(server, clients[i].mesh);
-		meshlink_set_node_status_cb(clients[i].mesh, status_cb);
 		assert(meshlink_start(clients[i].mesh));
+	}
+
+	// Open channels
+
+	for(int i = 0; i < 3; i++) {
+		meshlink_node_t *peer = meshlink_get_node(server, names[i]);
+		assert(peer);
+		channels[i] = meshlink_channel_open_ex(server, peer, 1, NULL, NULL, 0, MESHLINK_CHANNEL_UDP);
+		assert(channels[i]);
 	}
 
 	// Wait for all three channels to connect
 
-	assert(wait_sync_flag(&accept_flag, 10));
-
 	for(int i = 0; i < 3; i++) {
-		assert(channels[i]);
-		assert(clients[i].channel);
+		assert(wait_sync_flag(&clients[i].accept_flag, 10));
 	}
 
 	// Check that we can send up to 65535 bytes without errors
@@ -146,6 +110,12 @@ int main(void) {
 
 	for(int i = 0; i < 3; i++) {
 		assert(meshlink_channel_send(server, channels[i], large_data, sizeof(large_data)) == sizeof(large_data));
+	}
+
+	// Check that we can send zero bytes without errors
+
+	for(int i = 0; i < 3; i++) {
+		assert(meshlink_channel_send(server, channels[i], large_data, 0) == 0);
 	}
 
 	// Assert that any larger packets are not allowed
@@ -159,21 +129,23 @@ int main(void) {
 
 	for(int j = 0; j < 2500; j++) {
 		for(int i = 0; i < 3; i++) {
-			assert(meshlink_channel_send(server, channels[i], data, sizeof(data)) == sizeof(data));
+			size_t result = meshlink_channel_send(server, channels[i], data, sizeof(data));
+			assert(result == sizeof(data));
 		}
 
 		const struct timespec req = {0, 2000000};
 		clock_nanosleep(CLOCK_MONOTONIC, 0, &req, NULL);
 	}
 
-	// Let the clients close the channels
+	// Close the channels
 
 	for(int i = 0; i < 3; i++) {
-		meshlink_channel_close(clients[i].mesh, clients[i].channel);
-		meshlink_set_node_status_cb(clients[i].mesh, NULL);
+		meshlink_channel_close(server, channels[i]);
 	}
 
-	assert(wait_sync_flag(&close_flag, 10));
+	for(int i = 0; i < 3; i++) {
+		assert(wait_sync_flag(&clients[i].close_flag, 10));
+	}
 
 	// Check that the clients have received (most of) the data
 
@@ -181,11 +153,15 @@ int main(void) {
 		fprintf(stderr, "%s received %zu\n", clients[i].mesh->name, clients[i].received);
 	}
 
+	bool got_large_packet = false;
+
 	for(int i = 0; i < 3; i++) {
 		assert(clients[i].received >= 1000000);
 		assert(clients[i].received <= 1345536);
-		assert(clients[i].got_large_packet);
+		got_large_packet |= clients[i].got_large_packet;
 	}
+
+	assert(got_large_packet);
 
 	// Clean up.
 

@@ -1530,6 +1530,19 @@ size_t meshlink_channel_get_mss(struct meshlink_handle *mesh, struct meshlink_ch
  */
 void meshlink_set_node_channel_timeout(struct meshlink_handle *mesh, struct meshlink_node *node, int timeout);
 
+/// Set the flush timeout used for channels using message framing to the given node.
+/** This sets the timeout after which UDP-style channels that use message framing will
+    flush partial packets.
+ *  The timeout is set for all current and future channels to the given node.
+ *
+ *  \memberof meshlink_node
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A pointer to a struct meshlink_node describing the node to set the channel connection timeout for.
+ *  @param timeout      The timeout in milliseconds after which partial packets will be flushed.
+ *                      The default is 5 milliseconds.
+ */
+void meshlink_set_node_flush_timeout(struct meshlink_handle *mesh, struct meshlink_node *node, int timeout);
+
 /// Hint that a hostname may be found at an address
 /** This function indicates to meshlink that the given hostname is likely found
  *  at the given IP address and port.

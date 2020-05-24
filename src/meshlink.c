@@ -3906,11 +3906,7 @@ ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *chann
 		return -1;
 	}
 
-	if(!len) {
-		return 0;
-	}
-
-	if(!data) {
+	if(len && !data) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return -1;
 	}
@@ -4141,6 +4137,27 @@ void meshlink_set_node_channel_timeout(meshlink_handle_t *mesh, meshlink_node_t 
 	}
 
 	utcp_set_user_timeout(n->utcp, timeout);
+
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
+void meshlink_set_node_flush_timeout(meshlink_handle_t *mesh, meshlink_node_t *node, int timeout) {
+	if(!mesh || !node) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	node_t *n = (node_t *)node;
+
+	pthread_mutex_lock(&mesh->mutex);
+
+	if(!n->utcp) {
+		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
+		utcp_set_mtu(n->utcp, n->mtu - sizeof(meshlink_packethdr_t));
+		utcp_set_retransmit_cb(n->utcp, channel_retransmit);
+	}
+
+	utcp_set_flush_timeout(n->utcp, timeout);
 
 	pthread_mutex_unlock(&mesh->mutex);
 }

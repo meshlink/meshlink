@@ -823,6 +823,19 @@ public:
 		meshlink_set_node_channel_timeout(handle, node, timeout);
 	}
 
+	/// Set the flush timeout used for channels using message framing to the given node.
+	/** This sets the timeout after which UDP-style channels that use message framing will
+	    flush partial packets.
+	    *  The timeout is set for all current and future channels to the given node.
+	    *
+	    *  @param node         The node to set the flush timeout for.
+	    *  @param timeout      The timeout in milliseconds after which partial packets will be flushed.
+	    *                      The default is 5 milliseconds.
+	    */
+	void set_node_flush_timeout(node *node, int timeout) {
+		meshlink_set_node_flush_timeout(handle, node, timeout);
+	}
+
 	/// Open a reliable stream channel to another node.
 	/** This function is called whenever a remote node wants to open a channel to the local node.
 	 *  The application then has to decide whether to accept or reject this channel.
