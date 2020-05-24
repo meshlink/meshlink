@@ -55,10 +55,10 @@ static void client_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chann
 	// We expect always the same amount of data from the server.
 	assert(mesh->priv);
 	struct client *client = mesh->priv;
-	assert(len == 512 || len == 65536);
+	assert(len == 512 || len == 65535);
 	client->received += len;
 
-	if(len == 65536) {
+	if(len == 65535) {
 		client->got_large_packet = true;
 	}
 }
@@ -142,16 +142,15 @@ int main(void) {
 
 	// Check that we can send up to 65535 bytes without errors
 
-	char large_data[65536] = "";
+	char large_data[65535] = "";
 
 	for(int i = 0; i < 3; i++) {
-		assert(meshlink_channel_send(server, channels[i], large_data, sizeof(large_data) + 1) == -1);
 		assert(meshlink_channel_send(server, channels[i], large_data, sizeof(large_data)) == sizeof(large_data));
 	}
 
-	// Assert that packets larger than 64 kiB are not allowed
+	// Assert that any larger packets are not allowed
 
-	assert(meshlink_channel_send(server, channels[0], large_data, 65537) == -1);
+	assert(meshlink_channel_send(server, channels[0], large_data, 65536) == -1);
 
 	// Stream packets from server to clients for 5 seconds at 40 Mbps (1 kB * 500 Hz)
 
