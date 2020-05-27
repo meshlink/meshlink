@@ -13,10 +13,10 @@
 #include "../src/meshlink.h"
 #include "utils.h"
 
-static bool received_large;
-static bool received_zero;
 static size_t received;
 static struct sync_flag accept_flag;
+static struct sync_flag small_flag;
+static struct sync_flag large_flag;
 static struct sync_flag close_flag;
 
 static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
@@ -34,11 +34,11 @@ static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, con
 	}
 
 	if(len == 65535) {
-		received_large = true;
+		set_sync_flag(&large_flag, true);
 	}
 
 	if(len == 0) {
-		received_zero = true;
+		set_sync_flag(&small_flag, true);
 	}
 
 	received += len;
@@ -77,6 +77,11 @@ int main(void) {
 	size_t sndbuf_size = 128 * 1024;
 	meshlink_set_channel_sndbuf(mesh_a, channel, sndbuf_size);
 
+	// Check that we can send zero bytes
+
+	assert(meshlink_channel_send(mesh_a, channel, "", 0) == 0);
+	assert(wait_sync_flag(&small_flag, 1));
+
 	// Check that we cannot send more than 65535 bytes without errors
 
 	char data[65535] = "";
@@ -87,10 +92,7 @@ int main(void) {
 	uint16_t framelen = 65535;
 	memcpy(data, &framelen, sizeof(framelen));
 	assert(meshlink_channel_send(mesh_a, channel, data, framelen) == framelen);
-
-	// Check that we can send zero bytes
-
-	assert(meshlink_channel_send(mesh_a, channel, data, 0) == 0);
+	assert(wait_sync_flag(&large_flag, 1));
 
 	// Send randomly sized frames from a to b
 
@@ -117,8 +119,6 @@ int main(void) {
 	// Check that the clients have received all the data we sent
 
 	assert(received == total_len);
-	assert(received_large);
-	assert(received_zero);
 
 	close_meshlink_pair(mesh_a, mesh_b);
 

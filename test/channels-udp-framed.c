@@ -13,10 +13,11 @@
 #include "../src/meshlink.h"
 #include "utils.h"
 
-static bool received_large;
-static bool received_zero;
 static size_t received;
 static struct sync_flag accept_flag;
+static struct sync_flag poll_flag;
+static struct sync_flag small_flag;
+static struct sync_flag large_flag;
 static struct sync_flag close_flag;
 
 static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
@@ -34,11 +35,11 @@ static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, con
 	}
 
 	if(len == 65535) {
-		received_large = true;
+		set_sync_flag(&large_flag, true);
 	}
 
 	if(len == 0) {
-		received_zero = true;
+		set_sync_flag(&small_flag, true);
 	}
 
 	received += len;
@@ -53,6 +54,11 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 	set_sync_flag(&accept_flag, true);
 
 	return true;
+}
+
+static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t len) {
+	meshlink_set_channel_poll_cb(mesh, channel, NULL);
+	set_sync_flag(&poll_flag, len > 0);
 }
 
 int main(void) {
@@ -74,6 +80,16 @@ int main(void) {
 	meshlink_channel_t *channel = meshlink_channel_open_ex(mesh_a, b, 1, NULL, NULL, 0, MESHLINK_CHANNEL_UDP | MESHLINK_CHANNEL_FRAMED);
 	assert(channel);
 
+	// Wait for the channel to be fully established
+
+	meshlink_set_channel_poll_cb(mesh_a, channel, poll_cb);
+	assert(wait_sync_flag(&poll_flag, 10));
+
+	// Check that we can send zero bytes, and that it is received
+
+	assert(meshlink_channel_send(mesh_a, channel, "", 0) == 0);
+	assert(wait_sync_flag(&small_flag, 1));
+
 	// Check that we cannot send more than 65535 bytes without errors
 
 	char data[65535] = "";
@@ -84,10 +100,7 @@ int main(void) {
 	uint16_t framelen = 65535;
 	memcpy(data, &framelen, sizeof(framelen));
 	assert(meshlink_channel_send(mesh_a, channel, data, framelen) == framelen);
-
-	// Check that we can send zero bytes
-
-	assert(meshlink_channel_send(mesh_a, channel, data, 0) == 0);
+	assert(wait_sync_flag(&large_flag, 1));
 
 	// Stream packets from a to b for 5 seconds at 40 Mbps (~1 kB * 500 Hz)
 
@@ -113,8 +126,7 @@ int main(void) {
 	// Check that the clients have received (most of) the data
 
 	assert(received <= total_len);
-	assert(received >= total_len / 2);
-	assert(received_zero);
+	assert(received >= total_len / 4 * 3);
 
 	close_meshlink_pair(mesh_a, mesh_b);
 
