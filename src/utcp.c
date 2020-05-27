@@ -2433,7 +2433,7 @@ struct timespec utcp_timeout(struct utcp *utcp) {
 		if(c->poll) {
 			if((c->state == ESTABLISHED || c->state == CLOSE_WAIT) && c->do_poll) {
 				c->do_poll = false;
-				uint32_t len = buffer_free(&c->sndbuf);
+				uint32_t len = is_framed(c) ? min(buffer_free(&c->sndbuf), MAX_UNRELIABLE_SIZE) : buffer_free(&c->sndbuf);
 
 				if(len) {
 					c->poll(c, len);
