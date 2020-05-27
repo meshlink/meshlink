@@ -880,6 +880,9 @@ static void ack_unreliable_framed(struct utcp_connection *c) {
 			// There is no partial data in the send buffer, so stop the flush timer
 			stop_retransmit_timer(c);
 		}
+	} else if(left && !timespec_isset(&c->rtrx_timeout)) {
+		// We have partial data and we didn't start the flush timer yet
+		start_flush_timer(c);
 	}
 }
 
