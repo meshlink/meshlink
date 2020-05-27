@@ -1444,11 +1444,11 @@ static void handle_unreliable_framed(struct utcp_connection *c, const struct hdr
 	buffer_clear(&c->rcvbuf);
 
 	// Handle whole frames
-	while(left > 2) {
+	while(left >= 2) {
 		uint16_t framelen;
 		memcpy(&framelen, ptr, sizeof(framelen));
 
-		if(left <= (size_t)framelen + 2) {
+		if(left < (size_t)framelen + 2) {
 			break;
 		}
 
