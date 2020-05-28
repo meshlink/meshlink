@@ -88,6 +88,7 @@ void utcp_set_user_timeout(struct utcp *utcp, int seconds);
 
 int utcp_get_flush_timeout(struct utcp *utcp);
 void utcp_set_flush_timeout(struct utcp *utcp, int milliseconds);
+bool utcp_get_flush_needed(struct utcp_connection *connection);
 
 uint16_t utcp_get_mtu(struct utcp *utcp);
 uint16_t utcp_get_mss(struct utcp *utcp);

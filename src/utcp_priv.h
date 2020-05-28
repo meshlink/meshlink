@@ -109,6 +109,7 @@ struct utcp_connection {
 
 	bool reapable;
 	bool do_poll;
+	bool flush_needed;
 
 	// Callbacks
 

@@ -3933,6 +3933,10 @@ ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *chann
 		meshlink_errno = MESHLINK_ENETWORK;
 	}
 
+	if(utcp_get_flush_needed(channel->c)) {
+		signal_trigger(&mesh->loop, &mesh->datafromapp);
+	}
+
 	return retval;
 }
 
