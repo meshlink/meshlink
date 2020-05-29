@@ -209,6 +209,7 @@ struct meshlink_submesh {
 typedef struct meshlink_aio_buffer {
 	const void *data;
 	int fd;
+	io_t io;
 	size_t len;
 	size_t done;
 	union {

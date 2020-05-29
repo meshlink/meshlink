@@ -6,6 +6,7 @@ TESTS = \
 	channels-aio \
 	channels-aio-cornercases \
 	channels-aio-fd \
+	channels-aio-fd-wouldblock \
 	channels-cornercases \
 	channels-failure \
 	channels-fork \
@@ -40,6 +41,7 @@ check_PROGRAMS = \
 	channels-aio \
 	channels-aio-cornercases \
 	channels-aio-fd \
+	channels-aio-fd-wouldblock \
 	channels-cornercases \
 	channels-failure \
 	channels-fork \
@@ -81,6 +83,9 @@ channels_aio_cornercases_LDADD = $(top_builddir)/src/libmeshlink.la
 
 channels_aio_fd_SOURCES = channels-aio-fd.c utils.c utils.h
 channels_aio_fd_LDADD = $(top_builddir)/src/libmeshlink.la
+
+channels_aio_fd_wouldblock_SOURCES = channels-aio-fd-wouldblock.c utils.c utils.h
+channels_aio_fd_wouldblock_LDADD = $(top_builddir)/src/libmeshlink.la
 
 channels_no_partial_SOURCES = channels-no-partial.c utils.c utils.h
 channels_no_partial_LDADD = $(top_builddir)/src/libmeshlink.la
