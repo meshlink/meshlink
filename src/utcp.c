@@ -423,7 +423,6 @@ static int compare(const void *va, const void *vb) {
 	const struct utcp_connection *b = *(struct utcp_connection **)vb;
 
 	assert(a && b);
-	assert(a->src && b->src);
 
 	int c = (int)a->src - (int)b->src;
 
