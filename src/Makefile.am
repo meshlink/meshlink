@@ -93,6 +93,9 @@ EXTRA_libmeshlink_la_DEPENDENCIES = $(srcdir)/meshlink.sym
 libmeshlink_la_CFLAGS = $(PTHREAD_CFLAGS) -fPIC -iquote.
 libmeshlink_la_LDFLAGS += $(PTHREAD_LIBS)
 
+utcp_test_CFLAGS = $(PTHREAD_CFLAGS) -iquote.
+utcp_test_LDFLAGS = $(PTHREAD_LIBS)
+
 if CATTA
 libmeshlink_la_SOURCES += \
 	discovery.c discovery.h
