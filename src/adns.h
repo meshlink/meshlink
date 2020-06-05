@@ -27,6 +27,6 @@ typedef void (*adns_cb_t)(meshlink_handle_t *mesh, char *host, char *serv, void 
 void init_adns(meshlink_handle_t *mesh);
 void exit_adns(meshlink_handle_t *mesh);
 void adns_queue(meshlink_handle_t *mesh, char *host, char *serv, adns_cb_t cb, void *data, int timeout);
-struct addrinfo *adns_blocking_request(meshlink_handle_t *mesh, char *host, char *serv, int timeout);
+struct addrinfo *adns_blocking_request(meshlink_handle_t *mesh, char *host, char *serv, int socktype, int timeout);
 
 #endif
