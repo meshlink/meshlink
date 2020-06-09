@@ -71,7 +71,7 @@ typedef enum {
 	MESHLINK_EPEER,        ///< A peer caused an error
 	MESHLINK_ENOTSUP,      ///< The operation is not supported in the current configuration of MeshLink
 	MESHLINK_EBUSY,        ///< The MeshLink instance is already in use by another process
-	MESHLINK_EBLACKLISTED, ///< The operation is not allowed because the node is blacklisted
+	MESHLINK_EBLACKLISTED  ///< The operation is not allowed because the node is blacklisted
 } meshlink_errno_t;
 
 /// Device class

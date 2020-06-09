@@ -164,6 +164,8 @@ static void set_mtu(struct utcp *u, int s) {
 		getsockopt(s, IPPROTO_IP, IP_MTU, &mtu, &optlen);
 	}
 
+#else
+	(void)s;
 #endif
 
 	if(!mtu || mtu == 65535) {
