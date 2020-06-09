@@ -157,10 +157,14 @@ static ssize_t do_send(struct utcp *utcp, const void *data, size_t len) {
 }
 
 static void set_mtu(struct utcp *u, int s) {
+#ifdef IP_MTU
+
 	if(!mtu) {
 		socklen_t optlen = sizeof(mtu);
 		getsockopt(s, IPPROTO_IP, IP_MTU, &mtu, &optlen);
 	}
+
+#endif
 
 	if(!mtu || mtu == 65535) {
 		mtu = 1500;
