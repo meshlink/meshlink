@@ -343,6 +343,8 @@ static void *discovery_loop(void *userdata) {
 	meshlink_handle_t *mesh = userdata;
 	assert(mesh);
 
+	pthread_mutex_lock(&mesh->discovery_mutex);
+
 	// handle catta logs
 	catta_set_log_function(discovery_log_cb);
 
@@ -414,7 +416,6 @@ static void *discovery_loop(void *userdata) {
 
 fail:
 
-	pthread_mutex_lock(&mesh->discovery_mutex);
 	pthread_cond_broadcast(&mesh->discovery_cond);
 	pthread_mutex_unlock(&mesh->discovery_mutex);
 
@@ -461,14 +462,16 @@ bool discovery_start(meshlink_handle_t *mesh) {
 	assert(!mesh->discovery_threadstarted);
 	assert(!mesh->catta_servicetype);
 
+	pthread_mutex_lock(&mesh->discovery_mutex);
+
 	// Start the discovery thread
 	if(pthread_create(&mesh->discovery_thread, NULL, discovery_loop, mesh) != 0) {
+		pthread_mutex_unlock(&mesh->discovery_mutex);
 		logger(mesh, MESHLINK_ERROR, "Could not start discovery thread: %s\n", strerror(errno));
 		memset(&mesh->discovery_thread, 0, sizeof(mesh)->discovery_thread);
 		return false;
 	}
 
-	pthread_mutex_lock(&mesh->discovery_mutex);
 	pthread_cond_wait(&mesh->discovery_cond, &mesh->discovery_mutex);
 	pthread_mutex_unlock(&mesh->discovery_mutex);
 

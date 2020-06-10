@@ -1456,11 +1456,16 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 		}
 	}
 
-	// initialize mutex
+	// initialize mutexes and conds
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 	pthread_mutex_init(&mesh->mutex, &attr);
+
+	pthread_mutex_init(&mesh->discovery_mutex, NULL);
+	pthread_cond_init(&mesh->discovery_cond, NULL);
+
+	pthread_cond_init(&mesh->adns_cond, NULL);
 
 	mesh->threadstarted = false;
 	event_loop_init(&mesh->loop);

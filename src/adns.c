@@ -184,6 +184,8 @@ struct addrinfo *adns_blocking_request(meshlink_handle_t *mesh, char *host, char
 	info->host = host;
 	info->serv = serv;
 	info->socktype = socktype;
+	pthread_mutex_init(&info->mutex, NULL);
+	pthread_cond_init(&info->cond, NULL);
 
 	struct timespec deadline;
 	clock_gettime(CLOCK_REALTIME, &deadline);
