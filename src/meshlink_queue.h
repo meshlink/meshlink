@@ -40,13 +40,13 @@ static inline void meshlink_queue_init(meshlink_queue_t *queue) {
 	queue->head = NULL;
 	queue->tail = NULL;
 	pthread_mutexattr_t attr;
-	pthread_mutexattr_init(&attr);
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_DEFAULT);
-	pthread_mutex_init(&queue->mutex, &attr);
+	assert(pthread_mutexattr_init(&attr) == 0);
+	assert(pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_DEFAULT) == 0);
+	assert(pthread_mutex_init(&queue->mutex, &attr) == 0);
 }
 
 static inline void meshlink_queue_exit(meshlink_queue_t *queue) {
-	pthread_mutex_destroy(&queue->mutex);
+	assert(pthread_mutex_destroy(&queue->mutex) == 0);
 }
 
 static inline __attribute__((__warn_unused_result__)) bool meshlink_queue_push(meshlink_queue_t *queue, void *data) {
@@ -58,7 +58,7 @@ static inline __attribute__((__warn_unused_result__)) bool meshlink_queue_push(m
 
 	item->data = data;
 	item->next = NULL;
-	pthread_mutex_lock(&queue->mutex);
+	assert(pthread_mutex_lock(&queue->mutex) == 0);
 
 	if(!queue->tail) {
 		queue->head = queue->tail = item;
@@ -66,14 +66,14 @@ static inline __attribute__((__warn_unused_result__)) bool meshlink_queue_push(m
 		queue->tail = queue->tail->next = item;
 	}
 
-	pthread_mutex_unlock(&queue->mutex);
+	assert(pthread_mutex_unlock(&queue->mutex) == 0);
 	return true;
 }
 
 static inline __attribute__((__warn_unused_result__)) void *meshlink_queue_pop(meshlink_queue_t *queue) {
 	meshlink_queue_item_t *item;
 
-	pthread_mutex_lock(&queue->mutex);
+	assert(pthread_mutex_lock(&queue->mutex) == 0);
 
 	if((item = queue->head)) {
 		queue->head = item->next;
@@ -83,7 +83,7 @@ static inline __attribute__((__warn_unused_result__)) void *meshlink_queue_pop(m
 		}
 	}
 
-	pthread_mutex_unlock(&queue->mutex);
+	assert(pthread_mutex_unlock(&queue->mutex) == 0);
 
 	void *data = item ? item->data : NULL;
 	free(item);
@@ -93,10 +93,10 @@ static inline __attribute__((__warn_unused_result__)) void *meshlink_queue_pop(m
 static inline __attribute__((__warn_unused_result__)) void *meshlink_queue_pop_cond(meshlink_queue_t *queue, pthread_cond_t *cond) {
 	meshlink_queue_item_t *item;
 
-	pthread_mutex_lock(&queue->mutex);
+	assert(pthread_mutex_lock(&queue->mutex) == 0);
 
 	while(!queue->head) {
-		pthread_cond_wait(cond, &queue->mutex);
+		assert(pthread_cond_wait(cond, &queue->mutex) == 0);
 	}
 
 	item = queue->head;
@@ -106,7 +106,7 @@ static inline __attribute__((__warn_unused_result__)) void *meshlink_queue_pop_c
 		queue->tail = NULL;
 	}
 
-	pthread_mutex_unlock(&queue->mutex);
+	assert(pthread_mutex_unlock(&queue->mutex) == 0);
 
 	void *data = item->data;
 	free(item);

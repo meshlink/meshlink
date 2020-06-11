@@ -126,13 +126,13 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 	case CATTA_SERVER_RUNNING:
 		/* The serve has startup successfully and registered its host
 		 * name on the network, so it's time to create our services */
-		pthread_mutex_lock(&mesh->mutex);
+		assert(pthread_mutex_lock(&mesh->mutex) == 0);
 
 		if(!mesh->catta_group) {
 			discovery_create_services(mesh);
 		}
 
-		pthread_mutex_unlock(&mesh->mutex);
+		assert(pthread_mutex_unlock(&mesh->mutex) == 0);
 
 		break;
 
@@ -141,7 +141,7 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 		char hostname[17];
 		generate_rand_string(mesh, hostname, sizeof(hostname));
 
-		pthread_mutex_lock(&mesh->mutex);
+		assert(pthread_mutex_lock(&mesh->mutex) == 0);
 
 		assert(mesh->catta_server);
 		assert(mesh->catta_poll);
@@ -152,12 +152,12 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 			catta_simple_poll_quit(mesh->catta_poll);
 		}
 
-		pthread_mutex_unlock(&mesh->mutex);
+		assert(pthread_mutex_unlock(&mesh->mutex) == 0);
 	}
 	break;
 
 	case CATTA_SERVER_REGISTERING:
-		pthread_mutex_lock(&mesh->mutex);
+		assert(pthread_mutex_lock(&mesh->mutex) == 0);
 
 		/* Let's drop our registered services. When the server is back
 		 * in CATTA_SERVER_RUNNING state we will register them
@@ -167,12 +167,12 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 			mesh->catta_group = NULL;
 		}
 
-		pthread_mutex_unlock(&mesh->mutex);
+		assert(pthread_mutex_unlock(&mesh->mutex) == 0);
 
 		break;
 
 	case CATTA_SERVER_FAILURE:
-		pthread_mutex_lock(&mesh->mutex);
+		assert(pthread_mutex_lock(&mesh->mutex) == 0);
 
 		assert(mesh->catta_server);
 		assert(mesh->catta_poll);
@@ -180,7 +180,7 @@ static void discovery_server_callback(CattaServer *server, CattaServerState stat
 		/* Terminate on failure */
 		catta_simple_poll_quit(mesh->catta_poll);
 
-		pthread_mutex_unlock(&mesh->mutex);
+		assert(pthread_mutex_unlock(&mesh->mutex) == 0);
 		break;
 
 	case CATTA_SERVER_INVALID:
@@ -215,7 +215,7 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 		char *node_fp = (char *)catta_string_list_get_text(node_fp_li) + strlen(MESHLINK_MDNS_FINGERPRINT_KEY);
 
 		if(node_name[0] == '=' && node_fp[0] == '=') {
-			pthread_mutex_lock(&mesh->mutex);
+			assert(pthread_mutex_lock(&mesh->mutex) == 0);
 
 			node_name += 1;
 
@@ -273,7 +273,7 @@ static void discovery_resolve_callback(CattaSServiceResolver *resolver, CattaIfI
 				logger(mesh, MESHLINK_WARNING, "Node %s is not part of the mesh network.\n", node_name);
 			}
 
-			pthread_mutex_unlock(&mesh->mutex);
+			assert(pthread_mutex_unlock(&mesh->mutex) == 0);
 		}
 	}
 
@@ -288,22 +288,22 @@ static void discovery_browse_callback(CattaSServiceBrowser *browser, CattaIfInde
 	/* Called whenever a new services becomes available on the LAN or is removed from the LAN */
 	switch(event) {
 	case CATTA_BROWSER_FAILURE:
-		pthread_mutex_lock(&mesh->mutex);
+		assert(pthread_mutex_lock(&mesh->mutex) == 0);
 		catta_simple_poll_quit(mesh->catta_poll);
-		pthread_mutex_unlock(&mesh->mutex);
+		assert(pthread_mutex_unlock(&mesh->mutex) == 0);
 		break;
 
 	case CATTA_BROWSER_NEW:
-		pthread_mutex_lock(&mesh->mutex);
+		assert(pthread_mutex_lock(&mesh->mutex) == 0);
 		catta_s_service_resolver_new(mesh->catta_server, interface_, protocol, name, type, domain, CATTA_PROTO_UNSPEC, 0, discovery_resolve_callback, mesh);
 		handle_network_change(mesh, ++mesh->catta_interfaces);
-		pthread_mutex_unlock(&mesh->mutex);
+		assert(pthread_mutex_unlock(&mesh->mutex) == 0);
 		break;
 
 	case CATTA_BROWSER_REMOVE:
-		pthread_mutex_lock(&mesh->mutex);
+		assert(pthread_mutex_lock(&mesh->mutex) == 0);
 		handle_network_change(mesh, --mesh->catta_interfaces);
-		pthread_mutex_unlock(&mesh->mutex);
+		assert(pthread_mutex_unlock(&mesh->mutex) == 0);
 		break;
 
 	case CATTA_BROWSER_ALL_FOR_NOW:
@@ -343,7 +343,7 @@ static void *discovery_loop(void *userdata) {
 	meshlink_handle_t *mesh = userdata;
 	assert(mesh);
 
-	pthread_mutex_lock(&mesh->discovery_mutex);
+	assert(pthread_mutex_lock(&mesh->discovery_mutex) == 0);
 
 	// handle catta logs
 	catta_set_log_function(discovery_log_cb);
@@ -416,8 +416,8 @@ static void *discovery_loop(void *userdata) {
 
 fail:
 
-	pthread_cond_broadcast(&mesh->discovery_cond);
-	pthread_mutex_unlock(&mesh->discovery_mutex);
+	assert(pthread_cond_broadcast(&mesh->discovery_cond) == 0);
+	assert(pthread_mutex_unlock(&mesh->discovery_mutex) == 0);
 
 	if(status) {
 		catta_simple_poll_loop(mesh->catta_poll);
@@ -462,18 +462,18 @@ bool discovery_start(meshlink_handle_t *mesh) {
 	assert(!mesh->discovery_threadstarted);
 	assert(!mesh->catta_servicetype);
 
-	pthread_mutex_lock(&mesh->discovery_mutex);
+	assert(pthread_mutex_lock(&mesh->discovery_mutex) == 0);
 
 	// Start the discovery thread
 	if(pthread_create(&mesh->discovery_thread, NULL, discovery_loop, mesh) != 0) {
-		pthread_mutex_unlock(&mesh->discovery_mutex);
+		assert(pthread_mutex_unlock(&mesh->discovery_mutex) == 0);
 		logger(mesh, MESHLINK_ERROR, "Could not start discovery thread: %s\n", strerror(errno));
 		memset(&mesh->discovery_thread, 0, sizeof(mesh)->discovery_thread);
 		return false;
 	}
 
-	pthread_cond_wait(&mesh->discovery_cond, &mesh->discovery_mutex);
-	pthread_mutex_unlock(&mesh->discovery_mutex);
+	assert(pthread_cond_wait(&mesh->discovery_cond, &mesh->discovery_mutex) == 0);
+	assert(pthread_mutex_unlock(&mesh->discovery_mutex) == 0);
 
 	mesh->discovery_threadstarted = true;
 
@@ -492,7 +492,7 @@ void discovery_stop(meshlink_handle_t *mesh) {
 
 	// Wait for the discovery thread to finish
 	if(mesh->discovery_threadstarted == true) {
-		pthread_join(mesh->discovery_thread, NULL);
+		assert(pthread_join(mesh->discovery_thread, NULL) == 0);
 		mesh->discovery_threadstarted = false;
 	}
 

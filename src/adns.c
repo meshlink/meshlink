@@ -107,7 +107,7 @@ void exit_adns(meshlink_handle_t *mesh) {
 		abort();
 	}
 
-	pthread_cond_signal(&mesh->adns_cond);
+	assert(pthread_cond_signal(&mesh->adns_cond) == 0);
 
 	pthread_join(mesh->adns_thread, NULL);
 	meshlink_queue_exit(&mesh->adns_queue);
@@ -128,7 +128,7 @@ void adns_queue(meshlink_handle_t *mesh, char *host, char *serv, adns_cb_t cb, v
 		abort();
 	}
 
-	pthread_cond_signal(&mesh->adns_cond);
+	assert(pthread_cond_signal(&mesh->adns_cond) == 0);
 }
 
 struct adns_blocking_info {
@@ -157,16 +157,16 @@ static void *adns_blocking_handler(void *data) {
 		info->ai = NULL;
 	}
 
-	pthread_mutex_lock(&info->mutex);
+	assert(pthread_mutex_lock(&info->mutex) == 0);
 
 	bool cleanup = info->done;
 
 	if(!info->done) {
 		info->done = true;
-		pthread_cond_signal(&info->cond);
+		assert(pthread_cond_signal(&info->cond) == 0);
 	}
 
-	pthread_mutex_unlock(&info->mutex);
+	assert(pthread_mutex_unlock(&info->mutex) == 0);
 
 	if(cleanup) {
 		free(info->host);
@@ -184,8 +184,8 @@ struct addrinfo *adns_blocking_request(meshlink_handle_t *mesh, char *host, char
 	info->host = host;
 	info->serv = serv;
 	info->socktype = socktype;
-	pthread_mutex_init(&info->mutex, NULL);
-	pthread_cond_init(&info->cond, NULL);
+	assert(pthread_mutex_init(&info->mutex, NULL) == 0);
+	assert(pthread_cond_init(&info->cond, NULL) == 0);
 
 	struct timespec deadline;
 	clock_gettime(CLOCK_REALTIME, &deadline);
@@ -199,11 +199,11 @@ struct addrinfo *adns_blocking_request(meshlink_handle_t *mesh, char *host, char
 		free(info);
 		return NULL;
 	} else {
-		pthread_detach(thread);
+		assert(pthread_detach(thread) == 0);
 	}
 
-	pthread_mutex_lock(&info->mutex);
-	pthread_cond_timedwait(&info->cond, &info->mutex, &deadline);
+	assert(pthread_mutex_lock(&info->mutex) == 0);
+	assert(pthread_cond_timedwait(&info->cond, &info->mutex, &deadline) == 0);
 
 	struct addrinfo *result = NULL;
 	bool cleanup = info->done;
@@ -215,7 +215,7 @@ struct addrinfo *adns_blocking_request(meshlink_handle_t *mesh, char *host, char
 		info->done = true;
 	}
 
-	pthread_mutex_unlock(&info->mutex);
+	assert(pthread_mutex_unlock(&info->mutex) == 0);
 
 	if(cleanup) {
 		free(info->host);

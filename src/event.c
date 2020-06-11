@@ -311,7 +311,7 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		}
 
 		// release mesh mutex during select
-		pthread_mutex_unlock(mutex);
+		assert(pthread_mutex_unlock(mutex) == 0);
 
 #ifdef HAVE_PSELECT
 		int n = pselect(fds, &readable, &writable, NULL, &ts, NULL);
@@ -320,7 +320,7 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		int n = select(fds, &readable, &writable, NULL, (struct timeval *)&tv);
 #endif
 
-		pthread_mutex_lock(mutex);
+		assert(pthread_mutex_lock(mutex) == 0);
 
 		clock_gettime(EVENT_CLOCK, &loop->now);
 
