@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
+#include <time.h>
 
 #include "meshlink.h"
 #include "utils.h"
@@ -19,7 +19,7 @@ static const size_t nchannels = 4; // number of simultaneous channels
 struct aio_info {
 	int callbacks;
 	size_t size;
-	struct timeval tv;
+	struct timespec ts;
 	struct sync_flag flag;
 };
 
@@ -29,7 +29,7 @@ struct channel_info {
 };
 
 static size_t b_received_len;
-static struct timeval b_received_tv;
+static struct timespec b_received_ts;
 static struct sync_flag b_received_flag;
 
 static void aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, void *priv) {
@@ -39,7 +39,7 @@ static void aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const v
 	(void)len;
 
 	struct aio_info *info = priv;
-	gettimeofday(&info->tv, NULL);
+	clock_gettime(CLOCK_MONOTONIC, &info->ts);
 	info->callbacks++;
 	info->size += len;
 	set_sync_flag(&info->flag, true);
@@ -63,7 +63,7 @@ static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, con
 	b_received_len += len;
 
 	if(b_received_len >= smallsize) {
-		gettimeofday(&b_received_tv, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &b_received_ts);
 		set_sync_flag(&b_received_flag, true);
 	}
 }
@@ -187,13 +187,13 @@ int main(int argc, char *argv[]) {
 
 		// First batch of data should all be sent and received before the second batch
 		for(size_t j = 0; j < nchannels; j++) {
-			assert(timercmp(&out_infos[i].aio_infos[0].tv, &out_infos[j].aio_infos[1].tv, <=));
-			assert(timercmp(&in_infos[i].aio_infos[0].tv, &in_infos[j].aio_infos[1].tv, <=));
+			assert(timespec_lt(&out_infos[i].aio_infos[0].ts, &out_infos[j].aio_infos[1].ts));
+			assert(timespec_lt(&in_infos[i].aio_infos[0].ts, &in_infos[j].aio_infos[1].ts));
 		}
 
 		// The non-AIO transfer should have completed before everything else
-		assert(timercmp(&out_infos[i].aio_infos[0].tv, &b_received_tv, >=));
-		assert(timercmp(&in_infos[i].aio_infos[0].tv, &b_received_tv, >=));
+		assert(!timespec_lt(&out_infos[i].aio_infos[0].ts, &b_received_ts));
+		assert(!timespec_lt(&in_infos[i].aio_infos[0].ts, &b_received_ts));
 	}
 
 	// Clean up.

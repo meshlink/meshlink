@@ -1,6 +1,9 @@
 #ifndef MESHLINK_TEST_UTILS_H
 #define MESHLINK_TEST_UTILS_H
 
+#include <assert.h>
+#include <time.h>
+
 #include "../src/meshlink.h"
 
 // Simple synchronisation between threads
@@ -44,3 +47,12 @@ extern void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const ch
 	} while(0)
 
 #endif
+
+/// Compare two timespec values.
+static bool timespec_lt(const struct timespec *a, const struct timespec *b) {
+	if(a->tv_sec == b->tv_sec) {
+		return a->tv_nsec < b->tv_nsec;
+	} else {
+		return a->tv_sec < b->tv_sec;
+	}
+}
