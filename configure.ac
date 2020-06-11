@@ -54,6 +54,8 @@ if test -d /sw/lib ; then
   LIBS="$LIBS -L/sw/lib"
 fi
 
+AX_CHECK_COMPILE_FLAG([-std=c11], [CPPFLAGS="-std=c11"])
+
 dnl Compiler hardening flags
 dnl No -fstack-protector-all because it doesn't work on all platforms or architectures.
 
