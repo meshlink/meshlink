@@ -36,10 +36,10 @@ int main(void) {
 	assert(meshlink_destroy("get_all_nodes_conf.3"));
 
 	meshlink_handle_t *mesh[3];
-	mesh[0] = meshlink_open("get_all_nodes_conf.1", "foo", "import-export", DEV_CLASS_BACKBONE);
+	mesh[0] = meshlink_open("get_all_nodes_conf.1", "foo", "get-all-nodes", DEV_CLASS_BACKBONE);
 	assert(mesh[0]);
 
-	mesh[1] = meshlink_open("get_all_nodes_conf.2", "bar", "import-export", DEV_CLASS_STATIONARY);
+	mesh[1] = meshlink_open("get_all_nodes_conf.2", "bar", "get-all-nodes", DEV_CLASS_STATIONARY);
 	assert(mesh[1]);
 
 	mesh[2] = meshlink_open("get_all_nodes_conf.3", "baz", "get-all-nodes", DEV_CLASS_STATIONARY);
@@ -169,7 +169,7 @@ int main(void) {
 	meshlink_close(mesh[0]);
 	sleep(2);
 	time_t foo_stopped = time(NULL);
-	mesh[0] = meshlink_open("get_all_nodes_conf.1", "foo", "import-export", DEV_CLASS_BACKBONE);
+	mesh[0] = meshlink_open("get_all_nodes_conf.1", "foo", "get-all_nodes", DEV_CLASS_BACKBONE);
 	assert(mesh[0]);
 
 	nodes = meshlink_get_all_nodes(mesh[0], nodes, &nnodes);

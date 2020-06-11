@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
 	// Open two new meshlink instance.
 
 	meshlink_handle_t *mesh_a, *mesh_b;
-	open_meshlink_pair(&mesh_a, &mesh_b, "channels_aio");
+	open_meshlink_pair(&mesh_a, &mesh_b, "channels_aio_cornercases");
 
 	// Set the callbacks.
 

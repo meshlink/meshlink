@@ -91,7 +91,7 @@ static int main1(int rfd, int wfd) {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	assert(meshlink_destroy("channels_fork_conf.1"));
-	meshlink_handle_t *mesh = meshlink_open("channels_fork_conf.1", "foo", "channels", DEV_CLASS_BACKBONE);
+	meshlink_handle_t *mesh = meshlink_open("channels_fork_conf.1", "foo", "channels-fork", DEV_CLASS_BACKBONE);
 	assert(mesh);
 
 	meshlink_enable_discovery(mesh, false);
@@ -147,7 +147,7 @@ static int main2(int rfd, int wfd) {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	assert(meshlink_destroy("channels_fork_conf.2"));
-	meshlink_handle_t *mesh = meshlink_open("channels_fork_conf.2", "bar", "channels", DEV_CLASS_BACKBONE);
+	meshlink_handle_t *mesh = meshlink_open("channels_fork_conf.2", "bar", "channels-fork", DEV_CLASS_BACKBONE);
 	assert(mesh);
 
 	meshlink_enable_discovery(mesh, false);
