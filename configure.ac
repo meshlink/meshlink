@@ -54,7 +54,7 @@ if test -d /sw/lib ; then
   LIBS="$LIBS -L/sw/lib"
 fi
 
-AX_CHECK_COMPILE_FLAG([-std=c11], [CPPFLAGS="-std=c11"])
+AX_CHECK_COMPILE_FLAG([-std=c11], [CFLAGS="-std=c11"])
 
 dnl Compiler hardening flags
 dnl No -fstack-protector-all because it doesn't work on all platforms or architectures.
@@ -77,7 +77,10 @@ AS_IF([test "x$enable_hardening" != "xno"],
    esac
    AX_CHECK_LINK_FLAG([-Wl,-z,relro], [LDFLAGS="$LDFLAGS -Wl,-z,relro"])
    AX_CHECK_LINK_FLAG([-Wl,-z,now], [LDFLAGS="$LDFLAGS -Wl,-z,now"])
-   AX_CHECK_COMPILE_FLAG([-Wextra -pedantic -Wreturn-type -Wold-style-definition -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wshadow -Wbad-function-cast -Wwrite-strings -fdiagnostics-show-option -fstrict-aliasing -Wmissing-noreturn], [CPPFLAGS="$CPPFLAGS -Wextra -pedantic -Wreturn-type -Wold-style-definition -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wshadow -Wbad-function-cast -Wwrite-strings -fdiagnostics-show-option -fstrict-aliasing -Wmissing-noreturn"])
+   AX_CHECK_COMPILE_FLAG([-Wextra -pedantic -Wreturn-type -Wold-style-definition -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wshadow -Wbad-function-cast -Wwrite-strings -fdiagnostics-show-option -fstrict-aliasing -Wmissing-noreturn], [
+     CPPFLAGS="$CPPFLAGS -Wextra -pedantic -Wreturn-type -Wmissing-declarations -Wredundant-decls -Wshadow -Wwrite-strings -fdiagnostics-show-option -fstrict-aliasing -Wmissing-noreturn"
+     CFLAGS="$CFLAGS -Wold-style-definition -Wmissing-prototypes -Wstrict-prototypes -Wbad-function-cast"
+   ])
   ]
 );
 
