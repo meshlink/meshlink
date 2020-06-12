@@ -175,6 +175,10 @@ static int main2(void) {
 
 
 int main(void) {
+	init_sync_flag(&a_started);
+	init_sync_flag(&a_stopped);
+	init_sync_flag(&b_responded);
+
 	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_cb);
 
 	// Initialize and exchange configuration.

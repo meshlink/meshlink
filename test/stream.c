@@ -73,6 +73,7 @@ int main(int argc, char *argv[]) {
 			char *p = buf;
 
 			memcpy(buf, &now, sizeof(now));
+			clock_gettime(CLOCK_REALTIME, &now);
 
 			for(uint64_t *q = (uint64_t *)(buf + sizeof(now)); (char *)q < buf + framesize; q++) {
 				*q = counter++;
@@ -82,23 +83,22 @@ int main(int argc, char *argv[]) {
 				ssize_t sent = write(1, p, tosend);
 
 				if(sent <= 0) {
-					err(1, "write(1, %p, %zu)", p, tosend);
+					err(1, "write(1, %p, %zu)", (void *)p, tosend);
 				}
 
 				tosend -= sent;
 				p += sent;
 			}
 
-			next = now;
-			next.tv_nsec += interval;
+			next.tv_sec = 0;
+			next.tv_nsec = interval;
 
 			while(next.tv_nsec >= 1000000000) {
 				next.tv_nsec -= 1000000000;
 				next.tv_sec++;
 			}
 
-			clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &next, NULL);
-			now = next;
+			nanosleep(&next, NULL);
 			total -= framesize;
 		} else {
 			struct timespec *ts = (struct timespec *)buf;
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
 				ssize_t result = read(0, p, toread);
 
 				if(result <= 0) {
-					err(1, "read(1, %p, %zu)", p, toread);
+					err(1, "read(1, %p, %zu)", (void *)p, toread);
 				}
 
 				toread -= result;
@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
 				ssize_t result = read(0, p, toread);
 
 				if(result <= 0) {
-					err(1, "read(1, %p, %zu)", p, toread);
+					err(1, "read(1, %p, %zu)", (void *)p, toread);
 				}
 
 				toread -= result;
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
 				if(*q != counter++) {
 					uint64_t offset = (counter - 1) * 8;
 					offset += ((counter * 8) / (framesize - sizeof(now))) * sizeof(now);
-					err(1, "verification failed at offset %lu", offset);
+					err(1, "verification failed at offset %lu", (unsigned long)offset);
 				}
 			}
 

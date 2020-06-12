@@ -45,6 +45,10 @@ static void baz_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool r
 }
 
 int main(void) {
+	init_sync_flag(&bar_connected);
+	init_sync_flag(&bar_disconnected);
+	init_sync_flag(&baz_connected);
+
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	// Create three instances.

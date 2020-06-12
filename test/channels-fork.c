@@ -187,10 +187,14 @@ static void alarm_handler(int sig) {
 }
 
 int main(void) {
+	init_sync_flag(&bar_responded);
+	init_sync_flag(&foo_connected);
+	init_sync_flag(&foo_gone);
+
 	int fda[2], fdb[2];
 
-	assert(pipe2(fda, 0) != -1);
-	assert(pipe2(fdb, 0) != -1);
+	assert(pipe(fda) != -1);
+	assert(pipe(fdb) != -1);
 
 	if(!fork()) {
 		return main2(fdb[0], fda[1]);

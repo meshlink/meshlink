@@ -65,10 +65,7 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 	return true;
 }
 
-int main(int argc, char *argv[]) {
-	(void)argc;
-	(void)argv;
-
+int main(void) {
 	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_cb);
 
 	// Prepare file
@@ -93,6 +90,11 @@ int main(int argc, char *argv[]) {
 	memset(out_infos, 0, sizeof(out_infos));
 
 	for(size_t i = 0; i < nchannels; i++) {
+		init_sync_flag(&in_infos[i].aio_infos[0].flag);
+		init_sync_flag(&in_infos[i].aio_infos[1].flag);
+		init_sync_flag(&out_infos[i].aio_infos[0].flag);
+		init_sync_flag(&out_infos[i].aio_infos[1].flag);
+
 		char filename[PATH_MAX];
 		snprintf(filename, sizeof(filename), "channels_aio_fd.out%d", (int)i);
 		in_infos[i].file = fopen(filename, "w");

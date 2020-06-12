@@ -13,6 +13,7 @@ struct sync_flag {
 	bool flag;
 };
 
+extern void init_sync_flag(struct sync_flag *s);
 extern void set_sync_flag(struct sync_flag *s, bool value);
 extern bool check_sync_flag(struct sync_flag *s);
 extern bool wait_sync_flag(struct sync_flag *s, int seconds);
@@ -49,7 +50,7 @@ extern void log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const ch
 #endif
 
 /// Compare two timespec values.
-static bool timespec_lt(const struct timespec *a, const struct timespec *b) {
+static inline bool timespec_lt(const struct timespec *a, const struct timespec *b) {
 	if(a->tv_sec == b->tv_sec) {
 		return a->tv_nsec < b->tv_nsec;
 	} else {

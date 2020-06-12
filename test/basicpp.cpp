@@ -9,7 +9,7 @@
 
 using namespace std;
 
-int main() {
+int main(void) {
 	assert(meshlink::destroy("basicpp_conf"));
 
 	// Open a new meshlink instance.

@@ -19,6 +19,8 @@ static void handle_duplicate(meshlink_handle_t *mesh, meshlink_node_t *node) {
 }
 
 int main(void) {
+	init_sync_flag(&duplicate_detected);
+
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	// Open meshlink instances

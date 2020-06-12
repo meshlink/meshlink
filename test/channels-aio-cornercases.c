@@ -27,8 +27,6 @@ struct channel_info {
 	struct aio_info aio_infos[2];
 };
 
-static size_t b_received_len;
-static struct timeval b_received_tv;
 static struct sync_flag b_received_flag;
 
 static void aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, void *priv) {
@@ -66,14 +64,14 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 	switch(port) {
 	case 1:
 	case 3:
-		meshlink_channel_aio_receive(mesh, channel, info->data, size / 4, aio_cb, &info->aio_infos[0]);
-		meshlink_channel_aio_receive(mesh, channel, info->data + size / 4, size - size / 4, aio_cb_close, &info->aio_infos[1]);
+		assert(meshlink_channel_aio_receive(mesh, channel, info->data, size / 4, aio_cb, &info->aio_infos[0]));
+		assert(meshlink_channel_aio_receive(mesh, channel, info->data + size / 4, size - size / 4, aio_cb_close, &info->aio_infos[1]));
 		break;
 
 	case 2:
 	case 4:
-		meshlink_channel_aio_receive(mesh, channel, info->data, size / 4, aio_cb_close, &info->aio_infos[0]);
-		meshlink_channel_aio_receive(mesh, channel, info->data + size / 4, size - size / 4, aio_cb, &info->aio_infos[1]);
+		assert(meshlink_channel_aio_receive(mesh, channel, info->data, size / 4, aio_cb_close, &info->aio_infos[0]));
+		assert(meshlink_channel_aio_receive(mesh, channel, info->data + size / 4, size - size / 4, aio_cb, &info->aio_infos[1]));
 		set_sync_flag(&info->aio_infos[1].flag, true);
 		break;
 
@@ -84,9 +82,8 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 	return true;
 }
 
-int main(int argc, char *argv[]) {
-	(void)argc;
-	(void)argv;
+int main(void) {
+	init_sync_flag(&b_received_flag);
 
 	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_cb);
 
@@ -107,6 +104,11 @@ int main(int argc, char *argv[]) {
 	memset(out_infos, 0, sizeof(out_infos));
 
 	for(size_t i = 0; i < nchannels; i++) {
+		init_sync_flag(&in_infos[i].aio_infos[0].flag);
+		init_sync_flag(&in_infos[i].aio_infos[1].flag);
+		init_sync_flag(&out_infos[i].aio_infos[0].flag);
+		init_sync_flag(&out_infos[i].aio_infos[1].flag);
+
 		in_infos[i].data = malloc(size);
 		assert(in_infos[i].data);
 		out_infos[i].data = outdata;

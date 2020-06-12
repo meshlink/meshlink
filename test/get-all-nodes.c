@@ -24,6 +24,8 @@ static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reach
 }
 
 int main(void) {
+	init_sync_flag(&bar_reachable);
+
 	struct meshlink_node **nodes = NULL;
 	size_t nnodes = 0;
 

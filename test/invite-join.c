@@ -23,6 +23,8 @@ static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reach
 }
 
 int main(void) {
+	init_sync_flag(&baz_reachable);
+
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	assert(meshlink_destroy("invite_join_conf.1"));

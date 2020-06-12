@@ -76,6 +76,8 @@ static void poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t
 }
 
 int main(void) {
+	init_sync_flag(&b_responded);
+
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
 	// Open two new meshlink instance.

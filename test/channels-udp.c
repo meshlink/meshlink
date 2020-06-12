@@ -101,6 +101,9 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 }
 
 int main(void) {
+	init_sync_flag(&accept_flag);
+	init_sync_flag(&close_flag);
+
 	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_cb);
 
 	// Open four new meshlink instance, the server and three peers.
@@ -164,7 +167,7 @@ int main(void) {
 		}
 
 		const struct timespec req = {0, 2000000};
-		clock_nanosleep(CLOCK_MONOTONIC, 0, &req, NULL);
+		nanosleep(&req, NULL);
 	}
 
 	// Let the clients close the channels

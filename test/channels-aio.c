@@ -86,9 +86,8 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 	return true;
 }
 
-int main(int argc, char *argv[]) {
-	(void)argc;
-	(void)argv;
+int main(void) {
+	init_sync_flag(&b_received_flag);
 
 	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_cb);
 
@@ -110,6 +109,11 @@ int main(int argc, char *argv[]) {
 	memset(out_infos, 0, sizeof(out_infos));
 
 	for(size_t i = 0; i < nchannels; i++) {
+		init_sync_flag(&in_infos[i].aio_infos[0].flag);
+		init_sync_flag(&in_infos[i].aio_infos[1].flag);
+		init_sync_flag(&out_infos[i].aio_infos[0].flag);
+		init_sync_flag(&out_infos[i].aio_infos[1].flag);
+
 		in_infos[i].data = malloc(size);
 		assert(in_infos[i].data);
 		out_infos[i].data = outdata;

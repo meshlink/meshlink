@@ -13,18 +13,23 @@
 
 #include "utils.h"
 
+void init_sync_flag(struct sync_flag *s) {
+	assert(pthread_mutex_init(&s->mutex, NULL) == 0);
+	assert(pthread_cond_init(&s->cond, NULL) == 0);
+}
+
 void set_sync_flag(struct sync_flag *s, bool value) {
-	pthread_mutex_lock(&s->mutex);
+	assert(pthread_mutex_lock(&s->mutex) == 0);
 	s->flag = value;
-	pthread_cond_broadcast(&s->cond);
-	pthread_mutex_unlock(&s->mutex);
+	assert(pthread_cond_broadcast(&s->cond) == 0);
+	assert(pthread_mutex_unlock(&s->mutex) == 0);
 }
 
 bool check_sync_flag(struct sync_flag *s) {
 	bool flag;
-	pthread_mutex_lock(&s->mutex);
+	assert(pthread_mutex_lock(&s->mutex) == 0);
 	flag = s->flag;
-	pthread_mutex_unlock(&s->mutex);
+	assert(pthread_mutex_unlock(&s->mutex) == 0);
 	return flag;
 }
 
@@ -33,7 +38,7 @@ bool wait_sync_flag(struct sync_flag *s, int seconds) {
 	clock_gettime(CLOCK_REALTIME, &timeout);
 	timeout.tv_sec += seconds;
 
-	pthread_mutex_lock(&s->mutex);
+	assert(pthread_mutex_lock(&s->mutex) == 0);
 
 	while(!s->flag) {
 		if(!pthread_cond_timedwait(&s->cond, &s->mutex, &timeout) || errno != EINTR) {
@@ -41,7 +46,7 @@ bool wait_sync_flag(struct sync_flag *s, int seconds) {
 		}
 	}
 
-	pthread_mutex_unlock(&s->mutex);
+	assert(pthread_mutex_unlock(&s->mutex) == 0);
 
 	return s->flag;
 }
@@ -108,6 +113,7 @@ static void pair_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool 
 
 void start_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b) {
 	struct sync_flag pair_status = {.flag = false};
+	init_sync_flag(&pair_status);
 
 	a->priv = &pair_status;
 	meshlink_set_node_status_cb(a, pair_status_cb);
