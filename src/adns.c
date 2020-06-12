@@ -85,8 +85,9 @@ static void adns_cb_handler(event_loop_t *loop, void *data) {
 }
 
 void init_adns(meshlink_handle_t *mesh) {
-	signal_add(&mesh->loop, &mesh->adns_signal, adns_cb_handler, mesh, 1);
 	meshlink_queue_init(&mesh->adns_queue);
+	meshlink_queue_init(&mesh->adns_done_queue);
+	signal_add(&mesh->loop, &mesh->adns_signal, adns_cb_handler, mesh, 1);
 	pthread_create(&mesh->adns_thread, NULL, adns_loop, mesh);
 }
 
