@@ -270,6 +270,11 @@ int main(int argc, char *argv[]) {
 			return 1;
 		}
 	} else {
+#ifdef SO_NOSIGPIPE
+		int nosigpipe = 1;
+		setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe, sizeof(nosigpipe));
+#endif
+
 		if(connect(s, ai->ai_addr, ai->ai_addrlen)) {
 			debug("Could not connect: %s\n", strerror(errno));
 			return 1;

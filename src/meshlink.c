@@ -268,6 +268,11 @@ char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int fami
 
 		int s = socket_in_netns(aip->ai_family, aip->ai_socktype, aip->ai_protocol, mesh->netns);
 
+#ifdef SO_NOSIGPIPE
+		int nosigpipe = 1;
+		setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe, sizeof(nosigpipe));
+#endif
+
 		if(s >= 0) {
 			set_timeout(s, 5000);
 
@@ -2904,6 +2909,11 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 					meshlink_errno = MESHLINK_ENETWORK;
 					continue;
 				}
+
+#ifdef SO_NOSIGPIPE
+				int nosigpipe = 1;
+				setsockopt(state.sock, SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe, sizeof(nosigpipe));
+#endif
 
 				set_timeout(state.sock, 5000);
 
