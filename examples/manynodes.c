@@ -128,7 +128,7 @@ static void exportmeshgraph_timer(int signum) {
 	exportmeshgraph(name);
 }
 
-#ifndef _WIN32
+#ifdef ITIMER_REAL
 static bool exportmeshgraph_started = false;
 
 static bool exportmeshgraph_end(void) {
