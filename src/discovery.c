@@ -392,6 +392,7 @@ static void *discovery_loop(void *userdata) {
 	config.publish_hinfo = 0;
 	config.publish_addresses = 1;
 	config.publish_no_reverse = 1;
+	config.allow_point_to_point = 1;
 
 	/* Allocate a new server */
 	int error;

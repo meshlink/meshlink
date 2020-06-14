@@ -4305,6 +4305,7 @@ void handle_network_change(meshlink_handle_t *mesh, bool online) {
 	}
 
 	retry(mesh);
+	signal_trigger(&mesh->loop, &mesh->datafromapp);
 }
 
 void call_error_cb(meshlink_handle_t *mesh, meshlink_errno_t cb_errno) {
