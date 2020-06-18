@@ -191,6 +191,9 @@ struct meshlink_handle {
 	char *catta_servicetype;
 	unsigned int catta_interfaces;
 
+	// PFROUTE
+	io_t pfroute_io;
+
 	// ADNS
 	pthread_t adns_thread;
 	pthread_cond_t adns_cond;
