@@ -9,7 +9,12 @@
 #include <catta/alternative.h>
 #include <catta/error.h>
 
+#if defined(__APPLE__) || defined(__unix) && !defined(__linux)
+#include <net/route.h>
+#endif
+
 #include "meshlink_internal.h"
+#include "event.h"
 #include "discovery.h"
 #include "sockaddr.h"
 #include "logger.h"
@@ -453,6 +458,53 @@ fail:
 	return NULL;
 }
 
+#ifdef RTM_NEWADDR
+static void pfroute_io_handler(event_loop_t *loop, void *data, int flags) {
+	(void)flags;
+	static time_t prev_update;
+	meshlink_handle_t *mesh = data;
+
+	struct {
+		struct rt_msghdr rtm;
+		char data[2048];
+	} msg;
+
+	while(true) {
+		msg.rtm.rtm_version = 0;
+		ssize_t result = recv(mesh->pfroute_io.fd, &msg, sizeof(msg), MSG_DONTWAIT);
+
+		if(result <= 0) {
+			if(result == 0 || errno == EAGAIN || errno == EINTR) {
+				break;
+			}
+
+			logger(mesh, MESHLINK_ERROR, "Reading from PFROUTE socket failed: %s\n", strerror(errno));
+			io_set(loop, &mesh->pfroute_io, 0);
+		}
+
+		if(msg.rtm.rtm_version != RTM_VERSION) {
+			logger(mesh, MESHLINK_ERROR, "Invalid PFROUTE message version\n");
+			break;
+		}
+
+		switch(msg.rtm.rtm_type) {
+		case RTM_IFINFO:
+		case RTM_NEWADDR:
+		case RTM_DELADDR:
+			if(loop->now.tv_sec > prev_update + 5) {
+				prev_update = loop->now.tv_sec;
+				handle_network_change(mesh, 1);
+			}
+
+			break;
+
+		default:
+			break;
+		}
+	}
+}
+#endif
+
 bool discovery_start(meshlink_handle_t *mesh) {
 	logger(mesh, MESHLINK_DEBUG, "discovery_start called\n");
 
@@ -478,6 +530,17 @@ bool discovery_start(meshlink_handle_t *mesh) {
 
 	mesh->discovery_threadstarted = true;
 
+#ifdef RTM_NEWADDR
+	int sock = socket(PF_ROUTE, SOCK_RAW, AF_UNSPEC);
+
+	if(sock != -1) {
+		io_add(&mesh->loop, &mesh->pfroute_io, pfroute_io_handler, mesh, sock, IO_READ);
+	} else {
+		logger(mesh, MESHLINK_WARNING, "Could not open PF_ROUTE socket: %s", strerror(errno));
+	}
+
+#endif
+
 	return true;
 }
 
@@ -485,6 +548,15 @@ void discovery_stop(meshlink_handle_t *mesh) {
 	logger(mesh, MESHLINK_DEBUG, "discovery_stop called\n");
 
 	assert(mesh);
+
+#ifdef RTM_NEWADDR
+
+	if(mesh->pfroute_io.cb) {
+		close(mesh->pfroute_io.fd);
+		io_del(&mesh->loop, &mesh->pfroute_io);
+	}
+
+#endif
 
 	// Shut down
 	if(mesh->catta_poll) {
