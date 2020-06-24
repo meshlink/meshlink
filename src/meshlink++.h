@@ -1049,6 +1049,16 @@ public:
 		meshlink_set_dev_class_fast_retry_period(handle, devclass, fast_retry_period);
 	}
 
+	/// Set device class maximum timeout
+	/** This sets the maximum timeout for outgoing connection retries for a given device class.
+	 *
+	 *  @param devclass      The device class to update
+	 *  @param maxtimeout    The maximum timeout between reconnection attempts, in seconds. The default is 900.
+	 */
+	void set_dev_class_maxtimeout(dev_class_t devclass, int maxtimeout) {
+		meshlink_set_dev_class_maxtimeout(handle, devclass, maxtimeout);
+	}
+
 	/// Set which order invitations are committed
 	/** This determines in which order configuration files are written to disk during an invitation.
 	 *  By default, the invitee saves the configuration to disk first, then the inviter.

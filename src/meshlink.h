@@ -1589,6 +1589,16 @@ void meshlink_set_dev_class_timeouts(struct meshlink_handle *mesh, dev_class_t d
  */
 void meshlink_set_dev_class_fast_retry_period(struct meshlink_handle *mesh, dev_class_t devclass, int fast_retry_period);
 
+/// Set device class maximum timeout
+/** This sets the maximum timeout for outgoing connection retries for a given device class.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh          A handle which represents an instance of MeshLink.
+ *  @param devclass      The device class to update
+ *  @param maxtimeout    The maximum timeout between reconnection attempts, in seconds. The default is 900.
+ */
+void meshlink_set_dev_class_maxtimeout(struct meshlink_handle *mesh, dev_class_t devclass, int maxtimeout);
+
 /// Set which order invitations are committed
 /** This determines in which order configuration files are written to disk during an invitation.
  *  By default, the invitee saves the configuration to disk first, then the inviter.

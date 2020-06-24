@@ -74,6 +74,7 @@ typedef struct {
 	int pinginterval;
 	int pingtimeout;
 	int fast_retry_period;
+	int maxtimeout;
 	unsigned int min_connects;
 	unsigned int max_connects;
 	int edge_weight;
@@ -150,7 +151,6 @@ struct meshlink_handle {
 	dev_class_t devclass;
 
 	int invitation_timeout;
-	int maxtimeout;
 	int udp_choice;
 
 	dev_class_traits_t dev_class_traits[DEV_CLASS_COUNT];

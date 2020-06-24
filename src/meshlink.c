@@ -1296,10 +1296,10 @@ void meshlink_open_params_free(meshlink_open_params_t *params) {
 
 /// Device class traits
 static const dev_class_traits_t default_class_traits[DEV_CLASS_COUNT] = {
-	{ .pingtimeout = 5, .pinginterval = 60, .min_connects = 3, .max_connects = 10000, .edge_weight = 1 }, // DEV_CLASS_BACKBONE
-	{ .pingtimeout = 5, .pinginterval = 60, .min_connects = 3, .max_connects = 100, .edge_weight = 3 },   // DEV_CLASS_STATIONARY
-	{ .pingtimeout = 5, .pinginterval = 60, .min_connects = 3, .max_connects = 3, .edge_weight = 6 },     // DEV_CLASS_PORTABLE
-	{ .pingtimeout = 5, .pinginterval = 60, .min_connects = 1, .max_connects = 1, .edge_weight = 9 },     // DEV_CLASS_UNKNOWN
+	{ .pingtimeout = 5, .pinginterval = 60, .maxtimeout = 900, .min_connects = 3, .max_connects = 10000, .edge_weight = 1 }, // DEV_CLASS_BACKBONE
+	{ .pingtimeout = 5, .pinginterval = 60, .maxtimeout = 900, .min_connects = 3, .max_connects = 100, .edge_weight = 3 },   // DEV_CLASS_STATIONARY
+	{ .pingtimeout = 5, .pinginterval = 60, .maxtimeout = 900, .min_connects = 3, .max_connects = 3, .edge_weight = 6 },     // DEV_CLASS_PORTABLE
+	{ .pingtimeout = 5, .pinginterval = 60, .maxtimeout = 900, .min_connects = 1, .max_connects = 1, .edge_weight = 9 },     // DEV_CLASS_UNKNOWN
 };
 
 meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
@@ -4257,6 +4257,22 @@ void meshlink_set_dev_class_fast_retry_period(meshlink_handle_t *mesh, dev_class
 
 	assert(pthread_mutex_lock(&mesh->mutex) == 0);
 	mesh->dev_class_traits[devclass].fast_retry_period = fast_retry_period;
+	assert(pthread_mutex_unlock(&mesh->mutex) == 0);
+}
+
+void meshlink_set_dev_class_maxtimeout(struct meshlink_handle *mesh, dev_class_t devclass, int maxtimeout) {
+	if(!mesh || devclass < 0 || devclass >= DEV_CLASS_COUNT) {
+		meshlink_errno = EINVAL;
+		return;
+	}
+
+	if(maxtimeout < 0) {
+		meshlink_errno = EINVAL;
+		return;
+	}
+
+	assert(pthread_mutex_lock(&mesh->mutex) == 0);
+	mesh->dev_class_traits[devclass].maxtimeout = maxtimeout;
 	assert(pthread_mutex_unlock(&mesh->mutex) == 0);
 }
 

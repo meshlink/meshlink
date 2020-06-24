@@ -522,12 +522,6 @@ static bool add_listen_sockets(meshlink_handle_t *mesh) {
   Configure node_t mesh->self and set up the local sockets (listen only)
 */
 static bool setup_myself(meshlink_handle_t *mesh) {
-	/* Set some defaults */
-
-	mesh->maxtimeout = 900;
-
-	/* Done */
-
 	mesh->self->nexthop = mesh->self;
 
 	node_add(mesh, mesh->self);
