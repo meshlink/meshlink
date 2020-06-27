@@ -11,6 +11,10 @@
 
 #if defined(__APPLE__) || defined(__unix) && !defined(__linux)
 #include <net/route.h>
+#elif defined(__linux)
+#include <asm/types.h>
+#include <linux/netlink.h>
+#include <linux/rtnetlink.h>
 #endif
 
 #include "meshlink_internal.h"
@@ -487,7 +491,52 @@ fail:
 	return NULL;
 }
 
-#ifdef RTM_NEWADDR
+#if defined(__linux)
+static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
+	(void)flags;
+	static time_t prev_update;
+	meshlink_handle_t *mesh = data;
+
+	struct {
+		struct nlmsghdr nlm;
+		char data[2048];
+	} msg;
+
+	while(true) {
+		ssize_t result = recv(mesh->pfroute_io.fd, &msg, sizeof(msg), MSG_DONTWAIT);
+
+		if(result <= 0) {
+			if(result == 0 || errno == EAGAIN || errno == EINTR) {
+				break;
+			}
+
+			logger(mesh, MESHLINK_ERROR, "Reading from Netlink socket failed: %s\n", strerror(errno));
+			io_set(loop, &mesh->pfroute_io, 0);
+		}
+
+		if((size_t)result < sizeof(msg.nlm)) {
+			logger(mesh, MESHLINK_ERROR, "Invalid Netlink message\n");
+			break;
+		}
+
+		switch(msg.nlm.nlmsg_type) {
+		case RTM_NEWLINK:
+		case RTM_DELLINK:
+		case RTM_NEWADDR:
+		case RTM_DELADDR:
+			if(loop->now.tv_sec > prev_update + 5) {
+				prev_update = loop->now.tv_sec;
+				handle_network_change(mesh, 1);
+			}
+
+			break;
+
+		default:
+			break;
+		}
+	}
+}
+#elif defined(RTM_NEWADDR)
 static void pfroute_io_handler(event_loop_t *loop, void *data, int flags) {
 	(void)flags;
 	static time_t prev_update;
@@ -561,7 +610,25 @@ bool discovery_start(meshlink_handle_t *mesh) {
 
 	mesh->discovery_threadstarted = true;
 
-#ifdef RTM_NEWADDR
+#if defined(__linux)
+	int sock = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
+
+	if(sock != -1) {
+		struct sockaddr_nl sa;
+		memset(&sa, 0, sizeof(sa));
+		sa.nl_family = AF_NETLINK;
+		sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR | RTMGRP_IPV6_IFADDR;
+
+		if(bind(sock, (struct sockaddr *)&sa, sizeof(sa)) != -1) {
+			io_add(&mesh->loop, &mesh->pfroute_io, netlink_io_handler, mesh, sock, IO_READ);
+		} else {
+			logger(mesh, MESHLINK_WARNING, "Could not bind AF_NETLINK socket: %s", strerror(errno));
+		}
+	} else {
+		logger(mesh, MESHLINK_WARNING, "Could not open AF_NETLINK socket: %s", strerror(errno));
+	}
+
+#elif defined(RTM_NEWADDR)
 	int sock = socket(PF_ROUTE, SOCK_RAW, AF_UNSPEC);
 
 	if(sock != -1) {
@@ -580,14 +647,10 @@ void discovery_stop(meshlink_handle_t *mesh) {
 
 	assert(mesh);
 
-#ifdef RTM_NEWADDR
-
 	if(mesh->pfroute_io.cb) {
 		close(mesh->pfroute_io.fd);
 		io_del(&mesh->loop, &mesh->pfroute_io);
 	}
-
-#endif
 
 	// Shut down
 	if(mesh->catta_poll) {
