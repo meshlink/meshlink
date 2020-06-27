@@ -13,6 +13,8 @@
 #include <net/route.h>
 #elif defined(__linux)
 #include <asm/types.h>
+#include <net/if.h>
+#include <linux/if_link.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #endif
@@ -492,6 +494,100 @@ fail:
 }
 
 #if defined(__linux)
+static void netlink_getlink(int fd) {
+	static const struct {
+		struct nlmsghdr nlm;
+		struct ifinfomsg ifi;
+	} msg = {
+		.nlm.nlmsg_len = NLMSG_LENGTH(sizeof(msg.ifi)),
+		.nlm.nlmsg_type = RTM_GETLINK,
+		.nlm.nlmsg_flags = NLM_F_DUMP | NLM_F_REQUEST,
+		.nlm.nlmsg_seq = 1,
+		.ifi.ifi_family = AF_UNSPEC,
+	};
+	send(fd, &msg, msg.nlm.nlmsg_len, 0);
+}
+
+static void netlink_getaddr(int fd) {
+	static const struct {
+		struct nlmsghdr nlm;
+		struct ifaddrmsg ifa;
+	} msg = {
+		.nlm.nlmsg_len = NLMSG_LENGTH(sizeof(msg.ifa)),
+		.nlm.nlmsg_type = RTM_GETADDR,
+		.nlm.nlmsg_flags = NLM_F_DUMP | NLM_F_REQUEST,
+		.nlm.nlmsg_seq = 2,
+		.ifa.ifa_family = AF_UNSPEC,
+	};
+	send(fd, &msg, msg.nlm.nlmsg_len, 0);
+}
+
+static void netlink_parse_link(meshlink_handle_t *mesh, const struct nlmsghdr *nlm) {
+	const struct ifinfomsg *ifi = (const struct ifinfomsg *)(nlm + 1);
+
+	if(ifi->ifi_flags & IFF_UP && ifi->ifi_flags & IFF_MULTICAST) {
+		logger(mesh, MESHLINK_INFO, "iface %d active\n", ifi->ifi_index);
+	} else {
+		logger(mesh, MESHLINK_INFO, "iface %d inactive\n", ifi->ifi_index);
+	}
+}
+
+static void netlink_parse_addr(meshlink_handle_t *mesh, const struct nlmsghdr *nlm) {
+	const struct ifaddrmsg *ifa = (const struct ifaddrmsg *)(nlm + 1);
+	const uint8_t *ptr = (const uint8_t *)(ifa + 1);
+	size_t len = nlm->nlmsg_len - (ptr - (const uint8_t *)nlm);
+
+	while(len >= sizeof(struct rtattr)) {
+		const struct rtattr *rta = (const struct rtattr *)ptr;
+
+		if(rta->rta_len <= 0 || rta->rta_len > len) {
+			break;
+		}
+
+		if(rta->rta_type == IFA_ADDRESS) {
+			char dest[40] = "?";
+
+			if(rta->rta_len == 8) {
+				inet_ntop(AF_INET, ptr + 4, dest, sizeof dest);
+			} else if(rta->rta_len == 20) {
+				inet_ntop(AF_INET6, ptr + 4, dest, sizeof dest);
+			}
+
+			logger(mesh, MESHLINK_INFO, "iface %d address %s %s\n", ifa->ifa_index, dest, nlm->nlmsg_type == RTM_NEWADDR ? "new" : "del");
+		}
+
+		unsigned short rta_len = (rta->rta_len + 3) & ~3;
+		ptr += rta_len;
+		len -= rta_len;
+	}
+}
+
+static void netlink_parse(meshlink_handle_t *mesh, const void *data, size_t len) {
+	const uint8_t *ptr = data;
+
+	while(len >= sizeof(struct nlmsghdr)) {
+		const struct nlmsghdr *nlm = (const struct nlmsghdr *)ptr;
+
+		if(nlm->nlmsg_len > len) {
+			break;
+		}
+
+		switch(nlm->nlmsg_type) {
+		case RTM_NEWLINK:
+		case RTM_DELLINK:
+			netlink_parse_link(mesh, nlm);
+			break;
+
+		case RTM_NEWADDR:
+		case RTM_DELADDR:
+			netlink_parse_addr(mesh, nlm);
+		}
+
+		ptr += nlm->nlmsg_len;
+		len -= nlm->nlmsg_len;
+	}
+}
+
 static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 	(void)flags;
 	static time_t prev_update;
@@ -499,7 +595,7 @@ static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 
 	struct {
 		struct nlmsghdr nlm;
-		char data[2048];
+		char data[16384];
 	} msg;
 
 	while(true) {
@@ -519,20 +615,18 @@ static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 			break;
 		}
 
-		switch(msg.nlm.nlmsg_type) {
-		case RTM_NEWLINK:
-		case RTM_DELLINK:
-		case RTM_NEWADDR:
-		case RTM_DELADDR:
+		if(msg.nlm.nlmsg_type == NLMSG_DONE) {
+			if(msg.nlm.nlmsg_seq == 1) {
+				// We just got the result of GETLINK, now send GETADDR.
+				netlink_getaddr(mesh->pfroute_io.fd);
+			}
+		} else {
+			netlink_parse(mesh, &msg, result);
+
 			if(loop->now.tv_sec > prev_update + 5) {
 				prev_update = loop->now.tv_sec;
 				handle_network_change(mesh, 1);
 			}
-
-			break;
-
-		default:
-			break;
 		}
 	}
 }
@@ -621,6 +715,7 @@ bool discovery_start(meshlink_handle_t *mesh) {
 
 		if(bind(sock, (struct sockaddr *)&sa, sizeof(sa)) != -1) {
 			io_add(&mesh->loop, &mesh->pfroute_io, netlink_io_handler, mesh, sock, IO_READ);
+			netlink_getlink(sock);
 		} else {
 			logger(mesh, MESHLINK_WARNING, "Could not bind AF_NETLINK socket: %s", strerror(errno));
 		}
