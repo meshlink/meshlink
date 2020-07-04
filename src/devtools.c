@@ -65,7 +65,9 @@ devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *e
 		return NULL;
 	}
 
-	assert(pthread_mutex_lock(&mesh->mutex) == 0);
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
 
 	devtool_edge_t *result = NULL;
 	unsigned int result_size = 0;
@@ -113,7 +115,7 @@ devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *e
 		meshlink_errno = MESHLINK_ENOMEM;
 	}
 
-	assert(pthread_mutex_unlock(&mesh->mutex) == 0);
+	pthread_mutex_unlock(&mesh->mutex);
 
 	return result;
 }
@@ -135,7 +137,9 @@ bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream) 
 
 	bool result = true;
 
-	assert(pthread_mutex_lock(&mesh->mutex) == 0);
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
 
 	// export edges and nodes
 	size_t node_count = 0;
@@ -250,7 +254,7 @@ done:
 	free(nodes);
 	free(edges);
 
-	assert(pthread_mutex_unlock(&mesh->mutex) == 0);
+	pthread_mutex_unlock(&mesh->mutex);
 
 	return result;
 }
@@ -263,7 +267,9 @@ void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, dev
 
 	node_t *internal = (node_t *)node;
 
-	assert(pthread_mutex_lock(&mesh->mutex) == 0);
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
 
 	memcpy(&status->status, &internal->status, sizeof status->status);
 	memcpy(&status->address, &internal->address, sizeof status->address);
@@ -293,7 +299,7 @@ void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, dev
 		status->udp_status = DEVTOOL_UDP_UNKNOWN;
 	}
 
-	assert(pthread_mutex_unlock(&mesh->mutex) == 0);
+	pthread_mutex_unlock(&mesh->mutex);
 }
 
 meshlink_submesh_t **devtool_get_all_submeshes(meshlink_handle_t *mesh, meshlink_submesh_t **submeshes, size_t *nmemb) {
@@ -305,7 +311,9 @@ meshlink_submesh_t **devtool_get_all_submeshes(meshlink_handle_t *mesh, meshlink
 	meshlink_submesh_t **result;
 
 	//lock mesh->nodes
-	assert(pthread_mutex_lock(&mesh->mutex) == 0);
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
 
 	*nmemb = mesh->submeshes->count;
 	result = realloc(submeshes, *nmemb * sizeof(*submeshes));
@@ -322,7 +330,7 @@ meshlink_submesh_t **devtool_get_all_submeshes(meshlink_handle_t *mesh, meshlink
 		meshlink_errno = MESHLINK_ENOMEM;
 	}
 
-	assert(pthread_mutex_unlock(&mesh->mutex) == 0);
+	pthread_mutex_unlock(&mesh->mutex);
 
 	return result;
 }
