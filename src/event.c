@@ -199,7 +199,9 @@ static void signalio_handler(event_loop_t *loop, void *data, int flags) {
 	});
 
 	if(sig) {
+#ifdef HAVE_STDATOMIC_H
 		atomic_flag_clear(&sig->set);
+#endif
 		sig->cb(loop, sig->data);
 	}
 }
@@ -224,9 +226,13 @@ static void pipe_exit(event_loop_t *loop) {
 }
 
 void signal_trigger(event_loop_t *loop, signal_t *sig) {
+#ifdef HAVE_STDATOMIC_H
+
 	if(atomic_flag_test_and_set(&sig->set)) {
 		return;
 	}
+
+#endif
 
 	uint8_t signum = sig->signum;
 	write(loop->pipefd[1], &signum, 1);
@@ -241,7 +247,9 @@ void signal_add(event_loop_t *loop, signal_t *sig, signal_cb_t cb, void *data, u
 	sig->signum = signum;
 	sig->node.data = sig;
 
+#ifdef HAVE_STDATOMIC_H
 	atomic_flag_clear(&sig->set);
+#endif
 
 	if(loop->pipefd[0] == -1) {
 		pipe_init(loop);

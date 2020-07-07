@@ -32,7 +32,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
@@ -44,6 +43,10 @@
 #include <unistd.h>
 #include <limits.h>
 #include <assert.h>
+
+#ifdef HAVE_STDATOMIC_H
+#include <stdatomic.h>
+#endif
 
 #ifdef HAVE_MINGW
 #include <w32api.h>

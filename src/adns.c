@@ -20,7 +20,6 @@
 #include "system.h"
 
 #include <pthread.h>
-#include <stdatomic.h>
 
 #include "adns.h"
 #include "devtools.h"

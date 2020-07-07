@@ -123,7 +123,7 @@ AM_CONDITIONAL(INSTALL_TESTS, test "$install_tests" = true)
 dnl Checks for header files.
 dnl We do this in multiple stages, because unlike Linux all the other operating systems really suck and don't include their own dependencies.
 
-AC_CHECK_HEADERS([syslog.h sys/file.h sys/param.h sys/resource.h sys/socket.h sys/time.h sys/un.h sys/wait.h netdb.h arpa/inet.h dirent.h curses.h ifaddrs.h])
+AC_CHECK_HEADERS([syslog.h sys/file.h sys/param.h sys/resource.h sys/socket.h sys/time.h sys/un.h sys/wait.h netdb.h arpa/inet.h dirent.h curses.h ifaddrs.h stdatomic.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 MeshLink_ATTRIBUTE(__malloc__)

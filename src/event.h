@@ -52,7 +52,9 @@ typedef struct timeout_t {
 typedef struct signal_t {
 	struct splay_node_t node;
 	int signum;
+#ifdef HAVE_STDATOMIC_H
 	volatile atomic_flag set;
+#endif
 	signal_cb_t cb;
 	void *data;
 } signal_t;
