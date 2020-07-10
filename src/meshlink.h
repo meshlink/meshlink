@@ -1599,6 +1599,15 @@ void meshlink_set_dev_class_fast_retry_period(struct meshlink_handle *mesh, dev_
  */
 void meshlink_set_dev_class_maxtimeout(struct meshlink_handle *mesh, dev_class_t devclass, int maxtimeout);
 
+/// Reset all connection timers
+/** This resets all timers related to connections, causing pending outgoing connections to be retried immediately.
+ * It also sends keepalive packets on all active connections immediately.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh          A handle which represents an instance of MeshLink.
+ */
+void meshlink_reset_timers(struct meshlink_handle *mesh);
+
 /// Set which order invitations are committed
 /** This determines in which order configuration files are written to disk during an invitation.
  *  By default, the invitee saves the configuration to disk first, then the inviter.

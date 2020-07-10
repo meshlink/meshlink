@@ -61,6 +61,7 @@ meshlink_open_ephemeral
 meshlink_open_ex
 meshlink_open_params_free
 meshlink_open_params_init
+meshlink_reset_timers
 meshlink_send
 meshlink_set_canonical_address
 meshlink_set_channel_accept_cb

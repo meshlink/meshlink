@@ -4420,7 +4420,20 @@ void meshlink_set_dev_class_maxtimeout(struct meshlink_handle *mesh, dev_class_t
 	pthread_mutex_unlock(&mesh->mutex);
 }
 
-extern void meshlink_set_inviter_commits_first(struct meshlink_handle *mesh, bool inviter_commits_first) {
+void meshlink_reset_timers(struct meshlink_handle *mesh) {
+	if(!mesh) {
+		return;
+	}
+
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
+
+	handle_network_change(mesh, true);
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
+void meshlink_set_inviter_commits_first(struct meshlink_handle *mesh, bool inviter_commits_first) {
 	if(!mesh) {
 		meshlink_errno = EINVAL;
 		return;
