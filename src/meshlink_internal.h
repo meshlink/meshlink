@@ -193,6 +193,10 @@ struct meshlink_handle {
 
 	// PFROUTE
 	io_t pfroute_io;
+	int *discovery_ifaces;
+	struct discovery_address *discovery_addresses;
+	int discovery_iface_count;
+	int discovery_address_count;
 
 	// ADNS
 	pthread_t adns_thread;
