@@ -366,7 +366,7 @@ char *meshlink_get_local_address_for_family(meshlink_handle_t *mesh, int family)
 		for(struct ifaddrs *ifap = ifa; ifap; ifap = ifap->ifa_next) {
 			sockaddr_t *sa = (sockaddr_t *)ifap->ifa_addr;
 
-			if(sa->sa.sa_family != family) {
+			if(!sa || sa->sa.sa_family != family) {
 				continue;
 			}
 
