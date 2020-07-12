@@ -155,12 +155,6 @@ static void send_mdns_packet_ipv6(meshlink_handle_t *mesh, int fd, int index, co
 }
 
 static void send_mdns_packet(meshlink_handle_t *mesh, const discovery_address_t *addr) {
-	char *host = NULL, *port = NULL;
-	sockaddr2str(&addr->address, &host, &port);
-	fprintf(stderr, "Sending on iface %d %s port %s\n", addr->index, host, port);
-	free(host);
-	free(port);
-
 	// Configure the socket to send the packet to the right interface
 	int fd;
 	uint8_t data[1024];
@@ -222,7 +216,6 @@ static void mdns_io_handler(event_loop_t *loop, void *data, int flags) {
 
 	if(len == -1) {
 		if(!sockwouldblock(errno)) {
-			fprintf(stderr, "Error reading from discovery socket: %s\n", strerror(errno));
 			logger(mesh, MESHLINK_ERROR, "Error reading from mDNS discovery socket: %s", strerror(errno));
 			io_set(loop, io, 0);
 		}
@@ -240,7 +233,9 @@ static void mdns_io_handler(event_loop_t *loop, void *data, int flags) {
 		node_t *n = (node_t *)meshlink_get_node(mesh, values[0]);
 
 		if(n) {
-			logger(mesh, MESHLINK_INFO, "Node %s is part of the mesh network.\n", n->name);
+			if(n != mesh->self) {
+				logger(mesh, MESHLINK_INFO, "Node %s discovered on the local network.\n", n->name);
+			}
 
 			if(!response && n != mesh->self) {
 				// Send a unicast response back
@@ -284,11 +279,7 @@ static void mdns_io_handler(event_loop_t *loop, void *data, int flags) {
 					c->last_ping_time = -3600;
 				}
 			}
-		} else {
-			logger(mesh, MESHLINK_WARNING, "Node %s is not part of the mesh network.\n", values[0]);
 		}
-
-		fprintf(stderr, "Got packet from %s port %u\n%s=%s\n%s=%s\n", name, port, keys[0], values[0], keys[1], values[1]);
 	}
 
 	free(name);
@@ -305,7 +296,6 @@ static void iface_up(meshlink_handle_t *mesh, int index) {
 		return;
 	}
 
-	fprintf(stderr, "iface %d up\n", index);
 	mesh->discovery.ifaces = xrealloc(mesh->discovery.ifaces, ++mesh->discovery.iface_count * sizeof(*p));
 	mesh->discovery.ifaces[mesh->discovery.iface_count - 1] = index;
 	qsort(mesh->discovery.ifaces, mesh->discovery.iface_count, sizeof(*p), iface_compare);
@@ -355,7 +345,6 @@ static void iface_down(meshlink_handle_t *const mesh, int index) {
 	};
 	setsockopt(mesh->discovery.sockets[1].fd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6));
 
-	fprintf(stderr, "iface %d down\n", index);
 	memmove(p, p + 1, (mesh->discovery.ifaces + --mesh->discovery.iface_count - p) * sizeof(*p));
 
 	handle_network_change(mesh, mesh->discovery.iface_count);
@@ -369,11 +358,6 @@ static void addr_add(meshlink_handle_t *mesh, const discovery_address_t *addr) {
 	}
 
 	bool up = bsearch(&addr->index, mesh->discovery.ifaces, mesh->discovery.iface_count, sizeof(int), iface_compare);
-	char *host = NULL, *port = NULL;
-	sockaddr2str(&addr->address, &host, &port);
-	fprintf(stderr, "address %d %s port %s up %d\n", addr->index, host, port, up);
-	free(host);
-	free(port);
 
 	mesh->discovery.addresses = xrealloc(mesh->discovery.addresses, ++mesh->discovery.address_count * sizeof(*p));
 	mesh->discovery.addresses[mesh->discovery.address_count - 1] = *addr;
@@ -392,12 +376,6 @@ static void addr_del(meshlink_handle_t *mesh, const discovery_address_t *addr) {
 	if(!p) {
 		return;
 	}
-
-	char *host = NULL, *port = NULL;
-	sockaddr2str(&addr->address, &host, &port);
-	fprintf(stderr, "address %d %s port %s down\n", addr->index, host, port);
-	free(host);
-	free(port);
 
 	memmove(p, p + 1, (mesh->discovery.addresses + --mesh->discovery.address_count - p) * sizeof(*p));
 }
@@ -430,7 +408,6 @@ static void netlink_getaddr(int fd) {
 	};
 	send(fd, &msg, msg.nlm.nlmsg_len, 0);
 }
-
 
 static void netlink_parse_link(meshlink_handle_t *mesh, const struct nlmsghdr *nlm) {
 	const struct ifinfomsg *ifi = (const struct ifinfomsg *)(nlm + 1);
