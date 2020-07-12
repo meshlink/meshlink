@@ -1515,7 +1515,7 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 
 	mesh->appname = xstrdup(params->appname);
 	mesh->devclass = params->devclass;
-	mesh->discovery = true;
+	mesh->discovery.enabled = true;
 	mesh->invitation_timeout = 604800; // 1 week
 	mesh->netns = params->netns;
 	mesh->submeshes = NULL;
@@ -1555,9 +1555,6 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 
 	pthread_mutex_init(&mesh->mutex, &attr);
 	pthread_cond_init(&mesh->cond, NULL);
-
-	pthread_mutex_init(&mesh->discovery_mutex, NULL);
-	pthread_cond_init(&mesh->discovery_cond, NULL);
 
 	pthread_cond_init(&mesh->adns_cond, NULL);
 
@@ -1693,7 +1690,7 @@ static void *meshlink_main_loop(void *arg) {
 #endif // HAVE_SETNS
 	}
 
-	if(mesh->discovery) {
+	if(mesh->discovery.enabled) {
 		discovery_start(mesh);
 	}
 
@@ -1709,7 +1706,7 @@ static void *meshlink_main_loop(void *arg) {
 	pthread_mutex_unlock(&mesh->mutex);
 
 	// Stop discovery
-	if(mesh->discovery) {
+	if(mesh->discovery.enabled) {
 		discovery_stop(mesh);
 	}
 
@@ -4555,7 +4552,7 @@ void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable) {
 		abort();
 	}
 
-	if(mesh->discovery == enable) {
+	if(mesh->discovery.enabled == enable) {
 		goto end;
 	}
 
@@ -4567,7 +4564,7 @@ void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable) {
 		}
 	}
 
-	mesh->discovery = enable;
+	mesh->discovery.enabled = enable;
 
 end:
 	pthread_mutex_unlock(&mesh->mutex);
@@ -4642,7 +4639,7 @@ void meshlink_reset_timers(struct meshlink_handle *mesh) {
 
 	handle_network_change(mesh, true);
 
-	if(mesh->discovery) {
+	if(mesh->discovery.enabled) {
 		discovery_refresh(mesh);
 	}
 
