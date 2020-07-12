@@ -247,14 +247,14 @@ static void buf_check_len_end(cbuf_t *buf, const uint8_t *ptr) {
 	}
 }
 
-size_t prepare_packet(void *vdata, size_t size, const char *name, const char *protocol, const char *transport, uint16_t port, int nkeys, const char **keys, const char **values) {
+size_t prepare_packet(void *vdata, size_t size, const char *name, const char *protocol, const char *transport, uint16_t port, int nkeys, const char **keys, const char **values, bool response) {
 	// Create the request/response packet right now
 	uint8_t *data = vdata;
 	buf_t buf = {data, size};
 
 	// Header
 	buf_add_uint16(&buf, 0); // TX ID
-	buf_add_uint16(&buf, 0); // flags
+	buf_add_uint16(&buf, response ? ntohs(1 << 15) : 0); // flags
 	buf_add_uint16(&buf, 1); // 1 question
 	buf_add_uint16(&buf, 1); // 1 answer RR
 	buf_add_uint16(&buf, 0); // 0 authority RRs
@@ -314,21 +314,23 @@ size_t prepare_packet(void *vdata, size_t size, const char *name, const char *pr
 	}
 }
 
-bool parse_packet(const void *vdata, size_t size, char **name, const char *protocol, const char *transport, uint16_t *port, int nkeys, const char **keys, char **values) {
+bool parse_packet(const void *vdata, size_t size, char **name, const char *protocol, const char *transport, uint16_t *port, int nkeys, const char **keys, char **values, bool *response) {
 	const uint8_t *data = vdata;
 	cbuf_t buf = {data, size};
 
 	// Header
 	buf_check_uint16(&buf, 0); // TX ID
-	buf_check_uint16(&buf, 0); // flags
+	uint16_t flags = buf_get_uint16(&buf); // flags
 	buf_check_uint16(&buf, 1); // 1 question
 	buf_check_uint16(&buf, 1); // 1 answer RR
 	buf_check_uint16(&buf, 0); // 0 authority RRs
 	buf_check_uint16(&buf, 2); // 1 checkitional RR
 
-	if(buf.len == -1) {
+	if(buf.len == -1 || flags & ~ntohs(1 << 15)) {
 		return false;
 	}
+
+	*response = flags & ntohs(1 << 15);
 
 	// Question section: _protocol._transport.local PTR IN
 	buf_check_ulabel(&buf, protocol);

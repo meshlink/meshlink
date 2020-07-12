@@ -167,7 +167,8 @@ static void send_mdns_packet(meshlink_handle_t *mesh, const discovery_address_t 
 	char *fingerprint = meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self);
 	const char *keys[] = {MESHLINK_MDNS_NAME_KEY, MESHLINK_MDNS_FINGERPRINT_KEY};
 	const char *values[] = {mesh->name, fingerprint};
-	size_t size = prepare_packet(data, sizeof data, fingerprint, mesh->appname, "tcp", atoi(mesh->myport), 2, keys, values);
+	size_t size = prepare_packet(data, sizeof data, fingerprint, mesh->appname, "tcp", atoi(mesh->myport), 2, keys, values, false);
+	free(fingerprint);
 
 	switch(addr->address.sa.sa_family) {
 	case AF_INET:
@@ -233,12 +234,22 @@ static void mdns_io_handler(event_loop_t *loop, void *data, int flags) {
 	uint16_t port = 0;
 	const char *keys[2] = {MESHLINK_MDNS_NAME_KEY, MESHLINK_MDNS_FINGERPRINT_KEY};
 	char *values[2] = {NULL, NULL};
+	bool response;
 
-	if(parse_packet(buf, len, &name, mesh->appname, "tcp", &port, 2, keys, values)) {
+	if(parse_packet(buf, len, &name, mesh->appname, "tcp", &port, 2, keys, values, &response)) {
 		node_t *n = (node_t *)meshlink_get_node(mesh, values[0]);
 
 		if(n) {
 			logger(mesh, MESHLINK_INFO, "Node %s is part of the mesh network.\n", n->name);
+
+			if(!response && n != mesh->self) {
+				// Send a unicast response back
+				char *fingerprint = meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self);
+				const char *response_values[] = {mesh->name, fingerprint};
+				size_t size = prepare_packet(buf, sizeof(buf), fingerprint, mesh->appname, "tcp", atoi(mesh->myport), 2, keys, response_values, true);
+				sendto(io->fd, buf, size, MSG_DONTWAIT | MSG_NOSIGNAL, &sa.sa, sl);
+				free(fingerprint);
+			}
 
 			switch(sa.sa.sa_family) {
 			case AF_INET:
@@ -504,6 +515,7 @@ static void netlink_parse(meshlink_handle_t *mesh, const void *data, size_t len)
 
 static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 	(void)flags;
+	(void)data;
 	static time_t prev_update;
 	meshlink_handle_t *mesh = loop->data;
 
@@ -547,6 +559,7 @@ static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 #elif defined(RTM_NEWADDR)
 static void pfroute_io_handler(event_loop_t *loop, void *data, int flags) {
 	(void)flags;
+	(void)data;
 	static time_t prev_update;
 	meshlink_handle_t *mesh = loop->data;
 
@@ -663,6 +676,8 @@ void discovery_stop(meshlink_handle_t *mesh) {
 
 	free(mesh->discovery.ifaces);
 	free(mesh->discovery.addresses);
+	mesh->discovery.ifaces = NULL;
+	mesh->discovery.addresses = NULL;
 	mesh->discovery.iface_count = 0;
 	mesh->discovery.address_count = 0;
 
