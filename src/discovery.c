@@ -678,3 +678,11 @@ void discovery_stop(meshlink_handle_t *mesh) {
 		}
 	}
 }
+
+void discovery_refresh(meshlink_handle_t *mesh) {
+	for(int i = 0; i < mesh->discovery_address_count; i++) {
+		if(mesh->discovery_addresses[i].up) {
+			send_mdns_packet(mesh, &mesh->discovery_addresses[i]);
+		}
+	}
+}
