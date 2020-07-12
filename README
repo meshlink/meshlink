@@ -23,9 +23,6 @@ Requirements
 
 In order to compile MeshLink, you will need a GNU C compiler environment.
 
-The following libraries are used by default, but can be disabled if necessary:
-
-- Catta (https://github.com/meshlink/catta)
 
 Features
 --------

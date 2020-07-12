@@ -246,7 +246,7 @@ int main(int argc, char *argv[]) {
 		nick = argv[2];
 	}
 
-	meshlink_set_log_cb(NULL, MESHLINK_INFO, log_message);
+	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_message);
 
 	meshlink_handle_t *mesh = meshlink_open(confbase, nick, "chat", DEV_CLASS_STATIONARY);
 
@@ -257,7 +257,7 @@ int main(int argc, char *argv[]) {
 
 	meshlink_set_receive_cb(mesh, receive);
 	meshlink_set_node_status_cb(mesh, node_status);
-	meshlink_set_log_cb(mesh, MESHLINK_INFO, log_message);
+	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, log_message);
 
 	if(!meshlink_start(mesh)) {
 		fprintf(stderr, "Could not start MeshLink: %s\n", meshlink_strerror(meshlink_errno));

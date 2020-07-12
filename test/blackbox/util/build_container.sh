@@ -28,7 +28,6 @@ setx=$4
 #   Folder Paths
 ltlibfolder=".libs"
 meshlinksrclibpath="${meshlinkrootpath}/src/${ltlibfolder}"
-cattasrclibpath="${meshlinkrootpath}/catta/src/${ltlibfolder}"
 blackboxpath="${meshlinkrootpath}/test/blackbox"
 blackboxlibpath="${meshlinkrootpath}/test/blackbox/${ltlibfolder}"
 blackboxutilpath="${blackboxpath}/util"
@@ -76,7 +75,6 @@ mkdir ${mirrorfolderlibpath}
 cp ${blackboxlibpath}/* ${mirrorfolderlibpath}
 cp ${testcaselibpath}/*${nodesimpgm}* ${mirrorfolderlibpath}
 cp ${meshlinksrclibpath}/* ${mirrorfolderlibpath}
-cp ${cattasrclibpath}/* ${mirrorfolderlibpath}
 
 # Copy mirror folder into LXC Container
 #   Delete Destination Folder

@@ -45,11 +45,6 @@ static const char meshlink_udp_label[] = "MeshLink UDP";
 #define MESHLINK_CONFIG_VERSION 2
 #define MESHLINK_INVITATION_VERSION 2
 
-struct CattaServer;
-struct CattaSServiceBrowser;
-struct CattaSimplePoll;
-struct CattaSEntryGroup;
-
 typedef struct listen_socket_t {
 	struct io_t tcp;
 	struct io_t udp;
@@ -161,7 +156,7 @@ struct meshlink_handle {
 	int netns;
 
 	bool default_blacklist;
-	bool discovery;         // Whether Catta is enabled or not
+	bool discovery;         // Whether mDNS discovery is enabled or not
 	bool inviter_commits_first;
 
 	// Configuration
@@ -179,16 +174,7 @@ struct meshlink_handle {
 	bool threadstarted;
 	bool discovery_threadstarted;
 
-	// Catta
-	pthread_t discovery_thread;
-	struct CattaServer *catta_server;
-	struct CattaSServiceBrowser *catta_browser;
-	struct CattaSimplePoll *catta_poll;
-	struct CattaSEntryGroup *catta_group;
-	char *catta_servicetype;
-	unsigned int catta_interfaces;
-
-	// PFROUTE
+	// mDNS discovery
 	io_t pfroute_io;
 	int *discovery_ifaces;
 	struct discovery_address *discovery_addresses;

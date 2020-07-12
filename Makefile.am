@@ -2,11 +2,7 @@
 
 AUTOMAKE_OPTIONS = gnu
 
-if CATTA
-MAYBE_CATTA = catta
-endif
-
-SUBDIRS = $(MAYBE_CATTA) src test examples
+SUBDIRS = src test examples
 
 DIST_SUBDIRS = $(SUBDIRS)
 

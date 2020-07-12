@@ -81,14 +81,6 @@ AS_IF([test "x$enable_hardening" != "xno"],
   ]
 );
 
-dnl Allow building without Catta
-AC_ARG_ENABLE([catta], AS_HELP_STRING([--disable-catta], [disable linking with the Catta library]))
-AS_IF([test "x$enable_catta" != "xno"],
-  AC_DEFINE(HAVE_CATTA, 1, [Link with Catta])
-  AC_CONFIG_SUBDIRS([catta])
-)
-AM_CONDITIONAL(CATTA, test "x$enable_catta" != "xno")
-
 dnl UTCP debug flags
 AC_ARG_ENABLE([utcp_debug], AS_HELP_STRING([--enable-utcp-debug], [compile utcp with debug output]))
 AS_IF([test "x$enable_utcp_debug" = "xyes"],
