@@ -1693,13 +1693,9 @@ static void *meshlink_main_loop(void *arg) {
 #endif // HAVE_SETNS
 	}
 
-#if HAVE_CATTA
-
 	if(mesh->discovery) {
 		discovery_start(mesh);
 	}
-
-#endif
 
 	if(pthread_mutex_lock(&mesh->mutex) != 0) {
 		abort();
@@ -1712,14 +1708,10 @@ static void *meshlink_main_loop(void *arg) {
 
 	pthread_mutex_unlock(&mesh->mutex);
 
-#if HAVE_CATTA
-
 	// Stop discovery
 	if(mesh->discovery) {
 		discovery_stop(mesh);
 	}
-
-#endif
 
 	return NULL;
 }
@@ -4554,8 +4546,6 @@ void handle_duplicate_node(meshlink_handle_t *mesh, node_t *n) {
 }
 
 void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable) {
-#if HAVE_CATTA
-
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4581,11 +4571,6 @@ void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable) {
 
 end:
 	pthread_mutex_unlock(&mesh->mutex);
-#else
-	(void)mesh;
-	(void)enable;
-	meshlink_errno = MESHLINK_ENOTSUP;
-#endif
 }
 
 void meshlink_set_dev_class_timeouts(meshlink_handle_t *mesh, dev_class_t devclass, int pinginterval, int pingtimeout) {

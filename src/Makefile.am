@@ -42,6 +42,7 @@ libmeshlink_la_SOURCES = \
 	conf.c conf.h \
 	connection.c connection.h \
 	crypto.c crypto.h \
+	discovery.c discovery.h \
 	dropin.c dropin.h \
 	ecdh.h \
 	ecdsa.h \
