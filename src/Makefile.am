@@ -96,16 +96,3 @@ libmeshlink_la_LDFLAGS += $(PTHREAD_LIBS)
 
 utcp_test_CFLAGS = $(PTHREAD_CFLAGS) -iquote.
 utcp_test_LDFLAGS = $(PTHREAD_LIBS)
-
-if CATTA
-libmeshlink_la_SOURCES += \
-	discovery.c discovery.h
-
-libmeshlink_la_CFLAGS += -I${top_srcdir}/catta/include/
-
-if MINGW
-libmeshlink_la_CFLAGS += -I${top_srcdir}/catta/src/compat/windows/include/
-endif
-
-libmeshlink_la_LIBADD = ${top_builddir}/catta/src/libcatta.la
-endif
