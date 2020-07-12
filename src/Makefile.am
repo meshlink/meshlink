@@ -53,6 +53,7 @@ libmeshlink_la_SOURCES = \
 	have.h \
 	list.c list.h \
 	logger.c logger.h \
+	mdns.c mdns.h \
 	meshlink.c meshlink.h meshlink.sym \
 	meshlink_internal.h \
 	meshlink_queue.h \

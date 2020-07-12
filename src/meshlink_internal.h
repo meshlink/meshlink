@@ -197,6 +197,7 @@ struct meshlink_handle {
 	struct discovery_address *discovery_addresses;
 	int discovery_iface_count;
 	int discovery_address_count;
+	io_t discovery_sockets[2];
 
 	// ADNS
 	pthread_t adns_thread;

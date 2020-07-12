@@ -19,6 +19,7 @@
 #include <linux/rtnetlink.h>
 #endif
 
+#include "mdns.h"
 #include "meshlink_internal.h"
 #include "event.h"
 #include "discovery.h"
@@ -27,11 +28,26 @@
 #include "netutl.h"
 #include "node.h"
 #include "connection.h"
+#include "utils.h"
 #include "xalloc.h"
 
 #define MESHLINK_MDNS_SERVICE_TYPE "_%s._tcp"
 #define MESHLINK_MDNS_NAME_KEY "name"
 #define MESHLINK_MDNS_FINGERPRINT_KEY "fingerprint"
+
+static const sockaddr_t mdns_address_ipv4 = {
+	.in.sin_family = AF_INET,
+	.in.sin_addr.s_addr = 0xfb0000e0,
+	.in.sin_port = 0xe914,
+};
+
+static const sockaddr_t mdns_address_ipv6 = {
+	.in6.sin6_family = AF_INET6,
+	.in6.sin6_addr.s6_addr[0x0] = 0xfd,
+	.in6.sin6_addr.s6_addr[0x1] = 0x02,
+	.in6.sin6_addr.s6_addr[0xf] = 0xfb,
+	.in6.sin6_port = 0xe914,
+};
 
 static void generate_rand_string(meshlink_handle_t *mesh, char *buffer, size_t size) {
 	assert(size);
@@ -379,6 +395,13 @@ static void *discovery_loop(void *userdata) {
 		abort();
 	}
 
+#if 1
+	// bypass Catta
+	pthread_cond_broadcast(&mesh->discovery_cond);
+	pthread_mutex_unlock(&mesh->discovery_mutex);
+	return NULL;
+#endif
+
 	// handle catta logs
 	catta_set_log_function(discovery_log_cb);
 
@@ -517,12 +540,228 @@ static int address_compare(const void *va, const void *vb) {
 	return sockaddrcmp_noport(&a->address, &b->address);
 }
 
+static void send_mdns_packet_ipv4(meshlink_handle_t *mesh, int fd, int index, const sockaddr_t *src, const sockaddr_t *dest, void *data, size_t len) {
+#ifdef IP_PKTINFO
+	struct iovec iov  = {
+		.iov_base = data,
+		.iov_len = len,
+	};
+
+	struct in_pktinfo pkti = {
+		.ipi_ifindex = index,
+		.ipi_addr = src->in.sin_addr,
+	};
+
+	union {
+		char buf[CMSG_SPACE(sizeof(pkti))];
+		struct cmsghdr align;
+	} u;
+
+	struct msghdr msg = {
+		.msg_name = (struct sockaddr *) &dest->sa,
+		.msg_namelen = SALEN(dest->sa),
+		.msg_iov = &iov,
+		.msg_iovlen = 1,
+		.msg_control = u.buf,
+		.msg_controllen = sizeof(u.buf),
+	};
+
+
+	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = IPPROTO_IP;
+	cmsg->cmsg_type = IP_PKTINFO;
+	cmsg->cmsg_len = CMSG_LEN(sizeof(pkti));
+	memcpy(CMSG_DATA(cmsg), &pkti, sizeof(pkti));
+
+	// Send the packet
+	ssize_t result = sendmsg(fd, &msg, MSG_DONTWAIT | MSG_NOSIGNAL);
+#else
+	// Send the packet
+	ssize_t result = sendto(fd, data, len, MSG_DONTWAIT | MSG_NOSIGNAL, &dest->sa, SALEN(dest->sa));
+#endif
+
+	if(result <= 0) {
+		logger(mesh, MESHLINK_ERROR, "Error sending multicast packet: %s", strerror(errno));
+	}
+}
+
+static void send_mdns_packet_ipv6(meshlink_handle_t *mesh, int fd, int index, const sockaddr_t *src, const sockaddr_t *dest, void *data, size_t len) {
+#ifdef IPV6_PKTINFO
+	struct iovec iov  = {
+		.iov_base = data,
+		.iov_len = len,
+	};
+
+	struct in6_pktinfo pkti = {
+		.ipi6_ifindex = index,
+		.ipi6_addr = src->in6.sin6_addr,
+	};
+
+	union {
+		char buf[CMSG_SPACE(sizeof(pkti))];
+		struct cmsghdr align;
+	} u;
+
+	memset(&u, 0, sizeof u);
+
+	struct msghdr msg = {
+		.msg_name = (struct sockaddr *) &dest->sa,
+		.msg_namelen = SALEN(dest->sa),
+		.msg_iov = &iov,
+		.msg_iovlen = 1,
+		.msg_control = u.buf,
+		.msg_controllen = CMSG_LEN(sizeof(pkti)),
+	};
+
+	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = IPPROTO_IPV6;
+	cmsg->cmsg_type = IPV6_PKTINFO;
+	cmsg->cmsg_len = CMSG_LEN(sizeof(pkti));
+	memcpy(CMSG_DATA(cmsg), &pkti, sizeof(pkti));
+
+	// Send the packet
+	ssize_t result = sendmsg(fd, &msg, MSG_DONTWAIT | MSG_NOSIGNAL);
+#else
+	// Send the packet
+	ssize_t result = sendto(fd, data, len, MSG_DONTWAIT | MSG_NOSIGNAL, &dest->sa, SALEN(dest->sa));
+#endif
+
+	if(result <= 0) {
+		logger(mesh, MESHLINK_ERROR, "Error sending multicast packet: %s", strerror(errno));
+	}
+}
+
 static void send_mdns_packet(meshlink_handle_t *mesh, const discovery_address_t *addr) {
 	char *host = NULL, *port = NULL;
 	sockaddr2str(&addr->address, &host, &port);
 	fprintf(stderr, "Sending on iface %d %s port %s\n", addr->index, host, port);
 	free(host);
 	free(port);
+
+	// Configure the socket to send the packet to the right interface
+	int fd;
+	uint8_t data[1024];
+	char *fingerprint = meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self);
+	const char *keys[] = {MESHLINK_MDNS_NAME_KEY, MESHLINK_MDNS_FINGERPRINT_KEY};
+	const char *values[] = {mesh->name, fingerprint};
+	size_t size = prepare_packet(data, sizeof data, fingerprint, mesh->appname, "tcp", atoi(mesh->myport), 2, keys, values);
+
+	switch(addr->address.sa.sa_family) {
+	case AF_INET:
+		fd = mesh->discovery_sockets[0].fd;
+#ifdef IP_MULTICAST_IF
+		{
+			struct ip_mreqn mreq = {
+				.imr_address = addr->address.in.sin_addr,
+				.imr_ifindex = addr->index,
+			};
+
+			if(setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF, &mreq, sizeof(mreq)) != 0) {
+				logger(mesh, MESHLINK_ERROR, "Could not set outgoing multicast interface on IPv4 socket");
+				return;
+			}
+		}
+
+#endif
+
+		send_mdns_packet_ipv4(mesh, fd, addr->index, &addr->address, &mdns_address_ipv4, data, size);
+		break;
+
+	case AF_INET6:
+		fd = mesh->discovery_sockets[1].fd;
+#ifdef IPV6_MULTICAST_IF
+
+		if(setsockopt(fd, IPPROTO_IPV6, IPV6_MULTICAST_IF, &addr->index, sizeof(addr->index)) != 0) {
+			logger(mesh, MESHLINK_ERROR, "Could not set outgoing multicast interface on IPv6 socket");
+			return;
+		}
+
+#endif
+
+		send_mdns_packet_ipv6(mesh, fd, addr->index, &addr->address, &mdns_address_ipv6, data, size);
+		break;
+
+	default:
+		break;
+	}
+}
+
+static void mdns_io_handler(event_loop_t *loop, void *data, int flags) {
+	(void)flags;
+	meshlink_handle_t *mesh = loop->data;
+	io_t *io = data;
+	uint8_t buf[1024];
+	sockaddr_t sa;
+	socklen_t sl = sizeof(sa);
+
+	ssize_t len = recvfrom(io->fd, buf, sizeof(buf), MSG_DONTWAIT, &sa.sa, &sl);
+
+	if(len == -1) {
+		if(!sockwouldblock(errno)) {
+			fprintf(stderr, "Error reading from discovery socket: %s\n", strerror(errno));
+			logger(mesh, MESHLINK_ERROR, "Error reading from mDNS discovery socket: %s", strerror(errno));
+			io_set(loop, io, 0);
+		}
+
+		return;
+	}
+
+	char *name = NULL;
+	uint16_t port = 0;
+	const char *keys[2] = {MESHLINK_MDNS_NAME_KEY, MESHLINK_MDNS_FINGERPRINT_KEY};
+	char *values[2] = {NULL, NULL};
+
+	if(parse_packet(buf, len, &name, mesh->appname, "tcp", &port, 2, keys, values)) {
+		node_t *n = (node_t *)meshlink_get_node(mesh, values[0]);
+
+		if(n) {
+			logger(mesh, MESHLINK_INFO, "Node %s is part of the mesh network.\n", n->name);
+
+			switch(sa.sa.sa_family) {
+			case AF_INET:
+				sa.in.sin_port = port;
+				break;
+
+			case AF_INET6:
+				sa.in6.sin6_port = port;
+				break;
+
+			default:
+				logger(mesh, MESHLINK_WARNING, "Could not resolve node %s to a known address family type.\n", n->name);
+				sa.sa.sa_family = AF_UNKNOWN;
+				break;
+			}
+
+			if(sa.sa.sa_family != AF_UNKNOWN) {
+				n->catta_address = sa;
+				node_add_recent_address(mesh, n, &sa);
+
+				connection_t *c = n->connection;
+
+				if(c && c->outgoing && !c->status.active) {
+					c->outgoing->timeout = 0;
+
+					if(c->outgoing->ev.cb) {
+						timeout_set(&mesh->loop, &c->outgoing->ev, &(struct timespec) {
+							0, 0
+						});
+					}
+
+					c->last_ping_time = -3600;
+				}
+			}
+		} else {
+			logger(mesh, MESHLINK_WARNING, "Node %s is not part of the mesh network.\n", values[0]);
+		}
+
+		fprintf(stderr, "Got packet from %s port %u\n%s=%s\n%s=%s\n", name, port, keys[0], values[0], keys[1], values[1]);
+	}
+
+	free(name);
+
+	for(int i = 0; i < 2; i++) {
+		free(values[i]);
+	}
 }
 
 static void iface_up(meshlink_handle_t *mesh, int index) {
@@ -537,9 +776,20 @@ static void iface_up(meshlink_handle_t *mesh, int index) {
 	mesh->discovery_ifaces[mesh->discovery_iface_count - 1] = index;
 	qsort(mesh->discovery_ifaces, mesh->discovery_iface_count, sizeof(*p), iface_compare);
 
-	for(int i = 0; i < mesh->discovery_iface_count; i++) {
-		fprintf(stderr, "%d", mesh->discovery_ifaces[i]);
-	}
+	// Add multicast membership
+	struct ip_mreqn mreq4 = {
+		.imr_multiaddr = mdns_address_ipv4.in.sin_addr,
+		.imr_ifindex = index,
+	};
+	setsockopt(mesh->discovery_sockets[0].fd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq4, sizeof(mreq4));
+	setsockopt(mesh->discovery_sockets[0].fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq4, sizeof(mreq4));
+
+	struct ipv6_mreq mreq6 = {
+		.ipv6mr_multiaddr = mdns_address_ipv6.in6.sin6_addr,
+		.ipv6mr_interface = index,
+	};
+	setsockopt(mesh->discovery_sockets[1].fd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6));
+	setsockopt(mesh->discovery_sockets[1].fd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6));
 
 	// Send an announcement for all addresses associated with this interface
 	for(int i = 0; i < mesh->discovery_address_count; i++) {
@@ -547,27 +797,44 @@ static void iface_up(meshlink_handle_t *mesh, int index) {
 			send_mdns_packet(mesh, &mesh->discovery_addresses[i]);
 		}
 	}
+
+	handle_network_change(mesh, true);
 }
 
 static void iface_down(meshlink_handle_t *const mesh, int index) {
-	int *p = bsearch(&index, mesh->discovery_ifaces, mesh->discovery_iface_count, sizeof(int), iface_compare);
+	int *p = bsearch(&index, mesh->discovery_ifaces, mesh->discovery_iface_count, sizeof(*p), iface_compare);
 
 	if(!p) {
 		return;
 	}
 
+	// Drop multicast membership
+	struct ip_mreqn mreq4 = {
+		.imr_multiaddr = mdns_address_ipv4.in.sin_addr,
+		.imr_ifindex = index,
+	};
+	setsockopt(mesh->discovery_sockets[0].fd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq4, sizeof(mreq4));
+
+	struct ipv6_mreq mreq6 = {
+		.ipv6mr_multiaddr = mdns_address_ipv6.in6.sin6_addr,
+		.ipv6mr_interface = index,
+	};
+	setsockopt(mesh->discovery_sockets[1].fd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6));
+
 	fprintf(stderr, "iface %d down\n", index);
-	memmove(p, p + 1, --mesh->discovery_iface_count * sizeof(*p));
+	memmove(p, p + 1, (mesh->discovery_ifaces + --mesh->discovery_iface_count - p) * sizeof(*p));
+
+	handle_network_change(mesh, mesh->discovery_iface_count);
 }
 
 static void addr_add(meshlink_handle_t *mesh, const discovery_address_t *addr) {
-	discovery_address_t *p = bsearch(addr, mesh->discovery_addresses, mesh->discovery_address_count, sizeof(int), address_compare);
+	discovery_address_t *p = bsearch(addr, mesh->discovery_addresses, mesh->discovery_address_count, sizeof(*p), address_compare);
 
 	if(p) {
 		return;
 	}
 
-	bool up = bsearch(&addr->index, mesh->discovery_ifaces, mesh->discovery_iface_count, sizeof(*p), iface_compare);
+	bool up = bsearch(&addr->index, mesh->discovery_ifaces, mesh->discovery_iface_count, sizeof(int), iface_compare);
 	char *host = NULL, *port = NULL;
 	sockaddr2str(&addr->address, &host, &port);
 	fprintf(stderr, "address %d %s port %s up %d\n", addr->index, host, port, up);
@@ -576,13 +843,13 @@ static void addr_add(meshlink_handle_t *mesh, const discovery_address_t *addr) {
 
 	mesh->discovery_addresses = xrealloc(mesh->discovery_addresses, ++mesh->discovery_address_count * sizeof(*p));
 	mesh->discovery_addresses[mesh->discovery_address_count - 1] = *addr;
-	qsort(mesh->discovery_addresses, mesh->discovery_address_count, sizeof(*p), address_compare);
-
 	mesh->discovery_addresses[mesh->discovery_address_count - 1].up = up;
 
 	if(up) {
 		send_mdns_packet(mesh, &mesh->discovery_addresses[mesh->discovery_address_count - 1]);
 	}
+
+	qsort(mesh->discovery_addresses, mesh->discovery_address_count, sizeof(*p), address_compare);
 }
 
 static void addr_del(meshlink_handle_t *mesh, const discovery_address_t *addr) {
@@ -598,7 +865,7 @@ static void addr_del(meshlink_handle_t *mesh, const discovery_address_t *addr) {
 	free(host);
 	free(port);
 
-	memmove(p, p + 1, --mesh->discovery_address_count * sizeof(*p));
+	memmove(p, p + 1, (mesh->discovery_addresses + --mesh->discovery_address_count - p) * sizeof(*p));
 }
 
 #if defined(__linux)
@@ -828,6 +1095,33 @@ bool discovery_start(meshlink_handle_t *mesh) {
 
 	mesh->discovery_threadstarted = true;
 
+	// Set up multicast sockets for mDNS
+	static const int one = 1;
+	static const int ttl = 255;
+
+	int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	sockaddr_t sa4 = {
+		.in.sin_family = AF_INET,
+		.in.sin_port = ntohs(5353),
+	};
+	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+	bind(fd, &sa4.sa, SALEN(sa4.sa));
+	setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &one, sizeof(one));
+	setsockopt(fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
+	io_add(&mesh->loop, &mesh->discovery_sockets[0], mdns_io_handler, &mesh->discovery_sockets[0], fd, IO_READ);
+
+	sockaddr_t sa6 = {
+		.in6.sin6_family = AF_INET6,
+		.in6.sin6_port = ntohs(5353),
+	};
+	fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+	setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(one));
+	bind(fd, &sa6.sa, SALEN(sa6.sa));
+	setsockopt(fd, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &one, sizeof(one));
+	setsockopt(fd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl, sizeof(ttl));
+	io_add(&mesh->loop, &mesh->discovery_sockets[1], mdns_io_handler, &mesh->discovery_sockets[1], fd, IO_READ);
+
 #if defined(__linux)
 	int sock = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
 
@@ -874,6 +1168,13 @@ void discovery_stop(meshlink_handle_t *mesh) {
 	if(mesh->pfroute_io.cb) {
 		close(mesh->pfroute_io.fd);
 		io_del(&mesh->loop, &mesh->pfroute_io);
+	}
+
+	for(int i = 0; i < 2; i++) {
+		if(mesh->discovery_sockets[i].cb) {
+			close(mesh->discovery_sockets[i].fd);
+			io_del(&mesh->loop, &mesh->discovery_sockets[i]);
+		}
 	}
 
 	// Shut down
