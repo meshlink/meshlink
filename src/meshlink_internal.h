@@ -156,7 +156,6 @@ struct meshlink_handle {
 	int netns;
 
 	bool default_blacklist;
-	bool discovery;         // Whether mDNS discovery is enabled or not
 	bool inviter_commits_first;
 
 	// Configuration
@@ -169,18 +168,18 @@ struct meshlink_handle {
 	// Thread management
 	pthread_t thread;
 	pthread_cond_t cond;
-	pthread_mutex_t discovery_mutex;
-	pthread_cond_t discovery_cond;
 	bool threadstarted;
-	bool discovery_threadstarted;
 
 	// mDNS discovery
-	io_t pfroute_io;
-	int *discovery_ifaces;
-	struct discovery_address *discovery_addresses;
-	int discovery_iface_count;
-	int discovery_address_count;
-	io_t discovery_sockets[2];
+	struct {
+		bool enabled;
+		io_t pfroute_io;
+		int *ifaces;
+		struct discovery_address *addresses;
+		int iface_count;
+		int address_count;
+		io_t sockets[2];
+	} discovery;
 
 	// ADNS
 	pthread_t adns_thread;

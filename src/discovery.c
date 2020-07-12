@@ -171,7 +171,7 @@ static void send_mdns_packet(meshlink_handle_t *mesh, const discovery_address_t 
 
 	switch(addr->address.sa.sa_family) {
 	case AF_INET:
-		fd = mesh->discovery_sockets[0].fd;
+		fd = mesh->discovery.sockets[0].fd;
 #ifdef IP_MULTICAST_IF
 		{
 			struct ip_mreqn mreq = {
@@ -191,7 +191,7 @@ static void send_mdns_packet(meshlink_handle_t *mesh, const discovery_address_t 
 		break;
 
 	case AF_INET6:
-		fd = mesh->discovery_sockets[1].fd;
+		fd = mesh->discovery.sockets[1].fd;
 #ifdef IPV6_MULTICAST_IF
 
 		if(setsockopt(fd, IPPROTO_IPV6, IPV6_MULTICAST_IF, &addr->index, sizeof(addr->index)) != 0) {
@@ -288,36 +288,36 @@ static void mdns_io_handler(event_loop_t *loop, void *data, int flags) {
 }
 
 static void iface_up(meshlink_handle_t *mesh, int index) {
-	int *p = bsearch(&index, mesh->discovery_ifaces, mesh->discovery_iface_count, sizeof(*p), iface_compare);
+	int *p = bsearch(&index, mesh->discovery.ifaces, mesh->discovery.iface_count, sizeof(*p), iface_compare);
 
 	if(p) {
 		return;
 	}
 
 	fprintf(stderr, "iface %d up\n", index);
-	mesh->discovery_ifaces = xrealloc(mesh->discovery_ifaces, ++mesh->discovery_iface_count * sizeof(*p));
-	mesh->discovery_ifaces[mesh->discovery_iface_count - 1] = index;
-	qsort(mesh->discovery_ifaces, mesh->discovery_iface_count, sizeof(*p), iface_compare);
+	mesh->discovery.ifaces = xrealloc(mesh->discovery.ifaces, ++mesh->discovery.iface_count * sizeof(*p));
+	mesh->discovery.ifaces[mesh->discovery.iface_count - 1] = index;
+	qsort(mesh->discovery.ifaces, mesh->discovery.iface_count, sizeof(*p), iface_compare);
 
 	// Add multicast membership
 	struct ip_mreqn mreq4 = {
 		.imr_multiaddr = mdns_address_ipv4.in.sin_addr,
 		.imr_ifindex = index,
 	};
-	setsockopt(mesh->discovery_sockets[0].fd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq4, sizeof(mreq4));
-	setsockopt(mesh->discovery_sockets[0].fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq4, sizeof(mreq4));
+	setsockopt(mesh->discovery.sockets[0].fd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq4, sizeof(mreq4));
+	setsockopt(mesh->discovery.sockets[0].fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq4, sizeof(mreq4));
 
 	struct ipv6_mreq mreq6 = {
 		.ipv6mr_multiaddr = mdns_address_ipv6.in6.sin6_addr,
 		.ipv6mr_interface = index,
 	};
-	setsockopt(mesh->discovery_sockets[1].fd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6));
-	setsockopt(mesh->discovery_sockets[1].fd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6));
+	setsockopt(mesh->discovery.sockets[1].fd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6));
+	setsockopt(mesh->discovery.sockets[1].fd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6));
 
 	// Send an announcement for all addresses associated with this interface
-	for(int i = 0; i < mesh->discovery_address_count; i++) {
-		if(mesh->discovery_addresses[i].index == index) {
-			send_mdns_packet(mesh, &mesh->discovery_addresses[i]);
+	for(int i = 0; i < mesh->discovery.address_count; i++) {
+		if(mesh->discovery.addresses[i].index == index) {
+			send_mdns_packet(mesh, &mesh->discovery.addresses[i]);
 		}
 	}
 
@@ -325,7 +325,7 @@ static void iface_up(meshlink_handle_t *mesh, int index) {
 }
 
 static void iface_down(meshlink_handle_t *const mesh, int index) {
-	int *p = bsearch(&index, mesh->discovery_ifaces, mesh->discovery_iface_count, sizeof(*p), iface_compare);
+	int *p = bsearch(&index, mesh->discovery.ifaces, mesh->discovery.iface_count, sizeof(*p), iface_compare);
 
 	if(!p) {
 		return;
@@ -336,47 +336,47 @@ static void iface_down(meshlink_handle_t *const mesh, int index) {
 		.imr_multiaddr = mdns_address_ipv4.in.sin_addr,
 		.imr_ifindex = index,
 	};
-	setsockopt(mesh->discovery_sockets[0].fd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq4, sizeof(mreq4));
+	setsockopt(mesh->discovery.sockets[0].fd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq4, sizeof(mreq4));
 
 	struct ipv6_mreq mreq6 = {
 		.ipv6mr_multiaddr = mdns_address_ipv6.in6.sin6_addr,
 		.ipv6mr_interface = index,
 	};
-	setsockopt(mesh->discovery_sockets[1].fd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6));
+	setsockopt(mesh->discovery.sockets[1].fd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6));
 
 	fprintf(stderr, "iface %d down\n", index);
-	memmove(p, p + 1, (mesh->discovery_ifaces + --mesh->discovery_iface_count - p) * sizeof(*p));
+	memmove(p, p + 1, (mesh->discovery.ifaces + --mesh->discovery.iface_count - p) * sizeof(*p));
 
-	handle_network_change(mesh, mesh->discovery_iface_count);
+	handle_network_change(mesh, mesh->discovery.iface_count);
 }
 
 static void addr_add(meshlink_handle_t *mesh, const discovery_address_t *addr) {
-	discovery_address_t *p = bsearch(addr, mesh->discovery_addresses, mesh->discovery_address_count, sizeof(*p), address_compare);
+	discovery_address_t *p = bsearch(addr, mesh->discovery.addresses, mesh->discovery.address_count, sizeof(*p), address_compare);
 
 	if(p) {
 		return;
 	}
 
-	bool up = bsearch(&addr->index, mesh->discovery_ifaces, mesh->discovery_iface_count, sizeof(int), iface_compare);
+	bool up = bsearch(&addr->index, mesh->discovery.ifaces, mesh->discovery.iface_count, sizeof(int), iface_compare);
 	char *host = NULL, *port = NULL;
 	sockaddr2str(&addr->address, &host, &port);
 	fprintf(stderr, "address %d %s port %s up %d\n", addr->index, host, port, up);
 	free(host);
 	free(port);
 
-	mesh->discovery_addresses = xrealloc(mesh->discovery_addresses, ++mesh->discovery_address_count * sizeof(*p));
-	mesh->discovery_addresses[mesh->discovery_address_count - 1] = *addr;
-	mesh->discovery_addresses[mesh->discovery_address_count - 1].up = up;
+	mesh->discovery.addresses = xrealloc(mesh->discovery.addresses, ++mesh->discovery.address_count * sizeof(*p));
+	mesh->discovery.addresses[mesh->discovery.address_count - 1] = *addr;
+	mesh->discovery.addresses[mesh->discovery.address_count - 1].up = up;
 
 	if(up) {
-		send_mdns_packet(mesh, &mesh->discovery_addresses[mesh->discovery_address_count - 1]);
+		send_mdns_packet(mesh, &mesh->discovery.addresses[mesh->discovery.address_count - 1]);
 	}
 
-	qsort(mesh->discovery_addresses, mesh->discovery_address_count, sizeof(*p), address_compare);
+	qsort(mesh->discovery.addresses, mesh->discovery.address_count, sizeof(*p), address_compare);
 }
 
 static void addr_del(meshlink_handle_t *mesh, const discovery_address_t *addr) {
-	discovery_address_t *p = bsearch(addr, mesh->discovery_addresses, mesh->discovery_address_count, sizeof(*p), address_compare);
+	discovery_address_t *p = bsearch(addr, mesh->discovery.addresses, mesh->discovery.address_count, sizeof(*p), address_compare);
 
 	if(!p) {
 		return;
@@ -388,7 +388,7 @@ static void addr_del(meshlink_handle_t *mesh, const discovery_address_t *addr) {
 	free(host);
 	free(port);
 
-	memmove(p, p + 1, (mesh->discovery_addresses + --mesh->discovery_address_count - p) * sizeof(*p));
+	memmove(p, p + 1, (mesh->discovery.addresses + --mesh->discovery.address_count - p) * sizeof(*p));
 }
 
 #if defined(__linux)
@@ -505,7 +505,7 @@ static void netlink_parse(meshlink_handle_t *mesh, const void *data, size_t len)
 static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 	(void)flags;
 	static time_t prev_update;
-	meshlink_handle_t *mesh = data;
+	meshlink_handle_t *mesh = loop->data;
 
 	struct {
 		struct nlmsghdr nlm;
@@ -513,7 +513,7 @@ static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 	} msg;
 
 	while(true) {
-		ssize_t result = recv(mesh->pfroute_io.fd, &msg, sizeof(msg), MSG_DONTWAIT);
+		ssize_t result = recv(mesh->discovery.pfroute_io.fd, &msg, sizeof(msg), MSG_DONTWAIT);
 
 		if(result <= 0) {
 			if(result == 0 || errno == EAGAIN || errno == EINTR) {
@@ -521,7 +521,7 @@ static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 			}
 
 			logger(mesh, MESHLINK_ERROR, "Reading from Netlink socket failed: %s\n", strerror(errno));
-			io_set(loop, &mesh->pfroute_io, 0);
+			io_set(loop, &mesh->discovery.pfroute_io, 0);
 		}
 
 		if((size_t)result < sizeof(msg.nlm)) {
@@ -532,7 +532,7 @@ static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 		if(msg.nlm.nlmsg_type == NLMSG_DONE) {
 			if(msg.nlm.nlmsg_seq == 1) {
 				// We just got the result of GETLINK, now send GETADDR.
-				netlink_getaddr(mesh->pfroute_io.fd);
+				netlink_getaddr(mesh->discovery.pfroute_io.fd);
 			}
 		} else {
 			netlink_parse(mesh, &msg, result);
@@ -548,7 +548,7 @@ static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 static void pfroute_io_handler(event_loop_t *loop, void *data, int flags) {
 	(void)flags;
 	static time_t prev_update;
-	meshlink_handle_t *mesh = data;
+	meshlink_handle_t *mesh = loop->data;
 
 	struct {
 		struct rt_msghdr rtm;
@@ -557,7 +557,7 @@ static void pfroute_io_handler(event_loop_t *loop, void *data, int flags) {
 
 	while(true) {
 		msg.rtm.rtm_version = 0;
-		ssize_t result = recv(mesh->pfroute_io.fd, &msg, sizeof(msg), MSG_DONTWAIT);
+		ssize_t result = recv(mesh->discovery.pfroute_io.fd, &msg, sizeof(msg), MSG_DONTWAIT);
 
 		if(result <= 0) {
 			if(result == 0 || errno == EAGAIN || errno == EINTR) {
@@ -565,7 +565,7 @@ static void pfroute_io_handler(event_loop_t *loop, void *data, int flags) {
 			}
 
 			logger(mesh, MESHLINK_ERROR, "Reading from PFROUTE socket failed: %s\n", strerror(errno));
-			io_set(loop, &mesh->pfroute_io, 0);
+			io_set(loop, &mesh->discovery.pfroute_io, 0);
 		}
 
 		if(msg.rtm.rtm_version != RTM_VERSION) {
@@ -609,7 +609,7 @@ bool discovery_start(meshlink_handle_t *mesh) {
 	bind(fd, &sa4.sa, SALEN(sa4.sa));
 	setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &one, sizeof(one));
 	setsockopt(fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
-	io_add(&mesh->loop, &mesh->discovery_sockets[0], mdns_io_handler, &mesh->discovery_sockets[0], fd, IO_READ);
+	io_add(&mesh->loop, &mesh->discovery.sockets[0], mdns_io_handler, &mesh->discovery.sockets[0], fd, IO_READ);
 
 	sockaddr_t sa6 = {
 		.in6.sin6_family = AF_INET6,
@@ -621,7 +621,7 @@ bool discovery_start(meshlink_handle_t *mesh) {
 	bind(fd, &sa6.sa, SALEN(sa6.sa));
 	setsockopt(fd, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &one, sizeof(one));
 	setsockopt(fd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl, sizeof(ttl));
-	io_add(&mesh->loop, &mesh->discovery_sockets[1], mdns_io_handler, &mesh->discovery_sockets[1], fd, IO_READ);
+	io_add(&mesh->loop, &mesh->discovery.sockets[1], mdns_io_handler, &mesh->discovery.sockets[1], fd, IO_READ);
 
 #if defined(__linux)
 	int sock = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
@@ -633,7 +633,7 @@ bool discovery_start(meshlink_handle_t *mesh) {
 		sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR | RTMGRP_IPV6_IFADDR;
 
 		if(bind(sock, (struct sockaddr *)&sa, sizeof(sa)) != -1) {
-			io_add(&mesh->loop, &mesh->pfroute_io, netlink_io_handler, mesh, sock, IO_READ);
+			io_add(&mesh->loop, &mesh->discovery.pfroute_io, netlink_io_handler, NULL, sock, IO_READ);
 			netlink_getlink(sock);
 		} else {
 			logger(mesh, MESHLINK_WARNING, "Could not bind AF_NETLINK socket: %s", strerror(errno));
@@ -646,7 +646,7 @@ bool discovery_start(meshlink_handle_t *mesh) {
 	int sock = socket(PF_ROUTE, SOCK_RAW, AF_UNSPEC);
 
 	if(sock != -1) {
-		io_add(&mesh->loop, &mesh->pfroute_io, pfroute_io_handler, mesh, sock, IO_READ);
+		io_add(&mesh->loop, &mesh->discovery.pfroute_io, pfroute_io_handler, NULL, sock, IO_READ);
 	} else {
 		logger(mesh, MESHLINK_WARNING, "Could not open PF_ROUTE socket: %s", strerror(errno));
 	}
@@ -661,28 +661,28 @@ void discovery_stop(meshlink_handle_t *mesh) {
 
 	assert(mesh);
 
-	free(mesh->discovery_ifaces);
-	free(mesh->discovery_addresses);
-	mesh->discovery_iface_count = 0;
-	mesh->discovery_address_count = 0;
+	free(mesh->discovery.ifaces);
+	free(mesh->discovery.addresses);
+	mesh->discovery.iface_count = 0;
+	mesh->discovery.address_count = 0;
 
-	if(mesh->pfroute_io.cb) {
-		close(mesh->pfroute_io.fd);
-		io_del(&mesh->loop, &mesh->pfroute_io);
+	if(mesh->discovery.pfroute_io.cb) {
+		close(mesh->discovery.pfroute_io.fd);
+		io_del(&mesh->loop, &mesh->discovery.pfroute_io);
 	}
 
 	for(int i = 0; i < 2; i++) {
-		if(mesh->discovery_sockets[i].cb) {
-			close(mesh->discovery_sockets[i].fd);
-			io_del(&mesh->loop, &mesh->discovery_sockets[i]);
+		if(mesh->discovery.sockets[i].cb) {
+			close(mesh->discovery.sockets[i].fd);
+			io_del(&mesh->loop, &mesh->discovery.sockets[i]);
 		}
 	}
 }
 
 void discovery_refresh(meshlink_handle_t *mesh) {
-	for(int i = 0; i < mesh->discovery_address_count; i++) {
-		if(mesh->discovery_addresses[i].up) {
-			send_mdns_packet(mesh, &mesh->discovery_addresses[i]);
+	for(int i = 0; i < mesh->discovery.address_count; i++) {
+		if(mesh->discovery.addresses[i].up) {
+			send_mdns_packet(mesh, &mesh->discovery.addresses[i]);
 		}
 	}
 }
