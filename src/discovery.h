@@ -24,5 +24,6 @@
 
 bool discovery_start(meshlink_handle_t *mesh);
 void discovery_stop(meshlink_handle_t *mesh);
+void discovery_refresh(meshlink_handle_t *mesh);
 
 #endif

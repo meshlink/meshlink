@@ -4562,6 +4562,11 @@ void meshlink_reset_timers(struct meshlink_handle *mesh) {
 	}
 
 	handle_network_change(mesh, true);
+
+	if(mesh->discovery) {
+		discovery_refresh(mesh);
+	}
+
 	pthread_mutex_unlock(&mesh->mutex);
 }
 
