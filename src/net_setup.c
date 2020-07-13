@@ -93,6 +93,11 @@ bool node_read_public_key(meshlink_handle_t *mesh, node_t *n) {
 	// While we are at it, read known address information
 	if(!n->canonical_address) {
 		n->canonical_address = packmsg_get_str_dup(&in);
+
+		if(!*n->canonical_address) {
+			free(n->canonical_address);
+			n->canonical_address = NULL;
+		}
 	} else {
 		packmsg_skip_element(&in);
 	}
@@ -191,6 +196,12 @@ bool node_read_from_config(meshlink_handle_t *mesh, node_t *n, const config_t *c
 	}
 
 	n->canonical_address = packmsg_get_str_dup(&in);
+
+	if(!*n->canonical_address) {
+		free(n->canonical_address);
+		n->canonical_address = NULL;
+	}
+
 	uint32_t count = packmsg_get_array(&in);
 
 	for(uint32_t i = 0; i < count; i++) {
