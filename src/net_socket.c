@@ -378,6 +378,7 @@ begin:
 			/* We are waiting for a callback from the ADNS thread */
 		} else if(outgoing->state == OUTGOING_NO_KNOWN_ADDRESSES) {
 			logger(mesh, MESHLINK_ERROR, "No known addresses for %s", outgoing->node->name);
+			list_delete(mesh->outgoings, outgoing);
 		} else {
 			logger(mesh, MESHLINK_ERROR, "Could not set up a meta connection to %s", outgoing->node->name);
 			retry_outgoing(mesh, outgoing);
