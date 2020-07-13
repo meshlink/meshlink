@@ -248,11 +248,11 @@ static void mdns_io_handler(event_loop_t *loop, void *data, int flags) {
 
 			switch(sa.sa.sa_family) {
 			case AF_INET:
-				sa.in.sin_port = port;
+				sa.in.sin_port = htons(port);
 				break;
 
 			case AF_INET6:
-				sa.in6.sin6_port = port;
+				sa.in6.sin6_port = htons(port);
 				break;
 
 			default:
@@ -263,20 +263,25 @@ static void mdns_io_handler(event_loop_t *loop, void *data, int flags) {
 
 			if(sa.sa.sa_family != AF_UNKNOWN) {
 				n->catta_address = sa;
+				n->last_connect_try = 0;
 				node_add_recent_address(mesh, n, &sa);
 
-				connection_t *c = n->connection;
+				if(n->connection) {
+					n->connection->last_ping_time = -3600;
+				}
 
-				if(c && c->outgoing && !c->status.active) {
-					c->outgoing->timeout = 0;
+				for list_each(outgoing_t, outgoing, mesh->outgoings) {
+					if(outgoing->node != n) {
+						continue;
+					}
 
-					if(c->outgoing->ev.cb) {
-						timeout_set(&mesh->loop, &c->outgoing->ev, &(struct timespec) {
+					outgoing->timeout = 0;
+
+					if(outgoing->ev.cb) {
+						timeout_set(&mesh->loop, &outgoing->ev, &(struct timespec) {
 							0, 0
 						});
 					}
-
-					c->last_ping_time = -3600;
 				}
 			}
 		}
