@@ -21,6 +21,7 @@ TESTS = \
 	import-export \
 	invite-join \
 	meta-connections \
+	pmtu \
 	sign-verify \
 	storage-policy \
 	trio \
@@ -65,6 +66,7 @@ check_PROGRAMS = \
 	import-export \
 	invite-join \
 	meta-connections \
+	pmtu \
 	sign-verify \
 	storage-policy \
 	stream \
@@ -146,6 +148,9 @@ invite_join_LDADD = $(top_builddir)/src/libmeshlink.la
 
 meta_connections_SOURCES = meta-connections.c netns_utils.c netns_utils.h utils.c utils.h
 meta_connections_LDADD = $(top_builddir)/src/libmeshlink.la
+
+pmtu_SOURCES = pmtu.c utils.c utils.h
+pmtu_LDADD = $(top_builddir)/src/libmeshlink.la
 
 sign_verify_SOURCES = sign-verify.c utils.c utils.h
 sign_verify_LDADD = $(top_builddir)/src/libmeshlink.la
