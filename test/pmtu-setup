@@ -1,0 +1,63 @@
+#!/bin/bash
+set -e
+
+# Require root permissions
+test "$(id -u)" = "0" || exit 77
+
+prefix="pmtu_"
+
+# (Re)create the network namespaces we are going to use
+for ns in n nn p pn r; do
+	ip netns delete ${prefix}${ns} 2>/dev/null || true
+	ip netns add ${prefix}${ns}
+	ip netns exec ${prefix}${ns} ip link set dev lo up
+done
+
+# (Re)create the WAN bridge
+ip link del ${prefix}br0 2>/dev/null || true
+ip link add ${prefix}br0 type bridge
+ip link set dev ${prefix}br0 up
+
+# Set up the public interfaces of the nats and relay, and connect them to the bridge
+for ns in nn pn r; do
+	ip link del ${prefix}${ns}_p0 2>/dev/null || true
+	ip link del ${prefix}${ns}_e0 2>/dev/null || true
+	ip link add ${prefix}${ns}_e0 type veth peer name ${prefix}${ns}_p0
+	ip link set ${prefix}${ns}_e0 netns ${prefix}${ns} name eth0
+	ip link set ${prefix}${ns}_p0 master ${prefix}br0 up
+done
+
+# Set up the LAN interfaces
+for ns in n p; do
+	ip link add ${prefix}${ns}_e0 type veth peer name ${prefix}${ns}n_e1
+	ip link set ${prefix}${ns}_e0 netns ${prefix}${ns} name eth0
+	ip link set ${prefix}${ns}n_e1 netns ${prefix}${ns}n name eth1
+	ip netns exec ${prefix}${ns} iptables -I INPUT -p tcp -s 203.0.113.2 -j DROP
+	ip netns exec ${prefix}${ns} iptables -I INPUT -p tcp -s 203.0.113.3 -j DROP
+done
+
+# Configure the IP addresses of all interfaces
+while read ns iface addr gw; do
+	ip netns exec ${prefix}${ns} ip addr add ${addr} dev ${iface}
+	ip netns exec ${prefix}${ns} ip link set dev ${iface} up
+	if [ -n "${gw}" ]; then
+		ip netns exec ${prefix}${ns} ip route add default via ${gw}
+	fi
+done << EOF
+n    eth0  192.168.1.2/24  192.168.1.1
+nn   eth0  203.0.113.2/24
+nn   eth1  192.168.1.1/24
+p    eth0  192.168.1.2/24  192.168.1.1
+pn   eth0  203.0.113.3/24
+pn   eth1  192.168.1.1/24
+r    eth0  203.0.113.1/24  203.0.113.254
+EOF
+
+# Enable NAT
+while read ns wan_addr; do
+	ip netns exec ${prefix}${ns} iptables -t nat -A PREROUTING  -i eth0 -j DNAT --to-destination 192.168.1.2
+	ip netns exec ${prefix}${ns} iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to-source      ${wan_addr}
+done << EOF
+nn   203.0.113.2
+pn  203.0.113.3
+EOF
