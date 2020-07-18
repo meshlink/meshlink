@@ -93,6 +93,13 @@ static void udp_probe_timeout_handler(event_loop_t *loop, void *data) {
 	n->mtuprobes = 0;
 	n->minmtu = 0;
 	n->maxmtu = MTU;
+
+	// If we also have a meta-connection to this node, send a PING on it as well
+	connection_t *c = n->connection;
+
+	if(c && !c->status.pinged) {
+		send_ping(mesh, c);
+	}
 }
 
 static void send_udp_probe_reply(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet, uint16_t len) {
