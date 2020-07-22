@@ -370,6 +370,10 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	logger(mesh, MESHLINK_INFO, "Connection with %s activated", c->name);
 
+	if(mesh->meta_status_cb) {
+		mesh->meta_status_cb(mesh, (meshlink_node_t *)n, true);
+	}
+
 	/* Send him everything we know */
 
 	send_everything(mesh, c);

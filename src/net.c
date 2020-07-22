@@ -54,11 +54,15 @@ static const int default_interval = 60;
 void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report) {
 	logger(mesh, MESHLINK_INFO, "Closing connection with %s", c->name);
 
-	c->status.active = false;
-
 	if(c->node && c->node->connection == c) {
+		if(c->status.active && mesh->meta_status_cb) {
+			mesh->meta_status_cb(mesh, (meshlink_node_t *)c->node, false);
+		}
+
 		c->node->connection = NULL;
 	}
+
+	c->status.active = false;
 
 	if(c->edge) {
 		if(report) {

@@ -195,4 +195,18 @@ void devtool_force_sptps_renewal(meshlink_handle_t *mesh, meshlink_node_t *node)
  */
 extern void (*devtool_set_inviter_commits_first)(bool inviter_commited_first);
 
+/// Set the meta-connection status callback.
+/** This functions sets the callback that is called whenever a meta-connection is made or closed.
+ *  The callback is run in MeshLink's own thread.
+ *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to hand the data over to the application's thread.
+ *  The callback should also not block itself and return as quickly as possible.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh      A handle which represents an instance of MeshLink.
+ *  @param cb        A pointer to the function which will be called when a node's meta-connection status changes.
+ *                   If a NULL pointer is given, the callback will be disabled.
+ */
+void devtool_set_meta_status_cb(struct meshlink_handle *mesh, meshlink_node_status_cb_t cb);
+
 #endif
