@@ -1713,6 +1713,11 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 		return false;
 	}
 
+	// Reset node connection timers
+	for splay_each(node_t, n, mesh->nodes) {
+		n->last_connect_try = 0;
+	}
+
 	// TODO: open listening sockets first
 
 	//Check that a valid name is set
