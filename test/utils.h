@@ -21,6 +21,7 @@ extern bool wait_sync_flag(struct sync_flag *s, int seconds);
 
 /// Create a pair of meshlink instances that are already joined together.
 extern void open_meshlink_pair(meshlink_handle_t **a, meshlink_handle_t **b, const char *prefix);
+extern void open_meshlink_pair_ephemeral(meshlink_handle_t **a, meshlink_handle_t **b, const char *prefix);
 
 /// Start a pair of meshlink instances and wait for them to connect together.
 extern void start_meshlink_pair(meshlink_handle_t *a, meshlink_handle_t *b);

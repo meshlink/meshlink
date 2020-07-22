@@ -108,6 +108,26 @@ void open_meshlink_pair(meshlink_handle_t **pa, meshlink_handle_t **pb, const ch
 	*pb = b;
 }
 
+void open_meshlink_pair_ephemeral(meshlink_handle_t **pa, meshlink_handle_t **pb, const char *prefix) {
+	// Create two new MeshLink instances
+
+	*pa = *pb = NULL;
+
+	meshlink_handle_t *a = meshlink_open_ephemeral("a", prefix, DEV_CLASS_BACKBONE);
+	meshlink_handle_t *b = meshlink_open_ephemeral("b", prefix, DEV_CLASS_BACKBONE);
+
+	assert(a);
+	assert(b);
+
+	meshlink_enable_discovery(a, false);
+	meshlink_enable_discovery(b, false);
+
+	link_meshlink_pair(a, b);
+
+	*pa = a;
+	*pb = b;
+}
+
 // Don't poll in the application thread, use a condition variable to signal when the peer is online.
 static void pair_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 	(void)node;

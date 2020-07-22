@@ -24,6 +24,9 @@ TESTS = \
 	utcp-benchmark \
 	utcp-benchmark-stream
 
+TESTS += \
+	api_set_node_status_cb
+
 if BLACKBOX_TESTS
 SUBDIRS = blackbox
 endif
@@ -34,6 +37,7 @@ AM_CPPFLAGS = $(PTHREAD_CFLAGS) -I${top_srcdir}/src -iquote. -Wall
 AM_LDFLAGS = $(PTHREAD_LIBS)
 
 check_PROGRAMS = \
+	api_set_node_status_cb \
 	basic \
 	basicpp \
 	blacklist \
@@ -62,6 +66,9 @@ check_PROGRAMS = \
 if INSTALL_TESTS
 bin_PROGRAMS = $(check_PROGRAMS)
 endif
+
+api_set_node_status_cb_SOURCES = api_set_node_status_cb.c utils.c utils.h
+api_set_node_status_cb_LDADD = $(top_builddir)/src/libmeshlink.la
 
 basic_SOURCES = basic.c utils.c utils.h
 basic_LDADD = $(top_builddir)/src/libmeshlink.la
