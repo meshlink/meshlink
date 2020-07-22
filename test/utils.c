@@ -25,6 +25,12 @@ void set_sync_flag(struct sync_flag *s, bool value) {
 	assert(pthread_mutex_unlock(&s->mutex) == 0);
 }
 
+void reset_sync_flag(struct sync_flag *s) {
+	assert(pthread_mutex_lock(&s->mutex) == 0);
+	s->flag = false;
+	assert(pthread_mutex_unlock(&s->mutex) == 0);
+}
+
 bool check_sync_flag(struct sync_flag *s) {
 	bool flag;
 	assert(pthread_mutex_lock(&s->mutex) == 0);
