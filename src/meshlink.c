@@ -829,7 +829,7 @@ static bool finalize_join(join_state_t *state, const void *buf, uint16_t len) {
 	}
 
 	/* Ensure the configuration directory metadata is on disk */
-	if(!config_sync(mesh, "current") || !sync_path(mesh->confbase)) {
+	if(!config_sync(mesh, "current") || (mesh->confbase && !sync_path(mesh->confbase))) {
 		return false;
 	}
 
