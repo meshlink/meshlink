@@ -389,6 +389,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	c->edge->weight = mesh->dev_class_traits[devclass].edge_weight;
 	c->edge->connection = c;
 
+	node_add_recent_address(mesh, n, &c->address);
 	edge_add(mesh, c->edge);
 
 	/* Notify everyone of the new edge */
