@@ -344,6 +344,52 @@ static bool is_localaddr(sockaddr_t *sa) {
 	}
 }
 
+#ifdef HAVE_GETIFADDRS
+struct getifaddrs_in_netns_params {
+	struct ifaddrs **ifa;
+	int netns;
+};
+
+#ifdef HAVE_SETNS
+static void *getifaddrs_in_netns_thread(void *arg) {
+	struct getifaddrs_in_netns_params *params = arg;
+
+	if(setns(params->netns, CLONE_NEWNET) == -1) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	if(getifaddrs(params->ifa) != 0) {
+		*params->ifa = NULL;
+	}
+
+	return NULL;
+}
+#endif // HAVE_SETNS
+
+static int getifaddrs_in_netns(struct ifaddrs **ifa, int netns) {
+	if(netns == -1) {
+		return getifaddrs(ifa);
+	}
+
+#ifdef HAVE_SETNS
+	struct getifaddrs_in_netns_params params = {ifa, netns};
+	pthread_t thr;
+
+	if(pthread_create(&thr, NULL, getifaddrs_in_netns_thread, &params) == 0) {
+		if(pthread_join(thr, NULL) != 0) {
+			abort();
+		}
+	}
+
+	return *params.ifa ? 0 : -1;
+#else
+	return -1;
+#endif // HAVE_SETNS
+
+}
+#endif
+
 char *meshlink_get_local_address_for_family(meshlink_handle_t *mesh, int family) {
 	(void)mesh;
 
@@ -361,7 +407,7 @@ char *meshlink_get_local_address_for_family(meshlink_handle_t *mesh, int family)
 
 	if(!success) {
 		struct ifaddrs *ifa = NULL;
-		getifaddrs(&ifa);
+		getifaddrs_in_netns(&ifa, mesh->netns);
 
 		for(struct ifaddrs *ifap = ifa; ifap; ifap = ifap->ifa_next) {
 			sockaddr_t *sa = (sockaddr_t *)ifap->ifa_addr;
