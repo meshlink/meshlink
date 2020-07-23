@@ -13,12 +13,21 @@
 #include "utils.h"
 
 static struct sync_flag bar_reachable;
+static struct sync_flag pmtu_flag;
 
 static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 	(void)mesh;
 
 	if(reachable && !strcmp(node->name, "bar")) {
 		set_sync_flag(&bar_reachable, true);
+	}
+}
+
+static void pmtu_cb(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t pmtu) {
+	(void)mesh;
+
+	if(pmtu && !strcmp(node->name, "bar")) {
+		set_sync_flag(&pmtu_flag, true);
 	}
 }
 
@@ -79,24 +88,18 @@ int main(void) {
 	// Start both instances
 
 	meshlink_set_node_status_cb(mesh1, status_cb);
+	meshlink_set_node_pmtu_cb(mesh1, pmtu_cb);
 
 	assert(meshlink_start(mesh1));
 	assert(meshlink_start(mesh2));
 
 	// Wait for the two to connect.
 
-	assert(wait_sync_flag(&bar_reachable, 20));
+	assert(wait_sync_flag(&bar_reachable, 10));
 
 	// Wait for UDP communication to become possible.
 
-	int pmtu = meshlink_get_pmtu(mesh2, meshlink_get_node(mesh2, "bar"));
-
-	for(int i = 0; i < 10 && !pmtu; i++) {
-		sleep(1);
-		pmtu = meshlink_get_pmtu(mesh2, meshlink_get_node(mesh2, "bar"));
-	}
-
-	assert(pmtu);
+	assert(wait_sync_flag(&pmtu_flag, 10));
 
 	// Check that we now have reachability information
 
