@@ -8,11 +8,15 @@
 #include <string.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <errno.h>
 
 #include "meshlink.h"
+#include "devtools.h"
 #include "utils.h"
 
 static struct sync_flag baz_reachable;
+static struct sync_flag seven_reachable;
+static struct sync_flag commits_first_flag;
 
 static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 	(void)mesh;
@@ -20,10 +24,30 @@ static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reach
 	if(reachable && !strcmp(node->name, "baz")) {
 		set_sync_flag(&baz_reachable, true);
 	}
+
+	if(reachable && !strcmp(node->name, "seven")) {
+		set_sync_flag(&seven_reachable, true);
+	}
+}
+
+static void invitee_commits_first_cb(bool inviter_first) {
+	// Check that eight has committed foo's host config file, but foo hasn't committed eight's
+	assert(access("invite_join_conf.8/current/hosts/foo", F_OK) == 0);
+	assert(access("invite_join_conf.1/current/hosts/eight", F_OK) == -1 && errno == ENOENT);
+	set_sync_flag(&commits_first_flag, !inviter_first);
+}
+
+static void inviter_commits_first_cb(bool inviter_first) {
+	// Check that foo has committed nine's host config file, but nine hasn't committed foo's
+	assert(access("invite_join_conf.1/current/hosts/nine", F_OK) == 0);
+	assert(access("invite_join_conf.9/current/hosts/foo", F_OK) == -1 && errno == ENOENT);
+	set_sync_flag(&commits_first_flag, inviter_first);
 }
 
 int main(void) {
 	init_sync_flag(&baz_reachable);
+	init_sync_flag(&seven_reachable);
+	init_sync_flag(&commits_first_flag);
 
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
@@ -33,6 +57,9 @@ int main(void) {
 	assert(meshlink_destroy("invite_join_conf.4"));
 	assert(meshlink_destroy("invite_join_conf.5"));
 	assert(meshlink_destroy("invite_join_conf.6"));
+	assert(meshlink_destroy("invite_join_conf.7"));
+	assert(meshlink_destroy("invite_join_conf.8"));
+	assert(meshlink_destroy("invite_join_conf.9"));
 
 	// Open thee new meshlink instance.
 
@@ -63,10 +90,17 @@ int main(void) {
 	char *quux_url = meshlink_invite(mesh1, NULL, "quux");
 	assert(quux_url);
 
-	// Have the second instance join the first.
+	// Check that the second instances cannot join if it is already started
 
 	assert(meshlink_start(mesh1));
+	assert(meshlink_start(mesh2));
+	meshlink_errno = MESHLINK_OK;
+	assert(!meshlink_join(mesh2, baz_url));
+	assert(meshlink_errno = MESHLINK_EINVAL);
 
+	// Have the second instance join the first.
+
+	meshlink_stop(mesh2);
 	assert(meshlink_join(mesh2, baz_url));
 	assert(meshlink_start(mesh2));
 
@@ -282,8 +316,108 @@ int main(void) {
 	assert(!strcmp(mesh2_five_submesh->name, "submesh1"));
 	assert(!strcmp(mesh2_six_submesh->name, "submesh2"));
 
+	// Test case #2: check invalid parameters
+
+	meshlink_handle_t *mesh7 = meshlink_open("invite_join_conf.7", "seven", "invite-join", DEV_CLASS_BACKBONE);
+	assert(mesh7);
+	meshlink_enable_discovery(mesh7, false);
+	char *seven_url = meshlink_invite(mesh1, NULL, "seven");
+	assert(seven_url);
+
+	meshlink_errno = MESHLINK_OK;
+	assert(!meshlink_invite(NULL, NULL, "seven"));
+	assert(meshlink_errno == MESHLINK_EINVAL);
+
+	meshlink_errno = MESHLINK_OK;
+	assert(!meshlink_invite(mesh1, NULL, NULL));
+	assert(meshlink_errno == MESHLINK_EINVAL);
+
+	meshlink_errno = MESHLINK_OK;
+	assert(!meshlink_invite(mesh1, NULL, ""));
+	assert(meshlink_errno == MESHLINK_EINVAL);
+
+	meshlink_errno = MESHLINK_OK;
+	assert(!meshlink_join(NULL, seven_url));
+	assert(meshlink_errno == MESHLINK_EINVAL);
+
+	meshlink_errno = MESHLINK_OK;
+	assert(!meshlink_join(mesh7, NULL));
+	assert(meshlink_errno == MESHLINK_EINVAL);
+
+	meshlink_errno = MESHLINK_OK;
+	assert(!meshlink_join(mesh7, ""));
+	assert(meshlink_errno == MESHLINK_EINVAL);
+
+	// Test case #3 and #4: check persistence of inviter and invitee
+
+	assert(meshlink_join(mesh7, seven_url));
+	free(seven_url);
+	meshlink_close(mesh1);
+	meshlink_stop(mesh2);
+	meshlink_stop(mesh3);
+	meshlink_stop(mesh4);
+	meshlink_stop(mesh5);
+	meshlink_stop(mesh6);
+	meshlink_close(mesh7);
+	mesh1 = meshlink_open("invite_join_conf.1", "foo", "invite-join", DEV_CLASS_BACKBONE);
+	mesh7 = meshlink_open("invite_join_conf.7", "seven", "invite-join", DEV_CLASS_BACKBONE);
+	assert(mesh1);
+	assert(mesh7);
+	meshlink_enable_discovery(mesh1, false);
+	meshlink_enable_discovery(mesh7, false);
+	meshlink_set_node_status_cb(mesh1, status_cb);
+	assert(meshlink_start(mesh1));
+	assert(meshlink_start(mesh7));
+	assert(wait_sync_flag(&seven_reachable, 5));
+	meshlink_stop(mesh7);
+
+	// Test case #6 and #7: check invalid inviter_commits_first combinations
+
+	meshlink_handle_t *mesh8 = meshlink_open("invite_join_conf.8", "eight", "invite-join", DEV_CLASS_BACKBONE);
+	assert(mesh8);
+	meshlink_enable_discovery(mesh8, false);
+	char *eight_url = meshlink_invite(mesh1, NULL, "eight");
+	assert(eight_url);
+	meshlink_set_inviter_commits_first(mesh1, true);
+	meshlink_set_inviter_commits_first(mesh8, false);
+	assert(!meshlink_join(mesh8, eight_url));
+	free(eight_url);
+
+	eight_url = meshlink_invite(mesh1, NULL, "eight");
+	meshlink_set_inviter_commits_first(mesh1, false);
+	meshlink_set_inviter_commits_first(mesh8, true);
+	assert(!meshlink_join(mesh8, eight_url));
+	free(eight_url);
+
+	// Test case #5: test invitee committing first scenario
+
+	eight_url = meshlink_invite(mesh1, NULL, "eight");
+	meshlink_set_inviter_commits_first(mesh1, false);
+	meshlink_set_inviter_commits_first(mesh8, false);
+	devtool_set_inviter_commits_first = invitee_commits_first_cb;
+	assert(meshlink_join(mesh8, eight_url));
+	free(eight_url);
+	assert(wait_sync_flag(&commits_first_flag, 5));
+
+	// Test case #6: test inviter committing first scenario
+
+	meshlink_handle_t *mesh9 = meshlink_open("invite_join_conf.9", "nine", "invite-join", DEV_CLASS_BACKBONE);
+	assert(mesh9);
+	meshlink_enable_discovery(mesh9, false);
+	char *nine_url = meshlink_invite(mesh1, NULL, "nine");
+	meshlink_set_inviter_commits_first(mesh1, true);
+	meshlink_set_inviter_commits_first(mesh9, true);
+	devtool_set_inviter_commits_first = inviter_commits_first_cb;
+	reset_sync_flag(&commits_first_flag);
+	assert(meshlink_join(mesh9, nine_url));
+	free(nine_url);
+	assert(wait_sync_flag(&commits_first_flag, 5));
+
 	// Clean up.
 
+	meshlink_close(mesh9);
+	meshlink_close(mesh8);
+	meshlink_close(mesh7);
 	meshlink_close(mesh6);
 	meshlink_close(mesh5);
 	meshlink_close(mesh4);
