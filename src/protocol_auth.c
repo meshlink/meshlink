@@ -360,6 +360,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	n->last_successfull_connection = mesh->loop.now.tv_sec;
 
 	n->connection = c;
+	n->nexthop = n;
 	c->node = n;
 
 	/* Activate this connection */
@@ -399,6 +400,12 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	/* Run MST and SSSP algorithms */
 
 	graph(mesh);
+
+	/* Request a session key to jump start UDP traffic */
+
+	if(c->status.initiator) {
+		send_req_key(mesh, n);
+	}
 
 	return true;
 }

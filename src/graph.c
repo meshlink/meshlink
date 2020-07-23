@@ -212,10 +212,6 @@ static void check_reachability(meshlink_handle_t *mesh) {
 			if(!n->status.reachable) {
 				update_node_udp(mesh, n, NULL);
 				n->status.broadcast = false;
-			} else if(n->connection) {
-				if(n->connection->status.initiator) {
-					send_req_key(mesh, n);
-				}
 			}
 
 			if(n->utcp) {
