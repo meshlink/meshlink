@@ -14,47 +14,26 @@
 #include "utils.h"
 
 static struct sync_flag accept_flag;
-static struct sync_flag close_flag;
 
 struct client {
 	meshlink_handle_t *mesh;
 	meshlink_channel_t *channel;
 	size_t received;
 	bool got_large_packet;
+	struct sync_flag close_flag;
 };
 
-static void server_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	(void)data;
-
-	// We expect no data from clients, apart from disconnections.
-	assert(len == 0);
-
-	meshlink_channel_t **c = mesh->priv;
-	int count = 0;
-
-	for(int i = 0; i < 3; i++) {
-		if(c[i] == channel) {
-			c[i] = NULL;
-			meshlink_channel_close(mesh, channel);
-		}
-
-		if(c[i]) {
-			count++;
-		}
-	}
-
-	if(!count) {
-		set_sync_flag(&close_flag, true);
-	}
-}
-
 static void client_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
-	(void)channel;
-	(void)data;
-
-	// We expect always the same amount of data from the server.
 	assert(mesh->priv);
 	struct client *client = mesh->priv;
+
+	if(!data && !len) {
+		set_sync_flag(&client->close_flag, true);
+		meshlink_channel_close(mesh, channel);
+		return;
+	}
+
+	// We expect always the same amount of data from the server.
 	assert(len == 512 || len == 65536);
 	client->received += len;
 
@@ -80,7 +59,6 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 
 	assert(port == 1);
 	assert(meshlink_channel_get_flags(mesh, channel) == MESHLINK_CHANNEL_UDP);
-	meshlink_set_channel_receive_cb(mesh, channel, server_receive_cb);
 
 	assert(mesh->priv);
 	meshlink_channel_t **c = mesh->priv;
@@ -102,7 +80,6 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 
 int main(void) {
 	init_sync_flag(&accept_flag);
-	init_sync_flag(&close_flag);
 
 	meshlink_set_log_cb(NULL, MESHLINK_WARNING, log_cb);
 
@@ -125,6 +102,7 @@ int main(void) {
 		char dir[100];
 		snprintf(dir, sizeof(dir), "channels_udp_conf.%d", i + 1);
 		assert(meshlink_destroy(dir));
+		init_sync_flag(&clients[i].close_flag);
 		clients[i].mesh = meshlink_open(dir, names[i], "channels-udp", DEV_CLASS_STATIONARY);
 		assert(clients[i].mesh);
 		clients[i].mesh->priv = &clients[i];
@@ -170,14 +148,17 @@ int main(void) {
 		nanosleep(&req, NULL);
 	}
 
-	// Let the clients close the channels
+	// Shutdown the write side of the server's channels
 
 	for(int i = 0; i < 3; i++) {
-		meshlink_channel_close(clients[i].mesh, clients[i].channel);
-		meshlink_set_node_status_cb(clients[i].mesh, NULL);
+		meshlink_channel_shutdown(server, channels[i], SHUT_WR);
 	}
 
-	assert(wait_sync_flag(&close_flag, 10));
+	// Wait for the clients to finish reading all the data
+
+	for(int i = 0; i < 3; i++) {
+		assert(wait_sync_flag(&clients[i].close_flag, 10));
+	}
 
 	// Check that the clients have received (most of) the data
 

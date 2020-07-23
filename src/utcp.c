@@ -2043,7 +2043,6 @@ void utcp_abort_all_connections(struct utcp *utcp) {
 
 int utcp_close(struct utcp_connection *c) {
 	if(c->rcvbuf.used) {
-		fprintf(stderr, "UTCP channel closed with stuff in receive buffer\n");
 		return reset_connection(c) ? 0 : -1;
 	}
 
