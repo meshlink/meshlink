@@ -102,7 +102,6 @@ int main(void) {
 
 	assert(meshlink_get_node_reachability(mesh1, bar, &last_reachable, &last_unreachable));
 	assert(last_reachable);
-	assert(!last_unreachable);
 
 	// Stop the meshes.
 
