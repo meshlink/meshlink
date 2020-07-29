@@ -16,6 +16,7 @@
 void init_sync_flag(struct sync_flag *s) {
 	assert(pthread_mutex_init(&s->mutex, NULL) == 0);
 	assert(pthread_cond_init(&s->cond, NULL) == 0);
+	s->flag = false;
 }
 
 void set_sync_flag(struct sync_flag *s, bool value) {

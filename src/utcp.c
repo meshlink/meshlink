@@ -650,6 +650,7 @@ void utcp_accept(struct utcp_connection *c, utcp_recv_t recv, void *priv) {
 	debug(c, "accepted %p %p\n", c, recv, priv);
 	c->recv = recv;
 	c->priv = priv;
+	c->do_poll = true;
 	set_state(c, ESTABLISHED);
 }
 
@@ -1718,6 +1719,7 @@ skip_ack:
 				c->snd.last++;
 				set_state(c, FIN_WAIT_1);
 			} else {
+				c->do_poll = true;
 				set_state(c, ESTABLISHED);
 			}
 
