@@ -40,16 +40,6 @@ static void b_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, c
 	meshlink_channel_close(mesh, channel);
 }
 
-static bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	(void)mesh;
-	(void)channel;
-	(void)port;
-	(void)data;
-	(void)len;
-
-	return false;
-}
-
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	(void)port;
 
@@ -89,7 +79,6 @@ int main(void) {
 
 	// Set the callbacks.
 
-	meshlink_set_channel_accept_cb(a, reject_cb);
 	meshlink_set_channel_accept_cb(b, accept_cb);
 
 	// Open a channel from a to b before starting the mesh.
@@ -122,7 +111,6 @@ int main(void) {
 	reset_sync_flag(&b_closed);
 	open_meshlink_pair(&a, &b, "channels-udp-cornercases");
 
-	meshlink_set_channel_accept_cb(a, reject_cb);
 	meshlink_set_channel_accept_cb(b, accept_cb);
 
 	start_meshlink_pair(a, b);

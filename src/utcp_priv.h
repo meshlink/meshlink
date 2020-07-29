@@ -177,7 +177,7 @@ struct utcp {
 	// Callbacks
 
 	utcp_accept_t accept;
-	utcp_pre_accept_t pre_accept;
+	utcp_listen_t listen;
 	utcp_retransmit_t retransmit;
 	utcp_send_t send;
 

@@ -51,16 +51,6 @@ static void bar_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel,
 	}
 }
 
-static bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	(void)mesh;
-	(void)channel;
-	(void)port;
-	(void)data;
-	(void)len;
-
-	return false;
-}
-
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	if(port != 7) {
 		return false;
@@ -112,8 +102,6 @@ static int main1(int rfd, int wfd) {
 	indata[len] = 0;
 
 	assert(meshlink_import(mesh, indata));
-
-	meshlink_set_channel_accept_cb(mesh, reject_cb);
 
 	assert(meshlink_start(mesh));
 

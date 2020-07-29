@@ -79,6 +79,15 @@ typedef void (*duplicate_cb_t)(mesh *mesh, node *node);
  */
 typedef void (*log_cb_t)(mesh *mesh, log_level_t level, const char *text);
 
+/// A callback for listening for incoming channels.
+/** @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A handle for the node that wants to open a channel.
+ *  @param port         The port number the peer wishes to connect to.
+ *
+ *  @return             This function should return true if the application listens for the incoming channel, false otherwise.
+ */
+typedef bool (*meshlink_channel_listen_cb_t)(struct meshlink_handle *mesh, struct meshlink_node *node, uint16_t port);
+
 /// A callback for accepting incoming channels.
 /** @param mesh         A handle which represents an instance of MeshLink.
  *  @param channel      A handle for the incoming channel.
@@ -271,6 +280,25 @@ public:
 		(void)peer;
 	}
 
+	/// This functions is called to determine if we are listening for incoming channels.
+	/**
+	 *  The function is run in MeshLink's own thread.
+	 *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+	 *  to pass data to or from the application's thread.
+	 *  The callback should also not block itself and return as quickly as possible.
+	 *
+	 *  @param node         A handle for the node that wants to open a channel.
+	 *  @param port         The port number the peer wishes to connect to.
+	 *
+	 *  @return             This function should return true if the application accepts the incoming channel, false otherwise.
+	 */
+	virtual bool channel_listen(node *node, uint16_t port) {
+		/* by default accept all channels */
+		(void)node;
+		(void)port;
+		return true;
+	}
+
 	/// This functions is called whenever another node attempts to open a channel to the local node.
 	/**
 	 *  If the channel is accepted, the poll_callback will be set to channel_poll and can be
@@ -346,6 +374,7 @@ public:
 		meshlink_set_node_duplicate_cb(handle, &node_duplicate_trampoline);
 		meshlink_set_log_cb(handle, MESHLINK_DEBUG, &log_trampoline);
 		meshlink_set_error_cb(handle, &error_trampoline);
+		meshlink_set_channel_listen_cb(handle, &channel_listen_trampoline);
 		meshlink_set_channel_accept_cb(handle, &channel_accept_trampoline);
 		meshlink_set_connection_try_cb(handle, &connection_try_trampoline);
 		return meshlink_start(handle);
@@ -1148,6 +1177,15 @@ private:
 
 		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
 		that->connection_try(static_cast<node *>(peer));
+	}
+
+	static bool channel_listen_trampoline(meshlink_handle_t *handle, meshlink_node_t *node, uint16_t port) {
+		if(!(handle->priv)) {
+			return false;
+		}
+
+		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
+		return that->channel_listen(static_cast<meshlink::node *>(node), port);
 	}
 
 	static bool channel_accept_trampoline(meshlink_handle_t *handle, meshlink_channel *channel, uint16_t port, const void *data, size_t len) {

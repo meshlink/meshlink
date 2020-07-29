@@ -41,16 +41,6 @@ static void aio_fd_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, int 
 	set_sync_flag(&info->flag, true);
 }
 
-static bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	(void)mesh;
-	(void)channel;
-	(void)port;
-	(void)data;
-	(void)len;
-
-	return false;
-}
-
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	assert(port && port <= nchannels);
 	assert(!data);
@@ -115,7 +105,6 @@ int main(void) {
 
 	// Set the callbacks.
 
-	meshlink_set_channel_accept_cb(mesh_a, reject_cb);
 	meshlink_set_channel_accept_cb(mesh_b, accept_cb);
 
 	// Start both instances

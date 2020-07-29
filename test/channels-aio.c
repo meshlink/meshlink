@@ -45,16 +45,6 @@ static void aio_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const v
 	set_sync_flag(&info->flag, true);
 }
 
-static bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	(void)mesh;
-	(void)channel;
-	(void)port;
-	(void)data;
-	(void)len;
-
-	return false;
-}
-
 static void receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	(void)mesh;
 	(void)channel;
@@ -128,7 +118,6 @@ int main(void) {
 
 	mesh_b->priv = in_infos;
 
-	meshlink_set_channel_accept_cb(mesh_a, reject_cb);
 	meshlink_set_channel_accept_cb(mesh_b, accept_cb);
 
 	// Start both instances

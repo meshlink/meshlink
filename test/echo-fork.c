@@ -50,16 +50,6 @@ static void b_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, c
 	assert(write(1, data, len) == (ssize_t)len);
 }
 
-static bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	(void)mesh;
-	(void)channel;
-	(void)port;
-	(void)data;
-	(void)len;
-
-	return false;
-}
-
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	if(port != 7) {
 		return false;
@@ -88,8 +78,6 @@ static int main1(void) {
 
 	meshlink_handle_t *mesh = meshlink_open("echo-fork_conf.1", "a", "echo-fork", DEV_CLASS_BACKBONE);
 	assert(mesh);
-
-	meshlink_set_channel_accept_cb(mesh, reject_cb);
 
 	assert(meshlink_start(mesh));
 

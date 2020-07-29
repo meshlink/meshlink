@@ -54,7 +54,7 @@ struct utcp_connection;
 #define UTCP_TCP 3
 #define UTCP_UDP 0
 
-typedef bool (*utcp_pre_accept_t)(struct utcp *utcp, uint16_t port);
+typedef bool (*utcp_listen_t)(struct utcp *utcp, uint16_t port);
 typedef void (*utcp_accept_t)(struct utcp_connection *utcp_connection, uint16_t port);
 typedef void (*utcp_retransmit_t)(struct utcp_connection *connection);
 
@@ -63,7 +63,7 @@ typedef ssize_t (*utcp_recv_t)(struct utcp_connection *connection, const void *d
 
 typedef void (*utcp_poll_t)(struct utcp_connection *connection, size_t len);
 
-struct utcp *utcp_init(utcp_accept_t accept, utcp_pre_accept_t pre_accept, utcp_send_t send, void *priv);
+struct utcp *utcp_init(utcp_accept_t accept, utcp_listen_t listen, utcp_send_t send, void *priv);
 void utcp_exit(struct utcp *utcp);
 
 struct utcp_connection *utcp_connect_ex(struct utcp *utcp, uint16_t port, utcp_recv_t recv, void *priv, uint32_t flags);
@@ -77,7 +77,7 @@ int utcp_shutdown(struct utcp_connection *connection, int how);
 struct timespec utcp_timeout(struct utcp *utcp);
 void utcp_set_recv_cb(struct utcp_connection *connection, utcp_recv_t recv);
 void utcp_set_poll_cb(struct utcp_connection *connection, utcp_poll_t poll);
-void utcp_set_accept_cb(struct utcp *utcp, utcp_accept_t accept, utcp_pre_accept_t pre_accept);
+void utcp_set_accept_cb(struct utcp *utcp, utcp_accept_t accept, utcp_listen_t listen);
 bool utcp_is_active(struct utcp *utcp);
 void utcp_abort_all_connections(struct utcp *utcp);
 

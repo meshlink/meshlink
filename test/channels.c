@@ -35,16 +35,6 @@ static void b_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, c
 	assert(meshlink_channel_send(mesh, channel, data, len) == (ssize_t)len);
 }
 
-static bool reject_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
-	(void)mesh;
-	(void)channel;
-	(void)port;
-	(void)data;
-	(void)len;
-
-	return false;
-}
-
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	printf("accept_cb: (from %s on port %u) ", channel->node->name, (unsigned int)port);
 
@@ -87,7 +77,6 @@ int main(void) {
 
 	// Set the callbacks.
 
-	meshlink_set_channel_accept_cb(mesh_a, reject_cb);
 	meshlink_set_channel_accept_cb(mesh_b, accept_cb);
 
 	// Start both instances

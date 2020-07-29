@@ -12,6 +12,13 @@
 #include "../src/meshlink.h"
 #include "utils.h"
 
+static bool listen_cb(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port) {
+	(void)mesh;
+	(void)node;
+
+	return port == 7;
+}
+
 static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint16_t port, const void *data, size_t len) {
 	(void)mesh;
 	(void)channel;
@@ -56,6 +63,7 @@ int main(void) {
 
 	// Set the callbacks.
 
+	meshlink_set_channel_listen_cb(mesh_b, listen_cb);
 	meshlink_set_channel_accept_cb(mesh_b, accept_cb);
 
 	// Open a channel from a to b
@@ -94,8 +102,8 @@ int main(void) {
 
 	// Try setting up a new channel while b is still down.
 
-	set_sync_flag(&poll_flag, false);
-	set_sync_flag(&receive_flag, false);
+	reset_sync_flag(&poll_flag);
+	reset_sync_flag(&receive_flag);
 
 	channel = meshlink_channel_open(mesh_a, b, 7, NULL, NULL, 0);
 	assert(channel);
@@ -107,14 +115,25 @@ int main(void) {
 
 	meshlink_channel_close(mesh_a, channel);
 
-	// Restart b and create a new channel
+	// Restart b and create a new channel to the wrong port
 
-	set_sync_flag(&poll_flag, false);
-	set_sync_flag(&receive_flag, false);
+	reset_sync_flag(&poll_flag);
+	reset_sync_flag(&receive_flag);
 
 	meshlink_set_node_channel_timeout(mesh_a, b, 60);
 
 	assert(meshlink_start(mesh_b));
+
+	channel = meshlink_channel_open(mesh_a, b, 42, receive_cb, NULL, 0);
+	meshlink_set_channel_poll_cb(mesh_a, channel, poll_cb);
+	assert(channel);
+	assert(wait_sync_flag(&poll_flag, 10));
+	assert(poll_len == 0);
+	meshlink_channel_close(mesh_a, channel);
+
+	// Create a channel that will be accepted
+
+	reset_sync_flag(&poll_flag);
 
 	channel = meshlink_channel_open(mesh_a, b, 7, receive_cb, NULL, 0);
 	meshlink_set_channel_poll_cb(mesh_a, channel, poll_cb);

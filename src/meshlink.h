@@ -1158,9 +1158,25 @@ bool meshlink_whitelist_by_name(struct meshlink_handle *mesh, const char *name) 
  */
 void meshlink_set_default_blacklist(struct meshlink_handle *mesh, bool blacklist);
 
-/// A callback for accepting incoming channels.
+/// A callback for listening for incoming channels.
 /** This function is called whenever a remote node wants to open a channel to the local node.
- *  The application then has to decide whether to accept or reject this channel.
+ *  This callback should only make a decision whether to accept or reject this channel.
+ *  The accept callback should be set to get a handle to the actual channel.
+ *
+ *  The callback is run in MeshLink's own thread.
+ *  It is therefore important that the callback return quickly and uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to hand any data over to the application's thread.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A handle for the node that wants to open a channel.
+ *  @param port         The port number the peer wishes to connect to.
+ *
+ *  @return             This function should return true if the application accepts the incoming channel, false otherwise.
+ */
+typedef bool (*meshlink_channel_listen_cb_t)(struct meshlink_handle *mesh, struct meshlink_node *node, uint16_t port);
+
+/// A callback for accepting incoming channels.
+/** This function is called whenever a remote node has opened a channel to the local node.
  *
  *  The callback is run in MeshLink's own thread.
  *  It is therefore important that the callback return quickly and uses apprioriate methods (queues, pipes, locking, etc.)
@@ -1210,18 +1226,34 @@ typedef void (*meshlink_channel_receive_cb_t)(struct meshlink_handle *mesh, stru
  */
 typedef void (*meshlink_channel_poll_cb_t)(struct meshlink_handle *mesh, struct meshlink_channel *channel, size_t len);
 
-/// Set the accept callback.
-/** This functions sets the callback that is called whenever another node sends data to the local node.
+/// Set the listen callback.
+/** This functions sets the callback that is called whenever another node wants to open a channel to the local node.
  *  The callback is run in MeshLink's own thread.
  *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
  *  to hand the data over to the application's thread.
  *  The callback should also not block itself and return as quickly as possible.
  *
- *  If no accept callback is set, incoming channels are rejected.
+ *  If no listen or accept callbacks are set, incoming channels are rejected.
  *
  *  \memberof meshlink_handle
  *  @param mesh      A handle which represents an instance of MeshLink.
- *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
+ *  @param cb        A pointer to the function which will be called when another node want to open a channel.
+ *                   If a NULL pointer is given, the callback will be disabled.
+ */
+void meshlink_set_channel_listen_cb(struct meshlink_handle *mesh, meshlink_channel_listen_cb_t cb);
+
+/// Set the accept callback.
+/** This functions sets the callback that is called whenever a remote node has opened a channel to the local node.
+ *  The callback is run in MeshLink's own thread.
+ *  It is therefore important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to hand the data over to the application's thread.
+ *  The callback should also not block itself and return as quickly as possible.
+ *
+ *  If no listen or accept callbacks are set, incoming channels are rejected.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh      A handle which represents an instance of MeshLink.
+ *  @param cb        A pointer to the function which will be called when a new channel has been opened by a remote node.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
 void meshlink_set_channel_accept_cb(struct meshlink_handle *mesh, meshlink_channel_accept_cb_t cb);

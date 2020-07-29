@@ -137,6 +137,7 @@ struct meshlink_handle {
 	meshlink_node_status_cb_t node_status_cb;
 	meshlink_node_status_cb_t meta_status_cb;
 	meshlink_node_pmtu_cb_t node_pmtu_cb;
+	meshlink_channel_listen_cb_t channel_listen_cb;
 	meshlink_channel_accept_cb_t channel_accept_cb;
 	meshlink_node_duplicate_cb_t node_duplicate_cb;
 	meshlink_connection_try_cb_t connection_try_cb;

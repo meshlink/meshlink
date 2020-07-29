@@ -3626,7 +3626,12 @@ static bool channel_pre_accept(struct utcp *utcp, uint16_t port) {
 	(void)port;
 	node_t *n = utcp->priv;
 	meshlink_handle_t *mesh = n->mesh;
-	return mesh->channel_accept_cb;
+
+	if(mesh->channel_accept_cb && mesh->channel_listen_cb) {
+		return mesh->channel_listen_cb(mesh, (meshlink_node_t *)n, port);
+	} else {
+		return mesh->channel_accept_cb;
+	}
 }
 
 /* Finish one AIO buffer, return true if the channel is still open. */
@@ -3928,6 +3933,21 @@ void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *c
 
 	channel->poll_cb = cb;
 	utcp_set_poll_cb(channel->c, (cb || channel->aio_send) ? channel_poll : NULL);
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
+void meshlink_set_channel_listen_cb(meshlink_handle_t *mesh, meshlink_channel_listen_cb_t cb) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
+
+	mesh->channel_listen_cb = cb;
+
 	pthread_mutex_unlock(&mesh->mutex);
 }
 
