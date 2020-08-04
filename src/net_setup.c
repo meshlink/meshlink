@@ -278,6 +278,15 @@ static bool load_node(meshlink_handle_t *mesh, const char *name, void *priv) {
 	(void)priv;
 
 	if(!check_id(name)) {
+		// Check if this is a temporary file, if so remove it
+		const char *suffix = strstr(name, ".tmp");
+
+		if(suffix && !suffix[4]) {
+			char filename[PATH_MAX];
+			snprintf(filename, sizeof(filename), "%s" SLASH "current" SLASH "hosts", mesh->confbase);
+			unlink(filename);
+		}
+
 		return true;
 	}
 
