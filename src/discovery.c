@@ -669,28 +669,48 @@ bool discovery_start(meshlink_handle_t *mesh) {
 	static const uint8_t ttl8 = 255;
 
 	int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+	if(fd == -1) {
+		logger(mesh, MESHLINK_ERROR, "Error creating IPv4 socket: %s", strerror(errno));
+	}
+
 	sockaddr_t sa4 = {
 		.in.sin_family = AF_INET,
 		.in.sin_port = ntohs(5353),
 	};
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+	setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one));
 	setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &one8, sizeof(one8));
 	setsockopt(fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl8, sizeof(ttl8));
-	bind(fd, &sa4.sa, SALEN(sa4.sa));
-	io_add(&mesh->loop, &mesh->discovery.sockets[0], mdns_io_handler, &mesh->discovery.sockets[0], fd, IO_READ);
+
+	if(bind(fd, &sa4.sa, SALEN(sa4.sa)) == -1) {
+		logger(mesh, MESHLINK_ERROR, "Error binding to IPv4 multicast socket: %s", strerror(errno));
+	} else {
+		io_add(&mesh->loop, &mesh->discovery.sockets[0], mdns_io_handler, &mesh->discovery.sockets[0], fd, IO_READ);
+	}
 
 	sockaddr_t sa6 = {
 		.in6.sin6_family = AF_INET6,
 		.in6.sin6_port = ntohs(5353),
 	};
 	fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+
+	if(fd == -1) {
+		logger(mesh, MESHLINK_ERROR, "Error creating IPv6 socket: %s", strerror(errno));
+	}
+
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+	setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one));
 	setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(one));
 	setsockopt(fd, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &one, sizeof(one));
 	setsockopt(fd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl, sizeof(ttl));
 	setsockopt(fd, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof(ttl));
-	bind(fd, &sa6.sa, SALEN(sa6.sa));
-	io_add(&mesh->loop, &mesh->discovery.sockets[1], mdns_io_handler, &mesh->discovery.sockets[1], fd, IO_READ);
+
+	if(bind(fd, &sa6.sa, SALEN(sa6.sa)) == -1) {
+		logger(mesh, MESHLINK_ERROR, "Error binding to IPv4 multicast socket: %s", strerror(errno));
+	} else {
+		io_add(&mesh->loop, &mesh->discovery.sockets[1], mdns_io_handler, &mesh->discovery.sockets[1], fd, IO_READ);
+	}
 
 #if defined(__linux)
 	int sock = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
