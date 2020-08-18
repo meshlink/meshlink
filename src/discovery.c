@@ -178,11 +178,12 @@ static void send_mdns_packet_ipv6(meshlink_handle_t *mesh, int fd, int index, co
 static void send_mdns_packet(meshlink_handle_t *mesh, const discovery_address_t *addr) {
 	// Configure the socket to send the packet to the right interface
 	int fd;
-	uint8_t data[1024];
+	uint8_t request[1024], response[1024];
 	char *fingerprint = meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self);
 	const char *keys[] = {MESHLINK_MDNS_NAME_KEY, MESHLINK_MDNS_FINGERPRINT_KEY};
 	const char *values[] = {mesh->name, fingerprint};
-	size_t size = prepare_packet(data, sizeof data, fingerprint, mesh->appname, "tcp", atoi(mesh->myport), 2, keys, values, false);
+	size_t request_size = prepare_request(request, sizeof request, mesh->appname, "tcp");
+	size_t response_size = prepare_response(response, sizeof response, fingerprint, mesh->appname, "tcp", atoi(mesh->myport), 2, keys, values);
 	free(fingerprint);
 
 	switch(addr->address.sa.sa_family) {
@@ -203,7 +204,8 @@ static void send_mdns_packet(meshlink_handle_t *mesh, const discovery_address_t 
 
 #endif
 
-		send_mdns_packet_ipv4(mesh, fd, addr->index, &addr->address, &mdns_address_ipv4, data, size);
+		send_mdns_packet_ipv4(mesh, fd, addr->index, &addr->address, &mdns_address_ipv4, request, request_size);
+		send_mdns_packet_ipv4(mesh, fd, addr->index, &addr->address, &mdns_address_ipv4, response, response_size);
 		break;
 
 	case AF_INET6:
@@ -217,7 +219,8 @@ static void send_mdns_packet(meshlink_handle_t *mesh, const discovery_address_t 
 
 #endif
 
-		send_mdns_packet_ipv6(mesh, fd, addr->index, &addr->address, &mdns_address_ipv6, data, size);
+		send_mdns_packet_ipv6(mesh, fd, addr->index, &addr->address, &mdns_address_ipv6, request, request_size);
+		send_mdns_packet_ipv6(mesh, fd, addr->index, &addr->address, &mdns_address_ipv6, response, response_size);
 		break;
 
 	default:
@@ -248,23 +251,13 @@ static void mdns_io_handler(event_loop_t *loop, void *data, int flags) {
 	uint16_t port = 0;
 	const char *keys[2] = {MESHLINK_MDNS_NAME_KEY, MESHLINK_MDNS_FINGERPRINT_KEY};
 	char *values[2] = {NULL, NULL};
-	bool response;
 
-	if(parse_packet(buf, len, &name, mesh->appname, "tcp", &port, 2, keys, values, &response)) {
+	if(parse_response(buf, len, &name, mesh->appname, "tcp", &port, 2, keys, values)) {
 		node_t *n = (node_t *)meshlink_get_node(mesh, values[0]);
 
 		if(n) {
 			if(n != mesh->self) {
 				logger(mesh, MESHLINK_INFO, "Node %s discovered on the local network.\n", n->name);
-			}
-
-			if(!response && n != mesh->self) {
-				// Send a unicast response back
-				char *fingerprint = meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self);
-				const char *response_values[] = {mesh->name, fingerprint};
-				size_t size = prepare_packet(buf, sizeof(buf), fingerprint, mesh->appname, "tcp", atoi(mesh->myport), 2, keys, response_values, true);
-				sendto(io->fd, buf, size, MSG_DONTWAIT | MSG_NOSIGNAL, &sa.sa, sl);
-				free(fingerprint);
 			}
 
 			switch(sa.sa.sa_family) {
@@ -306,6 +299,13 @@ static void mdns_io_handler(event_loop_t *loop, void *data, int flags) {
 				}
 			}
 		}
+	} else if(parse_request(buf, len, mesh->appname, "tcp")) {
+		// Send a unicast response back
+		char *fingerprint = meshlink_get_fingerprint(mesh, (meshlink_node_t *)mesh->self);
+		const char *response_values[] = {mesh->name, fingerprint};
+		size_t size = prepare_response(buf, sizeof(buf), fingerprint, mesh->appname, "tcp", atoi(mesh->myport), 2, keys, response_values);
+		sendto(io->fd, buf, size, MSG_DONTWAIT | MSG_NOSIGNAL, &sa.sa, sl);
+		free(fingerprint);
 	}
 
 	free(name);

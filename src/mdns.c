@@ -247,63 +247,119 @@ static void buf_check_len_end(cbuf_t *buf, const uint8_t *ptr) {
 	}
 }
 
-size_t prepare_packet(void *vdata, size_t size, const char *name, const char *protocol, const char *transport, uint16_t port, int nkeys, const char **keys, const char **values, bool response) {
-	// Create the request/response packet right now
+size_t prepare_request(void *vdata, size_t size, const char *protocol, const char *transport) {
 	uint8_t *data = vdata;
 	buf_t buf = {data, size};
 
 	// Header
 	buf_add_uint16(&buf, 0); // TX ID
-	buf_add_uint16(&buf, response ? ntohs(1 << 15) : 0); // flags
+	buf_add_uint16(&buf, 0); // flags
 	buf_add_uint16(&buf, 1); // 1 question
-	buf_add_uint16(&buf, 1); // 1 answer RR
+	buf_add_uint16(&buf, 0); // 0 answer RR
 	buf_add_uint16(&buf, 0); // 0 authority RRs
-	buf_add_uint16(&buf, 2); // 1 additional RR
+	buf_add_uint16(&buf, 0); // 0 additional RR
 
 	// Question section: _protocol._transport.local PTR IN
 	buf_add_ulabel(&buf, protocol);
 	buf_add_ulabel(&buf, transport);
-	uint16_t local = buf.ptr - data;
 	buf_add_label(&buf, "local");
 	buf_add_uint8(&buf, 0);
 	buf_add_uint16(&buf, 0xc); // PTR
 	buf_add_uint16(&buf, 0x1); // IN
 
-	// Answer section: _protocol._transport local PTR IN 3600 name._protocol._transport
-	buf_add_uint16(&buf, 0xc00c); // _protocol._transport.local
-	buf_add_uint16(&buf, 0xc); // PTR
-	buf_add_uint16(&buf, 0x1); // IN
-	buf_add_uint32(&buf, 3600); // TTL
-	uint8_t *len_ptr = buf_len_start(&buf);
+	// Done.
+	if(buf.len < 0) {
+		return 0;
+	} else {
+		return buf.ptr - data;
+	}
+}
+
+bool parse_request(const void *vdata, size_t size, const char *protocol, const char *transport) {
+	const uint8_t *data = vdata;
+	cbuf_t buf = {data, size};
+
+	// Header
+	buf_get_uint16(&buf); // TX ID
+	buf_check_uint16(&buf, 0); // flags
+	buf_check_uint16(&buf, 1); // 1 question
+	buf_get_uint16(&buf); // ? answer RR
+	buf_get_uint16(&buf); // ? authority RRs
+	buf_get_uint16(&buf); // ? additional RR
+
+	if(buf.len == -1) {
+		return false;
+	}
+
+	// Question section: _protocol._transport.local PTR IN
+	buf_check_ulabel(&buf, protocol);
+	buf_check_ulabel(&buf, transport);
+	buf_check_label(&buf, "local");
+	buf_check_uint8(&buf, 0);
+	buf_check_uint16(&buf, 0xc); // PTR
+	buf_check_uint16(&buf, 0x1); // IN
+
+	if(buf.len == -1) {
+		return false;
+	}
+
+	// Done.
+	return buf.len != -1;
+}
+
+size_t prepare_response(void *vdata, size_t size, const char *name, const char *protocol, const char *transport, uint16_t port, int nkeys, const char **keys, const char **values) {
+	uint8_t *data = vdata;
+	buf_t buf = {data, size};
+
+	// Header
+	buf_add_uint16(&buf, 0); // TX ID
+	buf_add_uint16(&buf, 0x8400); // flags
+	buf_add_uint16(&buf, 0); // 1 question
+	buf_add_uint16(&buf, 3); // 1 answer RR
+	buf_add_uint16(&buf, 0); // 0 authority RRs
+	buf_add_uint16(&buf, 0); // 1 additional RR
+
+	// Add the TXT record: _protocol._transport local TXT IN 3600 name._protocol._transport key=value...
 	uint16_t full_name = buf.ptr - data; // remember start of full name
 	buf_add_label(&buf, name);
-	buf_add_uint16(&buf, 0xc00c); // _protocol._transport.local
+	uint16_t protocol_offset = buf.ptr - data; // remember start of _protocol
+	buf_add_ulabel(&buf, protocol);
+	buf_add_ulabel(&buf, transport);
+	uint16_t local_offset = buf.ptr - data; // remember start of local
+	buf_add_label(&buf, "local");
+	buf_add_uint8(&buf, 0);
+	buf_add_uint16(&buf, 0x10); // TXT
+	buf_add_uint16(&buf, 0x1); // IN
+	buf_add_uint32(&buf, 3600); // TTL
+
+	uint8_t *len_ptr = buf_len_start(&buf);
+
+	for(int i = 0; i < nkeys; i++) {
+		buf_add_kvp(&buf, keys[i], values[i]);
+	}
+
+	buf_len_end(&buf, len_ptr);
+
+	// Add the PTR record: _protocol._transport.local PTR IN 3600 name._protocol._transport.local
+	buf_add_uint16(&buf, 0xc000 | protocol_offset);
+	buf_add_uint16(&buf, 0xc); // PTR
+	buf_add_uint16(&buf, 0x8001); // IN (flush)
+	buf_add_uint32(&buf, 3600); // TTL
+	len_ptr = buf_len_start(&buf);
+	buf_add_uint16(&buf, 0xc000 | full_name);
 	buf_len_end(&buf, len_ptr);
 
 	// Add the SRV record: name._protocol._transport.local SRV IN 120 0 0 port name.local
 	buf_add_uint16(&buf, 0xc000 | full_name);
 	buf_add_uint16(&buf, 0x21); // SRV
-	buf_add_uint16(&buf, 0x1); // IN
+	buf_add_uint16(&buf, 0x8001); // IN (flush)
 	buf_add_uint32(&buf, 120); // TTL
 	len_ptr = buf_len_start(&buf);
 	buf_add_uint16(&buf, 0); // priority
 	buf_add_uint16(&buf, 0); // weight
 	buf_add_uint16(&buf, port); // port
 	buf_add_label(&buf, name);
-	buf_add_uint16(&buf, 0xc000 | local);
-	buf_len_end(&buf, len_ptr);
-
-	// Add the TXT records: name._protocol._transport.local TXT IN 3600 key=value...
-	buf_add_uint16(&buf, 0xc000 | full_name);
-	buf_add_uint16(&buf, 0x10); // TXT
-	buf_add_uint16(&buf, 0x1); // IN
-	buf_add_uint32(&buf, 3600); // TTL
-	len_ptr = buf_len_start(&buf);
-
-	for(int i = 0; i < nkeys; i++) {
-		buf_add_kvp(&buf, keys[i], values[i]);
-	}
-
+	buf_add_uint16(&buf, 0xc000 | local_offset);
 	buf_len_end(&buf, len_ptr);
 
 	// Done.
@@ -314,46 +370,53 @@ size_t prepare_packet(void *vdata, size_t size, const char *name, const char *pr
 	}
 }
 
-bool parse_packet(const void *vdata, size_t size, char **name, const char *protocol, const char *transport, uint16_t *port, int nkeys, const char **keys, char **values, bool *response) {
+bool parse_response(const void *vdata, size_t size, char **name, const char *protocol, const char *transport, uint16_t *port, int nkeys, const char **keys, char **values) {
 	const uint8_t *data = vdata;
 	cbuf_t buf = {data, size};
 
 	// Header
 	buf_check_uint16(&buf, 0); // TX ID
-	uint16_t flags = buf_get_uint16(&buf); // flags
-	buf_check_uint16(&buf, 1); // 1 question
-	buf_check_uint16(&buf, 1); // 1 answer RR
+	buf_check_uint16(&buf, 0x8400); // flags
+	buf_check_uint16(&buf, 0); // 0 question
+	buf_check_uint16(&buf, 3); // 1 answer RR
 	buf_check_uint16(&buf, 0); // 0 authority RRs
-	buf_check_uint16(&buf, 2); // 1 checkitional RR
-
-	if(buf.len == -1 || flags & ~ntohs(1 << 15)) {
-		return false;
-	}
-
-	*response = flags & ntohs(1 << 15);
-
-	// Question section: _protocol._transport.local PTR IN
-	buf_check_ulabel(&buf, protocol);
-	buf_check_ulabel(&buf, transport);
-	uint16_t local = buf.ptr - data;
-	buf_check_label(&buf, "local");
-	buf_check_uint8(&buf, 0);
-	buf_check_uint16(&buf, 0xc); // PTR
-	buf_check_uint16(&buf, 0x1); // IN
+	buf_check_uint16(&buf, 0); // 0 checkitional RR
 
 	if(buf.len == -1) {
 		return false;
 	}
 
-	// Answer section: _protocol._transport local PTR IN 3600 name._protocol._transport
-	buf_check_uint16(&buf, 0xc00c); // _protocol._transport.local
-	buf_check_uint16(&buf, 0xc); // PTR
+	// Check the TXT record: _protocol._transport local TXT IN 3600 name._protocol._transport key=value...
+	uint16_t full_name = buf.ptr - data; // remember start of full name
+	*name = buf_get_label(&buf);
+	uint16_t protocol_offset = buf.ptr - data; // remember start of _protocol
+	buf_check_ulabel(&buf, protocol);
+	buf_check_ulabel(&buf, transport);
+	uint16_t local_offset = buf.ptr - data; // remember start of local
+	buf_check_label(&buf, "local");
+	buf_check_uint8(&buf, 0);
+	buf_check_uint16(&buf, 0x10); // TXT
 	buf_check_uint16(&buf, 0x1); // IN
 	buf_check_uint32(&buf, 3600); // TTL
 	const uint8_t *len_ptr = buf_check_len_start(&buf);
-	uint16_t full_name = buf.ptr - data; // remember start of full name
-	*name = buf_get_label(&buf);
-	buf_check_uint16(&buf, 0xc00c); // _protocol._transport.local
+
+	for(int i = 0; i < nkeys; i++) {
+		buf_get_kvp(&buf, keys[i], &values[i]);
+	}
+
+	buf_check_len_end(&buf, len_ptr);
+
+	if(buf.len == -1) {
+		return false;
+	}
+
+	// Check the PTR record: _protocol._transport.local PTR IN 3600 name._protocol._transport.local
+	buf_check_uint16(&buf, 0xc000 | protocol_offset);
+	buf_check_uint16(&buf, 0xc); // PTR
+	buf_check_uint16(&buf, 0x8001); // IN (flush)
+	buf_check_uint32(&buf, 3600); // TTL
+	len_ptr = buf_check_len_start(&buf);
+	buf_check_uint16(&buf, 0xc000 | full_name);
 	buf_check_len_end(&buf, len_ptr);
 
 	if(buf.len == -1) {
@@ -363,31 +426,14 @@ bool parse_packet(const void *vdata, size_t size, char **name, const char *proto
 	// Check the SRV record: name._protocol._transport.local SRV IN 120 0 0 port name.local
 	buf_check_uint16(&buf, 0xc000 | full_name);
 	buf_check_uint16(&buf, 0x21); // SRV
-	buf_check_uint16(&buf, 0x1); // IN
+	buf_check_uint16(&buf, 0x8001); // IN (flush)
 	buf_check_uint32(&buf, 120); // TTL
 	len_ptr = buf_check_len_start(&buf);
 	buf_check_uint16(&buf, 0); // priority
 	buf_check_uint16(&buf, 0); // weight
 	*port = buf_get_uint16(&buf); // port
 	buf_check_label(&buf, *name);
-	buf_check_uint16(&buf, 0xc000 | local);
-	buf_check_len_end(&buf, len_ptr);
-
-	if(buf.len == -1) {
-		return false;
-	}
-
-	// Check the TXT records: name._protocol._transport.local TXT IN 3600 key=value...
-	buf_check_uint16(&buf, 0xc000 | full_name);
-	buf_check_uint16(&buf, 0x10); // TXT
-	buf_check_uint16(&buf, 0x1); // IN
-	buf_check_uint32(&buf, 3600); // TTL
-	len_ptr = buf_check_len_start(&buf);
-
-	for(int i = 0; i < nkeys; i++) {
-		buf_get_kvp(&buf, keys[i], &values[i]);
-	}
-
+	buf_check_uint16(&buf, 0xc000 | local_offset);
 	buf_check_len_end(&buf, len_ptr);
 
 	// Done.
