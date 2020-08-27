@@ -91,6 +91,7 @@ static void udp_probe_timeout_handler(event_loop_t *loop, void *data) {
 	logger(mesh, MESHLINK_INFO, "Too much time has elapsed since last UDP ping response from %s, stopping UDP communication", n->name);
 	n->status.udp_confirmed = false;
 	n->mtuprobes = 0;
+	n->udpprobes = 0;
 	n->minmtu = 0;
 	n->maxmtu = MTU;
 
@@ -161,6 +162,8 @@ void udp_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet, uint1
 		n->status.udp_confirmed = true;
 	}
 
+	n->udpprobes = 0;
+
 	// Reset the UDP ping timer.
 
 	timeout_del(&mesh->loop, &n->udp_ping_timeout);
@@ -219,14 +222,21 @@ static void send_udp_probe_packet(meshlink_handle_t *mesh, node_t *n, int len) {
 static void try_udp(meshlink_handle_t *mesh, node_t *n) {
 	/* Probe request */
 
+	if(n->udpprobes < -3) {
+		/* We lost three UDP probes, UDP status is no longer unconfirmed */
+		udp_probe_timeout_handler(&mesh->loop, n);
+	}
+
 	struct timespec elapsed;
+
 	timespec_sub(&mesh->loop.now, &n->last_udp_probe_sent, &elapsed);
 
-	int interval = n->status.udp_confirmed ? 10 : 2;
+	int interval = (n->status.udp_confirmed && n->udpprobes >= 0) ? 10 : 2;
 
 	if(elapsed.tv_sec >= interval) {
 		n->last_udp_probe_sent = mesh->loop.now;
 		send_udp_probe_packet(mesh, n, MIN_PROBE_SIZE);
+		n->udpprobes--;
 
 		if(!n->status.udp_confirmed && n->prevedge) {
 			n->status.broadcast = true;

@@ -73,7 +73,8 @@ typedef struct node_t {
 	timeout_t udp_ping_timeout;             /* UDP probe event */
 	struct timespec last_mtu_probe_sent;    /* Time that the last MTU probe was sent */
 	struct timespec last_udp_probe_sent;    /* Time that the last UDP probe was sent */
-	int mtuprobes;                          /* Number of probes */
+	int8_t mtuprobes;                       /* MTU probes counter */
+	int8_t udpprobes;                       /* UDP probes counter */
 	uint16_t last_mtu_len;                  /* Size of the last sent probe */
 	uint16_t mtu;                           /* Maximum size of packets to send to this node */
 	uint16_t maxmtu;                        /* Probed maximum MTU */
