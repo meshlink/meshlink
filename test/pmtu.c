@@ -13,6 +13,7 @@
 #include <fcntl.h>
 
 #include "meshlink.h"
+#include "devtools.h"
 #include "utils.h"
 
 #define nnodes 3
@@ -61,50 +62,56 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 	return true;
 }
 
-static void parse_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *text) {
-	if(level >= MESHLINK_INFO) {
-		log_cb(mesh, level, text);
-	}
-
-	struct state *state = mesh->priv;
-
-	if(state->pmtu != 0) {
-		return;
-	}
-
-	int len;
-	char name[10] = "";
-
-	if(sscanf(text, "Sending UDP probe length %d to %9s", &len, name) == 2 || sscanf(text, "Got PMTU probe length %d from %s", &len, name) == 2) {
-		if(!strcmp(name, "nut")) {
-			state->probe_count++;
-			state->probe_bytes += len;
-		}
-	} else if(sscanf(text, "Fixing PMTU of %9s to %d", name, &len) == 2) {
-		if(!strcmp(name, "nut")) {
-			state->pmtu = len;
-		}
-	}
-}
-
 static void wait_for_pmtu(void) {
 	// Set up a channel from peer to nut
 	meshlink_set_channel_accept_cb(states[2].mesh, accept_cb);
-	meshlink_channel_t *channel = meshlink_channel_open(states[1].mesh, meshlink_get_node(states[1].mesh, nodes[2].name), 1, NULL, NULL, 0);
+	meshlink_handle_t *mesh = states[1].mesh;
+	meshlink_node_t *peer = meshlink_get_node(mesh, nodes[2].name);
+	meshlink_channel_t *channel = meshlink_channel_open(mesh, peer, 1, NULL, NULL, 0);
 	assert(channel);
 
 	// While sending regular data, wait for PMTU discovery to finish
 	for(int i = 0; i < 30; i++) {
 		sleep(1);
 
-		if(states[1].pmtu) {
+		devtool_node_status_t status;
+		devtool_get_node_status(mesh, peer, &status);
+		states[1].pmtu = status.minmtu;
+
+		if(status.minmtu == status.maxmtu) {
 			break;
 		}
 
-		assert(meshlink_channel_send(states[1].mesh, channel, "ping", 4) == 4);
+		assert(meshlink_channel_send(mesh, channel, "ping", 4) == 4);
 	}
 
-	meshlink_channel_close(states[1].mesh, channel);
+	meshlink_channel_close(mesh, channel);
+}
+
+static void wait_for_udp_timeout(void) {
+	// Set up a channel from peer to nut
+	meshlink_set_channel_accept_cb(states[2].mesh, accept_cb);
+	meshlink_handle_t *mesh = states[1].mesh;
+	meshlink_node_t *peer = meshlink_get_node(mesh, nodes[2].name);
+	meshlink_channel_t *channel = meshlink_channel_open(mesh, peer, 1, NULL, NULL, 0);
+	assert(channel);
+
+	// While sending regular data, wait for UDP to time out
+	for(int i = 0; i < 20; i++) {
+		sleep(1);
+
+		devtool_node_status_t status;
+		devtool_get_node_status(mesh, peer, &status);
+		states[1].pmtu = status.minmtu;
+
+		if(!status.minmtu) {
+			break;
+		}
+
+		assert(meshlink_channel_send(mesh, channel, "ping", 4) == 4);
+	}
+
+	meshlink_channel_close(mesh, channel);
 }
 
 static void start_peer_nut(void) {
@@ -159,7 +166,7 @@ int main(void) {
 		meshlink_enable_discovery(states[i].mesh, false);
 		init_sync_flag(&states[i].up_flag);
 
-		meshlink_set_log_cb(states[i].mesh, MESHLINK_DEBUG, parse_log_cb);
+		meshlink_set_log_cb(states[i].mesh, MESHLINK_INFO, log_cb);
 
 		// Link the relay node to the other nodes
 		if(i > 0) {
@@ -195,6 +202,16 @@ int main(void) {
 	assert(states[1].pmtu >= 700 && states[1].pmtu <= 800);
 	assert(states[1].probe_count <= 20);
 	assert(states[1].probe_bytes <= 800 * 20);
+
+	// Block UDP
+
+	assert(system("ip netns exec pmtu_p iptables -A INPUT -p udp -j DROP") == 0);
+	assert(system("ip netns exec pmtu_n iptables -A INPUT -p udp -j DROP") == 0);
+
+	// Wait
+
+	wait_for_udp_timeout();
+	assert(states[1].pmtu == 0);
 
 	// Cleanup
 	for(int i = 0; i < nnodes; i++) {
