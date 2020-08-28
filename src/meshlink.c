@@ -30,6 +30,7 @@
 #include "node.h"
 #include "submesh.h"
 #include "packmsg.h"
+#include "pmtu.h"
 #include "prf.h"
 #include "protocol.h"
 #include "route.h"
@@ -3631,6 +3632,7 @@ static bool blacklist(meshlink_handle_t *mesh, node_t *n) {
 	n->mtu = 0;
 	n->minmtu = 0;
 	n->maxmtu = MTU;
+	n->udpprobes = 0;
 	n->mtuprobes = 0;
 	n->status.udp_confirmed = false;
 
@@ -4037,10 +4039,9 @@ static void channel_retransmit(struct utcp_connection *utcp_connection) {
 	node_t *n = utcp_connection->utcp->priv;
 	meshlink_handle_t *mesh = n->mesh;
 
-	if(n->mtuprobes == -1 && n->udp_ping_timeout.cb) {
-		timeout_set(&mesh->loop, &n->udp_ping_timeout, &(struct timespec) {
-			0, 0
-		});
+	if(!n->udpprobes) {
+		timespec_clear(&n->last_udp_probe_sent);
+		keepalive(mesh, n, false);
 	}
 }
 

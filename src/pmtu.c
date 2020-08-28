@@ -236,7 +236,10 @@ static void try_udp(meshlink_handle_t *mesh, node_t *n) {
 	if(elapsed.tv_sec >= interval) {
 		n->last_udp_probe_sent = mesh->loop.now;
 		send_udp_probe_packet(mesh, n, MIN_PROBE_SIZE);
-		n->udpprobes--;
+
+		if(n->status.udp_confirmed) {
+			n->udpprobes--;
+		}
 
 		if(!n->status.udp_confirmed && n->prevedge) {
 			n->status.broadcast = true;
