@@ -13,6 +13,10 @@
 #include "../src/meshlink.h"
 #include "utils.h"
 
+#define SMALL_SIZE 512
+#define SMALL_COUNT 2500
+#define LARGE_SIZE 131072
+
 static struct sync_flag accept_flag;
 
 struct client {
@@ -34,10 +38,10 @@ static void client_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *chann
 	}
 
 	// We expect always the same amount of data from the server.
-	assert(len == 512 || len == 65536);
+	assert(len == 512 || len == LARGE_SIZE);
 	client->received += len;
 
-	if(len == 65536) {
+	if(len == LARGE_SIZE) {
 		client->got_large_packet = true;
 	}
 }
@@ -123,29 +127,28 @@ int main(void) {
 
 	// Check that we can send up to 65535 bytes without errors
 
-	char large_data[65536] = "";
+	char large_data[LARGE_SIZE] = "";
 
 	for(int i = 0; i < 3; i++) {
-		assert(meshlink_channel_send(server, channels[i], large_data, sizeof(large_data) + 1) == -1);
 		assert(meshlink_channel_send(server, channels[i], large_data, sizeof(large_data)) == sizeof(large_data));
 	}
 
-	// Assert that packets larger than 64 kiB are not allowed
+	// Assert that packets larger than 16 MiB are not allowed
 
-	assert(meshlink_channel_send(server, channels[0], large_data, 65537) == -1);
+	assert(meshlink_channel_send(server, channels[0], large_data, 16777216) == -1);
 
 	// Stream packets from server to clients for 5 seconds at 40 Mbps (1 kB * 500 Hz)
 
-	char data[512];
+	char data[SMALL_SIZE];
 	memset(data, 'U', sizeof(data));
 
-	for(int j = 0; j < 2500; j++) {
+	for(int j = 0; j < SMALL_COUNT; j++) {
+		const struct timespec req = {0, 2000000};
+		nanosleep(&req, NULL);
+
 		for(int i = 0; i < 3; i++) {
 			assert(meshlink_channel_send(server, channels[i], data, sizeof(data)) == sizeof(data));
 		}
-
-		const struct timespec req = {0, 2000000};
-		nanosleep(&req, NULL);
 	}
 
 	// Shutdown the write side of the server's channels
@@ -167,8 +170,9 @@ int main(void) {
 	}
 
 	for(int i = 0; i < 3; i++) {
-		assert(clients[i].received >= 1000000);
-		assert(clients[i].received <= 1345536);
+		size_t max_received = SMALL_SIZE * SMALL_COUNT + LARGE_SIZE;
+		assert(clients[i].received >= max_received / 2);
+		assert(clients[i].received <= max_received);
 		assert(clients[i].got_large_packet);
 	}
 
