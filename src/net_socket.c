@@ -87,7 +87,7 @@ static void retry_outgoing_handler(event_loop_t *loop, void *data) {
 }
 
 void retry_outgoing(meshlink_handle_t *mesh, outgoing_t *outgoing) {
-	if(!mesh->reachable && mesh->loop.now.tv_sec < mesh->last_unreachable + mesh->dev_class_traits[mesh->devclass].fast_retry_period) {
+	if(!mesh->reachable && mesh->loop.now.tv_sec < mesh->last_unreachable + mesh->dev_class_traits[outgoing->node->devclass].fast_retry_period) {
 		outgoing->timeout = 1;
 	} else {
 		outgoing->timeout += 5;
