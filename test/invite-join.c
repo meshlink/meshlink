@@ -160,6 +160,8 @@ int main(void) {
 	int newport = meshlink_get_port(mesh1);
 	assert(oldport != newport);
 
+	assert(meshlink_set_canonical_address(mesh1, meshlink_get_self(mesh1), "localhost", NULL));
+
 	assert(meshlink_start(mesh1));
 	quux_url = meshlink_invite(mesh1, NULL, "quux");
 	assert(quux_url);
