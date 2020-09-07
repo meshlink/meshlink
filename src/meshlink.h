@@ -822,7 +822,7 @@ bool meshlink_set_canonical_address(struct meshlink_handle *mesh, struct meshlin
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param address      A nul-terminated C string containing the address, which can be either in numeric format or a hostname.
  *  @param port         A nul-terminated C string containing the port, which can be either in numeric or symbolic format.
- *                      If it is NULL, the listening port's number will be used.
+ *                      If it is NULL, the current listening port's number will be used.
  *
  *  @return             This function returns true if the address was added, false otherwise.
  */
@@ -952,6 +952,9 @@ int meshlink_get_port(struct meshlink_handle *mesh) __attribute__((__warn_unused
  *  Also note that if your node is already part of a mesh with other nodes,
  *  that the other nodes may no longer be able to initiate connections to the local node,
  *  since they will try to connect to the previously configured port.
+ *
+ *  Note that if a canonical address has been set for the local node,
+ *  you might need to call meshlink_set_canonical_address() again to ensure it includes the new port number.
  *
  *  \memberof meshlink_handle
  *  @param mesh          A handle which represents an instance of MeshLink.

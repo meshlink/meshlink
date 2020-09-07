@@ -2583,11 +2583,7 @@ bool meshlink_set_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *no
 
 	char *canonical_address;
 
-	if(port) {
-		xasprintf(&canonical_address, "%s %s", address, port);
-	} else {
-		canonical_address = xstrdup(address);
-	}
+	xasprintf(&canonical_address, "%s %s", address, port ? port : mesh->myport);
 
 	if(pthread_mutex_lock(&mesh->mutex) != 0) {
 		abort();
