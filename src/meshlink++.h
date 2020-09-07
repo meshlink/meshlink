@@ -515,6 +515,18 @@ public:
 		return meshlink_set_canonical_address(handle, node, address, port);
 	}
 
+	/// Clear the canonical Address for a node.
+	/** This function clears the canonical Address for a node.
+	 *
+	 *  @param mesh         A handle which represents an instance of MeshLink.
+	 *  @param node         A pointer to a struct meshlink_node describing the node.
+	 *
+	 *  @return             This function returns true if the address was removed, false otherwise.
+	 */
+	bool clear_canonical_address(node *node) {
+		return meshlink_clear_canonical_address(handle, node);
+	}
+
 	/// Add an invitation address for the local node.
 	/** This function adds an address for the local node, which will be used only for invitation URLs.
 	 *  This address is not stored permanently.

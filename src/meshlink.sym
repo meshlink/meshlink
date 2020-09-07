@@ -26,6 +26,7 @@ meshlink_channel_open
 meshlink_channel_open_ex
 meshlink_channel_send
 meshlink_channel_shutdown
+meshlink_clear_canonical_address
 meshlink_clear_invitation_addresses
 meshlink_close
 meshlink_destroy

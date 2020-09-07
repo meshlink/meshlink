@@ -320,7 +320,7 @@ static bool get_next_outgoing_address(meshlink_handle_t *mesh, outgoing_t *outgo
 
 		outgoing->ai = NULL;
 		outgoing->aip = NULL;
-		outgoing->state = OUTGOING_RECENT;
+		outgoing->state = OUTGOING_END;
 	}
 
 	if(outgoing->state == OUTGOING_RECENT) {

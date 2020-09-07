@@ -2603,6 +2603,30 @@ bool meshlink_set_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *no
 	return config_sync(mesh, "current");
 }
 
+bool meshlink_clear_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	if(!mesh || !node) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
+
+	node_t *n = (node_t *)node;
+	free(n->canonical_address);
+	n->canonical_address = NULL;
+
+	if(!node_write_config(mesh, n)) {
+		pthread_mutex_unlock(&mesh->mutex);
+		return false;
+	}
+
+	pthread_mutex_unlock(&mesh->mutex);
+
+	return config_sync(mesh, "current");
+}
+
 bool meshlink_add_invitation_address(struct meshlink_handle *mesh, const char *address, const char *port) {
 	if(!mesh || !address) {
 		meshlink_errno = MESHLINK_EINVAL;

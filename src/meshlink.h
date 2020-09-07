@@ -801,6 +801,8 @@ bool meshlink_verify(struct meshlink_handle *mesh, struct meshlink_node *source,
  *
  *  If a canonical Address is set for the local node,
  *  it will be used for the hostname part of generated invitation URLs.
+ *  If a canonical Address is set for a remote node,
+ *  it is used exclusively for creating outgoing connections to that node.
  *
  *  \memberof meshlink_node
  *  @param mesh         A handle which represents an instance of MeshLink.
@@ -812,6 +814,17 @@ bool meshlink_verify(struct meshlink_handle *mesh, struct meshlink_node *source,
  *  @return             This function returns true if the address was added, false otherwise.
  */
 bool meshlink_set_canonical_address(struct meshlink_handle *mesh, struct meshlink_node *node, const char *address, const char *port) __attribute__((__warn_unused_result__));
+
+/// Clear the canonical Address for a node.
+/** This function clears the canonical Address for a node.
+ *
+ *  \memberof meshlink_node
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A pointer to a struct meshlink_node describing the node.
+ *
+ *  @return             This function returns true if the address was removed, false otherwise.
+ */
+bool meshlink_clear_canonical_address(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
 
 /// Add an invitation address for the local node.
 /** This function adds an address for the local node, which will be used only for invitation URLs.
