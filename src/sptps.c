@@ -374,12 +374,12 @@ static bool receive_sig(sptps_t *s, const char *data, uint16_t len) {
 
 // Force another Key EXchange (for testing purposes).
 bool sptps_force_kex(sptps_t *s) {
-	if(!s->outstate || s->state < SPTPS_SECONDARY_KEX) {
+	if(!s->outstate) {
 		return error(s, EINVAL, "Cannot force KEX in current state");
 	}
 
-	if(s->state > SPTPS_SECONDARY_KEX) {
-		// We are already in the middle of a secondary key exchange
+	if(s->state != SPTPS_SECONDARY_KEX) {
+		// We are already in the middle of a key exchange
 		return true;
 	}
 
