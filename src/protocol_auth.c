@@ -146,6 +146,9 @@ static bool receive_invitation_sptps(void *handle, uint8_t type, const void *dat
 	connection_t *c = handle;
 	meshlink_handle_t *mesh = c->mesh;
 
+	// Extend the time for the invitation exchange upon receiving a valid message
+	c->last_ping_time = mesh->loop.now.tv_sec;
+
 	if(type == SPTPS_HANDSHAKE) {
 		// The peer should send its cookie first.
 		return true;
@@ -207,6 +210,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 		c->protocol_minor = 2;
 		c->allow_request = 1;
+		c->last_ping_time = mesh->loop.now.tv_sec;
 
 		return sptps_start(&c->sptps, c, false, false, mesh->invitation_key, c->ecdsa, meshlink_invitation_label, sizeof(meshlink_invitation_label), send_meta_sptps, receive_invitation_sptps);
 	}
@@ -275,6 +279,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	}
 
 	c->allow_request = ACK;
+	c->last_ping_time = mesh->loop.now.tv_sec;
 	char label[sizeof(meshlink_tcp_label) + strlen(mesh->self->name) + strlen(c->name) + 2];
 
 	if(c->outgoing) {
@@ -291,6 +296,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
+	c->last_ping_time = mesh->loop.now.tv_sec;
 	return send_request(mesh, c, NULL, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, OPTION_PMTU_DISCOVERY | (PROT_MINOR << 24));
 }
 
