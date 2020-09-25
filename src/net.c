@@ -117,7 +117,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 		int pingtimeout = c->node ? mesh->dev_class_traits[c->node->devclass].pingtimeout : default_timeout;
 		int pinginterval = c->node ? mesh->dev_class_traits[c->node->devclass].pinginterval : default_interval;
 
-		if(c->outgoing && c->outgoing->timeout < 5) {
+		if(c->outgoing && !c->status.active && c->outgoing->timeout < 5) {
 			pingtimeout = 1;
 		}
 
