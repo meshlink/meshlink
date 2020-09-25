@@ -123,7 +123,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 
 		// Also make sure that if outstanding key requests for the UDP counterpart of a connection has timed out, we restart it.
 		if(c->node) {
-			if(c->node->status.waitingforkey && c->node->last_req_key + pingtimeout <= mesh->loop.now.tv_sec) {
+			if(c->node->status.waitingforkey && c->node->last_req_key + pingtimeout < mesh->loop.now.tv_sec) {
 				send_req_key(mesh, c->node);
 			}
 		}
@@ -140,7 +140,7 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 			}
 		}
 
-		if(c->last_ping_time + pingtimeout <= mesh->loop.now.tv_sec) {
+		if(c->last_ping_time + pingtimeout < mesh->loop.now.tv_sec) {
 			if(c->status.active) {
 				if(c->status.pinged) {
 					logger(mesh, MESHLINK_INFO, "%s didn't respond to PING in %ld seconds", c->name, (long)mesh->loop.now.tv_sec - c->last_ping_time);
