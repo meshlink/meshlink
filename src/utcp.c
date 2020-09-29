@@ -1559,6 +1559,11 @@ synack:
 	advanced = seqdiff(hdr.ack, c->snd.una);
 
 	if(advanced) {
+		if(c->reapable && !is_reliable(c)) {
+			// TODO: we should also send RST for reliable connections
+			goto reset;
+		}
+
 		// RTT measurement
 		if(c->rtt_start.tv_sec) {
 			if(c->rtt_seq == hdr.ack) {
