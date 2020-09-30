@@ -101,7 +101,7 @@ int main(void) {
 	// Start MeshLink and wait for the channel to become connected.
 	start_meshlink_pair(a, b);
 
-	assert(wait_sync_flag(&channel_opened, 5));
+	assert(wait_sync_flag(&channel_opened, 15));
 
 	// Re-initialize everything
 	meshlink_channel_close(a, channel);
@@ -123,7 +123,7 @@ int main(void) {
 	assert(channel);
 	meshlink_set_channel_poll_cb(a, channel, poll_cb);
 
-	assert(wait_sync_flag(&channel_opened, 5));
+	assert(wait_sync_flag(&channel_opened, 15));
 
 	// Send a message to b
 
@@ -143,6 +143,17 @@ int main(void) {
 
 	wait_sync_flag(&b_responded, 1);
 	wait_sync_flag(&b_closed, 1);
+
+	// Try to send data on a closed channel
+
+	for(int i = 0; i < 10; i++) {
+		if(meshlink_channel_send(a, channel, "Hello", 5) == -1) {
+			break;
+		}
+
+		assert(i != 9);
+		usleep(10000);
+	}
 
 	// Try to create a second channel
 

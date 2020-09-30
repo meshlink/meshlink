@@ -12,7 +12,7 @@
 #include "meshlink.h"
 #include "utils.h"
 
-static const size_t size = 10000000; // size of data to transfer
+static const size_t size = 12000000; // size of data to transfer
 
 struct aio_info {
 	int port;
@@ -72,7 +72,6 @@ static bool accept_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint
 	case 4:
 		assert(meshlink_channel_aio_receive(mesh, channel, info->data, size / 4, aio_cb_close, &info->aio_infos[0]));
 		assert(meshlink_channel_aio_receive(mesh, channel, info->data + size / 4, size - size / 4, aio_cb, &info->aio_infos[1]));
-		set_sync_flag(&info->aio_infos[1].flag, true);
 		break;
 
 	default:
@@ -151,23 +150,32 @@ int main(void) {
 		if(i < 2) {
 			assert(meshlink_channel_aio_send(mesh_a, channels[i], outdata, size / 3, aio_cb, &out_infos[i].aio_infos[0]));
 			assert(meshlink_channel_aio_send(mesh_a, channels[i], outdata + size / 3, size - size / 3, aio_cb_close, &out_infos[i].aio_infos[1]));
-			assert(wait_sync_flag(&out_infos[i].aio_infos[0].flag, 10));
-			assert(wait_sync_flag(&out_infos[i].aio_infos[1].flag, 10));
 		} else {
 			assert(meshlink_channel_aio_send(mesh_a, channels[i], outdata, size / 3, aio_cb_close, &out_infos[i].aio_infos[0]));
 			assert(meshlink_channel_aio_send(mesh_a, channels[i], outdata + size / 3, size - size / 3, aio_cb, &out_infos[i].aio_infos[1]));
-			assert(wait_sync_flag(&out_infos[i].aio_infos[0].flag, 10));
-			set_sync_flag(&out_infos[i].aio_infos[1].flag, true);
 		}
 	}
 
 	// Wait for all AIO buffers to finish.
 
 	for(size_t i = 0; i < nchannels; i++) {
+		// The first chunk should always have succeeded
 		assert(wait_sync_flag(&in_infos[i].aio_infos[0].flag, 10));
-		assert(wait_sync_flag(&in_infos[i].aio_infos[1].flag, 10));
 		assert(wait_sync_flag(&out_infos[i].aio_infos[0].flag, 10));
-		assert(wait_sync_flag(&out_infos[i].aio_infos[1].flag, 10));
+
+		// The second chunk should only have completed if we didn't close the channel yet
+		if(i % 2) {
+			assert(!check_sync_flag(&in_infos[i].aio_infos[1].flag));
+		} else {
+			assert(wait_sync_flag(&in_infos[i].aio_infos[1].flag, 10));
+		}
+
+		if(i < 2) {
+			assert(wait_sync_flag(&out_infos[i].aio_infos[1].flag, 10));
+		} else {
+			assert(!check_sync_flag(&out_infos[i].aio_infos[1].flag));
+		}
+
 	}
 
 	// Check that everything is correct.

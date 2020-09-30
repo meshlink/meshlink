@@ -3904,9 +3904,6 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 		}
 
 		if(sent != (ssize_t)todo) {
-			/* We should never get a partial send at this point */
-			assert(sent <= 0);
-
 			/* Sending failed, abort all outstanding AIO buffers and send a poll callback. */
 			if(!aio_abort(mesh, channel, &channel->aio_send)) {
 				return;
