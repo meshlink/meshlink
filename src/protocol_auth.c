@@ -381,6 +381,25 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		mesh->meta_status_cb(mesh, (meshlink_node_t *)n, true);
 	}
 
+	/*  Terminate any connections to this node that are not activated yet */
+
+	for list_each(connection_t, other, mesh->connections) {
+		if(!other->status.active && !strcmp(other->name, c->name)) {
+			if(other->outgoing) {
+				if(c->outgoing) {
+					logger(mesh, MESHLINK_WARNING, "Two outgoing connections to the same node!");
+				} else {
+					c->outgoing = other->outgoing;
+				}
+
+				other->outgoing = NULL;
+			}
+
+			logger(mesh, MESHLINK_DEBUG, "Terminating pending second connection with %s", n->name);
+			terminate_connection(mesh, other, false);
+		}
+	}
+
 	/* Send him everything we know */
 
 	send_everything(mesh, c);
