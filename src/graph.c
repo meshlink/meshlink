@@ -193,10 +193,13 @@ static void check_reachability(meshlink_handle_t *mesh) {
 
 			/* TODO: only clear status.validkey if node is unreachable? */
 
-			n->status.validkey = false;
-			sptps_stop(&n->sptps);
-			n->status.waitingforkey = false;
-			n->last_req_key = -3600;
+			if(!n->status.reachable) {
+				logger(mesh, MESHLINK_DEBUG, "Resetting validkey/waitingforkey for %s, reachable %d", n->name, n->status.reachable);
+				n->status.validkey = false;
+				sptps_stop(&n->sptps);
+				n->status.waitingforkey = false;
+				n->last_req_key = -3600;
+			}
 
 			n->status.udp_confirmed = false;
 			n->maxmtu = MTU;
