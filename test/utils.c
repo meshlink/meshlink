@@ -133,7 +133,7 @@ void open_meshlink_pair_ephemeral(meshlink_handle_t **pa, meshlink_handle_t **pb
 static void pair_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
 	(void)node;
 
-	if(reachable) {
+	if(reachable && meshlink_get_self(mesh) != node) {
 		set_sync_flag(mesh->priv, true);
 	}
 }
