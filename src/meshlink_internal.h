@@ -179,6 +179,11 @@ struct meshlink_handle {
 		int iface_count;
 		int address_count;
 		io_t sockets[2];
+		time_t last_update;
+#ifdef __APPLE__
+		pthread_t thread;
+		void *runloop;
+#endif
 	} discovery;
 
 	// ADNS

@@ -40,6 +40,9 @@ case $host_os in
     AC_DEFINE(HAVE_MINGW, 1, [MinGW])
     LIBS="$LIBS -lws2_32 -lgdi32 -lcrypt32"
   ;;
+  *darwin*)
+    LIBS="$LIBS -framework SystemConfiguration -framework CoreServices"
+  ;;
 esac
 
 AM_CONDITIONAL(LINUX, test "$linux" = true)
