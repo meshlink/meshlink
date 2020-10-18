@@ -1,7 +1,14 @@
 #define __APPLE_USE_RFC_3542
 #include "system.h"
 
-#if defined(__APPLE__) || defined(__unix) && !defined(__linux)
+#if defined(__APPLE__)
+#include <CoreFoundation/CoreFoundation.h>
+#include <CoreFoundation/CFArray.h>
+#include <CoreFoundation/CFString.h>
+#include <SystemConfiguration/SystemConfiguration.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#elif defined(__unix) && !defined(__linux)
 #include <net/if.h>
 #include <net/route.h>
 #include <netinet/in.h>
@@ -351,7 +358,7 @@ static void iface_up(meshlink_handle_t *mesh, int index) {
 	handle_network_change(mesh, true);
 }
 
-static void iface_down(meshlink_handle_t *const mesh, int index) {
+static void iface_down(meshlink_handle_t *mesh, int index) {
 	int *p = bsearch(&index, mesh->discovery.ifaces, mesh->discovery.iface_count, sizeof(*p), iface_compare);
 
 	if(!p) {
@@ -405,6 +412,108 @@ static void addr_del(meshlink_handle_t *mesh, const discovery_address_t *addr) {
 
 	memmove(p, p + 1, (mesh->discovery.addresses + --mesh->discovery.address_count - p) * sizeof(*p));
 }
+
+#if !defined(__linux) && (defined(RTM_NEWADDR) || defined(__APPLE__))
+static void scan_ifaddrs(meshlink_handle_t *mesh) {
+	struct ifaddrs *ifa = NULL;
+
+	if(getifaddrs(&ifa) == -1) {
+		logger(mesh, MESHLINK_ERROR, "Could not get list of interface addresses: %s", strerror(errno));
+		return;
+	}
+
+	// Check for interfaces being removed
+	for(int i = 0; i < mesh->discovery.iface_count;) {
+		bool found = false;
+
+		for(struct ifaddrs *ifap = ifa; ifap; ifap = ifap->ifa_next) {
+			if(!ifap->ifa_name) {
+				continue;
+			}
+
+			int index = if_nametoindex(ifap->ifa_name);
+
+			if(mesh->discovery.ifaces[i] == index) {
+				found = true;
+				break;
+			}
+		}
+
+		if(!found) {
+			iface_down(mesh, mesh->discovery.ifaces[i]);
+		} else {
+			i++;
+		}
+	}
+
+	// Check for addresses being removed
+	for(int i = 0; i < mesh->discovery.address_count;) {
+		discovery_address_t *p = &mesh->discovery.addresses[i];
+		bool found = false;
+
+		for(struct ifaddrs *ifap = ifa; ifap; ifap = ifap->ifa_next) {
+			if(!ifap->ifa_name || !ifap->ifa_addr) {
+				continue;
+			}
+
+			int index = if_nametoindex(ifap->ifa_name);
+
+			if(p->index == index && sockaddrcmp_noport(&p->address, (sockaddr_t *)ifap->ifa_addr) == 0) {
+				found = true;
+				break;
+			}
+		}
+
+		if(!found) {
+			(void)addr_del;
+			memmove(p, p + 1, (mesh->discovery.addresses + --mesh->discovery.address_count - p) * sizeof(*p));
+		} else {
+			i++;
+		}
+	}
+
+	// Check for interfaces state changes and addresses going up
+	for(struct ifaddrs *ifap = ifa; ifap; ifap = ifap->ifa_next) {
+		if(!ifap->ifa_name) {
+			continue;
+		}
+
+		int index = if_nametoindex(ifap->ifa_name);
+
+		if(ifap->ifa_flags & IFF_UP && ifap->ifa_flags & IFF_MULTICAST && !(ifap->ifa_flags & IFF_LOOPBACK)) {
+			iface_up(mesh, index);
+		} else {
+			iface_down(mesh, index);
+		}
+
+		if(!ifap->ifa_addr) {
+			continue;
+		}
+
+		discovery_address_t addr  = {
+			.index = index,
+		};
+
+		sockaddr_t *sa = (sockaddr_t *)ifap->ifa_addr;
+
+		if(sa->sa.sa_family == AF_INET) {
+			memcpy(&addr.address.in, &sa->in, sizeof(sa->in));
+			addr.address.in.sin_port = ntohs(5353);
+		} else if(sa->sa.sa_family == AF_INET6) {
+			memcpy(&addr.address.in6, &sa->in6, sizeof(sa->in6));
+			addr.address.in6.sin6_port = ntohs(5353);
+		} else {
+			addr.address.sa.sa_family = AF_UNKNOWN;
+		}
+
+		if(addr.address.sa.sa_family != AF_UNKNOWN) {
+			addr_add(mesh, &addr);
+		}
+	}
+
+	freeifaddrs(ifa);
+}
+#endif
 
 #if defined(__linux)
 static void netlink_getlink(int fd) {
@@ -519,7 +628,6 @@ static void netlink_parse(meshlink_handle_t *mesh, const void *data, size_t len)
 static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 	(void)flags;
 	(void)data;
-	static time_t prev_update;
 	meshlink_handle_t *mesh = loop->data;
 
 	struct {
@@ -552,12 +660,110 @@ static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 		} else {
 			netlink_parse(mesh, &msg, result);
 
-			if(loop->now.tv_sec > prev_update + 5) {
-				prev_update = loop->now.tv_sec;
+			if(loop->now.tv_sec > mesh->discovery.last_update + 5) {
+				mesh->discovery.last_update = loop->now.tv_sec;
 				handle_network_change(mesh, 1);
 			}
 		}
 	}
+}
+#elif defined(__APPLE__)
+static void network_change_callback(SCDynamicStoreRef store, CFArrayRef keys, void *info) {
+	(void)store;
+	(void)keys;
+
+	meshlink_handle_t *mesh = info;
+
+	pthread_mutex_lock(&mesh->mutex);
+
+	logger(mesh, MESHLINK_ERROR, "Network change detected!");
+	scan_ifaddrs(mesh);
+
+	if(mesh->loop.now.tv_sec > mesh->discovery.last_update + 5) {
+		mesh->discovery.last_update = mesh->loop.now.tv_sec;
+		handle_network_change(mesh, 1);
+	}
+
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
+static void *network_change_handler(void *arg) {
+	meshlink_handle_t *mesh = arg;
+
+	mesh->discovery.runloop = CFRunLoopGetCurrent();
+
+	SCDynamicStoreContext context = {0, mesh, NULL, NULL, NULL};
+	SCDynamicStoreRef store = SCDynamicStoreCreate(NULL, CFSTR("network_change_handler"), network_change_callback, &context);
+	CFStringRef interfaces = SCDynamicStoreKeyCreate(NULL, CFSTR("State:/Network/Interface"), kCFStringEncodingUTF8);
+	CFStringRef ipv4 = SCDynamicStoreKeyCreateNetworkInterfaceEntity(NULL, kSCDynamicStoreDomainState, kSCCompAnyRegex, kSCEntNetIPv4);
+	CFStringRef ipv6 = SCDynamicStoreKeyCreateNetworkInterfaceEntity(NULL, kSCDynamicStoreDomainState, kSCCompAnyRegex, kSCEntNetIPv6);
+	CFMutableArrayRef keys = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
+	CFMutableArrayRef patterns = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
+	CFRunLoopSourceRef runloop_source = NULL;
+
+	if(!store) {
+		logger(mesh, MESHLINK_ERROR, "Error setting up network change handler: %s\n", SCErrorString(SCError()));
+		goto exit;
+	}
+
+	if(!interfaces || !ipv4 || !ipv6 || !keys || !patterns) {
+		logger(mesh, MESHLINK_ERROR, "Error setting up network change handler: %s\n", SCErrorString(SCError()));
+		goto exit;
+	}
+
+	CFArrayAppendValue(keys, interfaces);
+	CFArrayAppendValue(patterns, ipv4);
+	CFArrayAppendValue(patterns, ipv6);
+
+	if(!SCDynamicStoreSetNotificationKeys(store, keys, patterns)) {
+		logger(mesh, MESHLINK_ERROR, "Error setting up network change handler: %s\n", SCErrorString(SCError()));
+		goto exit;
+	}
+
+	runloop_source = SCDynamicStoreCreateRunLoopSource(NULL, store, 0);
+
+	if(!runloop_source) {
+		logger(mesh, MESHLINK_ERROR, "Error setting up network change handler: %s\n", SCErrorString(SCError()));
+		goto exit;
+	}
+
+	CFRunLoopAddSource(CFRunLoopGetCurrent(), runloop_source, kCFRunLoopDefaultMode);
+	CFRunLoopRun();
+
+exit:
+
+	if(runloop_source) {
+		CFRelease(runloop_source);
+	}
+
+	if(interfaces) {
+		CFRelease(interfaces);
+	}
+
+	if(ipv4) {
+		CFRelease(ipv4);
+	}
+
+	if(ipv6) {
+		CFRelease(ipv6);
+	}
+
+	if(keys) {
+		CFRelease(keys);
+	}
+
+	if(patterns) {
+		CFRelease(patterns);
+	}
+
+	if(store) {
+		CFRelease(store);
+	}
+
+	mesh->discovery.runloop = NULL;
+
+	return NULL;
+
 }
 #elif defined(RTM_NEWADDR)
 static void pfroute_parse_iface(meshlink_handle_t *mesh, const struct rt_msghdr *rtm) {
@@ -731,6 +937,10 @@ bool discovery_start(meshlink_handle_t *mesh) {
 		logger(mesh, MESHLINK_WARNING, "Could not open AF_NETLINK socket: %s", strerror(errno));
 	}
 
+#elif defined(__APPLE__)
+	pthread_create(&mesh->discovery.thread, NULL, network_change_handler, mesh);
+	// TODO: Do we need to wait for the thread to start succesfully?
+	scan_ifaddrs(mesh);
 #elif defined(RTM_NEWADDR)
 	int sock = socket(PF_ROUTE, SOCK_RAW, AF_UNSPEC);
 
@@ -740,51 +950,7 @@ bool discovery_start(meshlink_handle_t *mesh) {
 		logger(mesh, MESHLINK_WARNING, "Could not open PF_ROUTE socket: %s", strerror(errno));
 	}
 
-	struct ifaddrs *ifa = NULL;
-
-	if(getifaddrs(&ifa) == -1) {
-		logger(mesh, MESHLINK_ERROR, "Could not get list of interface addresses: %s", strerror(errno));
-		return true;
-	}
-
-	for(struct ifaddrs *ifap = ifa; ifap; ifap = ifap->ifa_next) {
-		if(!ifap->ifa_name) {
-			continue;
-		}
-
-		int index = if_nametoindex(ifap->ifa_name);
-
-		if(ifap->ifa_flags & IFF_UP && ifap->ifa_flags & IFF_MULTICAST && !(ifap->ifa_flags & IFF_LOOPBACK)) {
-			iface_up(mesh, index);
-		}
-
-		if(!ifap->ifa_addr) {
-			continue;
-		}
-
-		discovery_address_t addr  = {
-			.index = index,
-		};
-
-		sockaddr_t *sa = (sockaddr_t *)ifap->ifa_addr;
-
-		if(sa->sa.sa_family == AF_INET) {
-			memcpy(&addr.address.in, &sa->in, sizeof(sa->in));
-			addr.address.in.sin_port = ntohs(5353);
-		} else if(sa->sa.sa_family == AF_INET6) {
-			memcpy(&addr.address.in6, &sa->in6, sizeof(sa->in6));
-			addr.address.in6.sin6_port = ntohs(5353);
-		} else {
-			addr.address.sa.sa_family = AF_UNKNOWN;
-		}
-
-		if(addr.address.sa.sa_family != AF_UNKNOWN) {
-			addr_add(mesh, &addr);
-		}
-	}
-
-	freeifaddrs(ifa);
-
+	scan_ifaddrs(mesh);
 #endif
 
 	return true;
@@ -801,6 +967,15 @@ void discovery_stop(meshlink_handle_t *mesh) {
 	mesh->discovery.addresses = NULL;
 	mesh->discovery.iface_count = 0;
 	mesh->discovery.address_count = 0;
+
+#if defined(__APPLE__)
+
+	if(mesh->discovery.runloop) {
+		CFRunLoopStop(mesh->discovery.runloop);
+		pthread_join(mesh->discovery.thread, NULL);
+	}
+
+#endif
 
 	if(mesh->discovery.pfroute_io.cb) {
 		close(mesh->discovery.pfroute_io.fd);
