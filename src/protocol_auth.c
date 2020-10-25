@@ -48,8 +48,21 @@ bool send_id(meshlink_handle_t *mesh, connection_t *c) {
 }
 
 static bool commit_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data) {
+	// Check if the node is known
+	node_t *n = lookup_node(mesh, c->name);
+
+	if(n) {
+		if(n->status.blacklisted) {
+			logger(mesh, MESHLINK_ERROR, "Invitee %s is blacklisted", c->name);
+		} else {
+			logger(mesh, MESHLINK_ERROR, "Invitee %s already known", c->name);
+		}
+
+		return false;
+	}
+
 	// Create a new node
-	node_t *n = new_node();
+	n = new_node();
 	n->name = xstrdup(c->name);
 	n->devclass = DEV_CLASS_UNKNOWN;
 	n->ecdsa = ecdsa_set_public_key(data);
