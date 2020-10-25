@@ -431,6 +431,17 @@ public:
 		return meshlink_get_node_reachability(handle, node, last_reachable, last_unreachable);
 	}
 
+	/// Get a node's blacklist status.
+	/** This function returns the current blacklist status of a given node.
+	 *
+	 *  @param node              A pointer to a meshlink::node describing the node.
+	 *
+	 *  @return                  This function returns true if the node is currently blacklisted, false otherwise.
+	 */
+	bool get_node_blacklisted(node *node) {
+		return meshlink_get_node_blacklisted(handle, node);
+	}
+
 	/// Get a handle for a specific submesh.
 	/** This function returns a handle for the submesh with the given name.
 	 *
@@ -463,6 +474,21 @@ public:
 	 */
 	node **get_all_nodes(node **nodes, size_t *nmemb) {
 		return (node **)meshlink_get_all_nodes(handle, (meshlink_node_t **)nodes, nmemb);
+	}
+
+	/// Get a list of all nodes by blacklist status.
+	/** This function returns a list with handles for all the nodes who were either blacklisted or whitelisted.
+	 *
+	 *  @param nodes        A pointer to an array of pointers to meshlink::node, which should be allocated by the application.
+	 *  @param nmemb        The maximum number of pointers that can be stored in the nodes array.
+	 *
+	 *  @return             A pointer to an array containing pointers to all known nodes with the given blacklist status.
+	 *                      If the @a nodes argument was not NULL, then the return value can either be the same value or a different value.
+	 *                      If it is a new value, the old value of @a nodes should not be used anymore.
+	 *                      If the new value is NULL, then the old array will have been freed by MeshLink.
+	 */
+	node **get_all_nodes_by_blacklisted(bool blacklisted, node **nodes, size_t *nmemb) {
+		return (node **)meshlink_get_all_nodes_by_blacklisted(handle, blacklisted, (meshlink_node_t **)nodes, nmemb);
 	}
 
 	/// Sign data using the local node's MeshLink key.

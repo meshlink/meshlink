@@ -739,16 +739,48 @@ struct meshlink_node **meshlink_get_all_nodes_by_submesh(struct meshlink_handle 
  */
 struct meshlink_node **meshlink_get_all_nodes_by_last_reachable(struct meshlink_handle *mesh, time_t start, time_t end, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
 
+/// Get the list of all nodes by blacklist status.
+/** This function returns a list with handles for all the nodes who were either blacklisted or whitelisted.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param blacklisted  If true, a list of blacklisted nodes will be returned, otherwise whitelisted nodes.
+ *  @param nodes        A pointer to a previously allocated array of pointers to struct meshlink_node, or NULL in which case MeshLink will allocate a new array.
+ *                      The application can supply an array it allocated itself with malloc, or the return value from the previous call to this function (which is the preferred way).
+ *                      The application is allowed to call free() on the array whenever it wishes.
+ *                      The pointers in the array are valid until meshlink_close() is called.
+ *  @param nmemb        A pointer to a variable holding the number of nodes that were reachable within the period given by @a start and @a end.
+ *                      In case the @a nodes argument is not NULL, MeshLink might call realloc() on the array to change its size.
+ *                      The contents of this variable will be changed to reflect the new size of the array.
+ *
+ *  @return             A pointer to an array containing pointers to all known nodes with the given blacklist status.
+ *                      If the @a nodes argument was not NULL, then the return value can either be the same value or a different value.
+ *                      If it is a new value, the old value of @a nodes should not be used anymore.
+ *                      If the new value is NULL, then the old array will have been freed by MeshLink.
+ */
+struct meshlink_node **meshlink_get_all_nodes_by_blacklisted(struct meshlink_handle *mesh, bool blacklisted, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
+
 /// Get the node's device class.
 /** This function returns the device class of the given node.
  *
  *  \memberof meshlink_node
  *  @param mesh          A handle which represents an instance of MeshLink.
- *  @param node         A pointer to a struct meshlink_node describing the node.
+ *  @param node          A pointer to a struct meshlink_node describing the node.
  *
  *  @return              This function returns the device class of the @a node, or -1 in case of an error.
  */
 dev_class_t meshlink_get_node_dev_class(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
+
+/// Get the node's blacklist status.
+/** This function returns the given node is blacklisted.
+ *
+ *  \memberof meshlink_node
+ *  @param mesh          A handle which represents an instance of MeshLink.
+ *  @param node          A pointer to a struct meshlink_node describing the node.
+ *
+ *  @return              This function returns true if the node is blacklisted, false otherwise.
+ */
+bool meshlink_get_node_blacklisted(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
 
 /// Get the node's submesh handle.
 /** This function returns the submesh handle of the given node.

@@ -2360,6 +2360,10 @@ static bool search_node_by_dev_class(const node_t *node, const void *condition) 
 	return false;
 }
 
+static bool search_node_by_blacklisted(const node_t *node, const void *condition) {
+	return *(bool *)condition == node->status.blacklisted;
+}
+
 static bool search_node_by_submesh(const node_t *node, const void *condition) {
 	if(condition == node->submesh) {
 		return true;
@@ -2422,6 +2426,15 @@ meshlink_node_t **meshlink_get_all_nodes_by_last_reachable(meshlink_handle_t *me
 	return meshlink_get_all_nodes_by_condition(mesh, &range, nodes, nmemb, search_node_by_last_reachable);
 }
 
+meshlink_node_t **meshlink_get_all_nodes_by_blacklisted(meshlink_handle_t *mesh, bool blacklisted, meshlink_node_t **nodes, size_t *nmemb) {
+	if(!mesh || !nmemb) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
+
+	return meshlink_get_all_nodes_by_condition(mesh, &blacklisted, nodes, nmemb, search_node_by_blacklisted);
+}
+
 dev_class_t meshlink_get_node_dev_class(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	if(!mesh || !node) {
 		meshlink_errno = MESHLINK_EINVAL;
@@ -2439,6 +2452,28 @@ dev_class_t meshlink_get_node_dev_class(meshlink_handle_t *mesh, meshlink_node_t
 	pthread_mutex_unlock(&mesh->mutex);
 
 	return devclass;
+}
+
+bool meshlink_get_node_blacklisted(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+	}
+
+	if(!node) {
+		return mesh->default_blacklist;
+	}
+
+	bool blacklisted;
+
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
+
+	blacklisted = ((node_t *)node)->status.blacklisted;
+
+	pthread_mutex_unlock(&mesh->mutex);
+
+	return blacklisted;
 }
 
 meshlink_submesh_t *meshlink_get_node_submesh(meshlink_handle_t *mesh, meshlink_node_t *node) {

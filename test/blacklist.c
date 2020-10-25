@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/time.h>
+#include <dirent.h>
 
 #include "meshlink.h"
 #include "devtools.h"
@@ -95,14 +96,60 @@ int main(void) {
 	assert(!meshlink_get_node(mesh[1], name[2]));
 	assert(!meshlink_get_node(mesh[2], name[1]));
 
+	// Check default blacklist status
+
+	assert(!meshlink_get_node_blacklisted(mesh[0], meshlink_get_self(mesh[0])));
+	assert(!meshlink_get_node_blacklisted(mesh[0], meshlink_get_node(mesh[0], name[1])));
+	assert(meshlink_get_node_blacklisted(mesh[1], meshlink_get_node(mesh[1], name[2])));
+	assert(meshlink_get_node_blacklisted(mesh[2], meshlink_get_node(mesh[2], name[1])));
+
+	// Generate an invitation for a node that is about to be blacklisted
+
+	char *invitation = meshlink_invite(mesh[0], NULL, "xyzzy");
+	assert(invitation);
+	free(invitation);
+
 	// Whitelisting and blacklisting by name should work.
 
 	assert(meshlink_whitelist_by_name(mesh[0], "quux"));
 	assert(meshlink_blacklist_by_name(mesh[0], "xyzzy"));
+	assert(meshlink_get_node(mesh[0], "quux"));
+	assert(!meshlink_get_node_blacklisted(mesh[0], meshlink_get_node(mesh[0], "quux")));
+	assert(meshlink_get_node_blacklisted(mesh[0], meshlink_get_node(mesh[0], "xyzzy")));
+
+	meshlink_node_t **nodes = NULL;
+	size_t nnodes = 0;
+	nodes = meshlink_get_all_nodes_by_blacklisted(mesh[0], true, nodes, &nnodes);
+	assert(nnodes == 1);
+	assert(!strcmp(nodes[0]->name, "xyzzy"));
+
+	nodes = meshlink_get_all_nodes_by_blacklisted(mesh[0], false, nodes, &nnodes);
+	assert(nnodes == 4);
+	assert(!strcmp(nodes[0]->name, "bar"));
+	assert(!strcmp(nodes[1]->name, "baz"));
+	assert(!strcmp(nodes[2]->name, "foo"));
+	assert(!strcmp(nodes[3]->name, "quux"));
+
+	free(nodes);
+
+	// Check that blacklisted nodes are not allowed to be invited, and no invitations are left on disk.
+
+	assert(!meshlink_invite(mesh[0], NULL, "xyzzy"));
+
+	DIR *dir = opendir("blacklist_conf.0/current/invitations");
+	assert(dir);
+	struct dirent *ent;
+
+	while((ent = readdir(dir))) {
+		assert(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."));
+	}
+
+	closedir(dir);
 
 	// Since these nodes now exist we should be able to forget them.
 
 	assert(meshlink_forget_node(mesh[0], meshlink_get_node(mesh[0], "quux")));
+	assert(meshlink_get_node_blacklisted(mesh[0], meshlink_get_node(mesh[0], "quux"))); // default blacklisted again
 
 	// Start the nodes.
 
@@ -122,12 +169,14 @@ int main(void) {
 	set_sync_flag(&bar_disconnected, false);
 	assert(meshlink_blacklist(mesh[0], meshlink_get_node(mesh[0], name[1])));
 	assert(wait_sync_flag(&bar_disconnected, 5));
+	assert(meshlink_get_node_blacklisted(mesh[0], meshlink_get_node(mesh[0], name[1])));
 
 	// Whitelist bar
 
 	set_sync_flag(&bar_connected, false);
 	assert(meshlink_whitelist(mesh[0], meshlink_get_node(mesh[0], name[1])));
 	assert(wait_sync_flag(&bar_connected, 15));
+	assert(!meshlink_get_node_blacklisted(mesh[0], meshlink_get_node(mesh[0], name[1])));
 
 	// Bar should not connect to baz
 
@@ -144,6 +193,8 @@ int main(void) {
 
 	assert(meshlink_whitelist(mesh[1], baz));
 	assert(meshlink_whitelist(mesh[2], bar));
+	assert(!meshlink_get_node_blacklisted(mesh[1], baz));
+	assert(!meshlink_get_node_blacklisted(mesh[2], bar));
 
 	// They should connect to each other
 
