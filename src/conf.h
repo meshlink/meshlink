@@ -57,5 +57,6 @@ bool config_scan_all(struct meshlink_handle *mesh, const char *conf_subdir, cons
 bool invitation_read(struct meshlink_handle *mesh, const char *conf_subdir, const char *name, struct config_t *, void *key) __attribute__((__warn_unused_result__));
 bool invitation_write(struct meshlink_handle *mesh, const char *conf_subdir, const char *name, const struct config_t *, void *key) __attribute__((__warn_unused_result__));
 size_t invitation_purge_old(struct meshlink_handle *mesh, time_t deadline);
+size_t invitation_purge_node(struct meshlink_handle *mesh, const char *node_name);
 
 #endif

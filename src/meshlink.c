@@ -3430,6 +3430,9 @@ static bool blacklist(meshlink_handle_t *mesh, node_t *n) {
 		mesh->node_status_cb(mesh, (meshlink_node_t *)n, false);
 	}
 
+	/* Remove any outstanding invitations */
+	invitation_purge_node(mesh, n->name);
+
 	return node_write_config(mesh, n) && config_sync(mesh, "current");
 }
 
@@ -3608,6 +3611,9 @@ bool meshlink_forget_node(meshlink_handle_t *mesh, meshlink_node_t *node) {
 		pthread_mutex_unlock(&mesh->mutex);
 		return false;
 	}
+
+	/* Delete any pending invitations */
+	invitation_purge_node(mesh, n->name);
 
 	/* Delete the node struct and any remaining edges referencing this node */
 	node_del(mesh, n);

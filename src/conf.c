@@ -1036,3 +1036,79 @@ size_t invitation_purge_old(meshlink_handle_t *mesh, time_t deadline) {
 
 	return count;
 }
+
+/// Purge invitations for the given node
+size_t invitation_purge_node(meshlink_handle_t *mesh, const char *node_name) {
+	if(!mesh->confbase) {
+		return true;
+	}
+
+	char path[PATH_MAX];
+	make_invitation_path(mesh, "current", "", path, sizeof(path));
+
+	DIR *dir = opendir(path);
+
+	if(!dir) {
+		logger(mesh, MESHLINK_DEBUG, "Could not read directory %s: %s\n", path, strerror(errno));
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return 0;
+	}
+
+	errno = 0;
+	size_t count = 0;
+	struct dirent *ent;
+
+	while((ent = readdir(dir))) {
+		if(strlen(ent->d_name) != 24) {
+			continue;
+		}
+
+		char invname[PATH_MAX];
+
+		if(snprintf(invname, sizeof(invname), "%s" SLASH "%s", path, ent->d_name) >= PATH_MAX) {
+			logger(mesh, MESHLINK_DEBUG, "Filename too long: %s" SLASH "%s", path, ent->d_name);
+			continue;
+		}
+
+		FILE *f = fopen(invname, "r");
+
+		if(!f) {
+			errno = 0;
+			continue;
+		}
+
+		config_t config;
+
+		if(!config_read_file(mesh, f, &config, mesh->config_key)) {
+			logger(mesh, MESHLINK_ERROR, "Failed to read `%s': %s", invname, strerror(errno));
+			config_free(&config);
+			fclose(f);
+			errno = 0;
+			continue;
+		}
+
+		packmsg_input_t in = {config.buf, config.len};
+		packmsg_get_uint32(&in); // skip version
+		char *name = packmsg_get_str_dup(&in);
+
+		if(name && !strcmp(name, node_name)) {
+			logger(mesh, MESHLINK_DEBUG, "Removing invitation for %s", node_name);
+			unlink(invname);
+		}
+
+		free(name);
+		config_free(&config);
+		fclose(f);
+	}
+
+	if(errno) {
+		logger(mesh, MESHLINK_DEBUG, "Error while reading directory %s: %s\n", path, strerror(errno));
+		closedir(dir);
+		meshlink_errno = MESHLINK_ESTORAGE;
+		return 0;
+	}
+
+	closedir(dir);
+
+	return count;
+}
