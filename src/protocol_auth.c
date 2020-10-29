@@ -267,11 +267,6 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		return false;
 	}
 
-	if(n->status.blacklisted) {
-		logger(mesh, MESHLINK_WARNING, "Peer %s is blacklisted", c->name);
-		return false;
-	}
-
 	if(!node_read_public_key(mesh, n)) {
 		logger(mesh, MESHLINK_ERROR, "No key known for peer %s", c->name);
 
@@ -309,6 +304,13 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 }
 
 bool send_ack(meshlink_handle_t *mesh, connection_t *c) {
+	node_t *n = lookup_node(mesh, c->name);
+
+	if(n && n->status.blacklisted) {
+		logger(mesh, MESHLINK_WARNING, "Peer %s is blacklisted", c->name);
+		return send_error(mesh, c, BLACKLISTED, "blacklisted");
+	}
+
 	c->last_ping_time = mesh->loop.now.tv_sec;
 	return send_request(mesh, c, NULL, "%d %s %d %x", ACK, mesh->myport, mesh->devclass, OPTION_PMTU_DISCOVERY | (PROT_MINOR << 24));
 }

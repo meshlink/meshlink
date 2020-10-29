@@ -2060,6 +2060,20 @@ void meshlink_set_error_cb(struct meshlink_handle *mesh, meshlink_error_cb_t cb)
 	pthread_mutex_unlock(&mesh->mutex);
 }
 
+void meshlink_set_blacklisted_cb(struct meshlink_handle *mesh, meshlink_blacklisted_cb_t cb) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
+
+	mesh->blacklisted_cb = cb;
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
 static bool prepare_packet(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len, vpn_packet_t *packet) {
 	meshlink_packethdr_t *hdr;
 

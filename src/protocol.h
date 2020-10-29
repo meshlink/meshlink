@@ -51,6 +51,11 @@ typedef enum request_t {
 	LAST                                            /* Guardian for the highest request number */
 } request_t;
 
+typedef enum request_error_t {
+	NONE = 0,
+	BLACKLISTED = 1,
+} request_error_t;
+
 typedef struct past_request_t {
 	const char *request;
 	time_t firstseen;
@@ -83,6 +88,7 @@ bool seen_request(struct meshlink_handle *mesh, const char *);
 
 bool send_id(struct meshlink_handle *mesh, struct connection_t *);
 bool send_ack(struct meshlink_handle *mesh, struct connection_t *);
+bool send_error(struct meshlink_handle *mesh, struct connection_t *, request_error_t, const char *);
 bool send_ping(struct meshlink_handle *mesh, struct connection_t *);
 bool send_pong(struct meshlink_handle *mesh, struct connection_t *);
 bool send_add_edge(struct meshlink_handle *mesh, struct connection_t *, const struct edge_t *, int contradictions);

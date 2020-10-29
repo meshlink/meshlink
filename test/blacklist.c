@@ -19,6 +19,7 @@
 
 static struct sync_flag bar_connected;
 static struct sync_flag bar_disconnected;
+static struct sync_flag bar_blacklisted;
 static struct sync_flag baz_connected;
 
 static void foo_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reachable) {
@@ -42,6 +43,14 @@ static void baz_status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool r
 		if(reachable) {
 			set_sync_flag(&baz_connected, true);
 		}
+	}
+}
+
+static void bar_blacklisted_cb(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	(void)mesh;
+
+	if(!strcmp(node->name, "foo")) {
+		set_sync_flag(&bar_blacklisted, true);
 	}
 }
 
@@ -166,10 +175,14 @@ int main(void) {
 
 	// Blacklist bar
 
+	meshlink_set_blacklisted_cb(mesh[1], bar_blacklisted_cb);
+
 	set_sync_flag(&bar_disconnected, false);
 	assert(meshlink_blacklist(mesh[0], meshlink_get_node(mesh[0], name[1])));
 	assert(wait_sync_flag(&bar_disconnected, 5));
 	assert(meshlink_get_node_blacklisted(mesh[0], meshlink_get_node(mesh[0], name[1])));
+
+	assert(wait_sync_flag(&bar_blacklisted, 10));
 
 	// Whitelist bar
 

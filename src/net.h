@@ -111,6 +111,7 @@ void send_mtu_probe(struct meshlink_handle *mesh, struct node_t *);
 void handle_meta_connection_data(struct meshlink_handle *mesh, struct connection_t *);
 void retry(struct meshlink_handle *mesh);
 int check_port(struct meshlink_handle *mesh);
+void flush_meta(struct meshlink_handle *mesh, struct connection_t *);
 
 #ifndef HAVE_MINGW
 #define closesocket(s) close(s)

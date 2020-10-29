@@ -69,6 +69,7 @@ meshlink_open_params_set_netns
 meshlink_open_params_set_storage_key
 meshlink_reset_timers
 meshlink_send
+meshlink_set_blacklisted_cb
 meshlink_set_canonical_address
 meshlink_set_channel_accept_cb
 meshlink_set_channel_listen_cb

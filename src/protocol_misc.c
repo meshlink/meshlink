@@ -50,6 +50,12 @@ bool status_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	return true;
 }
 
+bool send_error(meshlink_handle_t *mesh, connection_t *c, request_error_t err, const char *message) {
+	send_request(mesh, c, NULL, "%d %d %s", ERROR, err, message);
+	flush_meta(mesh, c);
+	return false;
+}
+
 bool error_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	assert(request);
 	assert(*request);
@@ -63,6 +69,13 @@ bool error_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	}
 
 	logger(mesh, MESHLINK_INFO, "Error message from %s: %d: %s", c->name, err, errorstring);
+
+	switch(err) {
+	case BLACKLISTED:
+		if(mesh->blacklisted_cb) {
+			mesh->blacklisted_cb(mesh, (meshlink_node_t *)lookup_node(mesh, c->name));
+		}
+	}
 
 	return false;
 }

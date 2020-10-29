@@ -143,6 +143,10 @@ static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 	}
 }
 
+void flush_meta(meshlink_handle_t *mesh, connection_t *c) {
+	handle_meta_write(mesh, c);
+}
+
 static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 	meshlink_handle_t *mesh = loop->data;
 	connection_t *c = data;

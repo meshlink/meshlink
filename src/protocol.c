@@ -140,7 +140,7 @@ bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *reque
 			logger(mesh, MESHLINK_DEBUG, "Got %s from %s: %s", request_name[reqno], c->name, request);
 		}
 
-		if((c->allow_request != ALL) && (c->allow_request != reqno)) {
+		if((c->allow_request != ALL) && (c->allow_request != reqno) && (reqno != ERROR)) {
 			logger(mesh, MESHLINK_ERROR, "Unauthorized request from %s", c->name);
 			return false;
 		}

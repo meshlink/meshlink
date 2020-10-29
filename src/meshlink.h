@@ -547,6 +547,27 @@ typedef void (*meshlink_error_cb_t)(struct meshlink_handle *mesh, meshlink_errno
  */
 void meshlink_set_error_cb(struct meshlink_handle *mesh, meshlink_error_cb_t cb);
 
+/// A callback for receiving blacklisted conditions encountered by the MeshLink thread.
+/** @param mesh      A handle which represents an instance of MeshLink, or NULL.
+ *  @param node      The node that blacklisted the local node.
+ */
+typedef void (*meshlink_blacklisted_cb_t)(struct meshlink_handle *mesh, struct meshlink_node *node);
+
+/// Set the blacklisted callback.
+/** This functions sets the callback that is called whenever MeshLink detects that it is blacklisted by another node.
+ *
+ *  The callback is run in MeshLink's own thread.
+ *  It is important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to hand the data over to the application's thread.
+ *  The callback should also not block itself and return as quickly as possible.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh      A handle which represents an instance of MeshLink, or NULL.
+ *  @param cb        A pointer to the function which will be called when a serious error is encountered.
+ *                   If a NULL pointer is given, the callback will be disabled.
+ */
+void meshlink_set_blacklisted_cb(struct meshlink_handle *mesh, meshlink_blacklisted_cb_t cb);
+
 /// Send data to another node.
 /** This functions sends one packet of data to another node in the mesh.
  *  The packet is sent using UDP semantics, which means that
