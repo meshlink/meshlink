@@ -3456,6 +3456,10 @@ static bool blacklist(meshlink_handle_t *mesh, node_t *n) {
 	 */
 	for list_each(connection_t, c, mesh->connections) {
 		if(c->node == n) {
+			if(c->status.active) {
+				send_error(mesh, c, BLACKLISTED, "blacklisted");
+			}
+
 			shutdown(c->socket, SHUT_RDWR);
 		}
 	}
