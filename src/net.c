@@ -627,7 +627,7 @@ static void periodic_handler(event_loop_t *loop, void *data) {
 			n->status.dirty = false;
 		}
 
-		if(n->status.validkey && n->last_req_key + 3600 < mesh->loop.now.tv_sec) {
+		if(n->status.reachable && n->status.validkey && n->last_req_key + 3600 < mesh->loop.now.tv_sec) {
 			logger(mesh, MESHLINK_DEBUG, "SPTPS key renewal for node %s", n->name);
 			devtool_sptps_renewal_probe((meshlink_node_t *)n);
 

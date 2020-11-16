@@ -245,6 +245,11 @@ static bool try_mac(meshlink_handle_t *mesh, node_t *n, const vpn_packet_t *inpk
 }
 
 static void receive_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *inpkt) {
+	if(!n->status.reachable) {
+		logger(mesh, MESHLINK_ERROR, "Got SPTPS data from unreachable node %s", n->name);
+		return;
+	}
+
 	if(!n->sptps.state) {
 		if(!n->status.waitingforkey) {
 			logger(mesh, MESHLINK_DEBUG, "Got packet from %s but we haven't exchanged keys yet", n->name);
@@ -262,6 +267,11 @@ static void receive_udppacket(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 }
 
 static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *origpkt) {
+	if(!n->status.reachable) {
+		logger(mesh, MESHLINK_ERROR, "Trying to send SPTPS data to unreachable node %s", n->name);
+		return;
+	}
+
 	if(!n->status.validkey) {
 		logger(mesh, MESHLINK_INFO, "No valid key known yet for %s", n->name);
 
@@ -378,6 +388,11 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 
 	node_t *to = handle;
 	meshlink_handle_t *mesh = to->mesh;
+
+	if(!to->status.reachable) {
+		logger(mesh, MESHLINK_ERROR, "Trying to send SPTPS data to unreachable node %s", to->name);
+		return false;
+	}
 
 	/* Send it via TCP if it is a handshake packet, TCPOnly is in use, or this packet is larger than the MTU. */
 
