@@ -102,7 +102,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 	}
 
 	if(n->mtuprobes == 31) {
-		if(!n->minmtu && n->status.want_udp) {
+		if(!n->minmtu && n->status.want_udp && n->nexthop && n->nexthop->connection) {
 			/* Send a dummy ANS_KEY to try to update the reflexive UDP address */
 			send_request(mesh, n->nexthop->connection, NULL, "%d %s %s . -1 -1 -1 0", ANS_KEY, mesh->self->name, n->name);
 			n->status.want_udp = false;
@@ -188,7 +188,13 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 		if(!n->status.udp_confirmed) {
 			char *address, *port;
 			sockaddr2str(&n->address, &address, &port);
-			send_request(mesh, n->nexthop->connection, NULL, "%d %s %s . -1 -1 -1 0 %s %s", ANS_KEY, n->name, n->name, address, port);
+
+			if(n->nexthop && n->nexthop->connection) {
+				send_request(mesh, n->nexthop->connection, NULL, "%d %s %s . -1 -1 -1 0 %s %s", ANS_KEY, n->name, n->name, address, port);
+			} else {
+				logger(mesh, MESHLINK_WARNING, "Cannot send reflexive address to %s via %s", n->name, n->nexthop ? n->nexthop->name : n->name);
+			}
+
 			free(address);
 			free(port);
 			n->status.udp_confirmed = true;
@@ -399,6 +405,11 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 	if(type >= SPTPS_HANDSHAKE || (type != PKT_PROBE && (len - 21) > to->minmtu)) {
 		char buf[len * 4 / 3 + 5];
 		b64encode(data, buf, len);
+
+		if(!to->nexthop || !to->nexthop->connection) {
+			logger(mesh, MESHLINK_WARNING, "Unable to forward SPTPS packet to %s via %s", to->name, to->nexthop ? to->nexthop->name : to->name);
+			return false;
+		}
 
 		/* If no valid key is known yet, send the packets using ANS_KEY requests,
 		   to ensure we get to learn the reflexive UDP address. */

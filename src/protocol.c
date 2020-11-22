@@ -67,9 +67,13 @@ bool check_id(const char *id) {
    detection as well */
 
 bool send_request(meshlink_handle_t *mesh, connection_t *c, const submesh_t *s, const char *format, ...) {
-	assert(c);
 	assert(format);
 	assert(*format);
+
+	if(!c) {
+		logger(mesh, MESHLINK_ERROR, "Trying to send request to non-existing connection");
+		return false;
+	}
 
 	va_list args;
 	char request[MAXBUFSIZE];
