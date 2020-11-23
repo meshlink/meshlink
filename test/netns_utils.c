@@ -1,6 +1,6 @@
 #define _GNU_SOURCE 1
 
-#ifndef NDEBUG
+#ifdef NDEBUG
 #undef NDEBUG
 #endif
 

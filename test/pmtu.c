@@ -1,4 +1,4 @@
-#ifndef NDEBUG
+#ifdef NDEBUG
 #undef NDEBUG
 #endif
 
@@ -169,9 +169,22 @@ int main(void) {
 		meshlink_set_log_cb(states[i].mesh, MESHLINK_INFO, log_cb);
 
 		// Link the relay node to the other nodes
-		if(i > 0) {
-			link_meshlink_pair(states[0].mesh, states[i].mesh);
+		if(i == 0) {
+			assert(meshlink_set_canonical_address(states[i].mesh, meshlink_get_self(states[i].mesh), "203.0.113.1", NULL));
+		} else {
+			assert(meshlink_set_canonical_address(states[i].mesh, meshlink_get_self(states[i].mesh), "localhost", NULL));
+
+			char *data = meshlink_export(states[0].mesh);
+			assert(data);
+			assert(meshlink_import(states[i].mesh, data));
+			free(data);
+
+			data = meshlink_export(states[i].mesh);
+			assert(data);
+			assert(meshlink_import(states[0].mesh, data));
+			free(data);
 		}
+
 	}
 
 	// Start the relay
