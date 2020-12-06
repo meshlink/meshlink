@@ -33,6 +33,7 @@ static void pmtu_cb(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t pmt
 
 int main(void) {
 	init_sync_flag(&bar_reachable);
+	init_sync_flag(&pmtu_flag);
 
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);
 
