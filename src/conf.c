@@ -79,7 +79,9 @@ static bool deltree(const char *dirname) {
 
 		while((ent = readdir(d))) {
 			if(ent->d_name[0] == '.') {
-				continue;
+				if(!ent->d_name[1] || (ent->d_name[1] == '.' && !ent->d_name[2])) {
+					continue;
+				}
 			}
 
 			char filename[PATH_MAX];
