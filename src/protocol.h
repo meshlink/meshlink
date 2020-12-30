@@ -36,7 +36,7 @@
 /* Request numbers */
 
 typedef enum request_t {
-	ALL = -1,                                       /* Guardian for allow_request */
+	ALL = -1, /* Guardian for allow_request */
 	ID = 0, METAKEY, CHALLENGE, CHAL_REPLY, ACK,
 	STATUS, ERROR, TERMREQ,
 	PING, PONG,
@@ -44,11 +44,11 @@ typedef enum request_t {
 	ADD_EDGE, DEL_EDGE,
 	KEY_CHANGED, REQ_KEY, ANS_KEY,
 	PACKET,
-	/* Tinc 1.1 requests */
+	/* Extended requests */
 	CONTROL,
 	REQ_PUBKEY, ANS_PUBKEY,
 	REQ_SPTPS,
-	LAST                                            /* Guardian for the highest request number */
+	NUM_REQUESTS
 } request_t;
 
 typedef enum request_error_t {

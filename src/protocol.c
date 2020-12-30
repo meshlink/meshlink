@@ -31,23 +31,36 @@
 
 /* Jumptable for the request handlers */
 
-static bool (*request_handlers[])(meshlink_handle_t *, connection_t *, const char *) = {
-	id_h, NULL, NULL, NULL /* metakey_h, challenge_h, chal_reply_h */, ack_h,
-	status_h, error_h, termreq_h,
-	ping_h, pong_h,
-	NULL, NULL, //add_subnet_h, del_subnet_h,
-	add_edge_h, del_edge_h,
-	key_changed_h, req_key_h, ans_key_h, tcppacket_h, NULL, //control_h,
+static bool (*request_handlers[NUM_REQUESTS])(meshlink_handle_t *, connection_t *, const char *) = {
+	[ID] = id_h,
+	[ACK] = ack_h,
+	[STATUS] = status_h,
+	[ERROR] = error_h,
+	[TERMREQ] = termreq_h,
+	[PING] = ping_h,
+	[PONG] = pong_h,
+	[ADD_EDGE] = add_edge_h,
+	[DEL_EDGE] = del_edge_h,
+	[KEY_CHANGED] = key_changed_h,
+	[REQ_KEY] = req_key_h,
+	[ANS_KEY] = ans_key_h,
 };
 
 /* Request names */
 
-static const char *request_name[] = {
-	"ID", "METAKEY", "CHALLENGE", "CHAL_REPLY", "ACK",
-	"STATUS", "ERROR", "TERMREQ",
-	"PING", "PONG",
-	"ADD_SUBNET", "DEL_SUBNET",
-	"ADD_EDGE", "DEL_EDGE", "KEY_CHANGED", "REQ_KEY", "ANS_KEY", "PACKET", "CONTROL",
+static const char *request_name[NUM_REQUESTS] = {
+	[ID] = "ID",
+	[ACK] = "ACK",
+	[STATUS] = "STATUS",
+	[ERROR] = "ERROR",
+	[TERMREQ] = "TERMREQ",
+	[PING] = "PING",
+	[PONG] = "PONG",
+	[ADD_EDGE] = "ADD_EDGE",
+	[DEL_EDGE] = "DEL_EDGE",
+	[KEY_CHANGED] = "KEY_CHANGED",
+	[REQ_KEY] = "REQ_KEY",
+	[ANS_KEY] = "ANS_KEY",
 };
 
 bool check_id(const char *id) {
@@ -137,7 +150,7 @@ bool receive_request(meshlink_handle_t *mesh, connection_t *c, const char *reque
 	int reqno = atoi(request);
 
 	if(reqno || *request == '0') {
-		if((reqno < 0) || (reqno >= LAST) || !request_handlers[reqno]) {
+		if((reqno < 0) || (reqno >= NUM_REQUESTS) || !request_handlers[reqno]) {
 			logger(mesh, MESHLINK_DEBUG, "Unknown request from %s: %s", c->name, request);
 			return false;
 		} else {
