@@ -19,6 +19,7 @@
 
 #include "system.h"
 
+#include "meshlink_internal.h"
 #include "net.h"
 #include "netutl.h"
 #include "logger.h"
@@ -72,6 +73,45 @@ sockaddr_t str2sockaddr(const char *address, const char *port) {
 	}
 
 	memcpy(&result, ai->ai_addr, ai->ai_addrlen);
+	freeaddrinfo(ai);
+
+	return result;
+}
+
+sockaddr_t str2sockaddr_random(struct meshlink_handle *mesh, const char *address, const char *port) {
+	struct addrinfo *ai;
+	sockaddr_t result;
+	int err;
+
+	memset(&result, 0, sizeof(result));
+
+	struct addrinfo hint = {
+		.ai_family = AF_UNSPEC,
+		.ai_flags = NI_NUMERICHOST | NI_NUMERICSERV,
+		.ai_socktype = SOCK_STREAM,
+	};
+
+	err = getaddrinfo(address, port, &hint, &ai);
+
+	if(err || !ai) {
+		logger(NULL, MESHLINK_DEBUG, "Unknown type address %s port %s", address, port);
+		result.sa.sa_family = AF_UNKNOWN;
+		result.unknown.address = xstrdup(address);
+		result.unknown.port = xstrdup(port);
+		return result;
+	}
+
+	int count = 0;
+
+	for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
+		count++;
+	}
+
+	struct addrinfo *aip = ai;
+
+	for(count = prng(mesh, count); count--; aip = aip->ai_next);
+
+	memcpy(&result, aip->ai_addr, aip->ai_addrlen);
 	freeaddrinfo(ai);
 
 	return result;

@@ -305,7 +305,7 @@ static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 	return;
 }
 
-static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const sockaddr_t **sa, int *sock) {
+static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const sockaddr_t **sa, int *sock, sockaddr_t *sa_buf) {
 	/* Latest guess */
 	*sa = &n->address;
 	*sock = n->sock;
@@ -328,6 +328,22 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 	if(mesh->udp_choice == 1 && n->catta_address.sa.sa_family != AF_UNSPEC) {
 		*sa = &n->catta_address;
 		goto check_socket;
+	}
+
+	/* Else, if we have a canonical address, try this once every batch */
+	if(mesh->udp_choice == 1 && n->canonical_address) {
+		char *host = xstrdup(n->canonical_address);
+		char *port = strchr(host, ' ');
+
+		if(port) {
+			*port++ = 0;
+			*sa_buf = str2sockaddr_random(mesh, host, port);
+			*sa = sa_buf;
+			free(host);
+			goto check_socket;
+		}
+
+		free(host);
 	}
 
 	/* Otherwise, address are found in edges to this node.
@@ -422,13 +438,14 @@ bool send_sptps_data(void *handle, uint8_t type, const void *data, size_t len) {
 
 	/* Otherwise, send the packet via UDP */
 
+	sockaddr_t sa_buf;
 	const sockaddr_t *sa;
 	int sock;
 
 	if(to->status.broadcast) {
 		choose_broadcast_address(mesh, to, &sa, &sock);
 	} else {
-		choose_udp_address(mesh, to, &sa, &sock);
+		choose_udp_address(mesh, to, &sa, &sock, &sa_buf);
 	}
 
 	if(sendto(mesh->listen_socket[sock].udp.fd, data, len, 0, &sa->sa, SALEN(sa->sa)) < 0 && !sockwouldblock(sockerrno)) {
