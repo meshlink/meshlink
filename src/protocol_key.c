@@ -83,6 +83,14 @@ static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data
 	return send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_KEY, buf);
 }
 
+bool send_canonical_address(meshlink_handle_t *mesh, node_t *to) {
+	if(!mesh->self->canonical_address) {
+		return true;
+	}
+
+	return send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_CANONICAL, mesh->self->canonical_address);
+}
+
 bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 	if(!node_read_public_key(mesh, to)) {
 		logger(mesh, MESHLINK_DEBUG, "No ECDSA key known for %s", to->name);
@@ -101,6 +109,9 @@ bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 	if(to->sptps.label) {
 		logger(mesh, MESHLINK_DEBUG, "send_req_key(%s) called while sptps->label != NULL!", to->name);
 	}
+
+	/* Send our canonical address to help with UDP hole punching */
+	send_canonical_address(mesh, to);
 
 	char label[sizeof(meshlink_udp_label) + strlen(mesh->self->name) + strlen(to->name) + 2];
 	snprintf(label, sizeof(label), "%s %s %s", meshlink_udp_label, mesh->self->name, to->name);
@@ -206,6 +217,9 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		from->status.waitingforkey = true;
 		from->last_req_key = mesh->loop.now.tv_sec;
 
+		/* Send our canonical address to help with UDP hole punching */
+		send_canonical_address(mesh, from);
+
 		if(!sptps_start(&from->sptps, from, false, true, mesh->private_key, from->ecdsa, label, sizeof(label) - 1, send_sptps_data, receive_sptps_record)) {
 			logger(mesh, MESHLINK_ERROR, "Could not start SPTPS session with %s: %s", from->name, strerror(errno));
 			return true;
@@ -238,6 +252,28 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 			return true;
 		}
 
+		return true;
+	}
+
+	case REQ_CANONICAL: {
+		char host[MAX_STRING_SIZE];
+		char port[MAX_STRING_SIZE];
+
+		if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING " " MAX_STRING, host, port) != 2) {
+			logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "REQ_CANONICAL", from->name, "invalid canonical address");
+			return true;
+		}
+
+		strncat(host, " ", MAX_STRING_SIZE - 1);
+		strncat(host, port, MAX_STRING_SIZE - 1);
+
+		if(from->canonical_address && !strcmp(from->canonical_address, host)) {
+			return true;
+		}
+
+		logger(mesh, MESHLINK_DEBUG, "Updating canonical address of %s to %s", from->name, host);
+		free(from->canonical_address);
+		from->canonical_address = xstrdup(host);
 		return true;
 	}
 
