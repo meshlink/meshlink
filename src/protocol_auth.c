@@ -187,10 +187,27 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	assert(*request);
 
 	char name[MAX_STRING_SIZE];
+	char real_address[MAX_STRING_SIZE] = "";
+	char real_port[MAX_STRING_SIZE] = "";
 
-	if(sscanf(request, "%*d " MAX_STRING " %d.%d", name, &c->protocol_major, &c->protocol_minor) < 2) {
+	if(sscanf(request, "%*d " MAX_STRING " %d.%d %*s " MAX_STRING " " MAX_STRING, name, &c->protocol_major, &c->protocol_minor, real_address, real_port) < 2) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ID", c->name);
 		return false;
+	}
+
+	/* Parse the real address if present */
+
+	if(!c->outgoing && *real_address && *real_port) {
+		sockaddr_t sa = str2sockaddr(real_address, real_port);
+
+		if(sa.sa.sa_family == AF_UNKNOWN || sa.sa.sa_family == AF_UNSPEC) {
+			logger(mesh, MESHLINK_ERROR, "Could not parse real address from %s", c->name);
+			sockaddrfree(&sa);
+			return false;
+		}
+
+		sockaddrfree(&c->address);
+		c->address = sa;
 	}
 
 	/* Check if this is an invitation  */
