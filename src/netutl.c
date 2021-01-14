@@ -58,7 +58,7 @@ sockaddr_t str2sockaddr(const char *address, const char *port) {
 
 	struct addrinfo hint = {
 		.ai_family = AF_UNSPEC,
-		.ai_flags = NI_NUMERICHOST | NI_NUMERICSERV,
+		.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV,
 		.ai_socktype = SOCK_STREAM,
 	};
 
@@ -87,7 +87,7 @@ sockaddr_t str2sockaddr_random(struct meshlink_handle *mesh, const char *address
 
 	struct addrinfo hint = {
 		.ai_family = AF_UNSPEC,
-		.ai_flags = NI_NUMERICHOST | NI_NUMERICSERV,
+		.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV,
 		.ai_socktype = SOCK_STREAM,
 	};
 
