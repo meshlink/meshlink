@@ -418,7 +418,14 @@ static void *discovery_loop(void *userdata) {
 
 	/* Allocate a new server */
 	int error;
-	mesh->catta_server = catta_server_new(catta_simple_poll_get(mesh->catta_poll), &config, discovery_server_callback, mesh, &error);
+	const CattaPoll *poller = catta_simple_poll_get(mesh->catta_poll);
+
+	if(!poller) {
+		logger(mesh, MESHLINK_ERROR, "Failed to create discovery server: %s\n", catta_strerror(error));
+		goto fail;
+	}
+
+	mesh->catta_server = catta_server_new(poller, &config, discovery_server_callback, mesh, &error);
 
 	/* Free the configuration data */
 	catta_server_config_free(&config);
