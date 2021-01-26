@@ -54,6 +54,7 @@ meshlink_get_port
 meshlink_get_self
 meshlink_get_submesh
 meshlink_hint_address
+meshlink_hint_network_change
 meshlink_import
 meshlink_invite
 meshlink_invite_ex

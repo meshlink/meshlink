@@ -3,7 +3,7 @@
 
 /*
     discovery.h -- header for discovery.c
-    Copyright (C) 2014, 2017 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2021 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,5 +25,6 @@
 bool discovery_start(meshlink_handle_t *mesh);
 void discovery_stop(meshlink_handle_t *mesh);
 void discovery_refresh(meshlink_handle_t *mesh);
+void scan_ifaddrs(meshlink_handle_t *mesh);
 
 #endif

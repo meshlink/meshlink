@@ -1,3 +1,22 @@
+/*
+  discovery.c -- local network discovery
+  Copyright (C) 2014-2021 Guus Sliepen <guus@meshlink.io>
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #define __APPLE_USE_RFC_3542
 #include "system.h"
 
@@ -413,8 +432,8 @@ static void addr_del(meshlink_handle_t *mesh, const discovery_address_t *addr) {
 	memmove(p, p + 1, (mesh->discovery.addresses + --mesh->discovery.address_count - p) * sizeof(*p));
 }
 
-#if !defined(__linux) && (defined(RTM_NEWADDR) || defined(__APPLE__))
-static void scan_ifaddrs(meshlink_handle_t *mesh) {
+void scan_ifaddrs(meshlink_handle_t *mesh) {
+#ifdef HAVE_GETIFADDRS
 	struct ifaddrs *ifa = NULL;
 
 	if(getifaddrs(&ifa) == -1) {
@@ -512,8 +531,10 @@ static void scan_ifaddrs(meshlink_handle_t *mesh) {
 	}
 
 	freeifaddrs(ifa);
-}
+#else
+	(void)mesh;
 #endif
+}
 
 #if defined(__linux)
 static void netlink_getlink(int fd) {
@@ -932,9 +953,11 @@ bool discovery_start(meshlink_handle_t *mesh) {
 			netlink_getlink(sock);
 		} else {
 			logger(mesh, MESHLINK_WARNING, "Could not bind AF_NETLINK socket: %s", strerror(errno));
+			scan_ifaddrs(mesh);
 		}
 	} else {
 		logger(mesh, MESHLINK_WARNING, "Could not open AF_NETLINK socket: %s", strerror(errno));
+		scan_ifaddrs(mesh);
 	}
 
 #elif defined(__APPLE__)
