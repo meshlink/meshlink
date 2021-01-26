@@ -3,7 +3,7 @@
 
 /*
     meshlink.h -- MeshLink API
-    Copyright (C) 2014-2019 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2021 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -1734,6 +1734,16 @@ void meshlink_hint_address(struct meshlink_handle *mesh, struct meshlink_node *n
  *  @param enable  Set to true to enable discovery, false to disable.
  */
 void meshlink_enable_discovery(struct meshlink_handle *mesh, bool enable);
+
+/// Inform MeshLink that the local network configuration might have changed
+/** This is intended to be used when there is no way for MeshLink to get notifications of local network changes.
+ *  It forces MeshLink to scan all network interfaces for changes in up/down status and new/removed addresses,
+ *  and will immediately check if all connections to other nodes are still alive.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh    A handle which represents an instance of MeshLink.
+ */
+void meshlink_hint_network_change(struct meshlink_handle *mesh);
 
 /// Performs key rotation for an encrypted storage
 /** This rotates the (master) key for an encrypted storage and discards the old key

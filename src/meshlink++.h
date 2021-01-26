@@ -1150,6 +1150,15 @@ public:
 		meshlink_enable_discovery(handle, enable);
 	}
 
+	/// Inform MeshLink that the local network configuration might have changed
+	/** This is intended to be used when there is no way for MeshLink to get notifications of local network changes.
+	 *  It forces MeshLink to scan all network interfaces for changes in up/down status and new/removed addresses,
+	 *  and will immediately check if all connections to other nodes are still alive.
+	 */
+	void hint_network_change() {
+		meshlink_hint_network_change(handle);
+	}
+
 	/// Set device class timeouts
 	/** This sets the ping interval and timeout for a given device class.
 	 *

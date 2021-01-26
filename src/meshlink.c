@@ -1,6 +1,6 @@
 /*
     meshlink.c -- Implementation of the MeshLink API.
-    Copyright (C) 2014-2018 Guus Sliepen <guus@meshlink.io>
+    Copyright (C) 2014-2021 Guus Sliepen <guus@meshlink.io>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -4567,6 +4567,28 @@ void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable) {
 	mesh->discovery.enabled = enable;
 
 end:
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
+void meshlink_hint_network_change(struct meshlink_handle *mesh) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
+
+	if(mesh->discovery.enabled) {
+		scan_ifaddrs(mesh);
+	}
+
+	if(mesh->loop.now.tv_sec > mesh->discovery.last_update + 5) {
+		mesh->discovery.last_update = mesh->loop.now.tv_sec;
+		handle_network_change(mesh, 1);
+	}
+
 	pthread_mutex_unlock(&mesh->mutex);
 }
 
