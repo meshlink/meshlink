@@ -713,9 +713,11 @@ void retry(meshlink_handle_t *mesh) {
 	}
 
 	/* Kick the ping timeout handler */
-	timeout_set(&mesh->loop, &mesh->pingtimer, &(struct timespec) {
-		0, 0
-	});
+	if(mesh->pingtimer.cb) {
+		timeout_set(&mesh->loop, &mesh->pingtimer, &(struct timespec) {
+			0, 0
+		});
+	}
 }
 
 /*
