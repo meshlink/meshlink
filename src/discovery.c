@@ -434,6 +434,7 @@ static void addr_del(meshlink_handle_t *mesh, const discovery_address_t *addr) {
 
 void scan_ifaddrs(meshlink_handle_t *mesh) {
 #ifdef HAVE_GETIFADDRS
+	logger(mesh, MESHLINK_WARNING, "Calling getifaddrs()");
 	struct ifaddrs *ifa = NULL;
 
 	if(getifaddrs(&ifa) == -1) {
@@ -526,13 +527,20 @@ void scan_ifaddrs(meshlink_handle_t *mesh) {
 		}
 
 		if(addr.address.sa.sa_family != AF_UNKNOWN) {
+			char *host = NULL;
+			sockaddr2str(sa, &host, NULL);
+			logger(mesh, MESHLINK_WARNING, "iface %d (%s) address %s", index, ifap->ifa_name, host);
+			free(host);
+		}
+
+		if(addr.address.sa.sa_family != AF_UNKNOWN) {
 			addr_add(mesh, &addr);
 		}
 	}
 
 	freeifaddrs(ifa);
 #else
-	(void)mesh;
+	logger(mesh, MESHLINK_ERROR, "getifaddrs() not supported");
 #endif
 }
 

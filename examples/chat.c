@@ -86,6 +86,8 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			fprintf(stderr, "Could not restart MeshLink: %s\n", meshlink_strerror(meshlink_errno));
 			exit(1);
 		}
+	} else if(!strcasecmp(buf, "scan")) {
+		meshlink_hint_network_change(mesh);
 	} else if(!strcasecmp(buf, "kick")) {
 		if(!arg) {
 			fprintf(stderr, "/kick requires an argument!\n");
