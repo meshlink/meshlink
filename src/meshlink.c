@@ -689,7 +689,7 @@ static bool write_main_config_files(meshlink_handle_t *mesh) {
 	}
 
 	/* Write our own host config file */
-	if(!node_write_config(mesh, mesh->self)) {
+	if(!node_write_config(mesh, mesh->self, true)) {
 		return false;
 	}
 
@@ -823,7 +823,7 @@ static bool finalize_join(join_state_t *state, const void *buf, uint16_t len) {
 		n->last_reachable = 0;
 		n->last_unreachable = 0;
 
-		if(!node_write_config(mesh, n)) {
+		if(!node_write_config(mesh, n, true)) {
 			free_node(n);
 			return false;
 		}
@@ -1262,6 +1262,17 @@ bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const 
 	return true;
 }
 
+bool meshlink_open_params_set_storage_policy(meshlink_open_params_t *params, meshlink_storage_policy_t policy) {
+	if(!params) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	params->storage_policy = policy;
+
+	return true;
+}
+
 bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key, size_t new_keylen) {
 	if(!mesh || !new_key || !new_keylen) {
 		logger(mesh, MESHLINK_ERROR, "Invalid arguments given!\n");
@@ -1544,6 +1555,8 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 
 	// If no configuration exists yet, create it.
 
+	bool new_configuration = false;
+
 	if(!meshlink_confbase_exists(mesh)) {
 		if(!mesh->name) {
 			logger(NULL, MESHLINK_ERROR, "No configuration files found!\n");
@@ -1557,6 +1570,8 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 			meshlink_close(mesh);
 			return NULL;
 		}
+
+		new_configuration = true;
 	} else {
 		if(!meshlink_read_config(mesh)) {
 			logger(NULL, MESHLINK_ERROR, "Cannot read main configuration\n");
@@ -1564,6 +1579,8 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 			return NULL;
 		}
 	}
+
+	mesh->storage_policy = params->storage_policy;
 
 #ifdef HAVE_MINGW
 	struct WSAData wsa_state;
@@ -1601,7 +1618,7 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 
 	add_local_addresses(mesh);
 
-	if(!node_write_config(mesh, mesh->self)) {
+	if(!node_write_config(mesh, mesh->self, new_configuration)) {
 		logger(NULL, MESHLINK_ERROR, "Cannot update configuration\n");
 		return NULL;
 	}
@@ -1829,7 +1846,7 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	if(mesh->nodes) {
 		for splay_each(node_t, n, mesh->nodes) {
 			if(n->status.dirty) {
-				n->status.dirty = !node_write_config(mesh, n);
+				n->status.dirty = !node_write_config(mesh, n, false);
 			}
 		}
 	}
@@ -2645,7 +2662,7 @@ bool meshlink_set_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *no
 	free(n->canonical_address);
 	n->canonical_address = canonical_address;
 
-	if(!node_write_config(mesh, n)) {
+	if(!node_write_config(mesh, n, false)) {
 		pthread_mutex_unlock(&mesh->mutex);
 		return false;
 	}
@@ -2669,7 +2686,7 @@ bool meshlink_clear_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *
 	free(n->canonical_address);
 	n->canonical_address = NULL;
 
-	if(!node_write_config(mesh, n)) {
+	if(!node_write_config(mesh, n, false)) {
 		pthread_mutex_unlock(&mesh->mutex);
 		return false;
 	}
@@ -2919,7 +2936,7 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 
 	// If we changed our own host config file, write it out now
 	if(mesh->self->status.dirty) {
-		if(!node_write_config(mesh, mesh->self)) {
+		if(!node_write_config(mesh, mesh->self, false)) {
 			logger(mesh, MESHLINK_ERROR, "Could not write our own host config file!\n");
 			pthread_mutex_unlock(&mesh->mutex);
 			return NULL;
@@ -3415,7 +3432,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 		n->last_reachable = 0;
 		n->last_unreachable = 0;
 
-		if(!node_write_config(mesh, n)) {
+		if(!node_write_config(mesh, n, true)) {
 			free_node(n);
 			return false;
 		}
@@ -3489,7 +3506,7 @@ static bool blacklist(meshlink_handle_t *mesh, node_t *n) {
 	/* Remove any outstanding invitations */
 	invitation_purge_node(mesh, n->name);
 
-	return node_write_config(mesh, n) && config_sync(mesh, "current");
+	return node_write_config(mesh, n, true) && config_sync(mesh, "current");
 }
 
 bool meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
@@ -3561,7 +3578,7 @@ static bool whitelist(meshlink_handle_t *mesh, node_t *n) {
 		update_node_status(mesh, n);
 	}
 
-	return node_write_config(mesh, n) && config_sync(mesh, "current");
+	return node_write_config(mesh, n, true) && config_sync(mesh, "current");
 }
 
 bool meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
@@ -3695,7 +3712,7 @@ void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const
 	node_t *n = (node_t *)node;
 
 	if(node_add_recent_address(mesh, n, (sockaddr_t *)addr)) {
-		if(!node_write_config(mesh, n)) {
+		if(!node_write_config(mesh, n, false)) {
 			logger(mesh, MESHLINK_DEBUG, "Could not update %s\n", n->name);
 		}
 	}
@@ -4642,6 +4659,20 @@ void meshlink_set_scheduling_granularity(struct meshlink_handle *mesh, long gran
 	}
 
 	utcp_set_clock_granularity(granularity);
+}
+
+void meshlink_set_storage_policy(struct meshlink_handle *mesh, meshlink_storage_policy_t policy) {
+	if(!mesh) {
+		meshlink_errno = EINVAL;
+		return;
+	}
+
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
+
+	mesh->storage_policy = policy;
+	pthread_mutex_unlock(&mesh->mutex);
 }
 
 void handle_network_change(meshlink_handle_t *mesh, bool online) {

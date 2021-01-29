@@ -83,6 +83,13 @@ typedef enum {
 	DEV_CLASS_COUNT
 } dev_class_t;
 
+/// Storage policy
+typedef enum {
+	MESHLINK_STORAGE_ENABLED,    ///< Store all updates.
+	MESHLINK_STORAGE_DISABLED,   ///< Don't store any updates.
+	MESHLINK_STORAGE_KEYS_ONLY,  ///< Only store updates when a node's key has changed.
+} meshlink_storage_policy_t;
+
 /// Invitation flags
 static const uint32_t MESHLINK_INVITE_LOCAL = 1;    // Only use local addresses in the URL
 static const uint32_t MESHLINK_INVITE_PUBLIC = 2;   // Only use public or canonical addresses in the URL
@@ -188,6 +195,16 @@ bool meshlink_open_params_set_netns(meshlink_open_params_t *params, int netns) _
  *  @return         This function will return true if the open parameters have been successfully updated, false otherwise.
  */
 bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const void *key, size_t keylen) __attribute__((__warn_unused_result__));
+
+/// Set the encryption key MeshLink should use for local storage.
+/** This function changes the open parameters to use the given storage policy.
+ *
+ *  @param params   A pointer to a meshlink_open_params_t which must have been created earlier with meshlink_open_params_init().
+ *  @param policy   The storage policy to use.
+ *
+ *  @return         This function will return true if the open parameters have been successfully updated, false otherwise.
+ */
+bool meshlink_open_params_set_storage_policy(meshlink_open_params_t *params, meshlink_storage_policy_t policy) __attribute__((__warn_unused_result__));
 
 /// Open or create a MeshLink instance.
 /** This function opens or creates a MeshLink instance.
@@ -1779,6 +1796,19 @@ void meshlink_set_external_address_discovery_url(struct meshlink_handle *mesh, c
  *  @param granularity  The scheduling granularity of the application in microseconds.
  */
 void meshlink_set_scheduling_granularity(struct meshlink_handle *mesh, long granularity);
+
+/// Sets the storage policy used by MeshLink
+/** This sets the policy MeshLink uses when it has new information about nodes.
+ *  By default, all udpates will be stored to disk (unless an ephemeral instance has been opened).
+ *  Setting the policy to MESHLINK_STORAGE_KEYS_ONLY, only updates that contain new keys for nodes
+ *  are stored, as well as blacklist/whitelist settings.
+ *  By setting the policy to MESHLINK_STORAGE_DISABLED, no updates will be stored.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh    A handle which represents an instance of MeshLink.
+ *  @param policy  The storage policy to use.
+ */
+void meshlink_set_storage_policy(struct meshlink_handle *mesh, meshlink_storage_policy_t policy);
 
 #ifdef __cplusplus
 }

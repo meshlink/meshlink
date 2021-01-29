@@ -405,7 +405,7 @@ bool config_rename(meshlink_handle_t *mesh, const char *old_conf_subdir, const c
 bool config_sync(meshlink_handle_t *mesh, const char *conf_subdir) {
 	assert(conf_subdir);
 
-	if(!mesh->confbase) {
+	if(!mesh->confbase || mesh->storage_policy == MESHLINK_STORAGE_DISABLED) {
 		return true;
 	}
 
