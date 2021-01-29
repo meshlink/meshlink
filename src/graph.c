@@ -177,7 +177,7 @@ static void check_reachability(meshlink_handle_t *mesh) {
 					n->last_reachable = time(NULL);
 
 					if(first_time_reachable) {
-						if(!node_write_config(mesh, n)) {
+						if(!node_write_config(mesh, n, false)) {
 							logger(mesh, MESHLINK_WARNING, "Could not write host config file for node %s!\n", n->name);
 
 						}

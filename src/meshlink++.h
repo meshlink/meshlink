@@ -705,6 +705,19 @@ public:
 		meshlink_set_scheduling_granularity(handle, granularity);
 	}
 
+	/// Sets the storage policy used by MeshLink
+	/** This sets the policy MeshLink uses when it has new information about nodes.
+	 *  By default, all udpates will be stored to disk (unless an ephemeral instance has been opened).
+	 *  Setting the policy to MESHLINK_STORAGE_KEYS_ONLY, only updates that contain new keys for nodes
+	 *  are stored, as well as blacklist/whitelist settings.
+	 *  By setting the policy to MESHLINK_STORAGE_DISABLED, no updates will be stored.
+	 *
+	 *  @param policy  The storage policy to use.
+	 */
+	void set_storage_policy(meshlink_storage_policy_t policy) {
+		meshlink_set_storage_policy(handle, policy);
+	}
+
 	/// Invite another node into the mesh.
 	/** This function generates an invitation that can be used by another node to join the same mesh as the local node.
 	 *  The generated invitation is a string containing a URL.

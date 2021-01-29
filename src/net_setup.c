@@ -218,9 +218,24 @@ bool node_read_from_config(meshlink_handle_t *mesh, node_t *n, const config_t *c
 	return packmsg_done(&in);
 }
 
-bool node_write_config(meshlink_handle_t *mesh, node_t *n) {
+bool node_write_config(meshlink_handle_t *mesh, node_t *n, bool new_key) {
 	if(!mesh->confbase) {
 		return true;
+	}
+
+	switch(mesh->storage_policy) {
+	case MESHLINK_STORAGE_KEYS_ONLY:
+		if(!new_key) {
+			return true;
+		}
+
+		break;
+
+	case MESHLINK_STORAGE_DISABLED:
+		return true;
+
+	default:
+		break;
 	}
 
 	uint8_t buf[4096];
@@ -271,6 +286,7 @@ bool node_write_config(meshlink_handle_t *mesh, node_t *n) {
 		return false;
 	}
 
+	n->status.dirty = false;
 	return true;
 }
 

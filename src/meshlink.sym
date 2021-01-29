@@ -67,6 +67,7 @@ meshlink_open_params_free
 meshlink_open_params_init
 meshlink_open_params_set_netns
 meshlink_open_params_set_storage_key
+meshlink_open_params_set_storage_policy
 meshlink_reset_timers
 meshlink_send
 meshlink_set_blacklisted_cb
@@ -97,6 +98,7 @@ meshlink_set_scheduling_granularity
 meshlink_sign
 meshlink_start
 meshlink_stop
+meshlink_set_storage_policy
 meshlink_strerror
 meshlink_submesh_open
 meshlink_verify
