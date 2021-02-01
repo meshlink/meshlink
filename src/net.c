@@ -700,7 +700,7 @@ void retry(meshlink_handle_t *mesh) {
 
 		int sock = socket(sa.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 
-		if(sock != -1) {
+		if(sock == -1) {
 			continue;
 		}
 
