@@ -1846,7 +1846,9 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	if(mesh->nodes) {
 		for splay_each(node_t, n, mesh->nodes) {
 			if(n->status.dirty) {
-				n->status.dirty = !node_write_config(mesh, n, false);
+				if(!node_write_config(mesh, n, false)) {
+					// ignore
+				}
 			}
 		}
 	}
