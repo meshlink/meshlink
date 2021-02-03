@@ -21,6 +21,7 @@ TESTS = \
 	invite-join \
 	meta-connections \
 	sign-verify \
+	storage-policy \
 	trio \
 	trio2 \
 	utcp-benchmark \
@@ -63,6 +64,7 @@ check_PROGRAMS = \
 	invite-join \
 	meta-connections \
 	sign-verify \
+	storage-policy \
 	stream \
 	trio \
 	trio2
@@ -142,6 +144,9 @@ meta_connections_LDADD = $(top_builddir)/src/libmeshlink.la
 
 sign_verify_SOURCES = sign-verify.c utils.c utils.h
 sign_verify_LDADD = $(top_builddir)/src/libmeshlink.la
+
+storage_policy_SOURCES = storage-policy.c utils.c utils.h
+storage_policy_LDADD = $(top_builddir)/src/libmeshlink.la
 
 trio_SOURCES = trio.c utils.c utils.h
 trio_LDADD = $(top_builddir)/src/libmeshlink.la
