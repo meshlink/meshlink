@@ -3025,6 +3025,11 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 		return false;
 	}
 
+	if(mesh->storage_policy == MESHLINK_STORAGE_DISABLED) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
 	join_state_t state = {
 		.mesh = mesh,
 		.sock = -1,
