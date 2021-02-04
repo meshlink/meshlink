@@ -148,7 +148,63 @@ int main(void) {
 	assert(last_reachable);
 	assert(last_unreachable);
 
-	// That's it.
+	// Start again from scratch, now use invite/join instead of import/export
+
+	close_meshlink_pair(mesh1, mesh2);
+
+	assert(meshlink_destroy("storage-policy_conf.1"));
+	assert(meshlink_destroy("storage-policy_conf.2"));
+
+	mesh1 = meshlink_open("storage-policy_conf.1", "foo", "storage-policy", DEV_CLASS_BACKBONE);
+	mesh2 = meshlink_open("storage-policy_conf.2", "bar", "storage-policy", DEV_CLASS_BACKBONE);
+	assert(mesh1);
+	assert(mesh2);
+	meshlink_enable_discovery(mesh1, false);
+	meshlink_enable_discovery(mesh2, false);
+	meshlink_set_storage_policy(mesh1, MESHLINK_STORAGE_DISABLED);
+	meshlink_set_storage_policy(mesh2, MESHLINK_STORAGE_DISABLED);
+
+	// Check that joining is not possible with storage disabled
+
+	assert(meshlink_set_canonical_address(mesh1, meshlink_get_self(mesh1), "localhost", NULL));
+	char *invitation = meshlink_invite(mesh1, NULL, "bar");
+	assert(invitation);
+	assert(meshlink_start(mesh1));
+	assert(!meshlink_join(mesh2, invitation));
+	assert(meshlink_errno == MESHLINK_EINVAL);
+	meshlink_stop(mesh1);
+
+	// Try again with KEYS_ONLY
+
+	meshlink_set_storage_policy(mesh1, MESHLINK_STORAGE_KEYS_ONLY);
+	meshlink_set_storage_policy(mesh2, MESHLINK_STORAGE_KEYS_ONLY);
+
+	assert(meshlink_start(mesh1));
+	assert(meshlink_join(mesh2, invitation));
+	assert(meshlink_errno == MESHLINK_EINVAL);
+	meshlink_stop(mesh1);
+
+	start_meshlink_pair(mesh1, mesh2);
+
+	// Close the instances and reopen them.
+
+	close_meshlink_pair(mesh1, mesh2);
+
+	mesh1 = meshlink_open("storage-policy_conf.1", "foo", "storage-policy", DEV_CLASS_BACKBONE);
+	mesh2 = meshlink_open("storage-policy_conf.2", "bar", "storage-policy", DEV_CLASS_BACKBONE);
+	assert(mesh1);
+	assert(mesh2);
+	meshlink_enable_discovery(mesh1, false);
+	meshlink_enable_discovery(mesh2, false);
+	meshlink_set_storage_policy(mesh1, MESHLINK_STORAGE_KEYS_ONLY);
+	meshlink_set_storage_policy(mesh2, MESHLINK_STORAGE_KEYS_ONLY);
+
+	// Check that the nodes know each other
+
+	assert(meshlink_get_node(mesh1, "bar"));
+	assert(meshlink_get_node(mesh2, "foo"));
+
+	// Done.
 
 	close_meshlink_pair(mesh1, mesh2);
 }
