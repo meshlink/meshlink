@@ -1106,6 +1106,7 @@ char *meshlink_invite(struct meshlink_handle *mesh, struct meshlink_submesh *sub
  *  After a successfully accepted invitation, the name of the local node may have changed.
  *
  *  This function may only be called on a mesh that has not been started yet and which is not already part of an existing mesh.
+ *  It is not valid to call this function when the storage policy set to MESHLINK_STORAGE_DISABLED.
  *
  *  This function is blocking. It can take several seconds before it returns.
  *  There is no guarantee it will perform a successful join.
