@@ -170,6 +170,10 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		logger(mesh, MESHLINK_INFO, "Learned ECDSA public key from %s", from->name);
 		from->status.dirty = true;
 
+		if(!node_write_config(mesh, from, true)) {
+			// ignore
+		}
+
 		/* If we are trying to form an outgoing connection to this node, retry immediately */
 		for list_each(outgoing_t, outgoing, mesh->outgoings) {
 			if(outgoing->node == from && outgoing->ev.cb) {
