@@ -146,6 +146,13 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 					logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "REQ_PUBKEY", from->name, "invalid pubkey");
 					return true;
 				}
+
+				logger(mesh, MESHLINK_INFO, "Learned ECDSA public key from %s", from->name);
+				from->status.dirty = true;
+
+				if(!node_write_config(mesh, from, true)) {
+					// ignore
+				}
 			}
 		}
 
