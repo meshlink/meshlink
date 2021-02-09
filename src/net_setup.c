@@ -332,6 +332,25 @@ int setup_tcp_listen_socket(meshlink_handle_t *mesh, const struct addrinfo *aip)
 	fcntl(nfd, F_SETFD, FD_CLOEXEC);
 #endif
 
+#ifdef O_NONBLOCK
+	int flags = fcntl(nfd, F_GETFL);
+
+	if(fcntl(nfd, F_SETFL, flags | O_NONBLOCK) < 0) {
+		closesocket(nfd);
+		logger(mesh, MESHLINK_ERROR, "System call `%s' failed: %s", "fcntl", strerror(errno));
+		return -1;
+	}
+
+#elif defined(WIN32)
+	unsigned long arg = 1;
+
+	if(ioctlsocket(nfd, FIONBIO, &arg) != 0) {
+		closesocket(nfd);
+		logger(mesh, MESHLINK_ERROR, "Call to `%s' failed: %s", "ioctlsocket", sockstrerror(sockerrno));
+		return -1;
+	}
+
+#endif
 	int option = 1;
 	setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
 
@@ -528,8 +547,8 @@ static bool add_listen_sockets(meshlink_handle_t *mesh) {
 		for(int i = 0; i < mesh->listen_sockets; i++) {
 			io_del(&mesh->loop, &mesh->listen_socket[i].tcp);
 			io_del(&mesh->loop, &mesh->listen_socket[i].udp);
-			close(mesh->listen_socket[i].tcp.fd);
-			close(mesh->listen_socket[i].udp.fd);
+			closesocket(mesh->listen_socket[i].tcp.fd);
+			closesocket(mesh->listen_socket[i].udp.fd);
 		}
 
 		mesh->listen_sockets = 0;
@@ -617,8 +636,8 @@ void close_network_connections(meshlink_handle_t *mesh) {
 	for(int i = 0; i < mesh->listen_sockets; i++) {
 		io_del(&mesh->loop, &mesh->listen_socket[i].tcp);
 		io_del(&mesh->loop, &mesh->listen_socket[i].udp);
-		close(mesh->listen_socket[i].tcp.fd);
-		close(mesh->listen_socket[i].udp.fd);
+		closesocket(mesh->listen_socket[i].tcp.fd);
+		closesocket(mesh->listen_socket[i].udp.fd);
 	}
 
 	exit_requests(mesh);

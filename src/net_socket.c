@@ -524,6 +524,10 @@ void handle_new_meta_connection(event_loop_t *loop, void *data, int flags) {
 	fd = accept(l->tcp.fd, &sa.sa, &len);
 
 	if(fd < 0) {
+		if(sockwouldblock(errno)) {
+			return;
+		}
+
 		if(errno == EINVAL) { // TODO: check if Windows agrees
 			event_loop_stop(loop);
 			return;

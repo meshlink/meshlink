@@ -211,6 +211,10 @@ static void pipe_init(event_loop_t *loop) {
 	assert(result == 0);
 
 	if(result == 0) {
+#ifdef O_NONBLOCK
+		fcntl(loop->pipefd[0], F_SETFL, O_NONBLOCK);
+		fcntl(loop->pipefd[1], F_SETFL, O_NONBLOCK);
+#endif
 		io_add(loop, &loop->signalio, signalio_handler, NULL, loop->pipefd[0], IO_READ);
 	}
 }
@@ -278,11 +282,56 @@ void idle_set(event_loop_t *loop, idle_cb_t cb, void *data) {
 	loop->idle_data = data;
 }
 
+static void check_bad_fds(event_loop_t *loop) {
+	// Just call all registered callbacks and have them check their fds
+
+	do {
+		loop->deletion = false;
+
+		for splay_each(io_t, io, &loop->ios) {
+			if(io->flags & IO_WRITE) {
+				io->cb(loop, io->data, IO_WRITE);
+			}
+
+			if(loop->deletion) {
+				break;
+			}
+
+			if(io->flags & IO_READ) {
+				io->cb(loop, io->data, IO_READ);
+			}
+
+			if(loop->deletion) {
+				break;
+			}
+		}
+	} while(loop->deletion);
+
+	// Rebuild the fdsets
+
+	memset(&loop->readfds, 0, sizeof(loop->readfds));
+	memset(&loop->writefds, 0, sizeof(loop->writefds));
+
+	for splay_each(io_t, io, &loop->ios) {
+		if(io->flags & IO_READ) {
+			FD_SET(io->fd, &loop->readfds);
+			io->cb(loop, io->data, IO_READ);
+		}
+
+		if(io->flags & IO_WRITE) {
+			FD_SET(io->fd, &loop->writefds);
+			io->cb(loop, io->data, IO_WRITE);
+		}
+
+	}
+}
+
 bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 	assert(mutex);
 
 	fd_set readable;
 	fd_set writable;
+	int errors = 0;
 
 	while(loop->running) {
 		clock_gettime(EVENT_CLOCK, &loop->now);
@@ -338,9 +387,18 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 			if(sockwouldblock(errno)) {
 				continue;
 			} else {
-				return false;
+				errors++;
+
+				if(errors > 10) {
+					return false;
+				}
+
+				check_bad_fds(loop);
+				continue;
 			}
 		}
+
+		errors = 0;
 
 		if(!n) {
 			continue;
