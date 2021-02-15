@@ -43,7 +43,7 @@ bool config_sync(struct meshlink_handle *mesh, const char *conf_subdir) __attrib
 bool sync_path(const char *path) __attribute__((__warn_unused_result__));
 
 bool main_config_exists(struct meshlink_handle *mesh, const char *conf_subdir) __attribute__((__warn_unused_result__));
-bool main_config_lock(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
+bool main_config_lock(struct meshlink_handle *mesh, const char *lock_filename) __attribute__((__warn_unused_result__));
 void main_config_unlock(struct meshlink_handle *mesh);
 bool main_config_read(struct meshlink_handle *mesh, const char *conf_subdir, struct config_t *, void *key) __attribute__((__warn_unused_result__));
 bool main_config_write(struct meshlink_handle *mesh, const char *conf_subdir, const struct config_t *, void *key) __attribute__((__warn_unused_result__));

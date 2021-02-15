@@ -1227,6 +1227,8 @@ meshlink_open_params_t *meshlink_open_params_init(const char *confbase, const ch
 	params->devclass = devclass;
 	params->netns = -1;
 
+	xasprintf(&params->lock_filename, "%s" SLASH "meshlink.lock", confbase);
+
 	return params;
 }
 
@@ -1266,6 +1268,18 @@ bool meshlink_open_params_set_storage_policy(meshlink_open_params_t *params, mes
 	}
 
 	params->storage_policy = policy;
+
+	return true;
+}
+
+bool meshlink_open_params_set_lock_filename(meshlink_open_params_t *params, const char *filename) {
+	if(!params || !filename) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return false;
+	}
+
+	free(params->lock_filename);
+	params->lock_filename = xstrdup(filename);
 
 	return true;
 }
@@ -1351,6 +1365,7 @@ void meshlink_open_params_free(meshlink_open_params_t *params) {
 	free(params->confbase);
 	free(params->name);
 	free(params->appname);
+	free(params->lock_filename);
 
 	free(params);
 }
@@ -1370,15 +1385,18 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 		return NULL;
 	}
 
-	/* Create a temporary struct on the stack, to avoid allocating and freeing one. */
-	meshlink_open_params_t params;
-	memset(&params, 0, sizeof(params));
+	char lock_filename[PATH_MAX];
+	snprintf(lock_filename, sizeof(lock_filename), "%s" SLASH "meshlink.lock", confbase);
 
-	params.confbase = (char *)confbase;
-	params.name = (char *)name;
-	params.appname = (char *)appname;
-	params.devclass = devclass;
-	params.netns = -1;
+	/* Create a temporary struct on the stack, to avoid allocating and freeing one. */
+	meshlink_open_params_t params = {
+		.confbase = (char *)confbase,
+		.lock_filename = lock_filename,
+		.name = (char *)name,
+		.appname = (char *)appname,
+		.devclass = devclass,
+		.netns = -1,
+	};
 
 	return meshlink_open_ex(&params);
 }
@@ -1390,15 +1408,18 @@ meshlink_handle_t *meshlink_open_encrypted(const char *confbase, const char *nam
 		return NULL;
 	}
 
-	/* Create a temporary struct on the stack, to avoid allocating and freeing one. */
-	meshlink_open_params_t params;
-	memset(&params, 0, sizeof(params));
+	char lock_filename[PATH_MAX];
+	snprintf(lock_filename, sizeof(lock_filename), "%s" SLASH "meshlink.lock", confbase);
 
-	params.confbase = (char *)confbase;
-	params.name = (char *)name;
-	params.appname = (char *)appname;
-	params.devclass = devclass;
-	params.netns = -1;
+	/* Create a temporary struct on the stack, to avoid allocating and freeing one. */
+	meshlink_open_params_t params = {
+		.confbase = (char *)confbase,
+		.lock_filename = lock_filename,
+		.name = (char *)name,
+		.appname = (char *)appname,
+		.devclass = devclass,
+		.netns = -1,
+	};
 
 	if(!meshlink_open_params_set_storage_key(&params, key, keylen)) {
 		return false;
@@ -1439,13 +1460,12 @@ meshlink_handle_t *meshlink_open_ephemeral(const char *name, const char *appname
 	}
 
 	/* Create a temporary struct on the stack, to avoid allocating and freeing one. */
-	meshlink_open_params_t params;
-	memset(&params, 0, sizeof(params));
-
-	params.name = (char *)name;
-	params.appname = (char *)appname;
-	params.devclass = devclass;
-	params.netns = -1;
+	meshlink_open_params_t params = {
+		.name = (char *)name,
+		.appname = (char *)appname,
+		.devclass = devclass,
+		.netns = -1,
+	};
 
 	return meshlink_open_ex(&params);
 }
@@ -1545,7 +1565,7 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 	meshlink_queue_init(&mesh->outpacketqueue);
 
 	// Atomically lock the configuration directory.
-	if(!main_config_lock(mesh)) {
+	if(!main_config_lock(mesh, params->lock_filename)) {
 		meshlink_close(mesh);
 		return NULL;
 	}
@@ -1917,25 +1937,27 @@ void meshlink_close(meshlink_handle_t *mesh) {
 	free(mesh);
 }
 
-bool meshlink_destroy(const char *confbase) {
-	if(!confbase) {
+bool meshlink_destroy_ex(const meshlink_open_params_t *params) {
+	if(!params) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
 
+	if(!params->confbase) {
+		/* Ephemeral instances */
+		return true;
+	}
+
 	/* Exit early if the confbase directory itself doesn't exist */
-	if(access(confbase, F_OK) && errno == ENOENT) {
+	if(access(params->confbase, F_OK) && errno == ENOENT) {
 		return true;
 	}
 
 	/* Take the lock the same way meshlink_open() would. */
-	char lockfilename[PATH_MAX];
-	snprintf(lockfilename, sizeof(lockfilename), "%s" SLASH "meshlink.lock", confbase);
-
-	FILE *lockfile = fopen(lockfilename, "w+");
+	FILE *lockfile = fopen(params->lock_filename, "w+");
 
 	if(!lockfile) {
-		logger(NULL, MESHLINK_ERROR, "Could not open lock file %s: %s", lockfilename, strerror(errno));
+		logger(NULL, MESHLINK_ERROR, "Could not open lock file %s: %s", params->lock_filename, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
 	}
@@ -1949,7 +1971,7 @@ bool meshlink_destroy(const char *confbase) {
 #else
 
 	if(flock(fileno(lockfile), LOCK_EX | LOCK_NB) != 0) {
-		logger(NULL, MESHLINK_ERROR, "Configuration directory %s still in use\n", lockfilename);
+		logger(NULL, MESHLINK_ERROR, "Configuration directory %s still in use\n", params->lock_filename);
 		fclose(lockfile);
 		meshlink_errno = MESHLINK_EBUSY;
 		return false;
@@ -1957,13 +1979,13 @@ bool meshlink_destroy(const char *confbase) {
 
 #endif
 
-	if(!config_destroy(confbase, "current") || !config_destroy(confbase, "new") || !config_destroy(confbase, "old")) {
-		logger(NULL, MESHLINK_ERROR, "Cannot remove sub-directories in %s: %s\n", confbase, strerror(errno));
+	if(!config_destroy(params->confbase, "current") || !config_destroy(params->confbase, "new") || !config_destroy(params->confbase, "old")) {
+		logger(NULL, MESHLINK_ERROR, "Cannot remove sub-directories in %s: %s\n", params->confbase, strerror(errno));
 		return false;
 	}
 
-	if(unlink(lockfilename)) {
-		logger(NULL, MESHLINK_ERROR, "Cannot remove lock file %s: %s\n", lockfilename, strerror(errno));
+	if(unlink(params->lock_filename)) {
+		logger(NULL, MESHLINK_ERROR, "Cannot remove lock file %s: %s\n", params->lock_filename, strerror(errno));
 		fclose(lockfile);
 		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
@@ -1971,13 +1993,25 @@ bool meshlink_destroy(const char *confbase) {
 
 	fclose(lockfile);
 
-	if(!sync_path(confbase)) {
-		logger(NULL, MESHLINK_ERROR, "Cannot sync directory %s: %s\n", confbase, strerror(errno));
+	if(!sync_path(params->confbase)) {
+		logger(NULL, MESHLINK_ERROR, "Cannot sync directory %s: %s\n", params->confbase, strerror(errno));
 		meshlink_errno = MESHLINK_ESTORAGE;
 		return false;
 	}
 
 	return true;
+}
+
+bool meshlink_destroy(const char *confbase) {
+	char lock_filename[PATH_MAX];
+	snprintf(lock_filename, sizeof(lock_filename), "%s" SLASH "meshlink.lock", confbase);
+
+	meshlink_open_params_t params = {
+		.confbase = (char *)confbase,
+		.lock_filename = lock_filename,
+	};
+
+	return meshlink_destroy_ex(&params);
 }
 
 void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) {
