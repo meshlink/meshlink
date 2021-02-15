@@ -59,6 +59,7 @@ typedef struct listen_socket_t {
 
 struct meshlink_open_params {
 	char *confbase;
+	char *lock_filename;
 	char *appname;
 	char *name;
 	dev_class_t devclass;

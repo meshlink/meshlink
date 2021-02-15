@@ -206,6 +206,17 @@ bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const 
  */
 bool meshlink_open_params_set_storage_policy(meshlink_open_params_t *params, meshlink_storage_policy_t policy) __attribute__((__warn_unused_result__));
 
+/// Set the filename of the lockfile.
+/** This function changes the path of the lockfile used to ensure only one instance of MeshLink can be open at the same time.
+ *  If an application changes this, it must always set it to the same location.
+ *
+ *  @param params   A pointer to a meshlink_open_params_t which must have been created earlier with meshlink_open_params_init().
+ *  @param filename The filename of the lockfile.
+ *
+ *  @return         This function will return true if the open parameters have been successfully updated, false otherwise.
+ */
+bool meshlink_open_params_set_lock_filename(meshlink_open_params_t *params, const char *filename) __attribute__((__warn_unused_result__));
+
 /// Open or create a MeshLink instance.
 /** This function opens or creates a MeshLink instance.
  *  All parameters needed by MeshLink are passed via a meshlink_open_params_t struct,
@@ -378,6 +389,21 @@ void meshlink_close(struct meshlink_handle *mesh);
  *  @return         This function will return true if the MeshLink instance was successfully destroyed, false otherwise.
  */
 bool meshlink_destroy(const char *confbase) __attribute__((__warn_unused_result__));
+
+/// Destroy a MeshLink instance using open parameters.
+/** This function remove all configuration files of a MeshLink instance. It should only be called when the application
+ *  does not have an open handle to this instance. Afterwards, a call to meshlink_open() will create a completely
+ *  new instance.
+ *
+ *  This version expects a pointer to meshlink_open_params_t,
+ *  and will use exactly the same settings used for opening a handle to destroy it.
+ *
+ *  @param params   A pointer to a meshlink_open_params_t which must be filled in by the application.
+ *                  After the function returns, the application is free to reuse or free @a params.
+ *
+ *  @return         This function will return true if the MeshLink instance was successfully destroyed, false otherwise.
+ */
+bool meshlink_destroy_ex(const meshlink_open_params_t *params) __attribute__((__warn_unused_result__));
 
 /// A callback for receiving data from the mesh.
 /** @param mesh      A handle which represents an instance of MeshLink.

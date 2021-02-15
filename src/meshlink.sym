@@ -30,6 +30,7 @@ meshlink_clear_canonical_address
 meshlink_clear_invitation_addresses
 meshlink_close
 meshlink_destroy
+meshlink_destroy_ex
 meshlink_enable_discovery
 meshlink_encrypted_key_rotate
 meshlink_errno
@@ -65,6 +66,7 @@ meshlink_open_ephemeral
 meshlink_open_ex
 meshlink_open_params_free
 meshlink_open_params_init
+meshlink_open_params_set_lock_filename
 meshlink_open_params_set_netns
 meshlink_open_params_set_storage_key
 meshlink_open_params_set_storage_policy
