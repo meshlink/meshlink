@@ -228,7 +228,7 @@ bool seen_request(meshlink_handle_t *mesh, const char *request) {
 		new->request = xstrdup(request);
 		new->firstseen = mesh->loop.now.tv_sec;
 
-		if(!mesh->past_request_tree->head) {
+		if(!mesh->past_request_tree->head && mesh->past_request_timeout.cb) {
 			timeout_set(&mesh->loop, &mesh->past_request_timeout, &(struct timespec) {
 				10, prng(mesh, TIMER_FUDGE)
 			});

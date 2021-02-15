@@ -3863,7 +3863,7 @@ static void channel_retransmit(struct utcp_connection *utcp_connection) {
 	node_t *n = utcp_connection->utcp->priv;
 	meshlink_handle_t *mesh = n->mesh;
 
-	if(n->mtuprobes == 31) {
+	if(n->mtuprobes == 31 && n->mtutimeout.cb) {
 		timeout_set(&mesh->loop, &n->mtutimeout, &(struct timespec) {
 			0, 0
 		});
