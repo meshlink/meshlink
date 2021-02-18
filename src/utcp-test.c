@@ -105,8 +105,8 @@ static void do_accept(struct utcp_connection *nc, uint16_t port) {
 	c = nc;
 
 	if(bufsize) {
-		utcp_set_sndbuf(c, bufsize);
-		utcp_set_rcvbuf(c, bufsize);
+		utcp_set_sndbuf(c, NULL, bufsize);
+		utcp_set_rcvbuf(c, NULL, bufsize);
 	}
 
 	utcp_set_accept_cb(c->utcp, NULL, NULL);
@@ -299,8 +299,8 @@ int main(int argc, char *argv[]) {
 		c = utcp_connect_ex(u, 1, do_recv, NULL, flags);
 
 		if(bufsize) {
-			utcp_set_sndbuf(c, bufsize);
-			utcp_set_rcvbuf(c, bufsize);
+			utcp_set_sndbuf(c, NULL, bufsize);
+			utcp_set_rcvbuf(c, NULL, bufsize);
 		}
 	}
 

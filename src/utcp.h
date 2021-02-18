@@ -98,11 +98,11 @@ void utcp_set_retransmit_cb(struct utcp *utcp, utcp_retransmit_t retransmit);
 // Per-socket options
 
 size_t utcp_get_sndbuf(struct utcp_connection *connection);
-void utcp_set_sndbuf(struct utcp_connection *connection, size_t size);
+void utcp_set_sndbuf(struct utcp_connection *connection, void *buf, size_t size);
 size_t utcp_get_sndbuf_free(struct utcp_connection *connection);
 
 size_t utcp_get_rcvbuf(struct utcp_connection *connection);
-void utcp_set_rcvbuf(struct utcp_connection *connection, size_t size);
+void utcp_set_rcvbuf(struct utcp_connection *connection, void *buf, size_t size);
 size_t utcp_get_rcvbuf_free(struct utcp_connection *connection);
 
 size_t utcp_get_sendq(struct utcp_connection *connection);
