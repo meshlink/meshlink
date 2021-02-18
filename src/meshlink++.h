@@ -898,6 +898,30 @@ public:
 		meshlink_set_channel_flags(handle, channel, flags);
 	}
 
+	/// Set the send buffer storage of a channel.
+	/** This function provides MeshLink with a send buffer allocated by the application.
+	*
+	*  @param channel   A handle for the channel.
+	*  @param buf       A pointer to the start of the buffer.
+	*                   If a NULL pointer is given, MeshLink will use its own internal buffer again.
+	*  @param size      The size of the buffer.
+	*/
+	void set_channel_sndbuf_storage(channel *channel, void *buf, size_t size) {
+		meshlink_set_channel_sndbuf_storage(handle, channel, buf, size);
+	}
+
+	/// Set the receive buffer storage of a channel.
+	/** This function provides MeshLink with a receive buffer allocated by the application.
+	*
+	*  @param channel   A handle for the channel.
+	*  @param buf       A pointer to the start of the buffer.
+	*                   If a NULL pointer is given, MeshLink will use its own internal buffer again.
+	*  @param size      The size of the buffer.
+	*/
+	void set_channel_rcvbuf_storage(channel *channel, void *buf, size_t size) {
+		meshlink_set_channel_rcvbuf_storage(handle, channel, buf, size);
+	}
+
 	/// Set the connection timeout used for channels to the given node.
 	/** This sets the timeout after which unresponsive channels will be reported as closed.
 	 *  The timeout is set for all current and future channels to the given node.

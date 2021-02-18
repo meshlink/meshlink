@@ -1365,7 +1365,6 @@ void meshlink_set_channel_poll_cb(struct meshlink_handle *mesh, struct meshlink_
  *  @param mesh      A handle which represents an instance of MeshLink.
  *  @param channel   A handle for the channel.
  *  @param size      The desired size for the send buffer.
- *                   If a NULL pointer is given, the callback will be disabled.
  */
 void meshlink_set_channel_sndbuf(struct meshlink_handle *mesh, struct meshlink_channel *channel, size_t size);
 
@@ -1377,9 +1376,34 @@ void meshlink_set_channel_sndbuf(struct meshlink_handle *mesh, struct meshlink_c
  *  @param mesh      A handle which represents an instance of MeshLink.
  *  @param channel   A handle for the channel.
  *  @param size      The desired size for the send buffer.
- *                   If a NULL pointer is given, the callback will be disabled.
  */
 void meshlink_set_channel_rcvbuf(struct meshlink_handle *mesh, struct meshlink_channel *channel, size_t size);
+
+/// Set the send buffer storage of a channel.
+/** This function provides MeshLink with a send buffer allocated by the application.
+ *  The buffer must be valid until the channel is closed or until this function is called again with a NULL pointer for @a buf.
+ *
+ *  \memberof meshlink_channel
+ *  @param mesh      A handle which represents an instance of MeshLink.
+ *  @param channel   A handle for the channel.
+ *  @param buf       A pointer to the start of the buffer.
+ *                   If a NULL pointer is given, MeshLink will use its own internal buffer again.
+ *  @param size      The size of the buffer.
+ */
+void meshlink_set_channel_sndbuf_storage(struct meshlink_handle *mesh, struct meshlink_channel *channel, void *buf, size_t size);
+
+/// Set the receive buffer storage of a channel.
+/** This function provides MeshLink with a receive buffer allocated by the application.
+ *  The buffer must be valid until the channel is closed or until this function is called again with a NULL pointer for @a buf.
+ *
+ *  \memberof meshlink_channel
+ *  @param mesh      A handle which represents an instance of MeshLink.
+ *  @param channel   A handle for the channel.
+ *  @param buf       A pointer to the start of the buffer.
+ *                   If a NULL pointer is given, MeshLink will use its own internal buffer again.
+ *  @param size      The size of the buffer.
+ */
+void meshlink_set_channel_rcvbuf_storage(struct meshlink_handle *mesh, struct meshlink_channel *channel, void *buf, size_t size);
 
 /// Set the flags of a channel.
 /** This function allows changing some of the channel flags.

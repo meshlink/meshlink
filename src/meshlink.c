@@ -4055,20 +4055,14 @@ void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_ac
 }
 
 void meshlink_set_channel_sndbuf(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t size) {
-	if(!mesh || !channel) {
-		meshlink_errno = MESHLINK_EINVAL;
-		return;
-	}
-
-	if(pthread_mutex_lock(&mesh->mutex) != 0) {
-		abort();
-	}
-
-	utcp_set_sndbuf(channel->c, size);
-	pthread_mutex_unlock(&mesh->mutex);
+	meshlink_set_channel_sndbuf_storage(mesh, channel, NULL, size);
 }
 
 void meshlink_set_channel_rcvbuf(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t size) {
+	meshlink_set_channel_rcvbuf_storage(mesh, channel, NULL, size);
+}
+
+void meshlink_set_channel_sndbuf_storage(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *buf, size_t size) {
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4078,7 +4072,21 @@ void meshlink_set_channel_rcvbuf(meshlink_handle_t *mesh, meshlink_channel_t *ch
 		abort();
 	}
 
-	utcp_set_rcvbuf(channel->c, size);
+	utcp_set_sndbuf(channel->c, buf, size);
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
+void meshlink_set_channel_rcvbuf_storage(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *buf, size_t size) {
+	if(!mesh || !channel) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
+
+	utcp_set_rcvbuf(channel->c, buf, size);
 	pthread_mutex_unlock(&mesh->mutex);
 }
 

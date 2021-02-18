@@ -396,7 +396,10 @@ static bool buffer_set_size(struct buffer *buf, uint32_t minsize, uint32_t maxsi
 }
 
 static void buffer_exit(struct buffer *buf) {
-	free(buf->data);
+	if(!buf->external) {
+		free(buf->data);
+	}
+
 	memset(buf, 0, sizeof(*buf));
 }
 
@@ -2315,16 +2318,72 @@ size_t utcp_get_sndbuf_free(struct utcp_connection *c) {
 	}
 }
 
-void utcp_set_sndbuf(struct utcp_connection *c, size_t size) {
+static void buffer_transfer(struct buffer *buf, char *newdata, size_t newsize) {
+	if(buffer_wraps(buf)) {
+		// Old situation:
+		// [345......012]
+		// New situation:
+		// [012345......]
+		uint32_t tailsize = buf->size - buf->offset;
+		memcpy(newdata, buf->data + buf->offset, tailsize);
+		memcpy(newdata + tailsize, buf->data, buf->used - buf->offset);
+	} else {
+		// Old situation:
+		// [....012345..]
+		// New situation:
+		// [012345......]
+		memcpy(newdata, buf->data + buf->offset, buf->used);
+	}
+
+	buf->offset = 0;
+	buf->size = newsize;
+}
+
+static void set_buffer_storage(struct buffer *buf, char *data, size_t size) {
+	if(size > UINT32_MAX) {
+		size = UINT32_MAX;
+	}
+
+	buf->maxsize = size;
+
+	if(data) {
+		if(buf->external) {
+			// Don't allow resizing an external buffer
+			abort();
+		}
+
+		if(size < buf->used) {
+			// Ignore requests for an external buffer if we are already using more than it can store
+			return;
+		}
+
+		// Transition from internal to external buffer
+		buffer_transfer(buf, data, size);
+		free(buf->data);
+		buf->data = data;
+		buf->external = true;
+	} else if(buf->external) {
+		// Transition from external to internal buf
+		size_t minsize = buf->used < DEFAULT_SNDBUFSIZE ? DEFAULT_SNDBUFSIZE : buf->used;
+		data = malloc(minsize);
+
+		if(!data) {
+			// Cannot handle this
+			abort();
+		}
+
+		buffer_transfer(buf, data, minsize);
+		buf->data = data;
+		buf->external = false;
+	}
+}
+
+void utcp_set_sndbuf(struct utcp_connection *c, void *data, size_t size) {
 	if(!c) {
 		return;
 	}
 
-	c->sndbuf.maxsize = size;
-
-	if(c->sndbuf.maxsize != size) {
-		c->sndbuf.maxsize = -1;
-	}
+	set_buffer_storage(&c->sndbuf, data, size);
 
 	c->do_poll = is_reliable(c) && buffer_free(&c->sndbuf);
 }
@@ -2341,16 +2400,12 @@ size_t utcp_get_rcvbuf_free(struct utcp_connection *c) {
 	}
 }
 
-void utcp_set_rcvbuf(struct utcp_connection *c, size_t size) {
+void utcp_set_rcvbuf(struct utcp_connection *c, void *data, size_t size) {
 	if(!c) {
 		return;
 	}
 
-	c->rcvbuf.maxsize = size;
-
-	if(c->rcvbuf.maxsize != size) {
-		c->rcvbuf.maxsize = -1;
-	}
+	set_buffer_storage(&c->rcvbuf, data, size);
 }
 
 size_t utcp_get_sendq(struct utcp_connection *c) {
