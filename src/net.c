@@ -735,7 +735,7 @@ void main_loop(meshlink_handle_t *mesh) {
 	mesh->datafromapp.signum = 0;
 	signal_add(&mesh->loop, &mesh->datafromapp, meshlink_send_from_queue, mesh, mesh->datafromapp.signum);
 
-	if(!event_loop_run(&mesh->loop, &mesh->mutex)) {
+	if(!event_loop_run(&mesh->loop, mesh)) {
 		logger(mesh, MESHLINK_ERROR, "Error while waiting for input: %s", strerror(errno));
 		call_error_cb(mesh, MESHLINK_ENETWORK);
 	}

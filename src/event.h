@@ -28,6 +28,7 @@
 #define IO_WRITE 2
 
 typedef struct event_loop_t event_loop_t;
+struct meshlink_handle;
 
 typedef void (*io_cb_t)(event_loop_t *loop, void *data, int flags);
 typedef void (*timeout_cb_t)(event_loop_t *loop, void *data);
@@ -96,7 +97,7 @@ void idle_set(event_loop_t *loop, idle_cb_t cb, void *data);
 
 void event_loop_init(event_loop_t *loop);
 void event_loop_exit(event_loop_t *loop);
-bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) __attribute__((__warn_unused_result__));
+bool event_loop_run(event_loop_t *loop, struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
 void event_loop_flush_output(event_loop_t *loop);
 void event_loop_start(event_loop_t *loop);
 void event_loop_stop(event_loop_t *loop);

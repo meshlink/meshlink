@@ -21,6 +21,8 @@
 
 #include "dropin.h"
 #include "event.h"
+#include "logger.h"
+#include "meshlink.h"
 #include "net.h"
 #include "splay_tree.h"
 #include "utils.h"
@@ -282,7 +284,7 @@ void idle_set(event_loop_t *loop, idle_cb_t cb, void *data) {
 	loop->idle_data = data;
 }
 
-static void check_bad_fds(event_loop_t *loop) {
+static void check_bad_fds(event_loop_t *loop, meshlink_handle_t *mesh) {
 	// Just call all registered callbacks and have them check their fds
 
 	do {
@@ -309,6 +311,11 @@ static void check_bad_fds(event_loop_t *loop) {
 
 	// Rebuild the fdsets
 
+	fd_set old_readfds;
+	fd_set old_writefds;
+	memcpy(&old_readfds, &loop->readfds, sizeof(old_readfds));
+	memcpy(&old_writefds, &loop->writefds, sizeof(old_writefds));
+
 	memset(&loop->readfds, 0, sizeof(loop->readfds));
 	memset(&loop->writefds, 0, sizeof(loop->writefds));
 
@@ -322,12 +329,19 @@ static void check_bad_fds(event_loop_t *loop) {
 			FD_SET(io->fd, &loop->writefds);
 			io->cb(loop, io->data, IO_WRITE);
 		}
+	}
 
+	if(memcmp(&old_readfds, &loop->readfds, sizeof(old_readfds))) {
+		logger(mesh, MESHLINK_WARNING, "Incorrect readfds fixed");
+	}
+
+	if(memcmp(&old_writefds, &loop->writefds, sizeof(old_writefds))) {
+		logger(mesh, MESHLINK_WARNING, "Incorrect writefds fixed");
 	}
 }
 
-bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
-	assert(mutex);
+bool event_loop_run(event_loop_t *loop, meshlink_handle_t *mesh) {
+	assert(mesh);
 
 	fd_set readable;
 	fd_set writable;
@@ -368,7 +382,7 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		}
 
 		// release mesh mutex during select
-		pthread_mutex_unlock(mutex);
+		pthread_mutex_unlock(&mesh->mutex);
 
 #ifdef HAVE_PSELECT
 		int n = pselect(fds, &readable, &writable, NULL, &ts, NULL);
@@ -377,7 +391,7 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 		int n = select(fds, &readable, &writable, NULL, (struct timeval *)&tv);
 #endif
 
-		if(pthread_mutex_lock(mutex) != 0) {
+		if(pthread_mutex_lock(&mesh->mutex) != 0) {
 			abort();
 		}
 
@@ -390,10 +404,12 @@ bool event_loop_run(event_loop_t *loop, pthread_mutex_t *mutex) {
 				errors++;
 
 				if(errors > 10) {
+					logger(mesh, MESHLINK_ERROR, "Unrecoverable error from select(): %s", strerror(errno));
 					return false;
 				}
 
-				check_bad_fds(loop);
+				logger(mesh, MESHLINK_WARNING, "Error from select(), checking for bad fds: %s", strerror(errno));
+				check_bad_fds(loop, mesh);
 				continue;
 			}
 		}
