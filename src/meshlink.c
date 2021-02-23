@@ -391,7 +391,10 @@ static int getifaddrs_in_netns(struct ifaddrs **ifa, int netns) {
 #endif
 
 char *meshlink_get_local_address_for_family(meshlink_handle_t *mesh, int family) {
-	(void)mesh;
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return NULL;
+	}
 
 	// Determine address of the local interface used for outgoing connections.
 	char localaddr[NI_MAXHOST];
@@ -4052,9 +4055,7 @@ void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_ac
 }
 
 void meshlink_set_channel_sndbuf(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t size) {
-	(void)mesh;
-
-	if(!channel) {
+	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
 	}
@@ -4068,9 +4069,7 @@ void meshlink_set_channel_sndbuf(meshlink_handle_t *mesh, meshlink_channel_t *ch
 }
 
 void meshlink_set_channel_rcvbuf(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t size) {
-	(void)mesh;
-
-	if(!channel) {
+	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
 	}
