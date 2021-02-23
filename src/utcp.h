@@ -53,6 +53,7 @@ struct utcp_connection;
 
 #define UTCP_TCP 3
 #define UTCP_UDP 0
+#define UTCP_CHANGEABLE_FLAGS 0x18U
 
 typedef bool (*utcp_listen_t)(struct utcp *utcp, uint16_t port);
 typedef void (*utcp_accept_t)(struct utcp_connection *utcp_connection, uint16_t port);
@@ -117,6 +118,8 @@ void utcp_set_keepalive(struct utcp_connection *connection, bool keepalive);
 size_t utcp_get_outq(struct utcp_connection *connection);
 
 void utcp_expect_data(struct utcp_connection *connection, bool expect);
+
+void utcp_set_flags(struct utcp_connection *connection, uint32_t flags);
 
 // Completely global options
 

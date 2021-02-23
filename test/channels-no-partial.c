@@ -73,6 +73,19 @@ int main(int argc, char *argv[]) {
 	assert_after(!meshlink_channel_get_sendq(mesh_a, channel), 30);
 	assert(meshlink_channel_send(mesh_a, channel, buf, 512) == 512);
 
+	// Check that we can change the NO_PARTIAL flag
+
+	assert_after(!meshlink_channel_get_sendq(mesh_a, channel), 30);
+	meshlink_set_channel_sndbuf(mesh_a, channel, 256);
+	assert(meshlink_channel_send(mesh_a, channel, buf, 257) == -1);
+	meshlink_set_channel_flags(mesh_a, channel, 0);
+	assert(meshlink_channel_send(mesh_a, channel, buf, 257) == 256);
+
+	assert_after(!meshlink_channel_get_sendq(mesh_a, channel), 30);
+	meshlink_set_channel_flags(mesh_a, channel, MESHLINK_CHANNEL_NO_PARTIAL);
+	assert(meshlink_channel_send(mesh_a, channel, buf, 257) == -1);
+	assert(meshlink_channel_send(mesh_a, channel, buf, 256) == 256);
+
 	// Clean up.
 
 	close_meshlink_pair(mesh_a, mesh_b);

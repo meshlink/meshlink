@@ -2428,6 +2428,11 @@ void utcp_expect_data(struct utcp_connection *c, bool expect) {
 	}
 }
 
+void utcp_set_flags(struct utcp_connection *c, uint32_t flags) {
+	c->flags &= ~UTCP_CHANGEABLE_FLAGS;
+	c->flags |= flags & UTCP_CHANGEABLE_FLAGS;
+}
+
 void utcp_offline(struct utcp *utcp, bool offline) {
 	struct timespec now;
 	clock_gettime(UTCP_CLOCK, &now);

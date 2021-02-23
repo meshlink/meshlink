@@ -885,6 +885,19 @@ public:
 		meshlink_set_channel_rcvbuf(handle, channel, size);
 	}
 
+	/// Set the flags of a channel.
+	/** This function allows changing some of the channel flags.
+	 *  Currently only MESHLINK_CHANNEL_NO_PARTIAL and MESHLINK_CHANNEL_DROP_LATE are supported, other flags are ignored.
+	 *  These flags only affect the local side of the channel with the peer.
+	 *  The changes take effect immediately.
+	 *
+	 *  @param channel   A handle for the channel.
+	 *  @param flags     A bitwise-or'd combination of flags that set the semantics for this channel.
+	 */
+	void set_channel_flags(channel *channel, uint32_t flags) {
+		meshlink_set_channel_flags(handle, channel, flags);
+	}
+
 	/// Set the connection timeout used for channels to the given node.
 	/** This sets the timeout after which unresponsive channels will be reported as closed.
 	 *  The timeout is set for all current and future channels to the given node.
