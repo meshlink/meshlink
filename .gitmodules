@@ -1,4 +1,0 @@
-[submodule "catta"]
-	path = catta
-	url = ../catta
-	branch = develop
