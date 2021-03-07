@@ -145,7 +145,7 @@ struct adns_blocking_info {
 static void *adns_blocking_handler(void *data) {
 	struct adns_blocking_info *info = data;
 
-	logger(info->mesh, MESHLINK_DEBUG, "Resolving %s port %s", info->host, info->serv);
+	logger(info->mesh, MESHLINK_WARNING, "Resolving %s port %s", info->host, info->serv);
 	devtool_adns_resolve_probe();
 
 	struct addrinfo hint = {
@@ -153,7 +153,10 @@ static void *adns_blocking_handler(void *data) {
 		.ai_socktype = info->socktype,
 	};
 
-	if(getaddrinfo(info->host, info->serv, &hint, &info->ai)) {
+	int result = getaddrinfo(info->host, info->serv, &hint, &info->ai);
+
+	if(result) {
+		logger(info->mesh, MESHLINK_ERROR, "getaddrinfo(%s, %s) returned an error: %s", info->host, info->serv, gai_strerror(result));
 		info->ai = NULL;
 	}
 
@@ -164,8 +167,11 @@ static void *adns_blocking_handler(void *data) {
 	bool cleanup = info->done;
 
 	if(!info->done) {
+		logger(info->mesh, MESHLINK_WARNING, "getaddrinfo(%s, %s) returned before waiter timed out", info->host, info->serv);
 		info->done = true;
 		pthread_cond_signal(&info->cond);
+	} else {
+		logger(info->mesh, MESHLINK_WARNING, "getaddrinfo(%s, %s) returned after waiter timed out", info->host, info->serv);
 	}
 
 	pthread_mutex_unlock(&info->mutex);
@@ -193,6 +199,8 @@ struct addrinfo *adns_blocking_request(meshlink_handle_t *mesh, char *host, char
 	clock_gettime(CLOCK_REALTIME, &deadline);
 	deadline.tv_sec += timeout;
 
+	logger(mesh, MESHLINK_WARNING, "Starting blocking DNS request for %s port %s", host, serv);
+
 	pthread_t thread;
 
 	if(pthread_create(&thread, NULL, adns_blocking_handler, info)) {
@@ -214,9 +222,10 @@ struct addrinfo *adns_blocking_request(meshlink_handle_t *mesh, char *host, char
 	bool cleanup = info->done;
 
 	if(info->done) {
+		logger(mesh, MESHLINK_WARNING, "DNS request for %s port %s fulfilled in time, ai = %p", host, serv, (void *)info->ai);
 		result = info->ai;
 	} else {
-		logger(mesh, MESHLINK_WARNING, "Deadline passed for DNS request %s port %s", host, serv);
+		logger(mesh, MESHLINK_ERROR, "Deadline passed for DNS request %s port %s, ai = %p", host, serv, (void *)info->ai);
 		info->done = true;
 	}
 
