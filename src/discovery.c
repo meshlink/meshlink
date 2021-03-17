@@ -906,7 +906,9 @@ bool discovery_start(meshlink_handle_t *mesh) {
 		.in.sin_port = ntohs(5353),
 	};
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+#ifdef SO_REUSEPORT
 	setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one));
+#endif
 	setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &one8, sizeof(one8));
 	setsockopt(fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl8, sizeof(ttl8));
 
@@ -927,7 +929,9 @@ bool discovery_start(meshlink_handle_t *mesh) {
 	}
 
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+#ifdef SO_REUSEPORT
 	setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one));
+#endif
 	setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(one));
 	setsockopt(fd, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &one, sizeof(one));
 	setsockopt(fd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl, sizeof(ttl));
