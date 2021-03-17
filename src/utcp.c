@@ -2326,7 +2326,7 @@ static void buffer_transfer(struct buffer *buf, char *newdata, size_t newsize) {
 		// [012345......]
 		uint32_t tailsize = buf->size - buf->offset;
 		memcpy(newdata, buf->data + buf->offset, tailsize);
-		memcpy(newdata + tailsize, buf->data, buf->used - buf->offset);
+		memcpy(newdata + tailsize, buf->data, buf->used - tailsize);
 	} else {
 		// Old situation:
 		// [....012345..]
