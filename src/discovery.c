@@ -683,26 +683,26 @@ static void netlink_io_handler(event_loop_t *loop, void *data, int flags) {
 
 			if(loop->now.tv_sec > mesh->discovery.last_update + 5) {
 				mesh->discovery.last_update = loop->now.tv_sec;
-				handle_network_change(mesh, 1);
+				handle_network_change(mesh, true);
 			}
 		}
 	}
 }
 #elif defined(__APPLE__)
-static void network_change_callback(SCDynamicStoreRef store, CFArrayRef keys, void *info) {
-	(void)store;
-	(void)keys;
+static void reachability_change_callback(SCNetworkReachabilityRef reachability, SCNetworkReachabilityFlags flags, void *info) {
+	(void)reachability;
+	(void)flags;
 
 	meshlink_handle_t *mesh = info;
 
 	pthread_mutex_lock(&mesh->mutex);
 
-	logger(mesh, MESHLINK_ERROR, "Network change detected!");
 	scan_ifaddrs(mesh);
 
 	if(mesh->loop.now.tv_sec > mesh->discovery.last_update + 5) {
+		logger(mesh, MESHLINK_INFO, "Network change detected");
 		mesh->discovery.last_update = mesh->loop.now.tv_sec;
-		handle_network_change(mesh, 1);
+		handle_network_change(mesh, true);
 	}
 
 	pthread_mutex_unlock(&mesh->mutex);
@@ -713,78 +713,42 @@ static void *network_change_handler(void *arg) {
 
 	mesh->discovery.runloop = CFRunLoopGetCurrent();
 
-	SCDynamicStoreContext context = {0, mesh, NULL, NULL, NULL};
-	SCDynamicStoreRef store = SCDynamicStoreCreate(NULL, CFSTR("network_change_handler"), network_change_callback, &context);
-	CFStringRef interfaces = SCDynamicStoreKeyCreate(NULL, CFSTR("State:/Network/Interface"), kCFStringEncodingUTF8);
-	CFStringRef ipv4 = SCDynamicStoreKeyCreateNetworkInterfaceEntity(NULL, kSCDynamicStoreDomainState, kSCCompAnyRegex, kSCEntNetIPv4);
-	CFStringRef ipv6 = SCDynamicStoreKeyCreateNetworkInterfaceEntity(NULL, kSCDynamicStoreDomainState, kSCCompAnyRegex, kSCEntNetIPv6);
-	CFMutableArrayRef keys = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
-	CFMutableArrayRef patterns = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
-	CFRunLoopSourceRef runloop_source = NULL;
+	SCNetworkReachabilityRef reach_v4 = SCNetworkReachabilityCreateWithName(NULL, "93.184.216.34");
+	SCNetworkReachabilityRef reach_v6 = SCNetworkReachabilityCreateWithName(NULL, "2606:2800:220:1:248:1893:25c8:1946");
 
-	if(!store) {
-		logger(mesh, MESHLINK_ERROR, "Error setting up network change handler: %s\n", SCErrorString(SCError()));
-		goto exit;
+	SCNetworkReachabilityContext context;
+	memset(&context, 0, sizeof(context));
+	context.info = mesh;
+
+	if(reach_v4) {
+		SCNetworkReachabilitySetCallback(reach_v4, reachability_change_callback, &context);
+		SCNetworkReachabilityScheduleWithRunLoop(reach_v4, mesh->discovery.runloop, kCFRunLoopDefaultMode);
+	} else {
+		logger(mesh, MESHLINK_ERROR, "Could not create IPv4 network reachability watcher");
 	}
 
-	if(!interfaces || !ipv4 || !ipv6 || !keys || !patterns) {
-		logger(mesh, MESHLINK_ERROR, "Error setting up network change handler: %s\n", SCErrorString(SCError()));
-		goto exit;
+	if(reach_v6) {
+		SCNetworkReachabilitySetCallback(reach_v6, reachability_change_callback, &context);
+		SCNetworkReachabilityScheduleWithRunLoop(reach_v6, mesh->discovery.runloop, kCFRunLoopDefaultMode);
+	} else {
+		logger(mesh, MESHLINK_ERROR, "Could not create IPv6 network reachability watcher");
 	}
 
-	CFArrayAppendValue(keys, interfaces);
-	CFArrayAppendValue(patterns, ipv4);
-	CFArrayAppendValue(patterns, ipv6);
-
-	if(!SCDynamicStoreSetNotificationKeys(store, keys, patterns)) {
-		logger(mesh, MESHLINK_ERROR, "Error setting up network change handler: %s\n", SCErrorString(SCError()));
-		goto exit;
-	}
-
-	runloop_source = SCDynamicStoreCreateRunLoopSource(NULL, store, 0);
-
-	if(!runloop_source) {
-		logger(mesh, MESHLINK_ERROR, "Error setting up network change handler: %s\n", SCErrorString(SCError()));
-		goto exit;
-	}
-
-	CFRunLoopAddSource(CFRunLoopGetCurrent(), runloop_source, kCFRunLoopDefaultMode);
 	CFRunLoopRun();
-
-exit:
-
-	if(runloop_source) {
-		CFRelease(runloop_source);
-	}
-
-	if(interfaces) {
-		CFRelease(interfaces);
-	}
-
-	if(ipv4) {
-		CFRelease(ipv4);
-	}
-
-	if(ipv6) {
-		CFRelease(ipv6);
-	}
-
-	if(keys) {
-		CFRelease(keys);
-	}
-
-	if(patterns) {
-		CFRelease(patterns);
-	}
-
-	if(store) {
-		CFRelease(store);
-	}
 
 	mesh->discovery.runloop = NULL;
 
-	return NULL;
+	if(reach_v4) {
+		SCNetworkReachabilityUnscheduleFromRunLoop(reach_v4, mesh->discovery.runloop, kCFRunLoopDefaultMode);
+		CFRelease(reach_v4);
+	}
 
+	if(reach_v6) {
+		SCNetworkReachabilityUnscheduleFromRunLoop(reach_v6, mesh->discovery.runloop, kCFRunLoopDefaultMode);
+		CFRelease(reach_v6);
+	}
+
+	return NULL;
 }
 #elif defined(RTM_NEWADDR)
 static void pfroute_parse_iface(meshlink_handle_t *mesh, const struct rt_msghdr *rtm) {

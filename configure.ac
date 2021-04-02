@@ -42,7 +42,7 @@ case $host_os in
     LIBS="$LIBS -lws2_32 -lgdi32 -lcrypt32"
   ;;
   *darwin*)
-    LIBS="$LIBS -framework SystemConfiguration -framework CoreServices"
+    LIBS="$LIBS -framework Foundation -framework SystemConfiguration"
   ;;
 esac
 
