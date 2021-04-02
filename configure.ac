@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.61)
+AC_PREREQ(2.69)
 AC_INIT([MeshLink], [0.1])
 DX_PS_FEATURE(OFF)
 DX_INIT_DOXYGEN([MeshLink], [$(top_srcdir)/Doxyfile])
@@ -19,12 +19,12 @@ AC_DEFINE([_POSIX_C_SOURCE], 200809L, [Enable POSIX features])
 dnl Checks for programs.
 AM_PROG_CC_C_O
 AM_PROG_AR
-AC_PROG_CC_C99
+AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
-AC_PROG_LIBTOOL
+LT_INIT
 AX_PTHREAD
 
 dnl Check and set OS
@@ -126,7 +126,6 @@ MeshLink_ATTRIBUTE(__malloc__)
 MeshLink_ATTRIBUTE(__warn_unused_result__)
 
 dnl Checks for library functions.
-AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([asprintf fchmod fork gettimeofday random pselect select setns strdup usleep getifaddrs freeifaddrs],
   [], [], [#include "$srcdir/src/have.h"]
 )
