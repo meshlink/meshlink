@@ -87,7 +87,7 @@ typedef enum {
 typedef enum {
 	MESHLINK_STORAGE_ENABLED,    ///< Store all updates.
 	MESHLINK_STORAGE_DISABLED,   ///< Don't store any updates.
-	MESHLINK_STORAGE_KEYS_ONLY,  ///< Only store updates when a node's key has changed.
+	MESHLINK_STORAGE_KEYS_ONLY   ///< Only store updates when a node's key has changed.
 } meshlink_storage_policy_t;
 
 /// Invitation flags
