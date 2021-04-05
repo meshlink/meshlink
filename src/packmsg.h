@@ -250,7 +250,7 @@ static inline void packmsg_write_data_(packmsg_output_t *buf, const void *data, 
 	assert(buf->ptr);
 	assert(data);
 
-	if(packmsg_likely(buf->len >= dlen)) {
+	if(packmsg_likely(buf->len >= 0 && (uint32_t)buf->len >= dlen)) {
 		memcpy(buf->ptr, data, dlen);
 		buf->ptr += dlen;
 		buf->len -= dlen;
@@ -265,7 +265,7 @@ static inline void packmsg_write_hdrdata_(packmsg_output_t *buf, uint8_t hdr, co
 	assert(buf->ptr);
 	assert(data);
 
-	if(packmsg_likely(buf->len > dlen)) {
+	if(packmsg_likely(buf->len > 0 && (uint32_t)buf->len > dlen)) {
 		*buf->ptr = hdr;
 		buf->ptr++;
 		buf->len--;
@@ -283,7 +283,7 @@ static inline void *packmsg_reserve_(packmsg_output_t *buf, uint32_t len) {
 	assert(buf);
 	assert(buf->ptr);
 
-	if(packmsg_likely(buf->len >= len)) {
+	if(packmsg_likely(buf->len >= 0 && (uint32_t)buf->len >= len)) {
 		void *ptr = buf->ptr;
 		buf->ptr += len;
 		buf->len -= len;
@@ -706,7 +706,7 @@ static inline void packmsg_read_data_(packmsg_input_t *buf, void *data, uint32_t
 	assert(buf->ptr);
 	assert(data);
 
-	if(packmsg_likely(buf->len >= dlen)) {
+	if(packmsg_likely(buf->len >= 0 && (uint32_t)buf->len >= dlen)) {
 		memcpy(data, buf->ptr, dlen);
 		buf->ptr += dlen;
 		buf->len -= dlen;
@@ -1047,7 +1047,7 @@ static inline uint32_t packmsg_get_str_raw(packmsg_input_t *buf, const char **st
 		return 0;
 	}
 
-	if(packmsg_likely(buf->len >= slen)) {
+	if(packmsg_likely(buf->len >= 0 && (uint32_t)buf->len >= slen)) {
 		*str = (const char *)buf->ptr;
 		buf->ptr += slen;
 		buf->len -= slen;
@@ -1165,7 +1165,7 @@ static inline uint32_t packmsg_get_bin_raw(packmsg_input_t *buf, const void **da
 		return 0;
 	}
 
-	if(packmsg_likely(buf->len >= dlen)) {
+	if(packmsg_likely(buf->len >= 0 && (uint32_t)buf->len >= dlen)) {
 		*data = buf->ptr;
 		buf->ptr += dlen;
 		buf->len -= dlen;
@@ -1283,7 +1283,7 @@ static inline uint32_t packmsg_get_ext_raw(packmsg_input_t *buf, int8_t *type, c
 
 	*type = packmsg_read_hdr_(buf);
 
-	if(packmsg_likely(buf->len >= dlen)) {
+	if(packmsg_likely(buf->len >= 0 && (uint32_t)buf->len >= dlen)) {
 		*data = buf->ptr;
 		buf->ptr += dlen;
 		buf->len -= dlen;
@@ -2002,7 +2002,7 @@ static inline void packmsg_skip_element(packmsg_input_t *buf) {
 		dlen = skip;
 	}
 
-	if(packmsg_likely(buf->len >= dlen)) {
+	if(packmsg_likely(buf->len >= 0 && (uint32_t)buf->len >= dlen)) {
 		buf->ptr += dlen;
 		buf->len -= dlen;
 	} else {
