@@ -30,7 +30,7 @@ utcp_SOURCES = \
 	utcp_priv.h
 
 lib_LTLIBRARIES = libmeshlink.la
-noinst_PROGRAMS = utcp-test
+EXTRA_PROGRAMS = utcp-test
 
 pkginclude_HEADERS = meshlink++.h meshlink.h
 
