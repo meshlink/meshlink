@@ -41,7 +41,7 @@ case $host_os in
     AC_DEFINE(HAVE_MINGW, 1, [MinGW])
     LIBS="$LIBS -lws2_32 -lgdi32 -lcrypt32"
   ;;
-  *darwin*)
+  *darwin* | *ios*)
     LIBS="$LIBS -framework Foundation -framework SystemConfiguration"
   ;;
 esac
