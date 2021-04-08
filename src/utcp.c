@@ -395,6 +395,66 @@ static bool buffer_set_size(struct buffer *buf, uint32_t minsize, uint32_t maxsi
 	return buf->size >= minsize || buffer_resize(buf, minsize);
 }
 
+static void buffer_transfer(struct buffer *buf, char *newdata, size_t newsize) {
+	if(buffer_wraps(buf)) {
+		// Old situation:
+		// [345......012]
+		// New situation:
+		// [012345......]
+		uint32_t tailsize = buf->size - buf->offset;
+		memcpy(newdata, buf->data + buf->offset, tailsize);
+		memcpy(newdata + tailsize, buf->data, buf->used - tailsize);
+	} else {
+		// Old situation:
+		// [....012345..]
+		// New situation:
+		// [012345......]
+		memcpy(newdata, buf->data + buf->offset, buf->used);
+	}
+
+	buf->offset = 0;
+	buf->size = newsize;
+}
+
+static void set_buffer_storage(struct buffer *buf, char *data, size_t size) {
+	if(size > UINT32_MAX) {
+		size = UINT32_MAX;
+	}
+
+	buf->maxsize = size;
+
+	if(data) {
+		if(buf->external) {
+			// Don't allow resizing an external buffer
+			abort();
+		}
+
+		if(size < buf->used) {
+			// Ignore requests for an external buffer if we are already using more than it can store
+			return;
+		}
+
+		// Transition from internal to external buffer
+		buffer_transfer(buf, data, size);
+		free(buf->data);
+		buf->data = data;
+		buf->external = true;
+	} else if(buf->external) {
+		// Transition from external to internal buf
+		size_t minsize = buf->used < DEFAULT_SNDBUFSIZE ? DEFAULT_SNDBUFSIZE : buf->used;
+		data = malloc(minsize);
+
+		if(!data) {
+			// Cannot handle this
+			abort();
+		}
+
+		buffer_transfer(buf, data, minsize);
+		buf->data = data;
+		buf->external = false;
+	}
+}
+
 static void buffer_exit(struct buffer *buf) {
 	if(!buf->external) {
 		free(buf->data);
@@ -2014,6 +2074,20 @@ static bool reset_connection(struct utcp_connection *c) {
 	return true;
 }
 
+static void set_reapable(struct utcp_connection *c) {
+	if(c->sndbuf.external) {
+		set_buffer_storage(&c->sndbuf, NULL, DEFAULT_MTU);
+	}
+
+	if(c->rcvbuf.external) {
+		set_buffer_storage(&c->rcvbuf, NULL, DEFAULT_MTU);
+	}
+
+	c->recv = NULL;
+	c->poll = NULL;
+	c->reapable = true;
+}
+
 // Closes all the opened connections
 void utcp_abort_all_connections(struct utcp *utcp) {
 	if(!utcp) {
@@ -2031,7 +2105,7 @@ void utcp_abort_all_connections(struct utcp *utcp) {
 		utcp_recv_t old_recv = c->recv;
 		utcp_poll_t old_poll = c->poll;
 
-		reset_connection(c);
+		utcp_abort(c);
 
 		if(old_recv) {
 			errno = 0;
@@ -2052,9 +2126,7 @@ int utcp_close(struct utcp_connection *c) {
 		return -1;
 	}
 
-	c->recv = NULL;
-	c->poll = NULL;
-	c->reapable = true;
+	set_reapable(c);
 	return 0;
 }
 
@@ -2063,7 +2135,7 @@ int utcp_abort(struct utcp_connection *c) {
 		return -1;
 	}
 
-	c->reapable = true;
+	set_reapable(c);
 	return 0;
 }
 
@@ -2315,66 +2387,6 @@ size_t utcp_get_sndbuf_free(struct utcp_connection *c) {
 
 	default:
 		return 0;
-	}
-}
-
-static void buffer_transfer(struct buffer *buf, char *newdata, size_t newsize) {
-	if(buffer_wraps(buf)) {
-		// Old situation:
-		// [345......012]
-		// New situation:
-		// [012345......]
-		uint32_t tailsize = buf->size - buf->offset;
-		memcpy(newdata, buf->data + buf->offset, tailsize);
-		memcpy(newdata + tailsize, buf->data, buf->used - tailsize);
-	} else {
-		// Old situation:
-		// [....012345..]
-		// New situation:
-		// [012345......]
-		memcpy(newdata, buf->data + buf->offset, buf->used);
-	}
-
-	buf->offset = 0;
-	buf->size = newsize;
-}
-
-static void set_buffer_storage(struct buffer *buf, char *data, size_t size) {
-	if(size > UINT32_MAX) {
-		size = UINT32_MAX;
-	}
-
-	buf->maxsize = size;
-
-	if(data) {
-		if(buf->external) {
-			// Don't allow resizing an external buffer
-			abort();
-		}
-
-		if(size < buf->used) {
-			// Ignore requests for an external buffer if we are already using more than it can store
-			return;
-		}
-
-		// Transition from internal to external buffer
-		buffer_transfer(buf, data, size);
-		free(buf->data);
-		buf->data = data;
-		buf->external = true;
-	} else if(buf->external) {
-		// Transition from external to internal buf
-		size_t minsize = buf->used < DEFAULT_SNDBUFSIZE ? DEFAULT_SNDBUFSIZE : buf->used;
-		data = malloc(minsize);
-
-		if(!data) {
-			// Cannot handle this
-			abort();
-		}
-
-		buffer_transfer(buf, data, minsize);
-		buf->data = data;
-		buf->external = false;
 	}
 }
 
