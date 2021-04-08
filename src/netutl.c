@@ -94,10 +94,9 @@ sockaddr_t str2sockaddr_random(struct meshlink_handle *mesh, const char *address
 	err = getaddrinfo(address, port, &hint, &ai);
 
 	if(err || !ai) {
-		logger(NULL, MESHLINK_DEBUG, "Unknown type address %s port %s", address, port);
 		result.sa.sa_family = AF_UNKNOWN;
-		result.unknown.address = xstrdup(address);
-		result.unknown.port = xstrdup(port);
+		result.unknown.address = NULL;
+		result.unknown.port = NULL;
 		return result;
 	}
 

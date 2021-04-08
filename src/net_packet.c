@@ -339,8 +339,11 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 			*port++ = 0;
 			*sa_buf = str2sockaddr_random(mesh, host, port);
 			*sa = sa_buf;
-			free(host);
-			goto check_socket;
+
+			if(sa_buf->sa.sa_family != AF_UNKNOWN) {
+				free(host);
+				goto check_socket;
+			}
 		}
 
 		free(host);
