@@ -12,8 +12,9 @@ AM_SILENT_RULES([yes])
 # Enable GNU extensions.
 # Define this here, not in acconfig's @TOP@ section, since definitions
 # in the latter don't make it into the configure-time tests.
-AC_GNU_SOURCE
+AC_USE_SYSTEM_EXTENSIONS
 AC_DEFINE([__USE_BSD], 1, [Enable BSD extensions])
+AC_DEFINE([_POSIX_C_SOURCE], 200809L, [Enable POSIX features])
 
 dnl Checks for programs.
 AM_PROG_CC_C_O
