@@ -196,6 +196,16 @@ static bool buffer_wraps(struct buffer *buf) {
 }
 
 static bool buffer_resize(struct buffer *buf, uint32_t newsize) {
+	assert(!buf->external);
+
+	if(!newsize) {
+		free(buf->data);
+		buf->data = NULL;
+		buf->size = 0;
+		buf->offset = 0;
+		return true;
+	}
+
 	char *newdata = realloc(buf->data, newsize);
 
 	if(!newdata) {
@@ -441,17 +451,40 @@ static void set_buffer_storage(struct buffer *buf, char *data, size_t size) {
 		buf->external = true;
 	} else if(buf->external) {
 		// Transition from external to internal buf
-		size_t minsize = buf->used < DEFAULT_SNDBUFSIZE ? DEFAULT_SNDBUFSIZE : buf->used;
-		data = malloc(minsize);
+		size_t minsize = buf->used <= DEFAULT_SNDBUFSIZE ? DEFAULT_SNDBUFSIZE : buf->used;
 
-		if(!data) {
-			// Cannot handle this
-			abort();
+		if(minsize) {
+			data = malloc(minsize);
+
+			if(!data) {
+				// Cannot handle this
+				abort();
+			}
+
+			buffer_transfer(buf, data, minsize);
+			buf->data = data;
+		} else {
+			buf->data = NULL;
+			buf->size = 0;
 		}
 
-		buffer_transfer(buf, data, minsize);
-		buf->data = data;
 		buf->external = false;
+	} else {
+		// Realloc internal storage
+		size_t minsize = buf->used <= DEFAULT_SNDBUFSIZE ? DEFAULT_SNDBUFSIZE : buf->used;
+
+		if(minsize) {
+			data = realloc(buf->data, minsize);
+
+			if(data) {
+				buf->data = data;
+				buf->size = minsize;
+			}
+		} else {
+			free(buf->data);
+			buf->data = NULL;
+			buf->size = 0;
+		}
 	}
 }
 
@@ -2075,13 +2108,8 @@ static bool reset_connection(struct utcp_connection *c) {
 }
 
 static void set_reapable(struct utcp_connection *c) {
-	if(c->sndbuf.external) {
-		set_buffer_storage(&c->sndbuf, NULL, DEFAULT_MTU);
-	}
-
-	if(c->rcvbuf.external) {
-		set_buffer_storage(&c->rcvbuf, NULL, DEFAULT_MTU);
-	}
+	set_buffer_storage(&c->sndbuf, NULL, DEFAULT_MTU);
+	set_buffer_storage(&c->rcvbuf, NULL, DEFAULT_MTU);
 
 	c->recv = NULL;
 	c->poll = NULL;
