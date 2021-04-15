@@ -470,8 +470,13 @@ static void set_buffer_storage(struct buffer *buf, char *data, size_t size) {
 
 		buf->external = false;
 	} else {
+		// Don't do anything if the buffer wraps
+		if(buffer_wraps(buf)) {
+			return;
+		}
+
 		// Realloc internal storage
-		size_t minsize = buf->used <= DEFAULT_SNDBUFSIZE ? DEFAULT_SNDBUFSIZE : buf->used;
+		size_t minsize = max(DEFAULT_SNDBUFSIZE, buf->offset + buf->used);
 
 		if(minsize) {
 			data = realloc(buf->data, minsize);
@@ -2108,8 +2113,8 @@ static bool reset_connection(struct utcp_connection *c) {
 }
 
 static void set_reapable(struct utcp_connection *c) {
-	set_buffer_storage(&c->sndbuf, NULL, DEFAULT_MTU);
-	set_buffer_storage(&c->rcvbuf, NULL, DEFAULT_MTU);
+	set_buffer_storage(&c->sndbuf, NULL, min(c->sndbuf.maxsize, DEFAULT_MAXSNDBUFSIZE));
+	set_buffer_storage(&c->rcvbuf, NULL, min(c->rcvbuf.maxsize, DEFAULT_MAXRCVBUFSIZE));
 
 	c->recv = NULL;
 	c->poll = NULL;
