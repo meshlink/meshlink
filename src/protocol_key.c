@@ -275,16 +275,15 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 			return true;
 		}
 
-		strncat(host, " ", MAX_STRING_SIZE - 1);
-		strncat(host, port, MAX_STRING_SIZE - 1);
+		char *canonical_address;
+		xasprintf(&canonical_address, "%s %s", host, port);
 
-		if(from->canonical_address && !strcmp(from->canonical_address, host)) {
-			return true;
+		if(mesh->log_level <= MESHLINK_DEBUG && strcmp(from->canonical_address, canonical_address)) {
+			logger(mesh, MESHLINK_DEBUG, "Updating canonical address of %s to %s", from->name, canonical_address);
 		}
 
-		logger(mesh, MESHLINK_DEBUG, "Updating canonical address of %s to %s", from->name, host);
 		free(from->canonical_address);
-		from->canonical_address = xstrdup(host);
+		from->canonical_address = canonical_address;
 		return true;
 	}
 
