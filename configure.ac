@@ -15,6 +15,7 @@ AM_SILENT_RULES([yes])
 AC_USE_SYSTEM_EXTENSIONS
 AC_DEFINE([__USE_BSD], 1, [Enable BSD extensions])
 AC_DEFINE([_POSIX_C_SOURCE], 200809L, [Enable POSIX features])
+AC_DEFINE([_DARWIN_C_SOURCE], 1, [Enable Darwin features])
 
 dnl Checks for programs.
 AM_PROG_CC_C_O
