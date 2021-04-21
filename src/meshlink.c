@@ -3154,7 +3154,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 		}
 
 		// Connect to the meshlink daemon mentioned in the URL.
-		struct addrinfo *ai = adns_blocking_request(mesh, xstrdup(address), xstrdup(port), SOCK_STREAM, 5);
+		struct addrinfo *ai = adns_blocking_request(mesh, xstrdup(address), xstrdup(port), SOCK_STREAM, 30);
 
 		if(ai) {
 			for(struct addrinfo *aip = ai; aip; aip = aip->ai_next) {
