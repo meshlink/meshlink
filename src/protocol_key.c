@@ -278,7 +278,7 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		char *canonical_address;
 		xasprintf(&canonical_address, "%s %s", host, port);
 
-		if(mesh->log_level <= MESHLINK_DEBUG && strcmp(from->canonical_address, canonical_address)) {
+		if(mesh->log_level <= MESHLINK_DEBUG && (!from->canonical_address || strcmp(from->canonical_address, canonical_address))) {
 			logger(mesh, MESHLINK_DEBUG, "Updating canonical address of %s to %s", from->name, canonical_address);
 		}
 
