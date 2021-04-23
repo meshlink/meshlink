@@ -94,7 +94,7 @@ int main(void) {
 	meshlink_set_channel_poll_cb(mesh_a, channel, poll_cb);
 	assert(wait_sync_flag(&b_responded, 20));
 
-	meshlink_channel_close(mesh_a, channel);
+	meshlink_channel_abort(mesh_a, channel);
 
 	// Clean up.
 
