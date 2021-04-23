@@ -4252,6 +4252,32 @@ void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel
 	pthread_mutex_unlock(&mesh->mutex);
 }
 
+void meshlink_channel_abort(meshlink_handle_t *mesh, meshlink_channel_t *channel) {
+	if(!mesh || !channel) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
+
+	if(channel->c) {
+		utcp_abort(channel->c);
+		channel->c = NULL;
+
+		/* Clean up any outstanding AIO buffers. */
+		aio_abort(mesh, channel, &channel->aio_send);
+		aio_abort(mesh, channel, &channel->aio_receive);
+	}
+
+	if(!channel->in_callback) {
+		free(channel);
+	}
+
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
 ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;

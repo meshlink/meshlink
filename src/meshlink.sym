@@ -13,6 +13,7 @@ meshlink_add_external_address
 meshlink_add_invitation_address
 meshlink_blacklist
 meshlink_blacklist_by_name
+meshlink_channel_abort
 meshlink_channel_aio_fd_receive
 meshlink_channel_aio_fd_send
 meshlink_channel_aio_receive

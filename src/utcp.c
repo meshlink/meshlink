@@ -2072,6 +2072,9 @@ static bool reset_connection(struct utcp_connection *c) {
 		return false;
 	}
 
+	buffer_clear(&c->sndbuf);
+	buffer_clear(&c->rcvbuf);
+
 	c->recv = NULL;
 	c->poll = NULL;
 

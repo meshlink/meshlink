@@ -1012,10 +1012,28 @@ public:
 	 *  It also causes the local node to stop accepting incoming data from the remote node.
 	 *  Afterwards, the channel handle is invalid and must not be used any more.
 	 *
+	 *  It is allowed to call this function at any time on a valid handle, even inside callback functions.
+	 *  If called with a valid handle, this function always succeeds, otherwise the result is undefined.
+	 *
 	 *  @param channel      A handle for the channel.
 	 */
 	void channel_close(meshlink_channel_t *channel) {
 		return meshlink_channel_close(handle, channel);
+	}
+
+	/// Abort a reliable stream channel.
+	/** This aborts a channel.
+	 *  Data that was in the send and receive buffers is dropped, so potentially there is some data that
+	 *  was sent on this channel that will not be received by the peer.
+	 *  Afterwards, the channel handle is invalid and must not be used any more.
+	 *
+	 *  It is allowed to call this function at any time on a valid handle, even inside callback functions.
+	 *  If called with a valid handle, this function always succeeds, otherwise the result is undefined.
+	 *
+	 *  @param channel      A handle for the channel.
+	 */
+	void channel_abort(meshlink_channel_t *channel) {
+		return meshlink_channel_abort(handle, channel);
 	}
 
 	/// Transmit data on a channel

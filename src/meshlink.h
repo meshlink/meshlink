@@ -1531,7 +1531,6 @@ void meshlink_channel_shutdown(struct meshlink_handle *mesh, struct meshlink_cha
 /// Close a reliable stream channel.
 /** This informs the remote node that the local node has finished sending all data on the channel.
  *  It also causes the local node to stop accepting incoming data from the remote node.
- *  It will free the struct meshlink_channel and all associated resources.
  *  Afterwards, the channel handle is invalid and must not be used any more.
  *
  *  It is allowed to call this function at any time on a valid handle, even inside callback functions.
@@ -1542,6 +1541,21 @@ void meshlink_channel_shutdown(struct meshlink_handle *mesh, struct meshlink_cha
  *  @param channel      A handle for the channel.
  */
 void meshlink_channel_close(struct meshlink_handle *mesh, struct meshlink_channel *channel);
+
+/// Abort a reliable stream channel.
+/** This aborts a channel.
+ *  Data that was in the send and receive buffers is dropped, so potentially there is some data that
+ *  was sent on this channel that will not be received by the peer.
+ *  Afterwards, the channel handle is invalid and must not be used any more.
+ *
+ *  It is allowed to call this function at any time on a valid handle, even inside callback functions.
+ *  If called with a valid handle, this function always succeeds, otherwise the result is undefined.
+ *
+ *  \memberof meshlink_channel
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param channel      A handle for the channel.
+ */
+void meshlink_channel_abort(struct meshlink_handle *mesh, struct meshlink_channel *channel);
 
 /// Transmit data on a channel
 /** This queues data to send to the remote node.
