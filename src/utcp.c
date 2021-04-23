@@ -2109,6 +2109,7 @@ static bool reset_connection(struct utcp_connection *c) {
 	hdr.ack = c->rcv.nxt;
 	hdr.wnd = 0;
 	hdr.ctl = RST;
+	hdr.aux = 0;
 
 	print_packet(c, "send", &hdr, sizeof(hdr));
 	c->utcp->send(c->utcp, &hdr, sizeof(hdr));
