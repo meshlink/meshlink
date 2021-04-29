@@ -1600,6 +1600,8 @@ synack:
 			// The peer has aborted our connection.
 			set_state(c, CLOSED);
 			errno = ECONNRESET;
+			buffer_clear(&c->sndbuf);
+			buffer_clear(&c->rcvbuf);
 
 			if(c->recv) {
 				c->recv(c, NULL, 0);
@@ -2208,6 +2210,8 @@ struct timespec utcp_timeout(struct utcp *utcp) {
 		if(timespec_isset(&c->conn_timeout) && timespec_lt(&c->conn_timeout, &now)) {
 			errno = ETIMEDOUT;
 			c->state = CLOSED;
+			buffer_clear(&c->sndbuf);
+			buffer_clear(&c->rcvbuf);
 
 			if(c->recv) {
 				c->recv(c, NULL, 0);
@@ -2310,6 +2314,9 @@ void utcp_exit(struct utcp *utcp) {
 		struct utcp_connection *c = utcp->connections[i];
 
 		if(!c->reapable) {
+			buffer_clear(&c->sndbuf);
+			buffer_clear(&c->rcvbuf);
+
 			if(c->recv) {
 				c->recv(c, NULL, 0);
 			}
