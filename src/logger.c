@@ -23,8 +23,8 @@
 #include "meshlink_internal.h"
 #include "sptps.h"
 
-// TODO: refactor logging code to use a meshlink_handle_t *.
-void logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *format, ...) {
+#ifndef MESHLINK_NO_LOG
+void logger2(const char *file, int line, meshlink_handle_t *mesh, meshlink_log_level_t level, const char *format, ...) {
 	assert(format);
 
 	if(mesh) {
@@ -40,12 +40,18 @@ void logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *for
 	va_list ap;
 	char message[1024] = "";
 
+	int hlen = snprintf(message, sizeof message, "%s:%d ", file, line);
+
 	va_start(ap, format);
-	int len = vsnprintf(message, sizeof(message), format, ap);
+	int len = vsnprintf(message + hlen, sizeof(message) - hlen, format, ap);
 	va_end(ap);
 
-	if(len > 0 && (size_t)len < sizeof(message) && message[len - 1] == '\n') {
-		message[len - 1] = 0;
+	if(len > 0) {
+		len += hlen;
+
+		if((size_t)len < sizeof(message) && message[len - 1] == '\n') {
+			message[len - 1] = 0;
+		}
 	}
 
 	if(mesh) {
@@ -54,3 +60,4 @@ void logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *for
 		global_log_cb(NULL, level, message);
 	}
 }
+#endif

@@ -22,6 +22,11 @@
 
 #include "meshlink_internal.h"
 
-void logger(meshlink_handle_t *mesh, meshlink_log_level_t level, const char *format, ...) __attribute__((__format__(printf, 3, 4)));
+#ifdef MESHLINK_NO_LOG
+#define logger(mesh, level, ...) do {(void)(mesh);} while(0)
+#else
+#define logger(mesh, level, ...) logger2(__FILE__, __LINE__, (mesh), (level), __VA_ARGS__)
+void logger2(const char *file, int line, meshlink_handle_t *mesh, meshlink_log_level_t level, const char *format, ...) __attribute__((__format__(printf, 5, 6)));
+#endif
 
 #endif
