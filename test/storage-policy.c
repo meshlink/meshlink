@@ -207,4 +207,5 @@ int main(void) {
 	// Done.
 
 	close_meshlink_pair(mesh1, mesh2);
+	free(invitation);
 }

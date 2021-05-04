@@ -3399,6 +3399,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 
 	if(!buflen) {
 		logger(mesh, MESHLINK_DEBUG, "Invalid data\n");
+		free(buf);
 		meshlink_errno = MESHLINK_EPEER;
 		return false;
 	}
@@ -3408,6 +3409,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 
 	if(!count) {
 		logger(mesh, MESHLINK_DEBUG, "Invalid data\n");
+		free(buf);
 		meshlink_errno = MESHLINK_EPEER;
 		return false;
 	}
@@ -3464,6 +3466,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 
 		if(!node_write_config(mesh, n, true)) {
 			free_node(n);
+			free(buf);
 			return false;
 		}
 

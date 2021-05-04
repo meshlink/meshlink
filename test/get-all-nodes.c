@@ -77,6 +77,8 @@ int main(void) {
 
 			assert(meshlink_import(mesh[j], data));
 		}
+
+		free(data);
 	}
 
 	// We should know about all nodes now, and their device class.

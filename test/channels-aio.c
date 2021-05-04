@@ -189,9 +189,12 @@ int main(void) {
 		// The non-AIO transfer should have completed before everything else
 		assert(!timespec_lt(&out_infos[i].aio_infos[0].ts, &b_received_ts));
 		assert(!timespec_lt(&in_infos[i].aio_infos[0].ts, &b_received_ts));
+
+		free(in_infos[i].data);
 	}
 
 	// Clean up.
 
 	close_meshlink_pair(mesh_a, mesh_b);
+	free(outdata);
 }

@@ -175,4 +175,5 @@ int main(void) {
 	// Clean up.
 
 	close_meshlink_pair(mesh_a, mesh_b);
+	free(outdata);
 }
