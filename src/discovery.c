@@ -121,6 +121,8 @@ static void send_mdns_packet_ipv4(meshlink_handle_t *mesh, int fd, int index, co
 		struct cmsghdr align;
 	} u;
 
+	memset(&u, 0, sizeof(u));
+
 	struct msghdr msg = {
 		.msg_name = (struct sockaddr *) &dest->sa,
 		.msg_namelen = SALEN(dest->sa),
@@ -129,7 +131,6 @@ static void send_mdns_packet_ipv4(meshlink_handle_t *mesh, int fd, int index, co
 		.msg_control = u.buf,
 		.msg_controllen = sizeof(u.buf),
 	};
-
 
 	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
 	cmsg->cmsg_level = IPPROTO_IP;
