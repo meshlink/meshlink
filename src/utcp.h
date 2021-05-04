@@ -80,7 +80,7 @@ void utcp_set_recv_cb(struct utcp_connection *connection, utcp_recv_t recv);
 void utcp_set_poll_cb(struct utcp_connection *connection, utcp_poll_t poll);
 void utcp_set_accept_cb(struct utcp *utcp, utcp_accept_t accept, utcp_listen_t listen);
 bool utcp_is_active(struct utcp *utcp);
-void utcp_abort_all_connections(struct utcp *utcp);
+void utcp_reset_all_connections(struct utcp *utcp);
 
 // Global socket options
 

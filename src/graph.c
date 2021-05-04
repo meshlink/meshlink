@@ -150,7 +150,7 @@ static void check_reachability(meshlink_handle_t *mesh) {
 			n->session_id = n->prevedge->reverse->session_id;
 
 			if(n->utcp) {
-				utcp_abort_all_connections(n->utcp);
+				utcp_reset_all_connections(n->utcp);
 			}
 
 			n->status.validkey = false;

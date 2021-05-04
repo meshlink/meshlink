@@ -2077,9 +2077,6 @@ static bool reset_connection(struct utcp_connection *c) {
 	buffer_clear(&c->sndbuf);
 	buffer_clear(&c->rcvbuf);
 
-	c->recv = NULL;
-	c->poll = NULL;
-
 	switch(c->state) {
 	case CLOSED:
 		return true;
@@ -2127,8 +2124,8 @@ static void set_reapable(struct utcp_connection *c) {
 	c->reapable = true;
 }
 
-// Closes all the opened connections
-void utcp_abort_all_connections(struct utcp *utcp) {
+// Resets all connections, but does not invalidate connection handles
+void utcp_reset_all_connections(struct utcp *utcp) {
 	if(!utcp) {
 		errno = EINVAL;
 		return;
@@ -2141,19 +2138,16 @@ void utcp_abort_all_connections(struct utcp *utcp) {
 			continue;
 		}
 
-		utcp_recv_t old_recv = c->recv;
-		utcp_poll_t old_poll = c->poll;
+		reset_connection(c);
 
-		utcp_abort(c);
-
-		if(old_recv) {
+		if(c->recv) {
 			errno = 0;
-			old_recv(c, NULL, 0);
+			c->recv(c, NULL, 0);
 		}
 
-		if(old_poll && !c->reapable) {
+		if(c->poll && !c->reapable) {
 			errno = 0;
-			old_poll(c, 0);
+			c->poll(c, 0);
 		}
 	}
 

@@ -3517,7 +3517,7 @@ static bool blacklist(meshlink_handle_t *mesh, node_t *n) {
 		}
 	}
 
-	utcp_abort_all_connections(n->utcp);
+	utcp_reset_all_connections(n->utcp);
 
 	n->mtu = 0;
 	n->minmtu = 0;
