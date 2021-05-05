@@ -296,10 +296,13 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		snprintf(label, sizeof(label), "%s %s %s", meshlink_tcp_label, c->name, mesh->self->name);
 	}
 
-	char buf1[1024], buf2[1024];
-	bin2hex((uint8_t *)mesh->private_key + 64, buf1, 32);
-	bin2hex((uint8_t *)n->ecdsa + 64, buf2, 32);
-	logger(mesh, MESHLINK_DEBUG, "Connection to %s mykey %s hiskey %s", c->name, buf1, buf2);
+	if(mesh->log_level <= MESHLINK_DEBUG) {
+		char buf1[1024], buf2[1024];
+		bin2hex((uint8_t *)mesh->private_key + 64, buf1, 32);
+		bin2hex((uint8_t *)n->ecdsa + 64, buf2, 32);
+		logger(mesh, MESHLINK_DEBUG, "Connection to %s mykey %s hiskey %s", c->name, buf1, buf2);
+	}
+
 	return sptps_start(&c->sptps, c, c->outgoing, false, mesh->private_key, n->ecdsa, label, sizeof(label) - 1, send_meta_sptps, receive_meta_sptps);
 }
 
@@ -355,7 +358,7 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	} else {
 		if(n->connection) {
 			/* Oh dear, we already have a connection to this node. */
-			logger(mesh, MESHLINK_DEBUG, "Established a second connection with %s, closing old connection", n->connection->name);
+			logger(mesh, MESHLINK_INFO, "Established a second connection with %s, closing old connection", n->connection->name);
 
 			if(n->connection->outgoing) {
 				if(c->outgoing) {

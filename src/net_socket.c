@@ -161,7 +161,7 @@ static void handle_meta_io(event_loop_t *loop, void *data, int flags) {
 		if(!result) {
 			finish_connecting(mesh, c);
 		} else {
-			logger(mesh, MESHLINK_DEBUG, "Error while connecting to %s: %s", c->name, sockstrerror(result));
+			logger(mesh, MESHLINK_ERROR, "Error while connecting to %s: %s", c->name, sockstrerror(result));
 			terminate_connection(mesh, c, false);
 			return;
 		}

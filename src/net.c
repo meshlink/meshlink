@@ -52,7 +52,9 @@ static const int default_interval = 60;
   - Check if we need to retry making an outgoing connection
 */
 void terminate_connection(meshlink_handle_t *mesh, connection_t *c, bool report) {
-	logger(mesh, MESHLINK_INFO, "Closing connection with %s", c->name);
+	if(c->status.active) {
+		logger(mesh, MESHLINK_INFO, "Closing connection with %s", c->name);
+	}
 
 	if(c->node && c->node->connection == c) {
 		if(c->status.active && mesh->meta_status_cb) {
