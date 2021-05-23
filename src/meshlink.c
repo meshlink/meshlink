@@ -226,6 +226,7 @@ char *meshlink_get_external_address(meshlink_handle_t *mesh) {
 }
 
 char *meshlink_get_external_address_for_family(meshlink_handle_t *mesh, int family) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_get_external_address_for_family(%d)", family);
 	const char *url = mesh->external_address_url;
 
 	if(!url) {
@@ -391,6 +392,8 @@ static int getifaddrs_in_netns(struct ifaddrs **ifa, int netns) {
 #endif
 
 char *meshlink_get_local_address_for_family(meshlink_handle_t *mesh, int family) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_get_local_address_for_family(%d)", family);
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return NULL;
@@ -789,7 +792,7 @@ static bool finalize_join(join_state_t *state, const void *buf, uint16_t len) {
 		}
 
 		if(!strcmp(name2, mesh->name)) {
-			logger(mesh, MESHLINK_DEBUG, "Secondary chunk would overwrite our own host config file.\n");
+			logger(mesh, MESHLINK_ERROR, "Secondary chunk would overwrite our own host config file.\n");
 			free(name2);
 			meshlink_errno = MESHLINK_EPEER;
 			return false;
@@ -1008,7 +1011,7 @@ static bool ecdsa_keygen(meshlink_handle_t *mesh) {
 	mesh->invitation_key = ecdsa_generate();
 
 	if(!mesh->private_key || !mesh->invitation_key) {
-		logger(mesh, MESHLINK_DEBUG, "Error during key generation!\n");
+		logger(mesh, MESHLINK_ERROR, "Error during key generation!\n");
 		meshlink_errno = MESHLINK_EINTERNAL;
 		return false;
 	}
@@ -1192,6 +1195,8 @@ static void *setup_network_in_netns_thread(void *arg) {
 #endif // HAVE_SETNS
 
 meshlink_open_params_t *meshlink_open_params_init(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_open_params_init(%s, %s, %s, %d)", confbase, name, appname, devclass);
+
 	if(!confbase || !*confbase) {
 		logger(NULL, MESHLINK_ERROR, "No confbase given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
@@ -1236,6 +1241,8 @@ meshlink_open_params_t *meshlink_open_params_init(const char *confbase, const ch
 }
 
 bool meshlink_open_params_set_netns(meshlink_open_params_t *params, int netns) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_open_params_set_netnst(%d)", netns);
+
 	if(!params) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -1247,6 +1254,8 @@ bool meshlink_open_params_set_netns(meshlink_open_params_t *params, int netns) {
 }
 
 bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const void *key, size_t keylen) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_open_params_set_storage_key(%p, %zu)", key, keylen);
+
 	if(!params) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -1265,6 +1274,8 @@ bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const 
 }
 
 bool meshlink_open_params_set_storage_policy(meshlink_open_params_t *params, meshlink_storage_policy_t policy) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_open_params_set_storage_policy(%d)", policy);
+
 	if(!params) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -1276,6 +1287,8 @@ bool meshlink_open_params_set_storage_policy(meshlink_open_params_t *params, mes
 }
 
 bool meshlink_open_params_set_lock_filename(meshlink_open_params_t *params, const char *filename) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_open_params_set_lock_filename(%s)", filename);
+
 	if(!params || !filename) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -1288,6 +1301,8 @@ bool meshlink_open_params_set_lock_filename(meshlink_open_params_t *params, cons
 }
 
 bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key, size_t new_keylen) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_encrypted_key_rotate(%p, %zu)", new_key, new_keylen);
+
 	if(!mesh || !new_key || !new_keylen) {
 		logger(mesh, MESHLINK_ERROR, "Invalid arguments given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
@@ -1360,6 +1375,8 @@ bool meshlink_encrypted_key_rotate(meshlink_handle_t *mesh, const void *new_key,
 }
 
 void meshlink_open_params_free(meshlink_open_params_t *params) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_open_params_free()");
+
 	if(!params) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -1382,6 +1399,8 @@ static const dev_class_traits_t default_class_traits[DEV_CLASS_COUNT] = {
 };
 
 meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_open(%s, %s, %s, %d)", confbase, name, appname, devclass);
+
 	if(!confbase || !*confbase) {
 		logger(NULL, MESHLINK_ERROR, "No confbase given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
@@ -1405,6 +1424,8 @@ meshlink_handle_t *meshlink_open(const char *confbase, const char *name, const c
 }
 
 meshlink_handle_t *meshlink_open_encrypted(const char *confbase, const char *name, const char *appname, dev_class_t devclass, const void *key, size_t keylen) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_open_encrypted(%s, %s, %s, %d, %p, %zu)", confbase, name, appname, devclass, key, keylen);
+
 	if(!confbase || !*confbase) {
 		logger(NULL, MESHLINK_ERROR, "No confbase given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
@@ -1432,6 +1453,8 @@ meshlink_handle_t *meshlink_open_encrypted(const char *confbase, const char *nam
 }
 
 meshlink_handle_t *meshlink_open_ephemeral(const char *name, const char *appname, dev_class_t devclass) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_open_ephemeral(%s, %s, %d)", name, appname, devclass);
+
 	if(!name) {
 		logger(NULL, MESHLINK_ERROR, "No name given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
@@ -1474,7 +1497,7 @@ meshlink_handle_t *meshlink_open_ephemeral(const char *name, const char *appname
 }
 
 meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
-	logger(NULL, MESHLINK_DEBUG, "meshlink_open called\n");
+	logger(NULL, MESHLINK_DEBUG, "meshlink_open_ex()");
 
 	// Validate arguments provided by the application
 	if(!params->appname || !*params->appname) {
@@ -1646,7 +1669,9 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 	return mesh;
 }
 
-meshlink_submesh_t *meshlink_submesh_open(meshlink_handle_t  *mesh, const char *submesh) {
+meshlink_submesh_t *meshlink_submesh_open(meshlink_handle_t *mesh, const char *submesh) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_submesh_open(%s)", submesh);
+
 	meshlink_submesh_t *s = NULL;
 
 	if(!mesh) {
@@ -1751,7 +1776,7 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 
 	//Check that a valid name is set
 	if(!mesh->name) {
-		logger(mesh, MESHLINK_DEBUG, "No name given!\n");
+		logger(mesh, MESHLINK_ERROR, "No name given!\n");
 		meshlink_errno = MESHLINK_EINVAL;
 		pthread_mutex_unlock(&mesh->mutex);
 		return false;
@@ -1770,7 +1795,7 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 	pthread_attr_setstacksize(&attr, 1024 * 1024);
 
 	if(pthread_create(&mesh->thread, &attr, meshlink_main_loop, mesh) != 0) {
-		logger(mesh, MESHLINK_DEBUG, "Could not start thread: %s\n", strerror(errno));
+		logger(mesh, MESHLINK_ERROR, "Could not start thread: %s\n", strerror(errno));
 		memset(&mesh->thread, 0, sizeof(mesh)->thread);
 		meshlink_errno = MESHLINK_EINTERNAL;
 		event_loop_stop(&mesh->loop);
@@ -1789,6 +1814,8 @@ bool meshlink_start(meshlink_handle_t *mesh) {
 }
 
 void meshlink_stop(meshlink_handle_t *mesh) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_stop()\n");
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -1797,8 +1824,6 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 	if(pthread_mutex_lock(&mesh->mutex) != 0) {
 		abort();
 	}
-
-	logger(mesh, MESHLINK_DEBUG, "meshlink_stop called\n");
 
 	// Shut down the main thread
 	event_loop_stop(&mesh->loop);
@@ -1866,6 +1891,8 @@ void meshlink_stop(meshlink_handle_t *mesh) {
 }
 
 void meshlink_close(meshlink_handle_t *mesh) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_close()\n");
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -1930,6 +1957,8 @@ void meshlink_close(meshlink_handle_t *mesh) {
 }
 
 bool meshlink_destroy_ex(const meshlink_open_params_t *params) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_destroy_ex()\n");
+
 	if(!params) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -1995,6 +2024,8 @@ bool meshlink_destroy_ex(const meshlink_open_params_t *params) {
 }
 
 bool meshlink_destroy(const char *confbase) {
+	logger(NULL, MESHLINK_DEBUG, "meshlink_destroy(%s)", confbase);
+
 	char lock_filename[PATH_MAX];
 	snprintf(lock_filename, sizeof(lock_filename), "%s" SLASH "meshlink.lock", confbase);
 
@@ -2007,6 +2038,8 @@ bool meshlink_destroy(const char *confbase) {
 }
 
 void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_receive_cb(%p)", (void *)cb);
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -2021,6 +2054,8 @@ void meshlink_set_receive_cb(meshlink_handle_t *mesh, meshlink_receive_cb_t cb) 
 }
 
 void meshlink_set_connection_try_cb(meshlink_handle_t *mesh, meshlink_connection_try_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_connection_try_cb(%p)", (void *)cb);
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -2035,6 +2070,8 @@ void meshlink_set_connection_try_cb(meshlink_handle_t *mesh, meshlink_connection
 }
 
 void meshlink_set_node_status_cb(meshlink_handle_t *mesh, meshlink_node_status_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_node_status_cb(%p)", (void *)cb);
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -2049,6 +2086,8 @@ void meshlink_set_node_status_cb(meshlink_handle_t *mesh, meshlink_node_status_c
 }
 
 void meshlink_set_node_pmtu_cb(meshlink_handle_t *mesh, meshlink_node_pmtu_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_node_pmtu_cb(%p)", (void *)cb);
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -2063,6 +2102,8 @@ void meshlink_set_node_pmtu_cb(meshlink_handle_t *mesh, meshlink_node_pmtu_cb_t 
 }
 
 void meshlink_set_node_duplicate_cb(meshlink_handle_t *mesh, meshlink_node_duplicate_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_node_duplicate_cb(%p)", (void *)cb);
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -2077,6 +2118,8 @@ void meshlink_set_node_duplicate_cb(meshlink_handle_t *mesh, meshlink_node_dupli
 }
 
 void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, meshlink_log_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_log_cb(%p)", (void *)cb);
+
 	if(mesh) {
 		if(pthread_mutex_lock(&mesh->mutex) != 0) {
 			abort();
@@ -2092,6 +2135,8 @@ void meshlink_set_log_cb(meshlink_handle_t *mesh, meshlink_log_level_t level, me
 }
 
 void meshlink_set_error_cb(struct meshlink_handle *mesh, meshlink_error_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_error_cb(%p)", (void *)cb);
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -2106,6 +2151,8 @@ void meshlink_set_error_cb(struct meshlink_handle *mesh, meshlink_error_cb_t cb)
 }
 
 void meshlink_set_blacklisted_cb(struct meshlink_handle *mesh, meshlink_blacklisted_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_blacklisted_cb(%p)", (void *)cb);
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -2170,6 +2217,8 @@ static bool meshlink_send_immediate(meshlink_handle_t *mesh, meshlink_node_t *de
 }
 
 bool meshlink_send(meshlink_handle_t *mesh, meshlink_node_t *destination, const void *data, size_t len) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_send(%s, %p, %zu)", destination ? destination->name : "(null)", data, len);
+
 	// Validate arguments
 	if(!mesh || !destination) {
 		meshlink_errno = MESHLINK_EINVAL;
@@ -2579,6 +2628,8 @@ bool meshlink_get_node_reachability(struct meshlink_handle *mesh, struct meshlin
 }
 
 bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len, void *signature, size_t *siglen) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_sign(%p, %zu, %p, %p)", data, len, signature, (void *)siglen);
+
 	if(!mesh || !data || !len || !signature || !siglen) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -2605,6 +2656,8 @@ bool meshlink_sign(meshlink_handle_t *mesh, const void *data, size_t len, void *
 }
 
 bool meshlink_verify(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len, const void *signature, size_t siglen) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_verify(%p, %zu, %p, %zu)", data, len, signature, siglen);
+
 	if(!mesh || !source || !data || !len || !signature) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -2651,26 +2704,28 @@ static bool refresh_invitation_key(meshlink_handle_t *mesh) {
 }
 
 bool meshlink_set_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *node, const char *address, const char *port) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_canonical_address(%s, %s, %s)", node ? node->name : "(null)", address ? address : "(null)", port ? port : "(null)");
+
 	if(!mesh || !node || !address) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
 
 	if(!is_valid_hostname(address)) {
-		logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s", address);
+		logger(mesh, MESHLINK_ERROR, "Invalid character in address: %s", address);
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
 
 	if((node_t *)node != mesh->self && !port) {
-		logger(mesh, MESHLINK_DEBUG, "Missing port number!");
+		logger(mesh, MESHLINK_ERROR, "Missing port number!");
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 
 	}
 
 	if(port && !is_valid_port(port)) {
-		logger(mesh, MESHLINK_DEBUG, "Invalid character in port: %s", address);
+		logger(mesh, MESHLINK_ERROR, "Invalid character in port: %s", address);
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
@@ -2698,6 +2753,8 @@ bool meshlink_set_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *no
 }
 
 bool meshlink_clear_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_clear_canonical_address(%s)", node ? node->name : "(null)");
+
 	if(!mesh || !node) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -2722,19 +2779,21 @@ bool meshlink_clear_canonical_address(meshlink_handle_t *mesh, meshlink_node_t *
 }
 
 bool meshlink_add_invitation_address(struct meshlink_handle *mesh, const char *address, const char *port) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_add_invitation_address(%s, %s)", address ? address : "(null)", port ? port : "(null)");
+
 	if(!mesh || !address) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
 
 	if(!is_valid_hostname(address)) {
-		logger(mesh, MESHLINK_DEBUG, "Invalid character in address: %s\n", address);
+		logger(mesh, MESHLINK_ERROR, "Invalid character in address: %s\n", address);
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
 
 	if(port && !is_valid_port(port)) {
-		logger(mesh, MESHLINK_DEBUG, "Invalid character in port: %s\n", address);
+		logger(mesh, MESHLINK_ERROR, "Invalid character in port: %s\n", address);
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
 	}
@@ -2762,6 +2821,8 @@ bool meshlink_add_invitation_address(struct meshlink_handle *mesh, const char *a
 }
 
 void meshlink_clear_invitation_addresses(struct meshlink_handle *mesh) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_clear_invitation_addresses()");
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -2780,10 +2841,14 @@ void meshlink_clear_invitation_addresses(struct meshlink_handle *mesh) {
 }
 
 bool meshlink_add_address(meshlink_handle_t *mesh, const char *address) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_add_address(%s)", address ? address : "(null)");
+
 	return meshlink_set_canonical_address(mesh, (meshlink_node_t *)mesh->self, address, NULL);
 }
 
 bool meshlink_add_external_address(meshlink_handle_t *mesh) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_add_external_address()");
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -2825,6 +2890,8 @@ int meshlink_get_port(meshlink_handle_t *mesh) {
 }
 
 bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_port(%d)", port);
+
 	if(!mesh || port < 0 || port >= 65536 || mesh->threadstarted) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -2892,10 +2959,14 @@ done:
 }
 
 void meshlink_set_invitation_timeout(meshlink_handle_t *mesh, int timeout) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_invitation_timeout(%d)", timeout);
+
 	mesh->invitation_timeout = timeout;
 }
 
 char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, const char *name, uint32_t flags) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_invite_ex(%s, %s, %u)", submesh ? submesh->name : "(null)", name ? name : "(null)", flags);
+
 	meshlink_submesh_t *s = NULL;
 
 	if(!mesh) {
@@ -2907,7 +2978,7 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 		s = (meshlink_submesh_t *)lookup_submesh(mesh, submesh->name);
 
 		if(s != submesh) {
-			logger(mesh, MESHLINK_DEBUG, "Invalid SubMesh Handle.\n");
+			logger(mesh, MESHLINK_ERROR, "Invalid submesh handle.\n");
 			meshlink_errno = MESHLINK_EINVAL;
 			return NULL;
 		}
@@ -3039,10 +3110,14 @@ char *meshlink_invite_ex(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, c
 }
 
 char *meshlink_invite(meshlink_handle_t *mesh, meshlink_submesh_t *submesh, const char *name) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_invite_ex(%s, %s)", submesh ? submesh->name : "(null)", name ? name : "(null)");
+
 	return meshlink_invite_ex(mesh, submesh, name, 0);
 }
 
 bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_join(%s)", invitation ? invitation : "(null)");
+
 	if(!mesh || !invitation) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -3207,7 +3282,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	state.blen = 0;
 
 	if(!sendline(state.sock, "0 ?%s %d.%d %s", b64key, PROT_MAJOR, PROT_MINOR, mesh->appname)) {
-		logger(mesh, MESHLINK_DEBUG, "Error sending request to %s port %s: %s\n", address, port, strerror(errno));
+		logger(mesh, MESHLINK_ERROR, "Error sending request to %s port %s: %s\n", address, port, strerror(errno));
 		meshlink_errno = MESHLINK_ENETWORK;
 		goto exit;
 	}
@@ -3218,7 +3293,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	int code, hismajor, hisminor = 0;
 
 	if(!recvline(&state) || sscanf(state.line, "%d %s %d.%d", &code, hisname, &hismajor, &hisminor) < 3 || code != 0 || hismajor != PROT_MAJOR || !check_id(hisname) || !recvline(&state) || !rstrip(state.line) || sscanf(state.line, "%d ", &code) != 1 || code != ACK || strlen(state.line) < 3) {
-		logger(mesh, MESHLINK_DEBUG, "Cannot read greeting from peer\n");
+		logger(mesh, MESHLINK_ERROR, "Cannot read greeting from peer\n");
 		meshlink_errno = MESHLINK_ENETWORK;
 		goto exit;
 	}
@@ -3228,13 +3303,13 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	char hishash[64];
 
 	if(sha512(fingerprint, strlen(fingerprint), hishash)) {
-		logger(mesh, MESHLINK_DEBUG, "Could not create hash\n%s\n", state.line + 2);
+		logger(mesh, MESHLINK_ERROR, "Could not create hash\n%s\n", state.line + 2);
 		meshlink_errno = MESHLINK_EINTERNAL;
 		goto exit;
 	}
 
 	if(memcmp(hishash, state.hash, 18)) {
-		logger(mesh, MESHLINK_DEBUG, "Peer has an invalid key!\n%s\n", state.line + 2);
+		logger(mesh, MESHLINK_ERROR, "Peer has an invalid key!\n%s\n", state.line + 2);
 		meshlink_errno = MESHLINK_EPEER;
 		goto exit;
 	}
@@ -3267,7 +3342,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 				continue;
 			}
 
-			logger(mesh, MESHLINK_DEBUG, "Error reading data from %s port %s: %s\n", address, port, strerror(errno));
+			logger(mesh, MESHLINK_ERROR, "Error reading data from %s port %s: %s\n", address, port, strerror(errno));
 			meshlink_errno = MESHLINK_ENETWORK;
 			goto exit;
 		}
@@ -3279,7 +3354,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	}
 
 	if(!state.success) {
-		logger(mesh, MESHLINK_DEBUG, "Connection closed by peer, invitation cancelled.\n");
+		logger(mesh, MESHLINK_ERROR, "Connection closed by peer, invitation cancelled.\n");
 		meshlink_errno = MESHLINK_EPEER;
 		goto exit;
 	}
@@ -3293,7 +3368,7 @@ bool meshlink_join(meshlink_handle_t *mesh, const char *invitation) {
 	return true;
 
 invalid:
-	logger(mesh, MESHLINK_DEBUG, "Invalid invitation URL\n");
+	logger(mesh, MESHLINK_ERROR, "Invalid invitation URL\n");
 	meshlink_errno = MESHLINK_EINVAL;
 exit:
 	sptps_stop(&state.sptps);
@@ -3361,7 +3436,7 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 	pthread_mutex_unlock(&mesh->mutex);
 
 	if(!packmsg_output_ok(&out)) {
-		logger(mesh, MESHLINK_DEBUG, "Error creating export data\n");
+		logger(mesh, MESHLINK_ERROR, "Error creating export data\n");
 		meshlink_errno = MESHLINK_EINTERNAL;
 		return NULL;
 	}
@@ -3376,7 +3451,7 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 	packmsg_add_bin(&out2, buf, packmsg_output_size(&out, buf));
 
 	if(!packmsg_output_ok(&out2)) {
-		logger(mesh, MESHLINK_DEBUG, "Error creating export data\n");
+		logger(mesh, MESHLINK_ERROR, "Error creating export data\n");
 		meshlink_errno = MESHLINK_EINTERNAL;
 		free(buf2);
 		return NULL;
@@ -3388,6 +3463,8 @@ char *meshlink_export(meshlink_handle_t *mesh) {
 }
 
 bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_import(%p)", (const void *)data);
+
 	if(!mesh || !data) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -3398,7 +3475,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 	int buflen = b64decode(data, buf, datalen);
 
 	if(!buflen) {
-		logger(mesh, MESHLINK_DEBUG, "Invalid data\n");
+		logger(mesh, MESHLINK_ERROR, "Invalid data\n");
 		free(buf);
 		meshlink_errno = MESHLINK_EPEER;
 		return false;
@@ -3408,7 +3485,7 @@ bool meshlink_import(meshlink_handle_t *mesh, const char *data) {
 	uint32_t count = packmsg_get_array(&in);
 
 	if(!count) {
-		logger(mesh, MESHLINK_DEBUG, "Invalid data\n");
+		logger(mesh, MESHLINK_ERROR, "Invalid data\n");
 		free(buf);
 		meshlink_errno = MESHLINK_EPEER;
 		return false;
@@ -3543,6 +3620,8 @@ static bool blacklist(meshlink_handle_t *mesh, node_t *n) {
 }
 
 bool meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_blacklist(%s)", node ? node->name : "(null)");
+
 	if(!mesh || !node) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -3564,6 +3643,8 @@ bool meshlink_blacklist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 }
 
 bool meshlink_blacklist_by_name(meshlink_handle_t *mesh, const char *name) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_blacklist_by_name(%s)", name ? name : "(null)");
+
 	if(!mesh || !name) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -3615,6 +3696,8 @@ static bool whitelist(meshlink_handle_t *mesh, node_t *n) {
 }
 
 bool meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_whitelist(%s)", node ? node->name : "(null)");
+
 	if(!mesh || !node) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -3636,6 +3719,8 @@ bool meshlink_whitelist(meshlink_handle_t *mesh, meshlink_node_t *node) {
 }
 
 bool meshlink_whitelist_by_name(meshlink_handle_t *mesh, const char *name) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_whitelist_by_name(%s)", name ? name : "(null)");
+
 	if(!mesh || !name) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -3669,6 +3754,8 @@ void meshlink_set_default_blacklist(meshlink_handle_t *mesh, bool blacklist) {
 }
 
 bool meshlink_forget_node(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_forget_node(%s)", node ? node->name : "(null)");
+
 	if(!mesh || !node) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -3733,6 +3820,8 @@ bool meshlink_forget_node(meshlink_handle_t *mesh, meshlink_node_t *node) {
  * See header file for detailed comment.
  */
 void meshlink_hint_address(meshlink_handle_t *mesh, meshlink_node_t *node, const struct sockaddr *addr) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_hint_address(%s, %p)", node ? node->name : "(null)", (const void *)addr);
+
 	if(!mesh || !node || !addr) {
 		meshlink_errno = EINVAL;
 		return;
@@ -3935,6 +4024,8 @@ static ssize_t channel_send(struct utcp *utcp, const void *data, size_t len) {
 }
 
 void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_receive_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_channel_receive_cb(%p, %p)", (void *)channel, (void *)cb);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4051,6 +4142,8 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 }
 
 void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *channel, meshlink_channel_poll_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_channel_poll_cb(%p, %p)", (void *)channel, (void *)cb);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4066,6 +4159,8 @@ void meshlink_set_channel_poll_cb(meshlink_handle_t *mesh, meshlink_channel_t *c
 }
 
 void meshlink_set_channel_listen_cb(meshlink_handle_t *mesh, meshlink_channel_listen_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_channel_listen_cb(%p)", (void *)cb);
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4081,6 +4176,8 @@ void meshlink_set_channel_listen_cb(meshlink_handle_t *mesh, meshlink_channel_li
 }
 
 void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_accept_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_channel_accept_cb(%p)", (void *)cb);
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4105,14 +4202,20 @@ void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_ac
 }
 
 void meshlink_set_channel_sndbuf(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t size) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_channel_sndbuf(%p, %zu)", (void *)channel, size);
+
 	meshlink_set_channel_sndbuf_storage(mesh, channel, NULL, size);
 }
 
 void meshlink_set_channel_rcvbuf(meshlink_handle_t *mesh, meshlink_channel_t *channel, size_t size) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_channel_rcvbuf(%p, %zu)", (void *)channel, size);
+
 	meshlink_set_channel_rcvbuf_storage(mesh, channel, NULL, size);
 }
 
 void meshlink_set_channel_sndbuf_storage(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *buf, size_t size) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_channel_sndbuf_storage(%p, %p, %zu)", (void *)channel, buf, size);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4127,6 +4230,8 @@ void meshlink_set_channel_sndbuf_storage(meshlink_handle_t *mesh, meshlink_chann
 }
 
 void meshlink_set_channel_rcvbuf_storage(meshlink_handle_t *mesh, meshlink_channel_t *channel, void *buf, size_t size) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_channel_rcvbuf_storage(%p, %p, %zu)", (void *)channel, buf, size);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4141,6 +4246,8 @@ void meshlink_set_channel_rcvbuf_storage(meshlink_handle_t *mesh, meshlink_chann
 }
 
 void meshlink_set_channel_flags(meshlink_handle_t *mesh, meshlink_channel_t *channel, uint32_t flags) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_channel_flags(%p, %u)", (void *)channel, flags);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4155,6 +4262,8 @@ void meshlink_set_channel_flags(meshlink_handle_t *mesh, meshlink_channel_t *cha
 }
 
 meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len, uint32_t flags) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_channel_open_ex(%s, %u, %p, %p, %zu, %u)", node ? node->name : "(null)", port, (void *)cb, data, len, flags);
+
 	if(data && len) {
 		abort();        // TODO: handle non-NULL data
 	}
@@ -4212,10 +4321,14 @@ meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_n
 }
 
 meshlink_channel_t *meshlink_channel_open(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_channel_open_ex(%s, %u, %p, %p, %zu)", node ? node->name : "(null)", port, (void *)cb, data, len);
+
 	return meshlink_channel_open_ex(mesh, node, port, cb, data, len, MESHLINK_CHANNEL_TCP);
 }
 
 void meshlink_channel_shutdown(meshlink_handle_t *mesh, meshlink_channel_t *channel, int direction) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_channel_shutdown(%p, %d)", (void *)channel, direction);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4230,6 +4343,8 @@ void meshlink_channel_shutdown(meshlink_handle_t *mesh, meshlink_channel_t *chan
 }
 
 void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_channel_close(%p)", (void *)channel);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4256,6 +4371,8 @@ void meshlink_channel_close(meshlink_handle_t *mesh, meshlink_channel_t *channel
 }
 
 void meshlink_channel_abort(meshlink_handle_t *mesh, meshlink_channel_t *channel) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_channel_abort(%p)", (void *)channel);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4282,6 +4399,8 @@ void meshlink_channel_abort(meshlink_handle_t *mesh, meshlink_channel_t *channel
 }
 
 ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_channel_send(%p, %p, %zu)", (void *)channel, data, len);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return -1;
@@ -4324,6 +4443,8 @@ ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *chann
 }
 
 bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_channel_aio_send(%p, %p, %zu, %p, %p)", (void *)channel, data, len, (void *)cb, priv);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -4367,6 +4488,8 @@ bool meshlink_channel_aio_send(meshlink_handle_t *mesh, meshlink_channel_t *chan
 }
 
 bool meshlink_channel_aio_fd_send(meshlink_handle_t *mesh, meshlink_channel_t *channel, int fd, size_t len, meshlink_aio_fd_cb_t cb, void *priv) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_channel_aio_fd_send(%p, %d, %zu, %p, %p)", (void *)channel, fd, len, (void *)cb, priv);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -4410,6 +4533,8 @@ bool meshlink_channel_aio_fd_send(meshlink_handle_t *mesh, meshlink_channel_t *c
 }
 
 bool meshlink_channel_aio_receive(meshlink_handle_t *mesh, meshlink_channel_t *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_channel_aio_receive(%p, %p, %zu, %p, %p)", (void *)channel, data, len, (void *)cb, priv);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -4445,6 +4570,8 @@ bool meshlink_channel_aio_receive(meshlink_handle_t *mesh, meshlink_channel_t *c
 }
 
 bool meshlink_channel_aio_fd_receive(meshlink_handle_t *mesh, meshlink_channel_t *channel, int fd, size_t len, meshlink_aio_fd_cb_t cb, void *priv) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_channel_aio_fd_receive(%p, %d, %zu, %p, %p)", (void *)channel, fd, len, (void *)cb, priv);
+
 	if(!mesh || !channel) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return false;
@@ -4516,6 +4643,8 @@ size_t meshlink_channel_get_mss(meshlink_handle_t *mesh, meshlink_channel_t *cha
 }
 
 void meshlink_set_node_channel_timeout(meshlink_handle_t *mesh, meshlink_node_t *node, int timeout) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_node_channel_timeout(%s, %d)", node ? node->name : "(null)", timeout);
+
 	if(!mesh || !node) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4572,6 +4701,8 @@ void handle_duplicate_node(meshlink_handle_t *mesh, node_t *n) {
 }
 
 void meshlink_enable_discovery(meshlink_handle_t *mesh, bool enable) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_enable_discovery(%d)", enable);
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4600,6 +4731,8 @@ end:
 }
 
 void meshlink_hint_network_change(struct meshlink_handle *mesh) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_hint_network_change()");
+
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;
 		return;
@@ -4622,6 +4755,8 @@ void meshlink_hint_network_change(struct meshlink_handle *mesh) {
 }
 
 void meshlink_set_dev_class_timeouts(meshlink_handle_t *mesh, dev_class_t devclass, int pinginterval, int pingtimeout) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_dev_class_timeouts(%d, %d, %d)", devclass, pinginterval, pingtimeout);
+
 	if(!mesh || devclass < 0 || devclass >= DEV_CLASS_COUNT) {
 		meshlink_errno = EINVAL;
 		return;
@@ -4642,6 +4777,8 @@ void meshlink_set_dev_class_timeouts(meshlink_handle_t *mesh, dev_class_t devcla
 }
 
 void meshlink_set_dev_class_fast_retry_period(meshlink_handle_t *mesh, dev_class_t devclass, int fast_retry_period) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_dev_class_fast_retry_period(%d, %d)", devclass, fast_retry_period);
+
 	if(!mesh || devclass < 0 || devclass >= DEV_CLASS_COUNT) {
 		meshlink_errno = EINVAL;
 		return;
@@ -4661,6 +4798,8 @@ void meshlink_set_dev_class_fast_retry_period(meshlink_handle_t *mesh, dev_class
 }
 
 void meshlink_set_dev_class_maxtimeout(struct meshlink_handle *mesh, dev_class_t devclass, int maxtimeout) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_dev_class_fast_maxtimeout(%d, %d)", devclass, maxtimeout);
+
 	if(!mesh || devclass < 0 || devclass >= DEV_CLASS_COUNT) {
 		meshlink_errno = EINVAL;
 		return;
@@ -4680,6 +4819,8 @@ void meshlink_set_dev_class_maxtimeout(struct meshlink_handle *mesh, dev_class_t
 }
 
 void meshlink_reset_timers(struct meshlink_handle *mesh) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_reset_timers()");
+
 	if(!mesh) {
 		return;
 	}
@@ -4698,6 +4839,8 @@ void meshlink_reset_timers(struct meshlink_handle *mesh) {
 }
 
 void meshlink_set_inviter_commits_first(struct meshlink_handle *mesh, bool inviter_commits_first) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_inviter_commits_first(%d)", inviter_commits_first);
+
 	if(!mesh) {
 		meshlink_errno = EINVAL;
 		return;
@@ -4712,6 +4855,8 @@ void meshlink_set_inviter_commits_first(struct meshlink_handle *mesh, bool invit
 }
 
 void meshlink_set_external_address_discovery_url(struct meshlink_handle *mesh, const char *url) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_external_address_discovery_url(%s)", url ? url : "(null)");
+
 	if(!mesh) {
 		meshlink_errno = EINVAL;
 		return;
@@ -4732,6 +4877,8 @@ void meshlink_set_external_address_discovery_url(struct meshlink_handle *mesh, c
 }
 
 void meshlink_set_scheduling_granularity(struct meshlink_handle *mesh, long granularity) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_scheduling_granularity(%ld)", granularity);
+
 	if(!mesh || granularity < 0) {
 		meshlink_errno = EINVAL;
 		return;
@@ -4741,6 +4888,8 @@ void meshlink_set_scheduling_granularity(struct meshlink_handle *mesh, long gran
 }
 
 void meshlink_set_storage_policy(struct meshlink_handle *mesh, meshlink_storage_policy_t policy) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_storage_policy(%d)", policy);
+
 	if(!mesh) {
 		meshlink_errno = EINVAL;
 		return;
