@@ -201,10 +201,16 @@ bool add_edge_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 	if(e) {
 		if(e->weight != weight || e->session_id != session_id || sockaddrcmp(&e->address, &address)) {
 			if(from == mesh->self) {
+				/* The sender has outdated information, we own this edge to send a correction back */
 				logger(mesh, MESHLINK_DEBUG, "Got %s from %s for ourself which does not match existing entry", "ADD_EDGE", c->name);
 				send_add_edge(mesh, c, e, 0);
 				return true;
+			} else if(to == mesh->self && from != c->node && from->status.reachable) {
+				/* The sender has outdated information, someone else owns this node so they will correct */
+				logger(mesh, MESHLINK_DEBUG, "Got %s from %s which does not match existing entry, ignoring", "ADD_EDGE", c->name);
+				return true;
 			} else {
+				/* Might be outdated, but update our information, another node will send a correction if necessary */
 				logger(mesh, MESHLINK_DEBUG, "Got %s from %s which does not match existing entry", "ADD_EDGE", c->name);
 				edge_del(mesh, e);
 			}
