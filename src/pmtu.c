@@ -306,6 +306,7 @@ static uint16_t choose_initial_maxmtu(meshlink_handle_t *mesh, node_t *n) {
 	return mtu;
 
 #else
+	(void)mesh;
 	(void)n;
 	return MTU;
 #endif
