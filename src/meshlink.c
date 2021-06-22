@@ -4034,7 +4034,7 @@ void meshlink_set_channel_receive_cb(meshlink_handle_t *mesh, meshlink_channel_t
 	channel->receive_cb = cb;
 }
 
-static void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
+void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *source, const void *data, size_t len) {
 	(void)mesh;
 	node_t *n = (node_t *)source;
 
@@ -4188,7 +4188,6 @@ void meshlink_set_channel_accept_cb(meshlink_handle_t *mesh, meshlink_channel_ac
 	}
 
 	mesh->channel_accept_cb = cb;
-	mesh->receive_cb = channel_receive;
 
 	for splay_each(node_t, n, mesh->nodes) {
 		if(!n->utcp && n != mesh->self) {
@@ -4283,7 +4282,6 @@ meshlink_channel_t *meshlink_channel_open_ex(meshlink_handle_t *mesh, meshlink_n
 		n->utcp = utcp_init(channel_accept, channel_pre_accept, channel_send, n);
 		utcp_set_mtu(n->utcp, n->mtu - sizeof(meshlink_packethdr_t));
 		utcp_set_retransmit_cb(n->utcp, channel_retransmit);
-		mesh->receive_cb = channel_receive;
 
 		if(!n->utcp) {
 			meshlink_errno = errno == ENOMEM ? MESHLINK_ENOMEM : MESHLINK_EINTERNAL;

@@ -69,7 +69,9 @@ void route(meshlink_handle_t *mesh, node_t *source, vpn_packet_t *packet) {
 
 		logger(mesh, MESHLINK_DEBUG, "I received a packet for me with payload: %s\n", hex);
 
-		if(mesh->receive_cb) {
+		if(source->utcp) {
+			channel_receive(mesh, (meshlink_node_t *)source, payload, len);
+		} else if(mesh->receive_cb) {
 			mesh->receive_cb(mesh, (meshlink_node_t *)source, payload, len);
 		}
 

@@ -279,6 +279,11 @@ static void send_sptps_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *
 	}
 
 	if(!n->status.validkey) {
+		if(n->connection && (n->connection->flags & PROTOCOL_TINY) & n->connection->status.active) {
+			send_raw_packet(mesh, n->connection, origpkt);
+			return;
+		}
+
 		logger(mesh, MESHLINK_INFO, "No valid key known yet for %s", n->name);
 
 		if(!n->status.waitingforkey) {

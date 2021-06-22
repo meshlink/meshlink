@@ -41,6 +41,7 @@ typedef struct connection_status_t {
 	uint16_t invitation: 1;             /* 1 if this is an invitation */
 	uint16_t invitation_used: 1;        /* 1 if the invitation has been consumed */
 	uint16_t initiator: 1;              /* 1 if we initiated this connection */
+	uint16_t raw_packet: 1;             /* 1 if we are expecting a raw packet next */
 } connection_status_t;
 
 #include "ecdsa.h"

@@ -145,3 +145,16 @@ bool tcppacket_h(meshlink_handle_t *mesh, connection_t *c, const char *request) 
 	// This should never happen with MeshLink.
 	return false;
 }
+
+bool send_raw_packet(meshlink_handle_t *mesh, connection_t *c, const vpn_packet_t *packet) {
+	size_t hdrsize = sizeof(meshlink_packethdr_t);
+	assert(packet->len >= hdrsize);
+	return send_request(mesh, c, NULL, "%d", PACKET) && send_meta(mesh, c, (const char *)packet->data + hdrsize, packet->len - hdrsize);
+}
+
+bool raw_packet_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
+	(void)mesh;
+	(void)request;
+	c->status.raw_packet = true;
+	return true;
+}

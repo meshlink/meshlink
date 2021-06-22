@@ -250,6 +250,7 @@ extern meshlink_log_cb_t global_log_cb;
 void handle_duplicate_node(meshlink_handle_t *mesh, struct node_t *n);
 void handle_network_change(meshlink_handle_t *mesh, bool online);
 void call_error_cb(meshlink_handle_t *mesh, meshlink_errno_t meshlink_errno);
+void channel_receive(meshlink_handle_t *mesh, meshlink_node_t *node, const void *data, size_t len);
 
 /// Per-instance PRNG
 static inline int prng(meshlink_handle_t *mesh, uint64_t max) {

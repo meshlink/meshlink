@@ -47,7 +47,7 @@ bool send_meta_sptps(void *handle, uint8_t type, const void *buffer, size_t leng
 bool send_meta(meshlink_handle_t *mesh, connection_t *c, const char *buffer, int length) {
 	assert(c);
 	assert(buffer);
-	assert(length);
+	assert(length >= 0);
 
 	logger(mesh, MESHLINK_DEBUG, "Sending %d bytes of metadata to %s", length, c->name);
 
@@ -107,10 +107,16 @@ bool receive_meta_sptps(void *handle, uint8_t type, const void *data, uint16_t l
 		return true;
 	}
 
-	/* Are we receiving a TCPpacket? */
+	/* Are we receiving a raw packet? */
 
-	if(c->tcplen) {
-		abort(); // TODO: get rid of tcplen altogether
+	if(c->status.raw_packet) {
+		c->status.raw_packet = false;
+
+		if(mesh->receive_cb) {
+			mesh->receive_cb(mesh, (meshlink_node_t *)c->node, data, length);
+		}
+
+		return true;
 	}
 
 	/* Change newline to null byte, just like non-SPTPS requests */
