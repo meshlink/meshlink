@@ -44,7 +44,7 @@
 extern bool node_write_devclass(meshlink_handle_t *mesh, node_t *n);
 
 bool send_id(meshlink_handle_t *mesh, connection_t *c) {
-	return send_request(mesh, c, NULL, "%d %s %d.%d %s", ID, mesh->self->name, PROT_MAJOR, PROT_MINOR, mesh->appname);
+	return send_request(mesh, c, NULL, "%d %s %d.%d %s %u", ID, mesh->self->name, PROT_MAJOR, PROT_MINOR, mesh->appname, 0);
 }
 
 static bool commit_invitation(meshlink_handle_t *mesh, connection_t *c, const void *data) {
@@ -188,7 +188,7 @@ bool id_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	char name[MAX_STRING_SIZE];
 
-	if(sscanf(request, "%*d " MAX_STRING " %d.%d", name, &c->protocol_major, &c->protocol_minor) < 2) {
+	if(sscanf(request, "%*d " MAX_STRING " %d.%d %*s %u", name, &c->protocol_major, &c->protocol_minor, &c->flags) < 2) {
 		logger(mesh, MESHLINK_ERROR, "Got bad %s from %s", "ID", c->name);
 		return false;
 	}
@@ -420,7 +420,9 @@ bool ack_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 
 	/* Send him everything we know */
 
-	send_everything(mesh, c);
+	if(!(c->flags & PROTOCOL_TINY)) {
+		send_everything(mesh, c);
+	}
 
 	/* Create an edge_t for this connection */
 

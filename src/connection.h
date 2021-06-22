@@ -78,6 +78,7 @@ typedef struct connection_t {
 	ecdsa_t *ecdsa;                 /* his public ECDSA key */
 	int protocol_major;             /* used protocol */
 	int protocol_minor;             /* used protocol */
+	uint32_t flags;                 /* used protocol flags */
 } connection_t;
 
 void init_connections(struct meshlink_handle *mesh);
