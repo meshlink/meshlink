@@ -835,6 +835,18 @@ struct meshlink_node **meshlink_get_all_nodes_by_blacklisted(struct meshlink_han
  */
 dev_class_t meshlink_get_node_dev_class(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
 
+/// Get the node's tiny status.
+/** This function returns true if the given node is a tiny node.
+ *  Note that the tiny status of a node will only be known if the node has been reachable at least once.
+ *
+ *  \memberof meshlink_node
+ *  @param mesh          A handle which represents an instance of MeshLink.
+ *  @param node          A pointer to a struct meshlink_node describing the node.
+ *
+ *  @return              This function returns true if the node is a tiny node.
+ */
+bool meshlink_get_node_tiny(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
+
 /// Get the node's blacklist status.
 /** This function returns the given node is blacklisted.
  *

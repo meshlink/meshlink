@@ -38,6 +38,7 @@ typedef struct node_status_t {
 	uint16_t duplicate: 1;              /* 1 if the node is duplicate, ie. multiple nodes using the same Name are online */
 	uint16_t dirty: 1;                  /* 1 if the configuration of the node is dirty and needs to be written out */
 	uint16_t want_udp: 1;               /* 1 if we want working UDP because we have data to send */
+	uint16_t tiny: 1;                   /* 1 if this is a tiny node */
 } node_status_t;
 
 #define MAX_RECENT 5

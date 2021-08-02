@@ -2562,6 +2562,25 @@ dev_class_t meshlink_get_node_dev_class(meshlink_handle_t *mesh, meshlink_node_t
 	return devclass;
 }
 
+bool meshlink_get_node_tiny(meshlink_handle_t *mesh, meshlink_node_t *node) {
+	if(!mesh || !node) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return -1;
+	}
+
+	bool tiny;
+
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
+
+	tiny = ((node_t *)node)->status.tiny;
+
+	pthread_mutex_unlock(&mesh->mutex);
+
+	return tiny;
+}
+
 bool meshlink_get_node_blacklisted(meshlink_handle_t *mesh, meshlink_node_t *node) {
 	if(!mesh) {
 		meshlink_errno = MESHLINK_EINVAL;

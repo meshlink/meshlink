@@ -449,6 +449,18 @@ public:
 		return meshlink_get_node_blacklisted(handle, node);
 	}
 
+	/// Get the node's tiny status.
+	/** This function returns true if the given node is a tiny node.
+	 *  Note that the tiny status of a node will only be known if the node has been reachable at least once.
+	 *
+	 *  @param node          A pointer to a meshlink::node describing the node.
+	 *
+	 *  @return              This function returns true if the node is a tiny node.
+	 */
+	bool get_node_tiny(node *node) {
+		return meshlink_get_node_tiny(handle, node);
+	}
+
 	/// Get a handle for a specific submesh.
 	/** This function returns a handle for the submesh with the given name.
 	 *

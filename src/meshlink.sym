@@ -51,6 +51,7 @@ meshlink_get_node_blacklisted
 meshlink_get_node_dev_class
 meshlink_get_node_reachability
 meshlink_get_node_submesh
+meshlink_get_node_tiny
 meshlink_get_pmtu
 meshlink_get_port
 meshlink_get_self
