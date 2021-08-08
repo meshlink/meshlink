@@ -92,6 +92,7 @@ struct devtool_node_status {
 	uint16_t minmtu;
 	uint16_t maxmtu;
 	int mtuprobes;
+
 	enum {
 		DEVTOOL_UDP_FAILED = -2,     /// UDP tried but failed
 		DEVTOOL_UDP_IMPOSSIBLE = -1, /// UDP not possible (node unreachable)
@@ -99,10 +100,13 @@ struct devtool_node_status {
 		DEVTOOL_UDP_TRYING,          /// UDP detection in progress
 		DEVTOOL_UDP_WORKING,         /// UDP communication established
 	} udp_status;
-	uint64_t in_packets;
-	uint64_t in_bytes;
-	uint64_t out_packets;
-	uint64_t out_bytes;
+
+	uint64_t in_data;                    /// Bytes received from channels
+	uint64_t out_data;                   /// Bytes sent via channels
+	uint64_t in_forward;                 /// Bytes received for channels that need to be forwarded to other nodes
+	uint64_t out_forward;                /// Bytes forwarded from channel from other nodes
+	uint64_t in_meta;                    /// Bytes received from meta-connections, heartbeat packets etc.
+	uint64_t out_meta;                   /// Bytes sent on meta-connections, heartbeat packets etc.
 };
 
 /// Get the status of a node.
@@ -117,6 +121,20 @@ struct devtool_node_status {
  *                      the current status of the node.
  */
 void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, devtool_node_status_t *status);
+
+/// Reset the traffic counters of a node.
+/** This function resets the byte counters for the given node to zero.
+ *  It also returns the status containing the counters right before they are zeroed.
+ *
+ *  @param mesh         A handle which represents an instance of MeshLink.
+ *  @param node         A pointer to a meshlink_node_t.
+ *  @param status       A pointer to a devtools_node_status_t variable that has
+ *                      to be provided by the caller.
+ *                      The contents of this variable will be changed to reflect
+ *                      the current status of the node before the counters are zeroed.
+ *                      If a NULL pointers is passed, no status will be written.
+ */
+void devtool_reset_node_counters(meshlink_handle_t *mesh, meshlink_node_t *node, devtool_node_status_t *status);
 
 /// Get the list of all submeshes of a meshlink instance.
 /** This function returns an array of submesh handles.

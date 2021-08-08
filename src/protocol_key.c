@@ -345,6 +345,10 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			return true;
 		}
 
+		size_t len = strlen(request);
+		from->in_forward += len;
+		to->out_forward += len;
+
 		send_request(mesh, to->nexthop->connection, NULL, "%s", request);
 	}
 
@@ -410,6 +414,11 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 			logger(mesh, MESHLINK_WARNING, "Cannot forward ANS_KEY to %s via %s", to->name, to->nexthop ? to->nexthop->name : to->name);
 			return false;
 		}
+
+		/* TODO: find a good way to avoid the use of strlen() */
+		size_t len = strlen(request);
+		from->in_forward += len;
+		to->out_forward += len;
 
 		/* Append the known UDP address of the from node, if we have a confirmed one */
 		if(!*address && from->status.udp_confirmed && from->address.sa.sa_family != AF_UNSPEC) {

@@ -62,10 +62,12 @@ typedef struct node_t {
 	struct utcp *utcp;
 
 	// Traffic counters
-	uint64_t in_packets;
-	uint64_t in_bytes;
-	uint64_t out_packets;
-	uint64_t out_bytes;
+	uint64_t in_data;                       /* Bytes received from channels */
+	uint64_t out_data;                      /* Bytes sent via channels */
+	uint64_t in_forward;                    /* Bytes received for channels that need to be forwarded to other nodes */
+	uint64_t out_forward;                   /* Bytes forwarded from channel from other nodes */
+	uint64_t in_meta;                       /* Bytes received from meta-connections, heartbeat packets etc. */
+	uint64_t out_meta;                      /* Bytes sent on meta-connections, heartbeat packets etc. */
 
 	// MTU probes
 	timeout_t mtutimeout;                   /* Probe event */

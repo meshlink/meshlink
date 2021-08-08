@@ -142,6 +142,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 
 		logger(mesh, MESHLINK_DEBUG, "Sending MTU probe length %d to %s", len, n->name);
 
+		n->out_meta += packet.len;
 		send_udppacket(mesh, n, &packet);
 	}
 
@@ -161,6 +162,8 @@ void send_mtu_probe(meshlink_handle_t *mesh, node_t *n) {
 }
 
 static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet, uint16_t len) {
+	n->in_meta += len;
+
 	if(len < 64) {
 		logger(mesh, MESHLINK_WARNING, "Got too short MTU probe length %d from %s", packet->len, n->name);
 		return;
@@ -178,6 +181,8 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 
 		bool udp_confirmed = n->status.udp_confirmed;
 		n->status.udp_confirmed = true;
+		logger(mesh, MESHLINK_DEBUG, "Sending MTU probe reply %d to %s", packet->len, n->name);
+		n->out_meta += packet->len;
 		send_udppacket(mesh, n, packet);
 		n->status.udp_confirmed = udp_confirmed;
 	} else {
@@ -238,9 +243,6 @@ static void receive_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *pac
 	if(n->status.blacklisted) {
 		logger(mesh, MESHLINK_WARNING, "Dropping packet from blacklisted node %s", n->name);
 	} else {
-		n->in_packets++;
-		n->in_bytes += packet->len;
-
 		route(mesh, n, packet);
 	}
 }
@@ -534,8 +536,6 @@ bool receive_sptps_record(void *handle, uint8_t type, const void *data, uint16_t
 */
 void send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 	if(n == mesh->self) {
-		n->out_packets++;
-		n->out_bytes += packet->len;
 		// TODO: send to application
 		return;
 	}
@@ -547,8 +547,6 @@ void send_packet(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet) {
 		return;
 	}
 
-	n->out_packets++;
-	n->out_bytes += packet->len;
 	n->status.want_udp = true;
 
 	send_sptps_packet(mesh, n, packet);

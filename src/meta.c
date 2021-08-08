@@ -150,6 +150,10 @@ bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 
 	logger(mesh, MESHLINK_DEBUG, "Received %d bytes of metadata from %s", inlen, c->name);
 
+	if(c->node) {
+		c->node->in_meta += inlen;
+	}
+
 	if(c->allow_request == ID) {
 		buffer_add(&c->inbuf, inbuf, inlen);
 

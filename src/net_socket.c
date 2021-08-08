@@ -136,6 +136,10 @@ static void handle_meta_write(meshlink_handle_t *mesh, connection_t *c) {
 		return;
 	}
 
+	if(c->node) {
+		c->node->out_meta += outlen;
+	}
+
 	buffer_read(&c->outbuf, outlen);
 
 	if(!c->outbuf.len) {

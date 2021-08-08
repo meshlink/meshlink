@@ -2270,8 +2270,6 @@ void meshlink_send_from_queue(event_loop_t *loop, void *data) {
 
 	for(vpn_packet_t *packet; (packet = meshlink_queue_pop(&mesh->outpacketqueue));) {
 		logger(mesh, MESHLINK_DEBUG, "Removing packet of %d bytes from packet queue", packet->len);
-		mesh->self->in_packets++;
-		mesh->self->in_bytes += packet->len;
 		route(mesh, mesh->self, packet);
 		free(packet);
 	}
