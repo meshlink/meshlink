@@ -92,6 +92,26 @@ static void setup_lan_topology(peer_config_t *peers, int npeers) {
 	}
 }
 
+/// Set up an indirect topology where all peers can only access the relay
+static void setup_indirect_topology(peer_config_t *peers, int npeers) {
+	// Add an interface to each peer that is connected to the relay
+	for(int i = 1; i < npeers; i++) {
+		char *command = NULL;
+		assert(asprintf(&command,
+		                "/bin/ip netns exec %1$s /bin/ip link add eth0 type veth peer eth%3$d netns %2$s;"
+		                "/bin/ip netns exec %1$s ip addr flush dev eth0;"
+		                "/bin/ip netns exec %1$s ip addr add 192.168.%3$d.2/24 dev eth0;"
+		                "/bin/ip netns exec %1$s /bin/ip link set dev eth0 up;"
+		                "/bin/ip netns exec %2$s ip addr flush dev eth%3$d;"
+		                "/bin/ip netns exec %2$s ip addr add 192.168.%3$d.1/24 dev eth%3$d;"
+		                "/bin/ip netns exec %2$s /bin/ip link set dev eth%3$d up;",
+		                peers[i].netns_name, peers[0].netns_name, i));
+		assert(command);
+		assert(system(command) == 0);
+		free(command);
+	}
+}
+
 /// Give a peer a unique IP address
 void change_peer_ip(peer_config_t *peer) {
 	char *command = NULL;
@@ -112,6 +132,7 @@ static void invite_peers(peer_config_t *peers, int npeers) {
 	for(int i = 1; i < npeers; i++) {
 		char *invitation = meshlink_invite_ex(peers[0].mesh, NULL, peers[i].name, MESHLINK_INVITE_LOCAL | MESHLINK_INVITE_NUMERIC);
 		assert(invitation);
+		printf("%s\n", invitation);
 		assert(meshlink_join(peers[i].mesh, invitation));
 		free(invitation);
 	}
@@ -131,13 +152,30 @@ static void close_peers(peer_config_t *peers, int npeers) {
 /// Set up relay, peer and NUT that are directly connected
 peer_config_t *setup_relay_peer_nut(const char *prefix) {
 	static peer_config_t peers[] = {
-		{"relay", DEV_CLASS_BACKBONE},
-		{"peer", DEV_CLASS_STATIONARY},
-		{"nut", DEV_CLASS_STATIONARY},
+		{"relay", DEV_CLASS_BACKBONE, NULL, 0, NULL},
+		{"peer", DEV_CLASS_STATIONARY, NULL, 0, NULL},
+		{"nut", DEV_CLASS_STATIONARY, NULL, 0, NULL},
 	};
 
 	create_peers(peers, 3, prefix);
 	setup_lan_topology(peers, 3);
+	invite_peers(peers, 3);
+
+	return peers;
+}
+
+/// Set up relay, peer and NUT that are directly connected
+peer_config_t *setup_relay_peer_nut_indirect(const char *prefix) {
+	static peer_config_t peers[] = {
+		{"relay", DEV_CLASS_BACKBONE, NULL, 0, NULL},
+		{"peer", DEV_CLASS_STATIONARY, NULL, 0, NULL},
+		{"nut", DEV_CLASS_STATIONARY, NULL, 0, NULL},
+	};
+
+	create_peers(peers, 3, prefix);
+	setup_indirect_topology(peers, 3);
+	assert(meshlink_add_invitation_address(peers[0].mesh, "192.168.1.1", NULL));
+	assert(meshlink_add_invitation_address(peers[0].mesh, "192.168.2.1", NULL));
 	invite_peers(peers, 3);
 
 	return peers;

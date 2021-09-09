@@ -20,6 +20,7 @@ TESTS = \
 	get-all-nodes \
 	import-export \
 	invite-join \
+	metering \
 	meta-connections \
 	sign-verify \
 	storage-policy \
@@ -64,6 +65,7 @@ check_PROGRAMS = \
 	get-all-nodes \
 	import-export \
 	invite-join \
+	metering \
 	meta-connections \
 	sign-verify \
 	storage-policy \
@@ -143,6 +145,9 @@ import_export_LDADD = $(top_builddir)/src/libmeshlink.la
 
 invite_join_SOURCES = invite-join.c utils.c utils.h
 invite_join_LDADD = $(top_builddir)/src/libmeshlink.la
+
+metering_SOURCES = metering.c netns_utils.c netns_utils.h utils.c utils.h
+metering_LDADD = $(top_builddir)/src/libmeshlink.la
 
 meta_connections_SOURCES = meta-connections.c netns_utils.c netns_utils.h utils.c utils.h
 meta_connections_LDADD = $(top_builddir)/src/libmeshlink.la
