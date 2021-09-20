@@ -95,7 +95,7 @@ static void warning(sptps_t *s, const char *format, ...) {
 
 // Send a record (datagram version, accepts all record types, handles encryption and authentication).
 static bool send_record_priv_datagram(sptps_t *s, uint8_t type, const void *data, uint16_t len) {
-	char buffer[len + 21UL];
+	char buffer[len + SPTPS_DATAGRAM_OVERHEAD];
 
 	// Create header with sequence number, length and record type
 	uint32_t seqno = s->outseqno++;
@@ -108,7 +108,7 @@ static bool send_record_priv_datagram(sptps_t *s, uint8_t type, const void *data
 	if(s->outstate) {
 		// If first handshake has finished, encrypt and HMAC
 		chacha_poly1305_encrypt(s->outcipher, seqno, buffer + 4, len + 1, buffer + 4, NULL);
-		return s->send_data(s->handle, type, buffer, len + 21UL);
+		return s->send_data(s->handle, type, buffer, len + SPTPS_DATAGRAM_OVERHEAD);
 	} else {
 		// Otherwise send as plaintext
 		return s->send_data(s->handle, type, buffer, len + 5UL);
@@ -120,7 +120,7 @@ static bool send_record_priv(sptps_t *s, uint8_t type, const void *data, uint16_
 		return send_record_priv_datagram(s, type, data, len);
 	}
 
-	char buffer[len + 19UL];
+	char buffer[len + SPTPS_OVERHEAD];
 
 	// Create header with sequence number, length and record type
 	uint32_t seqno = s->outseqno++;
@@ -133,7 +133,7 @@ static bool send_record_priv(sptps_t *s, uint8_t type, const void *data, uint16_
 	if(s->outstate) {
 		// If first handshake has finished, encrypt and HMAC
 		chacha_poly1305_encrypt(s->outcipher, seqno, buffer + 2, len + 1, buffer + 2, NULL);
-		return s->send_data(s->handle, type, buffer, len + 19UL);
+		return s->send_data(s->handle, type, buffer, len + SPTPS_OVERHEAD);
 	} else {
 		// Otherwise send as plaintext
 		return s->send_data(s->handle, type, buffer, len + 3UL);
@@ -454,7 +454,7 @@ bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len) {
 		return error(s, EIO, "SPTPS state not ready to verify this datagram");
 	}
 
-	if(len < 21) {
+	if(len < SPTPS_DATAGRAM_OVERHEAD) {
 		return error(s, EIO, "Received short packet in sptps_verify_datagram");
 	}
 
@@ -470,7 +470,7 @@ bool sptps_verify_datagram(sptps_t *s, const void *data, size_t len) {
 static bool sptps_receive_data_datagram(sptps_t *s, const void *vdata, size_t len) {
 	const char *data = vdata;
 
-	if(len < (s->instate ? 21 : 5)) {
+	if(len < (s->instate ? SPTPS_DATAGRAM_OVERHEAD : 5)) {
 		return error(s, EIO, "Received short packet in sptps_receive_data_datagram");
 	}
 
@@ -562,11 +562,11 @@ static bool sptps_receive_data_datagram(sptps_t *s, const void *vdata, size_t le
 			return error(s, EIO, "Application record received before handshake finished");
 		}
 
-		if(!s->receive_record(s->handle, type, s->decrypted_buffer + 1, len - 21)) {
+		if(!s->receive_record(s->handle, type, s->decrypted_buffer + 1, len - SPTPS_DATAGRAM_OVERHEAD)) {
 			abort();
 		}
 	} else if(type == SPTPS_HANDSHAKE) {
-		if(!receive_handshake(s, s->decrypted_buffer + 1, len - 21)) {
+		if(!receive_handshake(s, s->decrypted_buffer + 1, len - SPTPS_DATAGRAM_OVERHEAD)) {
 			abort();
 		}
 	} else {
@@ -614,7 +614,7 @@ bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 			s->reclen = ntohs(s->reclen);
 
 			// If we have the length bytes, ensure our buffer can hold the whole request.
-			s->inbuf = realloc(s->inbuf, s->reclen + 19UL);
+			s->inbuf = realloc(s->inbuf, s->reclen + SPTPS_OVERHEAD);
 
 			if(!s->inbuf) {
 				return error(s, errno, strerror(errno));
@@ -627,7 +627,7 @@ bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 		}
 
 		// Read up to the end of the record.
-		size_t toread = s->reclen + (s->instate ? 19UL : 3UL) - s->buflen;
+		size_t toread = s->reclen + (s->instate ? SPTPS_OVERHEAD : 3UL) - s->buflen;
 
 		if(toread > len) {
 			toread = len;
@@ -639,7 +639,7 @@ bool sptps_receive_data(sptps_t *s, const void *data, size_t len) {
 		ptr += toread;
 
 		// If we don't have a whole record, exit.
-		if(s->buflen < s->reclen + (s->instate ? 19UL : 3UL)) {
+		if(s->buflen < s->reclen + (s->instate ? SPTPS_OVERHEAD : 3UL)) {
 			return true;
 		}
 

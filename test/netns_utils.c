@@ -181,6 +181,20 @@ peer_config_t *setup_relay_peer_nut_indirect(const char *prefix) {
 	return peers;
 }
 
+/// Make all nodes only be able to communicate via TCP
+void set_peers_tcponly(peer_config_t *peers, int npeers) {
+	for (int i = 0; i < npeers; i++) {
+		char *command = NULL;
+		assert(asprintf(&command,
+						"/bin/ip netns exec %1$s iptables -A INPUT -p udp -j DROP;"
+						"/bin/ip netns exec %1$s iptables -A OUTPUT -p udp -j DROP;",
+						peers[i].netns_name));
+		assert(command);
+		assert(system(command) == 0);
+		free(command);
+	}
+}
+
 void close_relay_peer_nut(peer_config_t *peers) {
 	close_peers(peers, 3);
 }

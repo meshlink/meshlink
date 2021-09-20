@@ -21,6 +21,8 @@ TESTS = \
 	import-export \
 	invite-join \
 	metering \
+	metering-relayed \
+	metering-tcponly \		
 	meta-connections \
 	sign-verify \
 	storage-policy \
@@ -66,6 +68,8 @@ check_PROGRAMS = \
 	import-export \
 	invite-join \
 	metering \
+	metering-relayed \
+	metering-tcponly \
 	meta-connections \
 	sign-verify \
 	storage-policy \
@@ -148,6 +152,12 @@ invite_join_LDADD = $(top_builddir)/src/libmeshlink.la
 
 metering_SOURCES = metering.c netns_utils.c netns_utils.h utils.c utils.h
 metering_LDADD = $(top_builddir)/src/libmeshlink.la
+
+metering_relayed_SOURCES = metering-relayed.c netns_utils.c netns_utils.h utils.c utils.h
+metering_relayed_LDADD = $(top_builddir)/src/libmeshlink.la
+
+metering_tcponly_SOURCES = metering-tcponly.c netns_utils.c netns_utils.h utils.c utils.h
+metering_tcponly_LDADD = $(top_builddir)/src/libmeshlink.la
 
 meta_connections_SOURCES = meta-connections.c netns_utils.c netns_utils.h utils.c utils.h
 meta_connections_LDADD = $(top_builddir)/src/libmeshlink.la

@@ -29,6 +29,7 @@
 #include "netutl.h"
 #include "protocol.h"
 #include "route.h"
+#include "sptps.h"
 #include "utils.h"
 #include "xalloc.h"
 
@@ -37,6 +38,7 @@ int keylifetime = 0;
 static void send_udppacket(meshlink_handle_t *mesh, node_t *, vpn_packet_t *);
 
 #define MAX_SEQNO 1073741824
+#define PROBE_OVERHEAD (SPTPS_DATAGRAM_OVERHEAD + 40)
 
 /* mtuprobes == 1..30: initial discovery, send bursts with 1 second interval
    mtuprobes ==    31: sleep pinginterval seconds
@@ -142,7 +144,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 
 		logger(mesh, MESHLINK_DEBUG, "Sending MTU probe length %d to %s", len, n->name);
 
-		n->out_meta += packet.len;
+		n->out_meta += packet.len + PROBE_OVERHEAD;
 		send_udppacket(mesh, n, &packet);
 	}
 
@@ -162,7 +164,7 @@ void send_mtu_probe(meshlink_handle_t *mesh, node_t *n) {
 }
 
 static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet, uint16_t len) {
-	n->in_meta += len;
+	n->in_meta += len + PROBE_OVERHEAD;
 
 	if(len < 64) {
 		logger(mesh, MESHLINK_WARNING, "Got too short MTU probe length %d from %s", packet->len, n->name);
@@ -182,7 +184,7 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 		bool udp_confirmed = n->status.udp_confirmed;
 		n->status.udp_confirmed = true;
 		logger(mesh, MESHLINK_DEBUG, "Sending MTU probe reply %d to %s", packet->len, n->name);
-		n->out_meta += packet->len;
+		n->out_meta += packet->len + PROBE_OVERHEAD;
 		send_udppacket(mesh, n, packet);
 		n->status.udp_confirmed = udp_confirmed;
 	} else {

@@ -90,7 +90,7 @@ int main(void) {
 	init_sync_flag(&aio_done);
 
 	// Set up relay, peer and NUT
-	peer_config_t *peers = setup_relay_peer_nut_indirect("metering");
+	peer_config_t *peers = setup_relay_peer_nut("metering");
 
 	meshlink_set_node_status_cb(peers[2].mesh, nut_status_cb);
 
