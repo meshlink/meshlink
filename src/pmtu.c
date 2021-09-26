@@ -123,7 +123,7 @@ static void send_udp_probe_reply(meshlink_handle_t *mesh, node_t *n, vpn_packet_
 	bool udp_confirmed = n->status.udp_confirmed;
 	n->status.udp_confirmed = true;
 	logger(mesh, MESHLINK_DEBUG, "Sending UDP reply length %d to %s", packet->len, n->name);
-	n->out_meta += packet->len;
+	n->out_meta += packet->len + SPTPS_DATAGRAM_OVERHEAD;
 	send_udppacket(mesh, n, packet);
 	n->status.udp_confirmed = udp_confirmed;
 }
@@ -134,7 +134,7 @@ void udp_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet, uint1
 		return;
 	}
 
-	n->in_meta += packet->len;
+	n->in_meta += packet->len + SPTPS_DATAGRAM_OVERHEAD;
 
 	if(!packet->data[0]) {
 		/* It's a probe request, send back a reply */
@@ -215,7 +215,7 @@ static void send_udp_probe_packet(meshlink_handle_t *mesh, node_t *n, int len) {
 
 	logger(mesh, MESHLINK_DEBUG, "Sending UDP probe length %d to %s", len, n->name);
 
-	n->out_meta += packet.len;
+	n->out_meta += packet.len + SPTPS_DATAGRAM_OVERHEAD;
 	send_udppacket(mesh, n, &packet);
 }
 
