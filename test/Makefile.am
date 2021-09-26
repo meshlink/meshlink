@@ -22,6 +22,7 @@ TESTS = \
 	invite-join \
 	metering \
 	metering-relayed \
+	metering-slowping \
 	metering-tcponly \		
 	meta-connections \
 	sign-verify \
@@ -69,6 +70,7 @@ check_PROGRAMS = \
 	invite-join \
 	metering \
 	metering-relayed \
+	metering-slowping \
 	metering-tcponly \
 	meta-connections \
 	sign-verify \
@@ -155,6 +157,9 @@ metering_LDADD = $(top_builddir)/src/libmeshlink.la
 
 metering_relayed_SOURCES = metering-relayed.c netns_utils.c netns_utils.h utils.c utils.h
 metering_relayed_LDADD = $(top_builddir)/src/libmeshlink.la
+
+metering_slowping_SOURCES = metering-slowping.c netns_utils.c netns_utils.h utils.c utils.h
+metering_slowping_LDADD = $(top_builddir)/src/libmeshlink.la
 
 metering_tcponly_SOURCES = metering-tcponly.c netns_utils.c netns_utils.h utils.c utils.h
 metering_tcponly_LDADD = $(top_builddir)/src/libmeshlink.la
