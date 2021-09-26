@@ -410,7 +410,7 @@ static void try_pmtu(meshlink_handle_t *mesh, node_t *n) {
  */
 
 void keepalive(meshlink_handle_t *mesh, node_t *n, bool traffic) {
-	if(!n->status.reachable || !n->status.validkey) {
+	if(!n->status.reachable || !n->status.validkey || n->status.tiny) {
 		return;
 	}
 
