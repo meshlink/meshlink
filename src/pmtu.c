@@ -222,7 +222,7 @@ static void send_udp_probe_packet(meshlink_handle_t *mesh, node_t *n, int len) {
 static void try_udp(meshlink_handle_t *mesh, node_t *n) {
 	/* Probe request */
 
-	if(n->udpprobes < -3) {
+	if(n->status.udp_confirmed && n->udpprobes < -3) {
 		/* We lost three UDP probes, UDP status is no longer unconfirmed */
 		udp_probe_timeout_handler(&mesh->loop, n);
 	}
@@ -231,15 +231,24 @@ static void try_udp(meshlink_handle_t *mesh, node_t *n) {
 
 	timespec_sub(&mesh->loop.now, &n->last_udp_probe_sent, &elapsed);
 
-	int interval = (n->status.udp_confirmed && n->udpprobes >= 0) ? 10 : 2;
+	int interval;
+
+	if(n->status.udp_confirmed && n->udpprobes >= 0) {
+		// UDP confirmed and no lost probes, default interval
+		interval = 10;
+	} else if(n->udpprobes <= -15) {
+		// Many probes lost in a row, slow probing interval
+		n->udpprobes = -15;
+		interval = 10;
+	} else {
+		// Fast probing if we don't know the state of UDP connectivity yet
+		interval = 2;
+	}
 
 	if(elapsed.tv_sec >= interval) {
 		n->last_udp_probe_sent = mesh->loop.now;
 		send_udp_probe_packet(mesh, n, MIN_PROBE_SIZE);
-
-		if(n->status.udp_confirmed) {
-			n->udpprobes--;
-		}
+		n->udpprobes--;
 
 		if(!n->status.udp_confirmed && n->prevedge) {
 			n->status.broadcast = true;
