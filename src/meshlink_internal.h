@@ -140,6 +140,7 @@ struct meshlink_handle {
 	meshlink_connection_try_cb_t connection_try_cb;
 	meshlink_error_cb_t error_cb;
 	meshlink_blacklisted_cb_t blacklisted_cb;
+	meshlink_thread_status_cb_t thread_status_cb;
 
 	// Mesh parameters
 	char *appname;

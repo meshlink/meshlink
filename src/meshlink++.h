@@ -280,6 +280,12 @@ public:
 		(void)peer;
 	}
 
+	/// This functions is called whenever the MeshLink thread status changes.
+	virtual void thread_status(bool status) {
+		/* do nothing */
+		(void)status;
+	}
+
 	/// This functions is called whenever MeshLink a meta-connection attempt is made.
 	virtual void connection_try(node *peer) {
 		/* do nothing */
@@ -381,6 +387,7 @@ public:
 		meshlink_set_log_cb(handle, MESHLINK_DEBUG, &log_trampoline);
 		meshlink_set_error_cb(handle, &error_trampoline);
 		meshlink_set_blacklisted_cb(handle, &blacklisted_trampoline);
+		meshlink_set_thread_status_cb(handle, &thread_status_trampoline);
 		meshlink_set_channel_listen_cb(handle, &channel_listen_trampoline);
 		meshlink_set_channel_accept_cb(handle, &channel_accept_trampoline);
 		meshlink_set_connection_try_cb(handle, &connection_try_trampoline);
@@ -1311,6 +1318,15 @@ private:
 
 		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
 		that->blacklisted(static_cast<node *>(peer));
+	}
+
+	static void thread_status_trampoline(meshlink_handle_t *handle, bool status) {
+		if(!(handle->priv)) {
+			return;
+		}
+
+		meshlink::mesh *that = static_cast<mesh *>(handle->priv);
+		that->thread_status(status);
 	}
 
 	static void connection_try_trampoline(meshlink_handle_t *handle, meshlink_node_t *peer) {

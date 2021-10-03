@@ -611,6 +611,27 @@ typedef void (*meshlink_blacklisted_cb_t)(struct meshlink_handle *mesh, struct m
  */
 void meshlink_set_blacklisted_cb(struct meshlink_handle *mesh, meshlink_blacklisted_cb_t cb);
 
+/// A callback notifying when the MeshLink thread starts and stops.
+/*  @param mesh      A handle which represents an instance of MeshLink, or NULL.
+ *  @param started   True if the MeshLink thread has started, false if it is about to stop.
+ */
+typedef void (*meshlink_thread_status_cb_t)(struct meshlink_handle *mesh, bool started);
+
+/// Set the thread status callback.
+/** This functions sets the callback that is called whenever the MeshLink thread has started or is about to stop.
+ *
+ *  The callback is run in MeshLink's own thread.
+ *  It is important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to hand the data over to the application's thread.
+ *  The callback should also not block itself and return as quickly as possible.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh      A handle which represents an instance of MeshLink, or NULL.
+ *  @param cb        A pointer to the function which will be called when a serious error is encountered.
+ *                   If a NULL pointer is given, the callback will be disabled.
+ */
+void meshlink_set_thread_status_cb(struct meshlink_handle *mesh, meshlink_thread_status_cb_t cb);
+
 /// Send data to another node.
 /** This functions sends one packet of data to another node in the mesh.
  *  The packet is sent using UDP semantics, which means that
