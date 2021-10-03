@@ -1723,10 +1723,18 @@ static void *meshlink_main_loop(void *arg) {
 		abort();
 	}
 
+	if(mesh->thread_status_cb) {
+		mesh->thread_status_cb(mesh, true);
+	}
+
 	logger(mesh, MESHLINK_DEBUG, "Starting main_loop...\n");
 	pthread_cond_broadcast(&mesh->cond);
 	main_loop(mesh);
 	logger(mesh, MESHLINK_DEBUG, "main_loop returned.\n");
+
+	if(mesh->thread_status_cb) {
+		mesh->thread_status_cb(mesh, false);
+	}
 
 	pthread_mutex_unlock(&mesh->mutex);
 
@@ -2163,6 +2171,22 @@ void meshlink_set_blacklisted_cb(struct meshlink_handle *mesh, meshlink_blacklis
 	}
 
 	mesh->blacklisted_cb = cb;
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
+void meshlink_set_thread_status_cb(struct meshlink_handle *mesh, meshlink_thread_status_cb_t cb) {
+	logger(mesh, MESHLINK_DEBUG, "meshlink_set_thread_status_cb(%p)", (void *)(intptr_t)cb);
+
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+		return;
+	}
+
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
+
+	mesh->thread_status_cb = cb;
 	pthread_mutex_unlock(&mesh->mutex);
 }
 

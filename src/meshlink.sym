@@ -103,6 +103,7 @@ meshlink_set_node_status_cb
 meshlink_set_port
 meshlink_set_receive_cb
 meshlink_set_scheduling_granularity
+meshlink_set_thread_status_cb
 meshlink_sign
 meshlink_start
 meshlink_stop
