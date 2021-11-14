@@ -164,6 +164,10 @@ static void timeout_handler(event_loop_t *loop, void *data) {
 		}
 	}
 
+	if(mesh->global_metering_cb) {
+		check_global_metering(mesh);
+	}
+
 	timeout_set(&mesh->loop, data, &(struct timespec) {
 		1, prng(mesh, TIMER_FUDGE)
 	});

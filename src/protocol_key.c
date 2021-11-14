@@ -348,6 +348,8 @@ bool req_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		size_t len = strlen(request);
 		from->in_forward += len + SPTPS_OVERHEAD;
 		to->out_forward += len + SPTPS_OVERHEAD;
+		mesh->self->in_forward += len + SPTPS_OVERHEAD;
+		mesh->self->out_forward += len + SPTPS_OVERHEAD;
 
 		send_request(mesh, to->nexthop->connection, NULL, "%s", request);
 	}
@@ -419,6 +421,8 @@ bool ans_key_h(meshlink_handle_t *mesh, connection_t *c, const char *request) {
 		size_t len = strlen(request);
 		from->in_forward += len + SPTPS_OVERHEAD;
 		to->out_forward += len + SPTPS_OVERHEAD;
+		mesh->self->in_forward += len + SPTPS_OVERHEAD;
+		mesh->self->out_forward += len + SPTPS_OVERHEAD;
 
 		/* Append the known UDP address of the from node, if we have a confirmed one */
 		if(!*address && from->status.udp_confirmed && from->address.sa.sa_family != AF_UNSPEC) {

@@ -145,6 +145,7 @@ static void send_mtu_probe_handler(event_loop_t *loop, void *data) {
 		logger(mesh, MESHLINK_DEBUG, "Sending MTU probe length %d to %s", len, n->name);
 
 		n->out_meta += packet.len + PROBE_OVERHEAD;
+		mesh->self->out_meta += packet.len + PROBE_OVERHEAD;
 		send_udppacket(mesh, n, &packet);
 	}
 
@@ -165,6 +166,7 @@ void send_mtu_probe(meshlink_handle_t *mesh, node_t *n) {
 
 static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet, uint16_t len) {
 	n->in_meta += len + PROBE_OVERHEAD;
+	mesh->self->in_meta += len + PROBE_OVERHEAD;
 
 	if(len < 64) {
 		logger(mesh, MESHLINK_WARNING, "Got too short MTU probe length %d from %s", packet->len, n->name);
@@ -185,6 +187,7 @@ static void mtu_probe_h(meshlink_handle_t *mesh, node_t *n, vpn_packet_t *packet
 		n->status.udp_confirmed = true;
 		logger(mesh, MESHLINK_DEBUG, "Sending MTU probe reply %d to %s", packet->len, n->name);
 		n->out_meta += packet->len + PROBE_OVERHEAD;
+		mesh->self->out_meta += packet->len + PROBE_OVERHEAD;
 		send_udppacket(mesh, n, packet);
 		n->status.udp_confirmed = udp_confirmed;
 	} else {

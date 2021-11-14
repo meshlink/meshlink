@@ -407,3 +407,46 @@ void devtool_set_meta_status_cb(meshlink_handle_t *mesh, meshlink_node_status_cb
 	mesh->meta_status_cb = cb;
 	pthread_mutex_unlock(&mesh->mutex);
 }
+
+void devtool_set_global_metering_cb(meshlink_handle_t *mesh, meshlink_global_metering_cb_t cb, uint64_t threshold, int timeout) {
+	if(!mesh) {
+		meshlink_errno = MESHLINK_EINVAL;
+	}
+
+	if(pthread_mutex_lock(&mesh->mutex) != 0) {
+		abort();
+	}
+
+	mesh->global_metering_cb = cb;
+	mesh->metering_threshold = threshold;
+	mesh->metering_timeout = timeout;
+	pthread_mutex_unlock(&mesh->mutex);
+}
+
+void check_global_metering(meshlink_handle_t *mesh) {
+	uint64_t sum =
+	        mesh->self->in_data + mesh->self->out_data +
+	        mesh->self->in_forward + mesh->self->out_forward +
+	        mesh->self->in_meta + mesh->self->out_meta;
+
+	if(sum >= mesh->metering_threshold || mesh->loop.now.tv_sec >= mesh->last_metering_cb + mesh->metering_timeout) {
+		devtool_node_status_t status;
+		memset(&status, 0, sizeof status);
+		status.in_data = mesh->self->in_data;
+		status.out_data = mesh->self->out_data;
+		status.in_forward = mesh->self->in_forward;
+		status.out_forward = mesh->self->out_forward;
+		status.in_meta = mesh->self->in_meta;
+		status.out_meta = mesh->self->out_meta;
+
+		mesh->global_metering_cb(mesh, &status);
+
+		mesh->self->in_data = 0;
+		mesh->self->out_data = 0;
+		mesh->self->in_forward = 0;
+		mesh->self->out_forward = 0;
+		mesh->self->in_meta = 0;
+		mesh->self->out_meta = 0;
+		mesh->last_metering_cb = mesh->loop.now.tv_sec;
+	}
+}

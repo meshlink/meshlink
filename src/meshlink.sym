@@ -6,6 +6,7 @@ devtool_get_node_status
 devtool_keyrotate_probe
 devtool_open_in_netns
 devtool_reset_node_counters
+devtool_set_global_metering_cb
 devtool_set_meta_status_cb
 devtool_set_inviter_commits_first
 devtool_trybind_probe

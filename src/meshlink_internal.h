@@ -77,6 +77,10 @@ typedef struct {
 	int edge_weight;
 } dev_class_traits_t;
 
+struct devtool_node_status;
+void check_global_metering(meshlink_handle_t *mesh);
+typedef void (*meshlink_global_metering_cb_t)(meshlink_handle_t *mesh, const struct devtool_node_status *data);
+
 /// A handle for an instance of MeshLink.
 struct meshlink_handle {
 	// public members
@@ -130,6 +134,10 @@ struct meshlink_handle {
 	int next_pit;
 	int pits[10];
 
+	uint64_t metering_threshold;
+	time_t last_metering_cb;
+	int metering_timeout;
+
 	// Infrequently used callbacks
 	meshlink_node_status_cb_t node_status_cb;
 	meshlink_node_status_cb_t meta_status_cb;
@@ -141,6 +149,7 @@ struct meshlink_handle {
 	meshlink_error_cb_t error_cb;
 	meshlink_blacklisted_cb_t blacklisted_cb;
 	meshlink_thread_status_cb_t thread_status_cb;
+	meshlink_global_metering_cb_t global_metering_cb;
 
 	// Mesh parameters
 	char *appname;

@@ -227,4 +227,30 @@ extern void (*devtool_set_inviter_commits_first)(bool inviter_commited_first);
  */
 void devtool_set_meta_status_cb(struct meshlink_handle *mesh, meshlink_node_status_cb_t cb);
 
+/// A callback notifying about global traffic counters.
+/*  @param mesh   A handle which represents an instance of MeshLink..
+ *  @param data   A pointer to a data structure containing global traffic counters.
+ *                The application must only access this data during the callback,
+ *                the pointer is no longer valid after the callback function returns.
+ *                The counters will be reset after the callback function returns.
+ */
+typedef void (*meshlink_global_metering_cb_t)(meshlink_handle_t *mesh, const struct devtool_node_status *data);
+
+/// Set the global metering callback.
+/** This functions sets the callback that is called when a certain amount of traffic has occured or a timeout has passed.
+ *
+ *  The callback is run in MeshLink's own thread.
+ *  It is important that the callback uses apprioriate methods (queues, pipes, locking, etc.)
+ *  to hand the data over to the application's thread.
+ *  The callback should also not block itself and return as quickly as possible.
+ *
+ *  \memberof meshlink_handle
+ *  @param mesh      A handle which represents an instance of MeshLink..
+ *  @param cb        A pointer to the function which will be called when there is a traffic counter update..
+ *                   If a NULL pointer is given, the callback will be disabled.
+ *  @param threshold Threshold in bytes after which the callback will be called.
+ *  @param timeout   Timeout in seconds after which the callback will be called if the threshold was not reached before that time.
+ */
+void devtool_set_global_metering_cb(meshlink_handle_t *mesh, meshlink_global_metering_cb_t cb, uint64_t threshold, int timeout);
+
 #endif

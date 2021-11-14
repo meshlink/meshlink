@@ -152,6 +152,7 @@ bool receive_meta(meshlink_handle_t *mesh, connection_t *c) {
 
 	if(c->node) {
 		c->node->in_meta += inlen;
+		mesh->self->in_meta += inlen;
 	}
 
 	if(c->allow_request == ID) {
