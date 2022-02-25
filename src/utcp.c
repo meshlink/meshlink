@@ -891,6 +891,8 @@ ssize_t utcp_send(struct utcp_connection *c, const void *data, size_t len) {
 			errno = EMSGSIZE;
 			return -1;
 		}
+
+		c->do_poll = true;
 	} else {
 		return 0;
 	}

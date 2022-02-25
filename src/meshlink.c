@@ -4115,6 +4115,14 @@ static void channel_poll(struct utcp_connection *connection, size_t len) {
 			todo = len;
 		}
 
+		if(connection->flags == UTCP_UDP) {
+			size_t pmtu = utcp_get_mtu(connection->utcp);
+
+			if(todo > pmtu) {
+				todo = pmtu;
+			}
+		}
+
 		if(aio->data) {
 			sent = utcp_send(connection, (char *)aio->data + aio->done, todo);
 		} else {
