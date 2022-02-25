@@ -11,6 +11,7 @@ TESTS = \
 	channels-cornercases \
 	channels-failure \
 	channels-fork \
+	channels-mixed \
 	channels-no-partial \
 	channels-udp \
 	channels-udp-cornercases \
@@ -58,6 +59,7 @@ check_PROGRAMS = \
 	channels-cornercases \
 	channels-failure \
 	channels-fork \
+	channels-mixed \
 	channels-no-partial \
 	channels-udp \
 	channels-udp-cornercases \
@@ -121,6 +123,9 @@ channels_failure_LDADD = $(top_builddir)/src/libmeshlink.la
 
 channels_fork_SOURCES = channels-fork.c utils.c utils.h
 channels_fork_LDADD = $(top_builddir)/src/libmeshlink.la
+
+channels_mixed_SOURCES = channels-mixed.c utils.c utils.h
+channels_mixed_LDADD = $(top_builddir)/src/libmeshlink.la
 
 channels_cornercases_SOURCES = channels-cornercases.c utils.c utils.h
 channels_cornercases_LDADD = $(top_builddir)/src/libmeshlink.la
