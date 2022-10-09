@@ -128,7 +128,7 @@ MeshLink_ATTRIBUTE(__malloc__)
 MeshLink_ATTRIBUTE(__warn_unused_result__)
 
 dnl Checks for library functions.
-AC_CHECK_FUNCS([asprintf fchmod fork gettimeofday random pselect select setns strdup usleep getifaddrs freeifaddrs],
+AC_CHECK_FUNCS([asprintf fchmod fork gettimeofday random pselect select setns strdup usleep getifaddrs freeifaddrs flock],
   [], [], [#include "$srcdir/src/have.h"]
 )
 

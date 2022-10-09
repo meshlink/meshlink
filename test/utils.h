@@ -7,6 +7,10 @@
 
 #include "../src/meshlink.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Simple synchronisation between threads
 struct sync_flag {
 	pthread_mutex_t mutex;
@@ -60,3 +64,7 @@ static inline bool timespec_lt(const struct timespec *a, const struct timespec *
 		return a->tv_sec < b->tv_sec;
 	}
 }
+
+#ifdef __cplusplus
+}
+#endif

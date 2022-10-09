@@ -66,12 +66,7 @@ int main(void) {
 	assert(meshlink::destroy("basicpp_conf"));
 
 	DIR *dir = opendir("basicpp_conf");
-	assert(dir);
-	struct dirent *ent;
-	while((ent = readdir(dir))) {
-		assert(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."));
-	}
-	closedir(dir);
+	assert(!dir && errno == ENOENT);
 
 	return 0;
 }

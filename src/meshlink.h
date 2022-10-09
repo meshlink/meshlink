@@ -185,6 +185,73 @@ void meshlink_open_params_free(meshlink_open_params_t *params);
  */
 bool meshlink_open_params_set_netns(meshlink_open_params_t *params, int netns) __attribute__((__warn_unused_result__));
 
+/// A callback that loads a configuration object.
+/** @param mesh         A handle which represents an instance of MeshLink.
+ *  @param key          The key under which the configuration object was stored before.
+ *  @param[out] data    A pointer to a pointer to the buffer where the object has to be copied into.
+ *                      No more than len bytes should be written to this buffer.
+ *  @param[in,out] len  A pointer to the size of object.
+ *                      MeshLink sets this to the size of the buffer.
+ *                      The application must write the actual size of the object to it,
+ *                      regardless of whether it is larger or smaller than the buffer.
+ *
+ *  @return             This function must return true if the object was read and copied into the buffer succesfully,
+ *                      false otherwise.
+ *                      If the buffer provided by MeshLink was too small for the whole object, but no other errors
+ *                      occured, true must be returned.
+ */
+typedef bool (*meshlink_load_cb_t)(struct meshlink_handle *mesh, const char *filename, void *data, size_t *len);
+
+/// A callback that stores a configuration object.
+/** @param mesh      A handle which represents an instance of MeshLink.
+ *  @param key       The key under which the object should be stored.
+ *  @param data      A pointer to the buffer holding the data that must be stored.
+ *  @param len       The size of the buffer that must be stored.
+ *
+ *  @return          This function must return true if the file was written succesfully, false otherwise.
+ */
+typedef bool (*meshlink_store_cb_t)(struct meshlink_handle *mesh, const char *filename, const void *data, size_t len);
+
+/// A callback that reports the presence of a configuration object.
+/** @param mesh      A handle which represents an instance of MeshLink.
+ *  @param key       The key the object is stored under.
+ *  @param len       The size of the object if easy to obtain, zero otherwise.
+ *
+ *  @return          The return value. If it is false, the ls callback should immediately stop and return false as well.
+ */
+typedef bool (*meshlink_ls_entry_cb_t)(struct meshlink_handle *mesh, const char *key, size_t len);
+
+/// A callback that lists all configuration files.
+/** @param mesh      A handle which represents an instance of MeshLink.
+ *  @param entry_cb  A callback that must be called once for every configuration file found.
+ *
+ *  @return          This function must return true if all configuration files were listed
+ *                   and all entry callbacks return true as well, false otherwise.
+ */
+typedef bool (*meshlink_ls_cb_t)(struct meshlink_handle *mesh, meshlink_ls_entry_cb_t entry_cb);
+
+/// Set the callbacks MeshLink should use for local storage.
+/** This function allows the application to provide callbacks which handle loading and storing configuration files.
+ *  If storage callbacks are used, the application is in control of how and where configuration files are stored.
+ *  The application should then also ensure that only one MeshLink instance can access the configuration files at a time.
+ *
+ *  The callbacks get a relative filename which may contain directory separators, but there is no requirement that
+ *  the application also stores the files in directories. The only requirement is that a file stored with a given filename
+ *  can be loaded back using the same filename.
+ *
+ *  When storing files, it must ensure stores are done atomically.
+ *
+ *  If a storage key is set, MeshLink will take care of encrypting and decrypting the buffers passed to the storage callbacks.
+ *
+ *  @param params   A pointer to a meshlink_open_params_t which must have been created earlier with meshlink_open_params_init().
+ *  @param load_cb  A pointer to the function that will be called when MeshLink wants to load a configuration file.
+ *  @param store_cb A pointer to the function that will be called when MeshLink wants to store a configuration file.
+ *  @param ls_cb    A pointer to the function that will be called when MeshLink wants to know which configuration files are available.
+ *
+ *  @return         This function will return true if the callbacks have been successfully updated, false otherwise.
+ */
+bool meshlink_open_params_set_storage_callbacks(meshlink_open_params_t *params, meshlink_load_cb_t load_cb, meshlink_store_cb_t store_cb, meshlink_ls_cb_t ls_cb) __attribute__((__warn_unused_result__));
+
 /// Set the encryption key MeshLink should use for local storage.
 /** This function changes the open parameters to use the given key for encrypting MeshLink's own configuration files.
  *

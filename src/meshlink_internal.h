@@ -64,6 +64,9 @@ struct meshlink_open_params {
 	const void *key;
 	size_t keylen;
 	meshlink_storage_policy_t storage_policy;
+	meshlink_load_cb_t load_cb;
+	meshlink_store_cb_t store_cb;
+	meshlink_ls_cb_t ls_cb;
 };
 
 /// Device class traits
@@ -168,6 +171,11 @@ struct meshlink_handle {
 	char *external_address_url;
 	struct list_t *invitation_addresses;
 	meshlink_storage_policy_t storage_policy;
+	meshlink_load_cb_t load_cb;
+	meshlink_store_cb_t store_cb;
+	meshlink_ls_cb_t ls_cb;
+
+	void *ls_priv;
 
 	// Thread management
 	pthread_t thread;

@@ -146,12 +146,13 @@ int main(void) {
 
 	assert(!meshlink_invite(mesh[0], NULL, "xyzzy"));
 
-	DIR *dir = opendir("blacklist_conf.0/current/invitations");
+	DIR *dir = opendir("blacklist_conf.0");
 	assert(dir);
 	struct dirent *ent;
 
 	while((ent = readdir(dir))) {
-		assert(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."));
+		size_t len = strlen(ent->d_name);
+		assert(len < 4 || strcmp(ent->d_name + len - 4, ".inv") != 0);
 	}
 
 	closedir(dir);
@@ -240,12 +241,12 @@ int main(void) {
 	}
 
 	// Check that foo has a config file for xyzzy but not quux
-	assert(access("blacklist_conf.0/current/hosts/xyzzy", F_OK) == 0);
-	assert(access("blacklist_conf.0/current/hosts/quux", F_OK) != 0 && errno == ENOENT);
+	assert(access("blacklist_conf.0/xyzzy", F_OK) == 0);
+	assert(access("blacklist_conf.0/quux", F_OK) != 0 && errno == ENOENT);
 
 	// Check that bar has no config file for baz
-	assert(access("blacklist_conf.2/current/hosts/bar", F_OK) == 0);
-	assert(access("blacklist_conf.1/current/hosts/baz", F_OK) != 0 && errno == ENOENT);
+	assert(access("blacklist_conf.2/bar", F_OK) == 0);
+	assert(access("blacklist_conf.1/baz", F_OK) != 0 && errno == ENOENT);
 
 	// Check that we remember xyzzy but not quux after reopening the mesh
 	mesh[0] = meshlink_open("blacklist_conf.0", "foo", "blacklist", DEV_CLASS_BACKBONE);

@@ -71,7 +71,7 @@ static bool commit_invitation(meshlink_handle_t *mesh, connection_t *c, const vo
 	// Remember its current address
 	node_add_recent_address(mesh, n, &c->address);
 
-	if(!node_write_config(mesh, n, true) || !config_sync(mesh, "current")) {
+	if(!node_write_config(mesh, n, true)) {
 		logger(mesh, MESHLINK_ERROR, "Error writing configuration file for invited node %s!\n", c->name);
 		free_node(n);
 		return false;
@@ -103,16 +103,40 @@ static bool process_invitation(meshlink_handle_t *mesh, connection_t *c, const v
 
 	config_t config;
 
-	if(!invitation_read(mesh, "current", cookie, &config, mesh->config_key)) {
+	if(!invitation_read(mesh, cookie, &config)) {
 		logger(mesh, MESHLINK_ERROR, "Error while trying to read invitation file\n");
 		return false;
 	}
 
 	// Read the new node's Name from the file
 	packmsg_input_t in = {config.buf, config.len};
-	packmsg_get_uint32(&in); // skip version
+	uint32_t version = packmsg_get_uint32(&in);
+
+	if(version != MESHLINK_INVITATION_VERSION) {
+		logger(mesh, MESHLINK_ERROR, "Invalid invitation file\n");
+		config_free(&config);
+		return false;
+	}
+
+	int64_t timestamp = packmsg_get_int64(&in);
+
+	if(time(NULL) >= timestamp + mesh->invitation_timeout) {
+		logger(mesh, MESHLINK_ERROR, "Peer tried to use an outdated invitation file %s\n", cookie);
+		config_free(&config);
+		return false;
+	}
+
+	char *name = packmsg_get_str_dup(&in);
+
+	if(!check_id(name)) {
+		logger(mesh, MESHLINK_ERROR, "Invalid invitation file %s\n", cookie);
+		free(name);
+		config_free(&config);
+		return false;
+	}
+
 	free(c->name);
-	c->name = packmsg_get_str_dup(&in);
+	c->name = name;
 
 	// Check if the file contains Sub-Mesh information
 	char *submesh_name = packmsg_get_str_dup(&in);
@@ -124,6 +148,7 @@ static bool process_invitation(meshlink_handle_t *mesh, connection_t *c, const v
 		if(!check_id(submesh_name)) {
 			logger(mesh, MESHLINK_ERROR, "Invalid invitation file %s\n", cookie);
 			free(submesh_name);
+			config_free(&config);
 			return false;
 		}
 
@@ -132,11 +157,13 @@ static bool process_invitation(meshlink_handle_t *mesh, connection_t *c, const v
 
 		if(!c->submesh) {
 			logger(mesh, MESHLINK_ERROR, "Unknown submesh in invitation file %s\n", cookie);
+			config_free(&config);
 			return false;
 		}
 	}
 
 	if(mesh->inviter_commits_first && !commit_invitation(mesh, c, (const char *)data + 18)) {
+		config_free(&config);
 		return false;
 	}
 

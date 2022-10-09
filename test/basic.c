@@ -113,7 +113,7 @@ int main(void) {
 
 	// Check that messing with the config directory will create a new instance.
 
-	assert(unlink("basic_conf/current/meshlink.conf") == 0);
+	assert(unlink("basic_conf/meshlink.conf") == 0);
 	mesh = meshlink_open("basic_conf", "bar", "basic", DEV_CLASS_BACKBONE);
 	assert(mesh);
 	assert(!meshlink_get_node(mesh, "foo"));
@@ -123,6 +123,7 @@ int main(void) {
 	assert(access("basic_conf/new", X_OK) == -1 && errno == ENOENT);
 	meshlink_close(mesh);
 
+#if 0
 	assert(rename("basic_conf/current", "basic_conf/new") == 0);
 	mesh = meshlink_open("basic_conf", "baz", "basic", DEV_CLASS_BACKBONE);
 	assert(mesh);
@@ -132,22 +133,15 @@ int main(void) {
 	assert(!strcmp(self->name, "baz"));
 	assert(access("basic_conf/new", X_OK) == -1 && errno == ENOENT);
 	meshlink_close(mesh);
+#endif
 
 	// Destroy the mesh.
 
 	assert(meshlink_destroy("basic_conf"));
 
-	// Check that the configuration directory is completely empty.
+	// Check that the configuration directory is completely gone.
 
-	DIR *dir = opendir("basic_conf");
-	assert(dir);
-	struct dirent *ent;
-
-	while((ent = readdir(dir))) {
-		assert(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."));
-	}
-
-	closedir(dir);
+	assert(access("basic_conf", F_OK) == -1 && errno == ENOENT);
 
 	// Check that we can destroy it again.
 

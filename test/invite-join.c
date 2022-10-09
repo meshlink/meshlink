@@ -32,15 +32,15 @@ static void status_cb(meshlink_handle_t *mesh, meshlink_node_t *node, bool reach
 
 static void invitee_commits_first_cb(bool inviter_first) {
 	// Check that eight has committed foo's host config file, but foo hasn't committed eight's
-	assert(access("invite_join_conf.8/current/hosts/foo", F_OK) == 0);
-	assert(access("invite_join_conf.1/current/hosts/eight", F_OK) == -1 && errno == ENOENT);
+	assert(access("invite_join_conf.8/foo", F_OK) == 0);
+	assert(access("invite_join_conf.1/eight", F_OK) == -1 && errno == ENOENT);
 	set_sync_flag(&commits_first_flag, !inviter_first);
 }
 
 static void inviter_commits_first_cb(bool inviter_first) {
 	// Check that foo has committed nine's host config file, but nine hasn't committed foo's
-	assert(access("invite_join_conf.1/current/hosts/nine", F_OK) == 0);
-	assert(access("invite_join_conf.9/current/hosts/foo", F_OK) == -1 && errno == ENOENT);
+	assert(access("invite_join_conf.1/nine", F_OK) == 0);
+	assert(access("invite_join_conf.9/foo", F_OK) == -1 && errno == ENOENT);
 	set_sync_flag(&commits_first_flag, inviter_first);
 }
 

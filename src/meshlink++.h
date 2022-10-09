@@ -138,6 +138,52 @@ typedef void (*aio_cb_t)(mesh *mesh, channel *channel, const void *data, size_t 
  */
 typedef void (*aio_fd_cb_t)(mesh *mesh, channel *channel, int fd, size_t len, void *priv);
 
+/// A callback that loads a configuration object.
+/** @param mesh         A handle which represents an instance of MeshLink.
+ *  @param key          The key under which the configuration object was stored before.
+ *  @param[out] data    A pointer to a pointer to the buffer where the object has to be copied into.
+ *                      No more than len bytes should be written to this buffer.
+ *  @param[in,out] len  A pointer to the size of object.
+ *                      MeshLink sets this to the size of the buffer.
+ *                      The application must write the actual size of the object to it,
+ *                      regardless of whether it is larger or smaller than the buffer.
+ *
+ *  @return             This function must return true if the object was read and copied into the buffer succesfully,
+ *                      false otherwise.
+ *                      If the buffer provided by MeshLink was too small for the whole object, but no other errors
+ *                      occured, true must be returned.
+ */
+typedef bool (*load_cb_t)(mesh *mesh, const char *filename, void *data, size_t *len);
+
+/// A callback that stores a configuration object.
+/** @param mesh      A handle which represents an instance of MeshLink.
+ *  @param key       The key under which the object should be stored.
+ *  @param data      A pointer to the buffer holding the data that must be stored.
+ *  @param len       The size of the buffer that must be stored.
+ *
+ *  @return          This function must return true if the file was written succesfully, false otherwise.
+ */
+typedef bool (*store_cb_t)(mesh *mesh, const char *filename, const void *data, size_t len);
+
+/// A callback that reports the presence of a configuration object.
+/** @param mesh      A handle which represents an instance of MeshLink.
+ *  @param key       The key the object is stored under.
+ *  @param len       The size of the object if easy to obtain, zero otherwise.
+ *
+ *  @return          The return value. If it is false, the ls callback should immediately stop and return false as well.
+ */
+typedef bool (*ls_entry_cb_t)(mesh *mesh, const char *key, size_t len);
+
+/// A callback that lists all configuration files.
+/** @param mesh      A handle which represents an instance of MeshLink.
+ *  @param entry_cb  A callback that must be called once for every configuration file found.
+ *
+ *  @return          This function must return true if all configuration files were listed
+ *                   and all entry callbacks return true as well, false otherwise.
+ */
+typedef bool (*ls_cb_t)(mesh *mesh, ls_entry_cb_t entry_cb);
+
+
 /// A class describing a MeshLink node.
 class node: public meshlink_node_t {
 };
@@ -156,6 +202,39 @@ public:
 	static const uint32_t NO_PARTIAL = MESHLINK_CHANNEL_NO_PARTIAL;
 	static const uint32_t TCP = MESHLINK_CHANNEL_TCP;
 	static const uint32_t UDP = MESHLINK_CHANNEL_UDP;
+};
+
+class open_params {
+	friend class mesh;
+	meshlink_open_params_t *params;
+
+public:
+	open_params(const char *confbase, const char *name, const char *appname, dev_class_t devclass):
+		params(meshlink_open_params_init(confbase, name, appname, devclass)) {}
+
+	~open_params() {
+		meshlink_open_params_free(params);
+	}
+
+	bool set_netns(int netns) {
+		return meshlink_open_params_set_netns(params, netns);
+	}
+
+	bool set_storage_callbacks(meshlink_load_cb_t load_cb, meshlink_store_cb_t store_cb, meshlink_ls_cb_t ls_cb) {
+		return meshlink_open_params_set_storage_callbacks(params, load_cb, store_cb, ls_cb);
+	}
+
+	bool set_storage_key(const void *key, size_t keylen) {
+		return meshlink_open_params_set_storage_key(params, key, keylen);
+	}
+
+	bool set_storage_policy(meshlink_storage_policy_t policy) {
+		return meshlink_open_params_set_storage_policy(params, policy);
+	}
+
+	bool set_lock_filename(const char *filename) {
+		return meshlink_open_params_set_lock_filename(params, filename);
+	}
 };
 
 /// A class describing a MeshLink mesh.
@@ -207,8 +286,22 @@ public:
 		return isOpen();
 	}
 
+	bool open(const open_params &params) {
+		handle = meshlink_open_ex(params.params);
+
+		if(handle) {
+			handle->priv = this;
+		}
+
+		return isOpen();
+	}
+
 	mesh(const char *confbase, const char *name, const char *appname, dev_class_t devclass) {
 		open(confbase, name, appname, devclass);
+	}
+
+	mesh(const open_params &params) {
+		open(params);
 	}
 
 	/// Close the MeshLink handle.
@@ -1196,6 +1289,20 @@ public:
 		meshlink_hint_network_change(handle);
 	}
 
+	/// Performs key rotation for an encrypted storage
+	/** This rotates the (master) key for an encrypted storage and discards the old key
+	 *  if the call succeeded. This is an atomic call.
+	 *
+	 *  \memberof meshlink_handle
+	 *  @param key      A pointer to the new key used to encrypt storage.
+	 *  @param keylen   The length of the new key in bytes.
+	 *
+	 *  @return         This function returns true if the key rotation for the encrypted storage succeeds, false otherwise.
+	 */
+	bool encrypted_key_rotate(const void *key, size_t keylen) {
+		return meshlink_encrypted_key_rotate(handle, key, keylen);
+	}
+
 	/// Set device class timeouts
 	/** This sets the ping interval and timeout for a given device class.
 	 *
@@ -1400,6 +1507,11 @@ static inline const char *strerror(errno_t err = meshlink_errno) {
  */
 static inline bool destroy(const char *confbase) {
 	return meshlink_destroy(confbase);
+}
+
+
+static inline void set_log_cb(meshlink_log_level_t level, meshlink_log_cb_t cb) {
+	meshlink_set_log_cb(NULL, level, cb);
 }
 }
 

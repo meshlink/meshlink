@@ -26,6 +26,7 @@ TESTS = \
 	metering-tcponly \		
 	meta-connections \
 	sign-verify \
+	storage-callbacks \
 	storage-policy \
 	trio \
 	trio2 \
@@ -74,6 +75,7 @@ check_PROGRAMS = \
 	metering-tcponly \
 	meta-connections \
 	sign-verify \
+	storage-callbacks \
 	storage-policy \
 	stream \
 	trio \
@@ -169,6 +171,9 @@ meta_connections_LDADD = $(top_builddir)/src/libmeshlink.la
 
 sign_verify_SOURCES = sign-verify.c utils.c utils.h
 sign_verify_LDADD = $(top_builddir)/src/libmeshlink.la
+
+storage_callbacks_SOURCES = storage-callbacks.cpp utils.c utils.h
+storage_callbacks_LDADD = $(top_builddir)/src/libmeshlink.la
 
 storage_policy_SOURCES = storage-policy.c utils.c utils.h
 storage_policy_LDADD = $(top_builddir)/src/libmeshlink.la

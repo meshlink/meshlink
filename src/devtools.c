@@ -34,9 +34,9 @@ static void nop_probe(void) {
 	return;
 }
 
-static void keyrotate_nop_probe(int stage) {
+static bool keyrotate_nop_probe(int stage) {
 	(void)stage;
-	return;
+	return true;
 }
 
 static void inviter_commits_first_nop_probe(bool stage) {
@@ -50,7 +50,7 @@ static void sptps_renewal_nop_probe(meshlink_node_t *node) {
 }
 
 void (*devtool_trybind_probe)(void) = nop_probe;
-void (*devtool_keyrotate_probe)(int stage) = keyrotate_nop_probe;
+bool (*devtool_keyrotate_probe)(int stage) = keyrotate_nop_probe;
 void (*devtool_set_inviter_commits_first)(bool inviter_commited_first) = inviter_commits_first_nop_probe;
 void (*devtool_adns_resolve_probe)(void) = nop_probe;
 void (*devtool_sptps_renewal_probe)(meshlink_node_t *node) = sptps_renewal_nop_probe;

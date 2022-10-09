@@ -179,10 +179,13 @@ extern void (*devtool_trybind_probe)(void);
 /** This function pointer variable is a userspace tracepoint or debugger callback for
  *  encrypted key rotation function @a meshlink_encrypted_key_rotate @a.
  *  On assigning a debug function variable invokes callback for each stage from the key rotate API.
+ *  Returning false will cause the key rotation to be aborted.
  *
- *  @param stage Debug stage number.
+ *  @param stage  Debug stage number.
+ *
+ *  @return       Whether the key rotation should continue succesfully.
  */
-extern void (*devtool_keyrotate_probe)(int stage);
+extern bool (*devtool_keyrotate_probe)(int stage);
 
 /// Debug function pointer variable for asynchronous DNS resolving
 extern void (*devtool_adns_resolve_probe)(void);
