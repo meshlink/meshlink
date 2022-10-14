@@ -23,7 +23,7 @@ TESTS = \
 	metering \
 	metering-relayed \
 	metering-slowping \
-	metering-tcponly \		
+	metering-tcponly \
 	meta-connections \
 	sign-verify \
 	storage-callbacks \
@@ -183,3 +183,8 @@ trio_LDADD = $(top_builddir)/src/libmeshlink.la
 
 trio2_SOURCES = trio2.c utils.c utils.h
 trio2_LDADD = $(top_builddir)/src/libmeshlink.la
+
+clean-local: clean-local-check
+.PHONY: clean-local-check
+clean-local-check:
+	-rm -rf *_conf*
