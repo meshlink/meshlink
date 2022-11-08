@@ -651,7 +651,7 @@ static bool try_bind(meshlink_handle_t *mesh, int port) {
 
 int check_port(meshlink_handle_t *mesh) {
 	for(int i = 0; i < 1000; i++) {
-		int port = 0x1000 + prng(mesh, 0x8000);
+		int port = 0x1000 + prng(mesh, 0x7000);
 
 		if(try_bind(mesh, port)) {
 			free(mesh->myport);
