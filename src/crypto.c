@@ -23,7 +23,7 @@
 
 //TODO: use a strict random source once to seed a PRNG?
 
-#ifndef HAVE_MINGW
+#ifndef _WIN32
 
 static int random_fd = -1;
 

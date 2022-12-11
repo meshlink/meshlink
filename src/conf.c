@@ -510,7 +510,7 @@ bool main_config_lock(meshlink_handle_t *mesh, const char *lock_filename) {
 	fcntl(fileno(mesh->lockfile), F_SETFD, FD_CLOEXEC);
 #endif
 
-#ifdef HAVE_MINGW
+#ifdef _WIN32
 	// TODO: use _locking()?
 #else
 

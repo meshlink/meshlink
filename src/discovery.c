@@ -498,7 +498,7 @@ static void addr_del(meshlink_handle_t *mesh, const discovery_address_t *addr) {
 }
 
 void scan_ifaddrs(meshlink_handle_t *mesh) {
-#ifdef HAVE_GETIFADDRS
+#ifndef _WIN32
 	struct ifaddrs *ifa = NULL;
 
 	if(getifaddrs(&ifa) == -1) {

@@ -36,6 +36,10 @@
 extern "C" {
 #endif
 
+#ifndef MESHLINK_EXPORT
+#define MESHLINK_EXPORT __attribute__((visibility("default")))
+#endif
+
 /// The length in bytes of a signature made with meshlink_sign()
 #define MESHLINK_SIGLEN (64ul)
 
@@ -112,7 +116,7 @@ static const uint32_t MESHLINK_CHANNEL_UDP = 0;        // Select UDP semantics.
  *  The variable is only updated when an error is encountered, and is not reset to MESHLINK_OK
  *  if a function returned successfully.
  */
-extern __thread meshlink_errno_t meshlink_errno;
+MESHLINK_EXPORT extern __thread meshlink_errno_t meshlink_errno;
 
 #ifndef MESHLINK_INTERNAL_H
 
@@ -147,7 +151,7 @@ struct meshlink_channel {
  *                  The pointer is to static storage that is valid for the lifetime of the application.
  *                  This function will always return a valid pointer, even if an invalid error code has been passed.
  */
-const char *meshlink_strerror(meshlink_errno_t err) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT const char *meshlink_strerror(meshlink_errno_t err) __attribute__((__warn_unused_result__));
 
 /// Create a new meshlink_open_params_t struct.
 /** This function allocates and initializes a new meshlink_open_params_t struct that can be passed to meshlink_open_ex().
@@ -166,14 +170,14 @@ const char *meshlink_strerror(meshlink_errno_t err) __attribute__((__warn_unused
  *  @return         A pointer to a meshlink_open_params_t which can be passed to meshlink_open_ex(), or NULL in case of an error.
  *                  The pointer is valid until meshlink_open_params_free() is called.
  */
-meshlink_open_params_t *meshlink_open_params_init(const char *confbase, const char *name, const char *appname, dev_class_t devclass) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT meshlink_open_params_t *meshlink_open_params_init(const char *confbase, const char *name, const char *appname, dev_class_t devclass) __attribute__((__warn_unused_result__));
 
 /// Free a meshlink_open_params_t struct.
 /** This function frees a meshlink_open_params_t struct and all resources associated with it.
  *
  *  @param params   A pointer to a meshlink_open_params_t which must have been created earlier with meshlink_open_params_init().
  */
-void meshlink_open_params_free(meshlink_open_params_t *params);
+MESHLINK_EXPORT void meshlink_open_params_free(meshlink_open_params_t *params);
 
 /// Set the network namespace MeshLink should use.
 /** This function changes the open parameters to use the given netns filedescriptor.
@@ -183,7 +187,7 @@ void meshlink_open_params_free(meshlink_open_params_t *params);
  *
  *  @return         This function will return true if the open parameters have been successfully updated, false otherwise.
  */
-bool meshlink_open_params_set_netns(meshlink_open_params_t *params, int netns) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_open_params_set_netns(meshlink_open_params_t *params, int netns) __attribute__((__warn_unused_result__));
 
 /// Set the encryption key MeshLink should use for local storage.
 /** This function changes the open parameters to use the given key for encrypting MeshLink's own configuration files.
@@ -194,7 +198,7 @@ bool meshlink_open_params_set_netns(meshlink_open_params_t *params, int netns) _
  *
  *  @return         This function will return true if the open parameters have been successfully updated, false otherwise.
  */
-bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const void *key, size_t keylen) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const void *key, size_t keylen) __attribute__((__warn_unused_result__));
 
 /// Set the encryption key MeshLink should use for local storage.
 /** This function changes the open parameters to use the given storage policy.
@@ -204,7 +208,7 @@ bool meshlink_open_params_set_storage_key(meshlink_open_params_t *params, const 
  *
  *  @return         This function will return true if the open parameters have been successfully updated, false otherwise.
  */
-bool meshlink_open_params_set_storage_policy(meshlink_open_params_t *params, meshlink_storage_policy_t policy) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_open_params_set_storage_policy(meshlink_open_params_t *params, meshlink_storage_policy_t policy) __attribute__((__warn_unused_result__));
 
 /// Set the filename of the lockfile.
 /** This function changes the path of the lockfile used to ensure only one instance of MeshLink can be open at the same time.
@@ -215,7 +219,7 @@ bool meshlink_open_params_set_storage_policy(meshlink_open_params_t *params, mes
  *
  *  @return         This function will return true if the open parameters have been successfully updated, false otherwise.
  */
-bool meshlink_open_params_set_lock_filename(meshlink_open_params_t *params, const char *filename) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_open_params_set_lock_filename(meshlink_open_params_t *params, const char *filename) __attribute__((__warn_unused_result__));
 
 /// Open or create a MeshLink instance.
 /** This function opens or creates a MeshLink instance.
@@ -235,7 +239,7 @@ bool meshlink_open_params_set_lock_filename(meshlink_open_params_t *params, cons
  *  @return         A pointer to a struct meshlink_handle which represents this instance of MeshLink, or NULL in case of an error.
  *                  The pointer is valid until meshlink_close() is called.
  */
-struct meshlink_handle *meshlink_open_ex(const meshlink_open_params_t *params) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_handle *meshlink_open_ex(const meshlink_open_params_t *params) __attribute__((__warn_unused_result__));
 
 /// Open or create a MeshLink instance.
 /** This function opens or creates a MeshLink instance.
@@ -265,7 +269,7 @@ struct meshlink_handle *meshlink_open_ex(const meshlink_open_params_t *params) _
  *  @return         A pointer to a struct meshlink_handle which represents this instance of MeshLink, or NULL in case of an error.
  *                  The pointer is valid until meshlink_close() is called.
  */
-struct meshlink_handle *meshlink_open(const char *confbase, const char *name, const char *appname, dev_class_t devclass) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_handle *meshlink_open(const char *confbase, const char *name, const char *appname, dev_class_t devclass) __attribute__((__warn_unused_result__));
 
 /// Open or create a MeshLink instance that uses encrypted storage.
 /** This function opens or creates a MeshLink instance.
@@ -297,7 +301,7 @@ struct meshlink_handle *meshlink_open(const char *confbase, const char *name, co
  *  @return         A pointer to a struct meshlink_handle which represents this instance of MeshLink, or NULL in case of an error.
  *                  The pointer is valid until meshlink_close() is called.
  */
-struct meshlink_handle *meshlink_open_encrypted(const char *confbase, const char *name, const char *appname, dev_class_t devclass, const void *key, size_t keylen) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_handle *meshlink_open_encrypted(const char *confbase, const char *name, const char *appname, dev_class_t devclass, const void *key, size_t keylen) __attribute__((__warn_unused_result__));
 
 /// Create an ephemeral MeshLink instance that does not store any state.
 /** This function creates a MeshLink instance.
@@ -321,7 +325,7 @@ struct meshlink_handle *meshlink_open_encrypted(const char *confbase, const char
  *  @return         A pointer to a struct meshlink_handle which represents this instance of MeshLink, or NULL in case of an error.
  *                  The pointer is valid until meshlink_close() is called.
  */
-struct meshlink_handle *meshlink_open_ephemeral(const char *name, const char *appname, dev_class_t devclass) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_handle *meshlink_open_ephemeral(const char *name, const char *appname, dev_class_t devclass) __attribute__((__warn_unused_result__));
 
 /// Create Sub-Mesh.
 /** This function causes MeshLink to open a new Sub-Mesh network
@@ -337,7 +341,7 @@ struct meshlink_handle *meshlink_open_ephemeral(const char *name, const char *ap
  *  @return         A pointer to a struct meshlink_submesh which represents this instance of SubMesh, or NULL in case of an error.
  *                  The pointer is valid until meshlink_close() is called.
  */
-struct meshlink_submesh *meshlink_submesh_open(struct meshlink_handle *mesh, const char *submesh) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_submesh *meshlink_submesh_open(struct meshlink_handle *mesh, const char *submesh) __attribute__((__warn_unused_result__));
 
 /// Start MeshLink.
 /** This function causes MeshLink to open network sockets, make outgoing connections, and
@@ -350,7 +354,7 @@ struct meshlink_submesh *meshlink_submesh_open(struct meshlink_handle *mesh, con
  *
  *  @return         This function will return true if MeshLink has successfully started, false otherwise.
  */
-bool meshlink_start(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_start(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
 
 /// Stop MeshLink.
 /** This function causes MeshLink to disconnect from all other nodes,
@@ -362,7 +366,7 @@ bool meshlink_start(struct meshlink_handle *mesh) __attribute__((__warn_unused_r
  *  \memberof meshlink_handle
  *  @param mesh     A handle which represents an instance of MeshLink.
  */
-void meshlink_stop(struct meshlink_handle *mesh);
+MESHLINK_EXPORT void meshlink_stop(struct meshlink_handle *mesh);
 
 /// Close the MeshLink handle.
 /** This function calls meshlink_stop() if necessary,
@@ -376,7 +380,7 @@ void meshlink_stop(struct meshlink_handle *mesh);
  * \memberof meshlink_handle
  *  @param mesh     A handle which represents an instance of MeshLink.
  */
-void meshlink_close(struct meshlink_handle *mesh);
+MESHLINK_EXPORT void meshlink_close(struct meshlink_handle *mesh);
 
 /// Destroy a MeshLink instance.
 /** This function remove all configuration files of a MeshLink instance. It should only be called when the application
@@ -388,7 +392,7 @@ void meshlink_close(struct meshlink_handle *mesh);
  *
  *  @return         This function will return true if the MeshLink instance was successfully destroyed, false otherwise.
  */
-bool meshlink_destroy(const char *confbase) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_destroy(const char *confbase) __attribute__((__warn_unused_result__));
 
 /// Destroy a MeshLink instance using open parameters.
 /** This function remove all configuration files of a MeshLink instance. It should only be called when the application
@@ -403,7 +407,7 @@ bool meshlink_destroy(const char *confbase) __attribute__((__warn_unused_result_
  *
  *  @return         This function will return true if the MeshLink instance was successfully destroyed, false otherwise.
  */
-bool meshlink_destroy_ex(const meshlink_open_params_t *params) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_destroy_ex(const meshlink_open_params_t *params) __attribute__((__warn_unused_result__));
 
 /// A callback for receiving data from the mesh.
 /** @param mesh      A handle which represents an instance of MeshLink.
@@ -427,7 +431,7 @@ typedef void (*meshlink_receive_cb_t)(struct meshlink_handle *mesh, struct meshl
  *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-void meshlink_set_receive_cb(struct meshlink_handle *mesh, meshlink_receive_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_receive_cb(struct meshlink_handle *mesh, meshlink_receive_cb_t cb);
 
 /// A callback reporting the meta-connection attempt made by the host node to an another node.
 /** @param mesh      A handle which represents an instance of MeshLink.
@@ -448,7 +452,7 @@ typedef void (*meshlink_connection_try_cb_t)(struct meshlink_handle *mesh, struc
  *  @param cb        A pointer to the function which will be called when host node attempts to make
  *                   the connection to another node. If a NULL pointer is given, the callback will be disabled.
  */
-void meshlink_set_connection_try_cb(struct meshlink_handle *mesh, meshlink_connection_try_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_connection_try_cb(struct meshlink_handle *mesh, meshlink_connection_try_cb_t cb);
 
 /// A callback reporting node status changes.
 /** @param mesh      A handle which represents an instance of MeshLink.
@@ -470,7 +474,7 @@ typedef void (*meshlink_node_status_cb_t)(struct meshlink_handle *mesh, struct m
  *  @param cb        A pointer to the function which will be called when another node's status changes.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-void meshlink_set_node_status_cb(struct meshlink_handle *mesh, meshlink_node_status_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_node_status_cb(struct meshlink_handle *mesh, meshlink_node_status_cb_t cb);
 
 /// A callback reporting node path MTU changes.
 /** @param mesh      A handle which represents an instance of MeshLink.
@@ -492,7 +496,7 @@ typedef void (*meshlink_node_pmtu_cb_t)(struct meshlink_handle *mesh, struct mes
  *  @param cb        A pointer to the function which will be called when another node's extended status changes.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-void meshlink_set_node_pmtu_cb(struct meshlink_handle *mesh, meshlink_node_pmtu_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_node_pmtu_cb(struct meshlink_handle *mesh, meshlink_node_pmtu_cb_t cb);
 
 /// A callback reporting duplicate node detection.
 /** @param mesh       A handle which represents an instance of MeshLink.
@@ -513,7 +517,7 @@ typedef void (*meshlink_node_duplicate_cb_t)(struct meshlink_handle *mesh, struc
  *  @param cb        A pointer to the function which will be called when a duplicate node is detected.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-void meshlink_set_node_duplicate_cb(struct meshlink_handle *mesh, meshlink_node_duplicate_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_node_duplicate_cb(struct meshlink_handle *mesh, meshlink_node_duplicate_cb_t cb);
 
 /// Severity of log messages generated by MeshLink.
 typedef enum {
@@ -556,7 +560,7 @@ typedef void (*meshlink_log_cb_t)(struct meshlink_handle *mesh, meshlink_log_lev
  *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-void meshlink_set_log_cb(struct meshlink_handle *mesh, meshlink_log_level_t level, meshlink_log_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_log_cb(struct meshlink_handle *mesh, meshlink_log_level_t level, meshlink_log_cb_t cb);
 
 /// A callback for receiving error conditions encountered by the MeshLink thread.
 /** @param mesh      A handle which represents an instance of MeshLink, or NULL.
@@ -588,7 +592,7 @@ typedef void (*meshlink_error_cb_t)(struct meshlink_handle *mesh, meshlink_errno
  *  @param cb        A pointer to the function which will be called when a serious error is encountered.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-void meshlink_set_error_cb(struct meshlink_handle *mesh, meshlink_error_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_error_cb(struct meshlink_handle *mesh, meshlink_error_cb_t cb);
 
 /// A callback for receiving blacklisted conditions encountered by the MeshLink thread.
 /** @param mesh      A handle which represents an instance of MeshLink, or NULL.
@@ -609,7 +613,7 @@ typedef void (*meshlink_blacklisted_cb_t)(struct meshlink_handle *mesh, struct m
  *  @param cb        A pointer to the function which will be called when a serious error is encountered.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-void meshlink_set_blacklisted_cb(struct meshlink_handle *mesh, meshlink_blacklisted_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_blacklisted_cb(struct meshlink_handle *mesh, meshlink_blacklisted_cb_t cb);
 
 /// A callback notifying when the MeshLink thread starts and stops.
 /*  @param mesh      A handle which represents an instance of MeshLink, or NULL.
@@ -630,7 +634,7 @@ typedef void (*meshlink_thread_status_cb_t)(struct meshlink_handle *mesh, bool s
  *  @param cb        A pointer to the function which will be called when a serious error is encountered.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-void meshlink_set_thread_status_cb(struct meshlink_handle *mesh, meshlink_thread_status_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_thread_status_cb(struct meshlink_handle *mesh, meshlink_thread_status_cb_t cb);
 
 /// Send data to another node.
 /** This functions sends one packet of data to another node in the mesh.
@@ -651,7 +655,7 @@ void meshlink_set_thread_status_cb(struct meshlink_handle *mesh, meshlink_thread
  *  @return             This function will return true if MeshLink has queued the message for transmission, and false otherwise.
  *                      A return value of true does not guarantee that the message will actually arrive at the destination.
  */
-bool meshlink_send(struct meshlink_handle *mesh, struct meshlink_node *destination, const void *data, size_t len) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_send(struct meshlink_handle *mesh, struct meshlink_node *destination, const void *data, size_t len) __attribute__((__warn_unused_result__));
 
 /// Query the maximum packet size that can be sent to a node.
 /** This functions returns the maximum size of packets (path MTU) that can be sent to a specific node with meshlink_send().
@@ -667,7 +671,7 @@ bool meshlink_send(struct meshlink_handle *mesh, struct meshlink_node *destinati
  *  @return             The recommended maximum size of packets that are to be sent to the destination node, 0 if the node is unreachable,
  *                      or a negative value in case of an error.
  */
-ssize_t meshlink_get_pmtu(struct meshlink_handle *mesh, struct meshlink_node *destination) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT ssize_t meshlink_get_pmtu(struct meshlink_handle *mesh, struct meshlink_node *destination) __attribute__((__warn_unused_result__));
 
 /// Get a handle for our own node.
 /** This function returns a handle for the local node.
@@ -678,7 +682,7 @@ ssize_t meshlink_get_pmtu(struct meshlink_handle *mesh, struct meshlink_node *de
  *  @return             A pointer to a struct meshlink_node which represents the local node.
  *                      The pointer is guaranteed to be valid until meshlink_close() is called.
  */
-struct meshlink_node *meshlink_get_self(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_node *meshlink_get_self(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
 
 /// Get a handle for a specific node.
 /** This function returns a handle for the node with the given name.
@@ -692,7 +696,7 @@ struct meshlink_node *meshlink_get_self(struct meshlink_handle *mesh) __attribut
  *                      or NULL if the requested node does not exist.
  *                      The pointer is guaranteed to be valid until meshlink_close() is called.
  */
-struct meshlink_node *meshlink_get_node(struct meshlink_handle *mesh, const char *name) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_node *meshlink_get_node(struct meshlink_handle *mesh, const char *name) __attribute__((__warn_unused_result__));
 
 /// Get a handle for a specific submesh.
 /** This function returns a handle for the submesh with the given name.
@@ -706,7 +710,7 @@ struct meshlink_node *meshlink_get_node(struct meshlink_handle *mesh, const char
  *                      or NULL if the requested submesh does not exist.
  *                      The pointer is guaranteed to be valid until meshlink_close() is called.
  */
-struct meshlink_submesh *meshlink_get_submesh(struct meshlink_handle *mesh, const char *name) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_submesh *meshlink_get_submesh(struct meshlink_handle *mesh, const char *name) __attribute__((__warn_unused_result__));
 
 /// Get the fingerprint of a node's public key.
 /** This function returns a fingerprint of the node's public key.
@@ -719,7 +723,7 @@ struct meshlink_submesh *meshlink_get_submesh(struct meshlink_handle *mesh, cons
  *  @return             A nul-terminated C string containing the fingerprint of the node's public key in a printable ASCII format.
  *                      The application should call free() after it is done using this string.
  */
-char *meshlink_get_fingerprint(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT char *meshlink_get_fingerprint(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
 
 /// Get a list of all nodes.
 /** This function returns a list with handles for all known nodes.
@@ -739,7 +743,7 @@ char *meshlink_get_fingerprint(struct meshlink_handle *mesh, struct meshlink_nod
  *                      If it is a new value, the old value of @a nodes should not be used anymore.
  *                      If the new value is NULL, then the old array will have been freed by MeshLink.
  */
-struct meshlink_node **meshlink_get_all_nodes(struct meshlink_handle *mesh, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_node **meshlink_get_all_nodes(struct meshlink_handle *mesh, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
 
 /// Sign data using the local node's MeshLink key.
 /** This function signs data using the local node's MeshLink key.
@@ -756,7 +760,7 @@ struct meshlink_node **meshlink_get_all_nodes(struct meshlink_handle *mesh, stru
  *
  *  @return             This function returns true if the signature was correctly generated, false otherwise.
  */
-bool meshlink_sign(struct meshlink_handle *mesh, const void *data, size_t len, void *signature, size_t *siglen) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_sign(struct meshlink_handle *mesh, const void *data, size_t len, void *signature, size_t *siglen) __attribute__((__warn_unused_result__));
 
 /// Get the list of all nodes by device class.
 /** This function returns a list with handles for all the nodes that matches with the given @a devclass.
@@ -777,7 +781,7 @@ bool meshlink_sign(struct meshlink_handle *mesh, const void *data, size_t len, v
  *                      If it is a new value, the old value of @a nodes should not be used anymore.
  *                      If the new value is NULL, then the old array will have been freed by MeshLink.
  */
-struct meshlink_node **meshlink_get_all_nodes_by_dev_class(struct meshlink_handle *mesh, dev_class_t devclass, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_node **meshlink_get_all_nodes_by_dev_class(struct meshlink_handle *mesh, dev_class_t devclass, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
 
 /// Get the list of all nodes by Submesh.
 /** This function returns a list with handles for all the nodes that matches with the given @a Submesh.
@@ -798,7 +802,7 @@ struct meshlink_node **meshlink_get_all_nodes_by_dev_class(struct meshlink_handl
  *                      If it is a new value, the old value of @a nodes should not be used anymore.
  *                      If the new value is NULL, then the old array will have been freed by MeshLink.
  */
-struct meshlink_node **meshlink_get_all_nodes_by_submesh(struct meshlink_handle *mesh, struct meshlink_submesh *submesh, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_node **meshlink_get_all_nodes_by_submesh(struct meshlink_handle *mesh, struct meshlink_submesh *submesh, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
 
 /// Get the list of all nodes by time they were last reachable.
 /** This function returns a list with handles for all the nodes whose last known reachability time overlaps with the given time range.
@@ -822,7 +826,7 @@ struct meshlink_node **meshlink_get_all_nodes_by_submesh(struct meshlink_handle 
  *                      If it is a new value, the old value of @a nodes should not be used anymore.
  *                      If the new value is NULL, then the old array will have been freed by MeshLink.
  */
-struct meshlink_node **meshlink_get_all_nodes_by_last_reachable(struct meshlink_handle *mesh, time_t start, time_t end, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_node **meshlink_get_all_nodes_by_last_reachable(struct meshlink_handle *mesh, time_t start, time_t end, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
 
 /// Get the list of all nodes by blacklist status.
 /** This function returns a list with handles for all the nodes who were either blacklisted or whitelisted.
@@ -843,7 +847,7 @@ struct meshlink_node **meshlink_get_all_nodes_by_last_reachable(struct meshlink_
  *                      If it is a new value, the old value of @a nodes should not be used anymore.
  *                      If the new value is NULL, then the old array will have been freed by MeshLink.
  */
-struct meshlink_node **meshlink_get_all_nodes_by_blacklisted(struct meshlink_handle *mesh, bool blacklisted, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_node **meshlink_get_all_nodes_by_blacklisted(struct meshlink_handle *mesh, bool blacklisted, struct meshlink_node **nodes, size_t *nmemb) __attribute__((__warn_unused_result__));
 
 /// Get the node's device class.
 /** This function returns the device class of the given node.
@@ -854,7 +858,7 @@ struct meshlink_node **meshlink_get_all_nodes_by_blacklisted(struct meshlink_han
  *
  *  @return              This function returns the device class of the @a node, or -1 in case of an error.
  */
-dev_class_t meshlink_get_node_dev_class(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT dev_class_t meshlink_get_node_dev_class(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
 
 /// Get the node's tiny status.
 /** This function returns true if the given node is a tiny node.
@@ -866,7 +870,7 @@ dev_class_t meshlink_get_node_dev_class(struct meshlink_handle *mesh, struct mes
  *
  *  @return              This function returns true if the node is a tiny node.
  */
-bool meshlink_get_node_tiny(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_get_node_tiny(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
 
 /// Get the node's blacklist status.
 /** This function returns the given node is blacklisted.
@@ -877,7 +881,7 @@ bool meshlink_get_node_tiny(struct meshlink_handle *mesh, struct meshlink_node *
  *
  *  @return              This function returns true if the node is blacklisted, false otherwise.
  */
-bool meshlink_get_node_blacklisted(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_get_node_blacklisted(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
 
 /// Get the node's submesh handle.
 /** This function returns the submesh handle of the given node.
@@ -888,7 +892,7 @@ bool meshlink_get_node_blacklisted(struct meshlink_handle *mesh, struct meshlink
  *
  *  @return              This function returns the submesh handle of the @a node, or NULL in case of an error.
  */
-struct meshlink_submesh *meshlink_get_node_submesh(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_submesh *meshlink_get_node_submesh(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
 
 /// Get a node's reachability status.
 /** This function returns the current reachability of a given node, and the times of the last state changes.
@@ -904,7 +908,7 @@ struct meshlink_submesh *meshlink_get_node_submesh(struct meshlink_handle *mesh,
  *
  *  @return                  This function returns true if the node is currently reachable, false otherwise.
  */
-bool meshlink_get_node_reachability(struct meshlink_handle *mesh, struct meshlink_node *node, time_t *last_reachable, time_t *last_unreachable);
+MESHLINK_EXPORT bool meshlink_get_node_reachability(struct meshlink_handle *mesh, struct meshlink_node *node, time_t *last_reachable, time_t *last_unreachable);
 
 /// Verify the signature generated by another node of a piece of data.
 /** This function verifies the signature that another node generated for a piece of data.
@@ -920,7 +924,7 @@ bool meshlink_get_node_reachability(struct meshlink_handle *mesh, struct meshlin
  *
  *  @return             This function returns true if the signature is valid, false otherwise.
  */
-bool meshlink_verify(struct meshlink_handle *mesh, struct meshlink_node *source, const void *data, size_t len, const void *signature, size_t siglen) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_verify(struct meshlink_handle *mesh, struct meshlink_node *source, const void *data, size_t len, const void *signature, size_t siglen) __attribute__((__warn_unused_result__));
 
 /// Set the canonical Address for a node.
 /** This function sets the canonical Address for a node.
@@ -942,7 +946,7 @@ bool meshlink_verify(struct meshlink_handle *mesh, struct meshlink_node *source,
  *
  *  @return             This function returns true if the address was added, false otherwise.
  */
-bool meshlink_set_canonical_address(struct meshlink_handle *mesh, struct meshlink_node *node, const char *address, const char *port) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_set_canonical_address(struct meshlink_handle *mesh, struct meshlink_node *node, const char *address, const char *port) __attribute__((__warn_unused_result__));
 
 /// Clear the canonical Address for a node.
 /** This function clears the canonical Address for a node.
@@ -953,7 +957,7 @@ bool meshlink_set_canonical_address(struct meshlink_handle *mesh, struct meshlin
  *
  *  @return             This function returns true if the address was removed, false otherwise.
  */
-bool meshlink_clear_canonical_address(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_clear_canonical_address(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
 
 /// Add an invitation address for the local node.
 /** This function adds an address for the local node, which will be used only for invitation URLs.
@@ -968,7 +972,7 @@ bool meshlink_clear_canonical_address(struct meshlink_handle *mesh, struct meshl
  *
  *  @return             This function returns true if the address was added, false otherwise.
  */
-bool meshlink_add_invitation_address(struct meshlink_handle *mesh, const char *address, const char *port) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_add_invitation_address(struct meshlink_handle *mesh, const char *address, const char *port) __attribute__((__warn_unused_result__));
 
 /// Clears all invitation address for the local node.
 /** This function removes all addresses added with meshlink_add_invitation_address().
@@ -976,7 +980,7 @@ bool meshlink_add_invitation_address(struct meshlink_handle *mesh, const char *a
  *  \memberof meshlink_handle
  *  @param mesh         A handle which represents an instance of MeshLink.
  */
-void meshlink_clear_invitation_addresses(struct meshlink_handle *mesh);
+MESHLINK_EXPORT void meshlink_clear_invitation_addresses(struct meshlink_handle *mesh);
 
 /// Add an Address for the local node.
 /** This function adds an Address for the local node, which will be used for invitation URLs.
@@ -988,7 +992,7 @@ void meshlink_clear_invitation_addresses(struct meshlink_handle *mesh);
  *
  *  @return             This function returns true if the address was added, false otherwise.
  */
-bool meshlink_add_address(struct meshlink_handle *mesh, const char *address) __attribute__((__warn_unused_result__, __deprecated__("use meshlink_set_canonical_address() and/or meshlink_add_invitation_address() instead")));
+MESHLINK_EXPORT bool meshlink_add_address(struct meshlink_handle *mesh, const char *address) __attribute__((__warn_unused_result__, __deprecated__("use meshlink_set_canonical_address() and/or meshlink_add_invitation_address() instead")));
 
 /// Try to discover the external address for the local node.
 /** This function performs tries to discover the local node's external address
@@ -1012,7 +1016,7 @@ bool meshlink_add_address(struct meshlink_handle *mesh, const char *address) __a
  *                      or NULL if there was an error looking up the address.
  *                      After meshlink_get_external_address() returns, the application is free to overwrite or free this string.
  */
-char *meshlink_get_external_address(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT char *meshlink_get_external_address(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
 
 /// Try to discover the external address for the local node.
 /** This function performs tries to discover the local node's external address
@@ -1038,7 +1042,7 @@ char *meshlink_get_external_address(struct meshlink_handle *mesh) __attribute__(
  *                         or NULL if there was an error looking up the address.
  *                         After meshlink_get_external_address_for_family() returns, the application is free to overwrite or free this string.
  */
-char *meshlink_get_external_address_for_family(struct meshlink_handle *mesh, int address_family) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT char *meshlink_get_external_address_for_family(struct meshlink_handle *mesh, int address_family) __attribute__((__warn_unused_result__));
 
 /// Try to discover the local address for the local node.
 /** This function performs tries to discover the address of the local interface used for outgoing connection.
@@ -1061,7 +1065,7 @@ char *meshlink_get_external_address_for_family(struct meshlink_handle *mesh, int
  *                         or NULL if there was an error looking up the address.
  *                         After meshlink_get_local_address_for_family() returns, the application is free to overwrite or free this string.
  */
-char *meshlink_get_local_address_for_family(struct meshlink_handle *mesh, int address_family) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT char *meshlink_get_local_address_for_family(struct meshlink_handle *mesh, int address_family) __attribute__((__warn_unused_result__));
 
 /// Try to discover the external address for the local node, and add it to its list of addresses.
 /** This function is equivalent to:
@@ -1075,7 +1079,7 @@ char *meshlink_get_local_address_for_family(struct meshlink_handle *mesh, int ad
  *
  *  @return             This function returns true if the address was added, false otherwise.
  */
-bool meshlink_add_external_address(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_add_external_address(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
 
 /// Get the network port used by the local node.
 /** This function returns the network port that the local node is listening on.
@@ -1085,7 +1089,7 @@ bool meshlink_add_external_address(struct meshlink_handle *mesh) __attribute__((
  *
  *  @return              This function returns the port number, or -1 in case of an error.
  */
-int meshlink_get_port(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT int meshlink_get_port(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
 
 /// Set the network port used by the local node.
 /** This function sets the network port that the local node is listening on.
@@ -1109,7 +1113,7 @@ int meshlink_get_port(struct meshlink_handle *mesh) __attribute__((__warn_unused
  *                       is no guarantee that MeshLink is listening on the old port.
  */
 
-bool meshlink_set_port(struct meshlink_handle *mesh, int port) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_set_port(struct meshlink_handle *mesh, int port) __attribute__((__warn_unused_result__));
 
 /// Set the timeout for invitations.
 /** This function sets the timeout for invitations.
@@ -1120,7 +1124,7 @@ bool meshlink_set_port(struct meshlink_handle *mesh, int port) __attribute__((__
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param timeout      The timeout for invitations in seconds.
  */
-void meshlink_set_invitation_timeout(struct meshlink_handle *mesh, int timeout);
+MESHLINK_EXPORT void meshlink_set_invitation_timeout(struct meshlink_handle *mesh, int timeout);
 
 /// Invite another node into the mesh.
 /** This function generates an invitation that can be used by another node to join the same mesh as the local node.
@@ -1138,7 +1142,7 @@ void meshlink_set_invitation_timeout(struct meshlink_handle *mesh, int timeout);
  *  @return             This function returns a nul-terminated C string that contains the invitation URL, or NULL in case of an error.
  *                      The application should call free() after it has finished using the URL.
  */
-char *meshlink_invite_ex(struct meshlink_handle *mesh, struct meshlink_submesh *submesh, const char *name, uint32_t flags) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT char *meshlink_invite_ex(struct meshlink_handle *mesh, struct meshlink_submesh *submesh, const char *name, uint32_t flags) __attribute__((__warn_unused_result__));
 
 /// Invite another node into the mesh.
 /** This function generates an invitation that can be used by another node to join the same mesh as the local node.
@@ -1157,7 +1161,7 @@ char *meshlink_invite_ex(struct meshlink_handle *mesh, struct meshlink_submesh *
  *  @return             This function returns a nul-terminated C string that contains the invitation URL, or NULL in case of an error.
  *                      The application should call free() after it has finished using the URL.
  */
-char *meshlink_invite(struct meshlink_handle *mesh, struct meshlink_submesh *submesh, const char *name) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT char *meshlink_invite(struct meshlink_handle *mesh, struct meshlink_submesh *submesh, const char *name) __attribute__((__warn_unused_result__));
 
 /// Use an invitation to join a mesh.
 /** This function allows the local node to join an existing mesh using an invitation URL generated by another node.
@@ -1178,7 +1182,7 @@ char *meshlink_invite(struct meshlink_handle *mesh, struct meshlink_submesh *sub
  *
  *  @return             This function returns true if the local node joined the mesh it was invited to, false otherwise.
  */
-bool meshlink_join(struct meshlink_handle *mesh, const char *invitation) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_join(struct meshlink_handle *mesh, const char *invitation) __attribute__((__warn_unused_result__));
 
 /// Export the local node's key and addresses.
 /** This function generates a string that contains the local node's public key and one or more IP addresses.
@@ -1194,7 +1198,7 @@ bool meshlink_join(struct meshlink_handle *mesh, const char *invitation) __attri
  *  @return             This function returns a nul-terminated C string that contains the exported key and addresses, or NULL in case of an error.
  *                      The application should call free() after it has finished using this string.
  */
-char *meshlink_export(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT char *meshlink_export(struct meshlink_handle *mesh) __attribute__((__warn_unused_result__));
 
 /// Import another node's key and addresses.
 /** This function accepts a string containing the exported public key and addresses of another node.
@@ -1210,7 +1214,7 @@ char *meshlink_export(struct meshlink_handle *mesh) __attribute__((__warn_unused
  *
  *  @return             This function returns true if the data was valid and the other node has been granted access to the mesh, false otherwise.
  */
-bool meshlink_import(struct meshlink_handle *mesh, const char *data) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_import(struct meshlink_handle *mesh, const char *data) __attribute__((__warn_unused_result__));
 
 /// Forget any information about a node.
 /** This function allows the local node to forget any information it has about a node,
@@ -1232,7 +1236,7 @@ bool meshlink_import(struct meshlink_handle *mesh, const char *data) __attribute
  *
  *  @return             This function returns true if all currently known data about the node has been forgotten, false otherwise.
  */
-bool meshlink_forget_node(struct meshlink_handle *mesh, struct meshlink_node *node);
+MESHLINK_EXPORT bool meshlink_forget_node(struct meshlink_handle *mesh, struct meshlink_node *node);
 
 /// Blacklist a node from the mesh.
 /** This function causes the local node to blacklist another node.
@@ -1245,7 +1249,7 @@ bool meshlink_forget_node(struct meshlink_handle *mesh, struct meshlink_node *no
  *
  *  @return             This function returns true if the node has been blacklisted, false otherwise.
  */
-bool meshlink_blacklist(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_blacklist(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
 
 /// Blacklist a node from the mesh by name.
 /** This function causes the local node to blacklist another node by name.
@@ -1260,7 +1264,7 @@ bool meshlink_blacklist(struct meshlink_handle *mesh, struct meshlink_node *node
  *
  *  @return             This function returns true if the node has been blacklisted, false otherwise.
  */
-bool meshlink_blacklist_by_name(struct meshlink_handle *mesh, const char *name) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_blacklist_by_name(struct meshlink_handle *mesh, const char *name) __attribute__((__warn_unused_result__));
 
 /// Whitelist a node on the mesh.
 /** This function causes the local node to whitelist a previously blacklisted node.
@@ -1273,7 +1277,7 @@ bool meshlink_blacklist_by_name(struct meshlink_handle *mesh, const char *name) 
  *
  *  @return             This function returns true if the node has been whitelisted, false otherwise.
  */
-bool meshlink_whitelist(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_whitelist(struct meshlink_handle *mesh, struct meshlink_node *node) __attribute__((__warn_unused_result__));
 
 /// Whitelist a node on the mesh by name.
 /** This function causes the local node to whitelist a node by name.
@@ -1289,7 +1293,7 @@ bool meshlink_whitelist(struct meshlink_handle *mesh, struct meshlink_node *node
  *
  *  @return             This function returns true if the node has been whitelisted, false otherwise.
  */
-bool meshlink_whitelist_by_name(struct meshlink_handle *mesh, const char *name) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_whitelist_by_name(struct meshlink_handle *mesh, const char *name) __attribute__((__warn_unused_result__));
 
 /// Set whether new nodes are blacklisted by default.
 /** This function sets the blacklist behaviour for newly discovered nodes.
@@ -1302,7 +1306,7 @@ bool meshlink_whitelist_by_name(struct meshlink_handle *mesh, const char *name) 
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param blacklist    True if new nodes are to be blacklisted, false if whitelisted.
  */
-void meshlink_set_default_blacklist(struct meshlink_handle *mesh, bool blacklist);
+MESHLINK_EXPORT void meshlink_set_default_blacklist(struct meshlink_handle *mesh, bool blacklist);
 
 /// A callback for listening for incoming channels.
 /** This function is called whenever a remote node wants to open a channel to the local node.
@@ -1386,7 +1390,7 @@ typedef void (*meshlink_channel_poll_cb_t)(struct meshlink_handle *mesh, struct 
  *  @param cb        A pointer to the function which will be called when another node want to open a channel.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-void meshlink_set_channel_listen_cb(struct meshlink_handle *mesh, meshlink_channel_listen_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_channel_listen_cb(struct meshlink_handle *mesh, meshlink_channel_listen_cb_t cb);
 
 /// Set the accept callback.
 /** This functions sets the callback that is called whenever a remote node has opened a channel to the local node.
@@ -1402,7 +1406,7 @@ void meshlink_set_channel_listen_cb(struct meshlink_handle *mesh, meshlink_chann
  *  @param cb        A pointer to the function which will be called when a new channel has been opened by a remote node.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-void meshlink_set_channel_accept_cb(struct meshlink_handle *mesh, meshlink_channel_accept_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_channel_accept_cb(struct meshlink_handle *mesh, meshlink_channel_accept_cb_t cb);
 
 /// Set the receive callback.
 /** This functions sets the callback that is called whenever another node sends data to the local node.
@@ -1417,7 +1421,7 @@ void meshlink_set_channel_accept_cb(struct meshlink_handle *mesh, meshlink_chann
  *  @param cb        A pointer to the function which will be called when another node sends data to the local node.
  *                   If a NULL pointer is given, the callback will be disabled and incoming data is ignored.
  */
-void meshlink_set_channel_receive_cb(struct meshlink_handle *mesh, struct meshlink_channel *channel, meshlink_channel_receive_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_channel_receive_cb(struct meshlink_handle *mesh, struct meshlink_channel *channel, meshlink_channel_receive_cb_t cb);
 
 /// Set the poll callback.
 /** This functions sets the callback that is called whenever data can be sent to another node.
@@ -1432,7 +1436,7 @@ void meshlink_set_channel_receive_cb(struct meshlink_handle *mesh, struct meshli
  *  @param cb        A pointer to the function which will be called when data can be sent to another node.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-void meshlink_set_channel_poll_cb(struct meshlink_handle *mesh, struct meshlink_channel *channel, meshlink_channel_poll_cb_t cb);
+MESHLINK_EXPORT void meshlink_set_channel_poll_cb(struct meshlink_handle *mesh, struct meshlink_channel *channel, meshlink_channel_poll_cb_t cb);
 
 /// Set the send buffer size of a channel.
 /** This function sets the desired size of the send buffer.
@@ -1443,7 +1447,7 @@ void meshlink_set_channel_poll_cb(struct meshlink_handle *mesh, struct meshlink_
  *  @param channel   A handle for the channel.
  *  @param size      The desired size for the send buffer.
  */
-void meshlink_set_channel_sndbuf(struct meshlink_handle *mesh, struct meshlink_channel *channel, size_t size);
+MESHLINK_EXPORT void meshlink_set_channel_sndbuf(struct meshlink_handle *mesh, struct meshlink_channel *channel, size_t size);
 
 /// Set the receive buffer size of a channel.
 /** This function sets the desired size of the receive buffer.
@@ -1454,7 +1458,7 @@ void meshlink_set_channel_sndbuf(struct meshlink_handle *mesh, struct meshlink_c
  *  @param channel   A handle for the channel.
  *  @param size      The desired size for the send buffer.
  */
-void meshlink_set_channel_rcvbuf(struct meshlink_handle *mesh, struct meshlink_channel *channel, size_t size);
+MESHLINK_EXPORT void meshlink_set_channel_rcvbuf(struct meshlink_handle *mesh, struct meshlink_channel *channel, size_t size);
 
 /// Set the send buffer storage of a channel.
 /** This function provides MeshLink with a send buffer allocated by the application.
@@ -1467,7 +1471,7 @@ void meshlink_set_channel_rcvbuf(struct meshlink_handle *mesh, struct meshlink_c
  *                   If a NULL pointer is given, MeshLink will use its own internal buffer again.
  *  @param size      The size of the buffer.
  */
-void meshlink_set_channel_sndbuf_storage(struct meshlink_handle *mesh, struct meshlink_channel *channel, void *buf, size_t size);
+MESHLINK_EXPORT void meshlink_set_channel_sndbuf_storage(struct meshlink_handle *mesh, struct meshlink_channel *channel, void *buf, size_t size);
 
 /// Set the receive buffer storage of a channel.
 /** This function provides MeshLink with a receive buffer allocated by the application.
@@ -1480,7 +1484,7 @@ void meshlink_set_channel_sndbuf_storage(struct meshlink_handle *mesh, struct me
  *                   If a NULL pointer is given, MeshLink will use its own internal buffer again.
  *  @param size      The size of the buffer.
  */
-void meshlink_set_channel_rcvbuf_storage(struct meshlink_handle *mesh, struct meshlink_channel *channel, void *buf, size_t size);
+MESHLINK_EXPORT void meshlink_set_channel_rcvbuf_storage(struct meshlink_handle *mesh, struct meshlink_channel *channel, void *buf, size_t size);
 
 /// Set the flags of a channel.
 /** This function allows changing some of the channel flags.
@@ -1493,7 +1497,7 @@ void meshlink_set_channel_rcvbuf_storage(struct meshlink_handle *mesh, struct me
  *  @param channel   A handle for the channel.
  *  @param flags     A bitwise-or'd combination of flags that set the semantics for this channel.
  */
-void meshlink_set_channel_flags(struct meshlink_handle *mesh, struct meshlink_channel *channel, uint32_t flags);
+MESHLINK_EXPORT void meshlink_set_channel_flags(struct meshlink_handle *mesh, struct meshlink_channel *channel, uint32_t flags);
 
 /// Open a reliable stream channel to another node.
 /** This function is called whenever a remote node wants to open a channel to the local node.
@@ -1518,7 +1522,7 @@ void meshlink_set_channel_flags(struct meshlink_handle *mesh, struct meshlink_ch
  *  @return             A handle for the channel, or NULL in case of an error.
  *                      The handle is valid until meshlink_channel_close() is called.
  */
-struct meshlink_channel *meshlink_channel_open_ex(struct meshlink_handle *mesh, struct meshlink_node *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len, uint32_t flags) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_channel *meshlink_channel_open_ex(struct meshlink_handle *mesh, struct meshlink_node *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len, uint32_t flags) __attribute__((__warn_unused_result__));
 
 /// Open a reliable stream channel to another node.
 /** This function is called whenever a remote node wants to open a channel to the local node.
@@ -1545,7 +1549,7 @@ struct meshlink_channel *meshlink_channel_open_ex(struct meshlink_handle *mesh, 
  *  @return             A handle for the channel, or NULL in case of an error.
  *                      The handle is valid until meshlink_channel_close() is called.
  */
-struct meshlink_channel *meshlink_channel_open(struct meshlink_handle *mesh, struct meshlink_node *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT struct meshlink_channel *meshlink_channel_open(struct meshlink_handle *mesh, struct meshlink_node *node, uint16_t port, meshlink_channel_receive_cb_t cb, const void *data, size_t len) __attribute__((__warn_unused_result__));
 
 /// Partially close a reliable stream channel.
 /** This shuts down the read or write side of a channel, or both, without closing the handle.
@@ -1559,7 +1563,7 @@ struct meshlink_channel *meshlink_channel_open(struct meshlink_handle *mesh, str
  *  @param channel      A handle for the channel.
  *  @param direction    Must be one of SHUT_RD, SHUT_WR or SHUT_RDWR, otherwise this call will not have any affect.
  */
-void meshlink_channel_shutdown(struct meshlink_handle *mesh, struct meshlink_channel *channel, int direction);
+MESHLINK_EXPORT void meshlink_channel_shutdown(struct meshlink_handle *mesh, struct meshlink_channel *channel, int direction);
 
 /// Close a reliable stream channel.
 /** This informs the remote node that the local node has finished sending all data on the channel.
@@ -1573,7 +1577,7 @@ void meshlink_channel_shutdown(struct meshlink_handle *mesh, struct meshlink_cha
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param channel      A handle for the channel.
  */
-void meshlink_channel_close(struct meshlink_handle *mesh, struct meshlink_channel *channel);
+MESHLINK_EXPORT void meshlink_channel_close(struct meshlink_handle *mesh, struct meshlink_channel *channel);
 
 /// Abort a reliable stream channel.
 /** This aborts a channel.
@@ -1588,7 +1592,7 @@ void meshlink_channel_close(struct meshlink_handle *mesh, struct meshlink_channe
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param channel      A handle for the channel.
  */
-void meshlink_channel_abort(struct meshlink_handle *mesh, struct meshlink_channel *channel);
+MESHLINK_EXPORT void meshlink_channel_abort(struct meshlink_handle *mesh, struct meshlink_channel *channel);
 
 /// Transmit data on a channel
 /** This queues data to send to the remote node.
@@ -1604,7 +1608,7 @@ void meshlink_channel_abort(struct meshlink_handle *mesh, struct meshlink_channe
  *                      If MESHLINK_CHANNEL_NO_PARTIAL is set, then the result will either be len,
  *                      0 if the buffer is currently too full, or -1 if len is too big even for an empty buffer.
  */
-ssize_t meshlink_channel_send(struct meshlink_handle *mesh, struct meshlink_channel *channel, const void *data, size_t len) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT ssize_t meshlink_channel_send(struct meshlink_handle *mesh, struct meshlink_channel *channel, const void *data, size_t len) __attribute__((__warn_unused_result__));
 
 /// A callback for cleaning up buffers submitted for asynchronous I/O.
 /** This callbacks signals that MeshLink has finished using this buffer.
@@ -1646,7 +1650,7 @@ typedef void (*meshlink_aio_fd_cb_t)(struct meshlink_handle *mesh, struct meshli
  *
  *  @return             True if the buffer was enqueued, false otherwise.
  */
-bool meshlink_channel_aio_send(struct meshlink_handle *mesh, struct meshlink_channel *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_channel_aio_send(struct meshlink_handle *mesh, struct meshlink_channel *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv) __attribute__((__warn_unused_result__));
 
 /// Transmit data on a channel asynchronously from a filedescriptor
 /** This will read up to the specified length number of bytes from the given filedescriptor, and send it over the channel.
@@ -1663,7 +1667,7 @@ bool meshlink_channel_aio_send(struct meshlink_handle *mesh, struct meshlink_cha
  *
  *  @return             True if the buffer was enqueued, false otherwise.
  */
-bool meshlink_channel_aio_fd_send(struct meshlink_handle *mesh, struct meshlink_channel *channel, int fd, size_t len, meshlink_aio_fd_cb_t cb, void *priv) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_channel_aio_fd_send(struct meshlink_handle *mesh, struct meshlink_channel *channel, int fd, size_t len, meshlink_aio_fd_cb_t cb, void *priv) __attribute__((__warn_unused_result__));
 
 /// Receive data on a channel asynchronously
 /** This registers a buffer that will be filled with incoming channel data.
@@ -1682,7 +1686,7 @@ bool meshlink_channel_aio_fd_send(struct meshlink_handle *mesh, struct meshlink_
  *
  *  @return             True if the buffer was enqueued, false otherwise.
  */
-bool meshlink_channel_aio_receive(struct meshlink_handle *mesh, struct meshlink_channel *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_channel_aio_receive(struct meshlink_handle *mesh, struct meshlink_channel *channel, const void *data, size_t len, meshlink_aio_cb_t cb, void *priv) __attribute__((__warn_unused_result__));
 
 /// Receive data on a channel asynchronously and send it to a filedescriptor
 /** This will read up to the specified length number of bytes from the channel, and send it to the filedescriptor.
@@ -1699,7 +1703,7 @@ bool meshlink_channel_aio_receive(struct meshlink_handle *mesh, struct meshlink_
  *
  *  @return             True if the buffer was enqueued, false otherwise.
  */
-bool meshlink_channel_aio_fd_receive(struct meshlink_handle *mesh, struct meshlink_channel *channel, int fd, size_t len, meshlink_aio_fd_cb_t cb, void *priv) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_channel_aio_fd_receive(struct meshlink_handle *mesh, struct meshlink_channel *channel, int fd, size_t len, meshlink_aio_fd_cb_t cb, void *priv) __attribute__((__warn_unused_result__));
 
 /// Get channel flags.
 /** This returns the flags used when opening this channel.
@@ -1710,7 +1714,7 @@ bool meshlink_channel_aio_fd_receive(struct meshlink_handle *mesh, struct meshli
  *
  *  @return             The flags set for this channel.
  */
-uint32_t meshlink_channel_get_flags(struct meshlink_handle *mesh, struct meshlink_channel *channel) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT uint32_t meshlink_channel_get_flags(struct meshlink_handle *mesh, struct meshlink_channel *channel) __attribute__((__warn_unused_result__));
 
 /// Get the amount of bytes in the send buffer.
 /** This returns the amount of bytes in the send buffer.
@@ -1722,7 +1726,7 @@ uint32_t meshlink_channel_get_flags(struct meshlink_handle *mesh, struct meshlin
  *
  *  @return             The amount of un-ACKed bytes in the send buffer.
  */
-size_t meshlink_channel_get_sendq(struct meshlink_handle *mesh, struct meshlink_channel *channel) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT size_t meshlink_channel_get_sendq(struct meshlink_handle *mesh, struct meshlink_channel *channel) __attribute__((__warn_unused_result__));
 
 /// Get the amount of bytes in the receive buffer.
 /** This returns the amount of bytes in the receive buffer.
@@ -1734,7 +1738,7 @@ size_t meshlink_channel_get_sendq(struct meshlink_handle *mesh, struct meshlink_
  *
  *  @return             The amount of bytes in the receive buffer.
  */
-size_t meshlink_channel_get_recvq(struct meshlink_handle *mesh, struct meshlink_channel *channel) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT size_t meshlink_channel_get_recvq(struct meshlink_handle *mesh, struct meshlink_channel *channel) __attribute__((__warn_unused_result__));
 
 /// Get the maximum segment size of a channel.
 /** This returns the amount of bytes that can be sent at once for channels with UDP semantics.
@@ -1745,7 +1749,7 @@ size_t meshlink_channel_get_recvq(struct meshlink_handle *mesh, struct meshlink_
  *
  *  @return             The amount of bytes in the receive buffer.
  */
-size_t meshlink_channel_get_mss(struct meshlink_handle *mesh, struct meshlink_channel *channel) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT size_t meshlink_channel_get_mss(struct meshlink_handle *mesh, struct meshlink_channel *channel) __attribute__((__warn_unused_result__));
 
 /// Set the connection timeout used for channels to the given node.
 /** This sets the timeout after which unresponsive channels will be reported as closed.
@@ -1757,7 +1761,7 @@ size_t meshlink_channel_get_mss(struct meshlink_handle *mesh, struct meshlink_ch
  *  @param timeout      The timeout in seconds after which unresponsive channels will be reported as closed.
  *                      The default is 60 seconds.
  */
-void meshlink_set_node_channel_timeout(struct meshlink_handle *mesh, struct meshlink_node *node, int timeout);
+MESHLINK_EXPORT void meshlink_set_node_channel_timeout(struct meshlink_handle *mesh, struct meshlink_node *node, int timeout);
 
 /// Hint that a hostname may be found at an address
 /** This function indicates to meshlink that the given hostname is likely found
@@ -1770,7 +1774,7 @@ void meshlink_set_node_channel_timeout(struct meshlink_handle *mesh, struct mesh
  *                  given hostname. The caller is free to overwrite or free
  *                  this memory once meshlink returns.
  */
-void meshlink_hint_address(struct meshlink_handle *mesh, struct meshlink_node *node, const struct sockaddr *addr);
+MESHLINK_EXPORT void meshlink_hint_address(struct meshlink_handle *mesh, struct meshlink_node *node, const struct sockaddr *addr);
 
 /// Enable or disable zeroconf discovery of local peers
 /** This controls whether zeroconf discovery using the Catta library will be
@@ -1780,7 +1784,7 @@ void meshlink_hint_address(struct meshlink_handle *mesh, struct meshlink_node *n
  *  @param mesh    A handle which represents an instance of MeshLink.
  *  @param enable  Set to true to enable discovery, false to disable.
  */
-void meshlink_enable_discovery(struct meshlink_handle *mesh, bool enable);
+MESHLINK_EXPORT void meshlink_enable_discovery(struct meshlink_handle *mesh, bool enable);
 
 /// Inform MeshLink that the local network configuration might have changed
 /** This is intended to be used when there is no way for MeshLink to get notifications of local network changes.
@@ -1790,7 +1794,7 @@ void meshlink_enable_discovery(struct meshlink_handle *mesh, bool enable);
  *  \memberof meshlink_handle
  *  @param mesh    A handle which represents an instance of MeshLink.
  */
-void meshlink_hint_network_change(struct meshlink_handle *mesh);
+MESHLINK_EXPORT void meshlink_hint_network_change(struct meshlink_handle *mesh);
 
 /// Performs key rotation for an encrypted storage
 /** This rotates the (master) key for an encrypted storage and discards the old key
@@ -1803,7 +1807,7 @@ void meshlink_hint_network_change(struct meshlink_handle *mesh);
  *
  *  @return         This function returns true if the key rotation for the encrypted storage succeeds, false otherwise.
  */
-bool meshlink_encrypted_key_rotate(struct meshlink_handle *mesh, const void *key, size_t keylen) __attribute__((__warn_unused_result__));
+MESHLINK_EXPORT bool meshlink_encrypted_key_rotate(struct meshlink_handle *mesh, const void *key, size_t keylen) __attribute__((__warn_unused_result__));
 
 /// Set device class timeouts
 /** This sets the ping interval and timeout for a given device class.
@@ -1815,7 +1819,7 @@ bool meshlink_encrypted_key_rotate(struct meshlink_handle *mesh, const void *key
  *  @param pingtimeout   The required time within which a peer should respond, in seconds. The default is 5.
  *                       The timeout must be smaller than the interval.
  */
-void meshlink_set_dev_class_timeouts(struct meshlink_handle *mesh, dev_class_t devclass, int pinginterval, int pingtimeout);
+MESHLINK_EXPORT void meshlink_set_dev_class_timeouts(struct meshlink_handle *mesh, dev_class_t devclass, int pinginterval, int pingtimeout);
 
 /// Set device class fast retry period
 /** This sets the fast retry period for a given device class.
@@ -1826,7 +1830,7 @@ void meshlink_set_dev_class_timeouts(struct meshlink_handle *mesh, dev_class_t d
  *  @param devclass           The device class to update
  *  @param fast_retry_period  The period during which fast connection retries are done. The default is 0.
  */
-void meshlink_set_dev_class_fast_retry_period(struct meshlink_handle *mesh, dev_class_t devclass, int fast_retry_period);
+MESHLINK_EXPORT void meshlink_set_dev_class_fast_retry_period(struct meshlink_handle *mesh, dev_class_t devclass, int fast_retry_period);
 
 /// Set device class maximum timeout
 /** This sets the maximum timeout for outgoing connection retries for a given device class.
@@ -1836,7 +1840,7 @@ void meshlink_set_dev_class_fast_retry_period(struct meshlink_handle *mesh, dev_
  *  @param devclass      The device class to update
  *  @param maxtimeout    The maximum timeout between reconnection attempts, in seconds. The default is 900.
  */
-void meshlink_set_dev_class_maxtimeout(struct meshlink_handle *mesh, dev_class_t devclass, int maxtimeout);
+MESHLINK_EXPORT void meshlink_set_dev_class_maxtimeout(struct meshlink_handle *mesh, dev_class_t devclass, int maxtimeout);
 
 /// Reset all connection timers
 /** This resets all timers related to connections, causing pending outgoing connections to be retried immediately.
@@ -1845,7 +1849,7 @@ void meshlink_set_dev_class_maxtimeout(struct meshlink_handle *mesh, dev_class_t
  *  \memberof meshlink_handle
  *  @param mesh          A handle which represents an instance of MeshLink.
  */
-void meshlink_reset_timers(struct meshlink_handle *mesh);
+MESHLINK_EXPORT void meshlink_reset_timers(struct meshlink_handle *mesh);
 
 /// Set which order invitations are committed
 /** This determines in which order configuration files are written to disk during an invitation.
@@ -1856,7 +1860,7 @@ void meshlink_reset_timers(struct meshlink_handle *mesh);
  *  @param mesh               A handle which represents an instance of MeshLink.
  *  @param inviter_commits_first  If true, then the node that invited a peer will commit data to disk first.
  */
-void meshlink_set_inviter_commits_first(struct meshlink_handle *mesh, bool inviter_commits_first);
+MESHLINK_EXPORT void meshlink_set_inviter_commits_first(struct meshlink_handle *mesh, bool inviter_commits_first);
 
 /// Set the URL used to discover the host's external address
 /** For generating invitation URLs, MeshLink can look up the externally visible address of the local node.
@@ -1867,7 +1871,7 @@ void meshlink_set_inviter_commits_first(struct meshlink_handle *mesh, bool invit
  *  @param mesh  A handle which represents an instance of MeshLink.
  *  @param url   The URL to use for external address queries, or NULL to revert back to the default URL.
  */
-void meshlink_set_external_address_discovery_url(struct meshlink_handle *mesh, const char *url);
+MESHLINK_EXPORT void meshlink_set_external_address_discovery_url(struct meshlink_handle *mesh, const char *url);
 
 /// Set the scheduling granularity of the application
 /** This should be set to the effective scheduling granularity for the application.
@@ -1879,7 +1883,7 @@ void meshlink_set_external_address_discovery_url(struct meshlink_handle *mesh, c
  *  @param mesh         A handle which represents an instance of MeshLink.
  *  @param granularity  The scheduling granularity of the application in microseconds.
  */
-void meshlink_set_scheduling_granularity(struct meshlink_handle *mesh, long granularity);
+MESHLINK_EXPORT void meshlink_set_scheduling_granularity(struct meshlink_handle *mesh, long granularity);
 
 /// Sets the storage policy used by MeshLink
 /** This sets the policy MeshLink uses when it has new information about nodes.
@@ -1892,7 +1896,7 @@ void meshlink_set_scheduling_granularity(struct meshlink_handle *mesh, long gran
  *  @param mesh    A handle which represents an instance of MeshLink.
  *  @param policy  The storage policy to use.
  */
-void meshlink_set_storage_policy(struct meshlink_handle *mesh, meshlink_storage_policy_t policy);
+MESHLINK_EXPORT void meshlink_set_storage_policy(struct meshlink_handle *mesh, meshlink_storage_policy_t policy);
 
 #ifdef __cplusplus
 }

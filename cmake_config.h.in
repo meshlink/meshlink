@@ -1,0 +1,10 @@
+#define _GNU_SOURCE 1
+#define __USE_BSD 1
+#define _POSIX_C_SOURCE 200809L
+#define _DARWIN_C_SOURCE 1
+
+#cmakedefine HAVE_ASPRINTF
+#cmakedefine HAVE_PSELECT
+#cmakedefine HAVE_SETNS
+#cmakedefine HAVE_STDATOMIC_H
+#cmakedefine HAVE_STRSIGNAL

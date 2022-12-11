@@ -113,7 +113,7 @@ void retry(struct meshlink_handle *mesh);
 int check_port(struct meshlink_handle *mesh);
 void flush_meta(struct meshlink_handle *mesh, struct connection_t *);
 
-#ifndef HAVE_MINGW
+#ifndef _WIN32
 #define closesocket(s) close(s)
 #endif
 

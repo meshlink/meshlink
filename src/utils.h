@@ -27,7 +27,7 @@ int b64encode(const void *src, char *dst, int length);
 int b64encode_urlsafe(const void *src, char *dst, int length);
 int b64decode(const char *src, void *dst, int length);
 
-#ifdef HAVE_MINGW
+#ifdef _WIN32
 const char *winerror(int);
 #define strerror(x) ((x)>0?strerror(x):winerror(GetLastError()))
 #define sockerrno WSAGetLastError()
@@ -46,5 +46,9 @@ const char *winerror(int);
 #endif
 
 unsigned int bitfield_to_int(const void *bitfield, size_t size) __attribute__((__warn_unused_result__));
+
+#ifndef MIN
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#endif
 
 #endif

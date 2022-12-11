@@ -20,6 +20,10 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#ifndef MESHLINK_EXPORT
+#define MESHLINK_EXPORT __attribute__((visibility("default")))
+#endif
+
 /// \file devtools.h
 /** This header files declares functions that are only intended for debugging and quality control.
  *  They are not necessary for the normal operation of MeshLink.
@@ -71,7 +75,7 @@ struct devtool_edge {
  *                      value. If the new values is NULL, then the old array
  *                      will have been freed by Meshlink.
  */
-devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *edges, size_t *nmemb);
+MESHLINK_EXPORT devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *edges, size_t *nmemb);
 
 /// Export a list of edges to a file in JSON format.
 /*  @param mesh         A handle which represents an instance of MeshLink.
@@ -79,7 +83,7 @@ devtool_edge_t *devtool_get_all_edges(meshlink_handle_t *mesh, devtool_edge_t *e
  *
  *  @return             True in case of success, false otherwise.
  */
-bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream);
+MESHLINK_EXPORT bool devtool_export_json_all_edges_state(meshlink_handle_t *mesh, FILE *stream);
 
 /// The status of a node.
 typedef struct devtool_node_status devtool_node_status_t;
@@ -120,7 +124,7 @@ struct devtool_node_status {
  *                      The contents of this variable will be changed to reflect
  *                      the current status of the node.
  */
-void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, devtool_node_status_t *status);
+MESHLINK_EXPORT void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, devtool_node_status_t *status);
 
 /// Reset the traffic counters of a node.
 /** This function resets the byte counters for the given node to zero.
@@ -134,7 +138,7 @@ void devtool_get_node_status(meshlink_handle_t *mesh, meshlink_node_t *node, dev
  *                      the current status of the node before the counters are zeroed.
  *                      If a NULL pointers is passed, no status will be written.
  */
-void devtool_reset_node_counters(meshlink_handle_t *mesh, meshlink_node_t *node, devtool_node_status_t *status);
+MESHLINK_EXPORT void devtool_reset_node_counters(meshlink_handle_t *mesh, meshlink_node_t *node, devtool_node_status_t *status);
 
 /// Get the list of all submeshes of a meshlink instance.
 /** This function returns an array of submesh handles.
@@ -148,7 +152,7 @@ void devtool_reset_node_counters(meshlink_handle_t *mesh, meshlink_node_t *node,
  *                      The contents of this variable will be changed to indicate
  *                      the number if array elements.
  */
-meshlink_submesh_t **devtool_get_all_submeshes(meshlink_handle_t *mesh, meshlink_submesh_t **submeshes, size_t *nmemb);
+MESHLINK_EXPORT meshlink_submesh_t **devtool_get_all_submeshes(meshlink_handle_t *mesh, meshlink_submesh_t **submeshes, size_t *nmemb);
 
 /// Open a MeshLink instance in a given network namespace.
 /** This function opens MeshLink in the given network namespace.
@@ -165,7 +169,7 @@ meshlink_submesh_t **devtool_get_all_submeshes(meshlink_handle_t *mesh, meshlink
  *  @return         A pointer to a meshlink_handle_t which represents this instance of MeshLink, or NULL in case of an error.
  *                  The pointer is valid until meshlink_close() is called.
  */
-meshlink_handle_t *devtool_open_in_netns(const char *confbase, const char *name, const char *appname, dev_class_t devclass, int netns);
+MESHLINK_EXPORT meshlink_handle_t *devtool_open_in_netns(const char *confbase, const char *name, const char *appname, dev_class_t devclass, int netns);
 
 /// Debug function pointer variable for set port API
 /** This function pointer variable is a userspace tracepoint or debugger callback for
@@ -173,7 +177,7 @@ meshlink_handle_t *devtool_open_in_netns(const char *confbase, const char *name,
  *  On assigning a debug function variable invokes callback when try_bind() succeeds in meshlink_set_port API.
  *
  */
-extern void (*devtool_trybind_probe)(void);
+MESHLINK_EXPORT extern void (*devtool_trybind_probe)(void);
 
 /// Debug function pointer variable for encrypted key rotate API
 /** This function pointer variable is a userspace tracepoint or debugger callback for
@@ -182,10 +186,10 @@ extern void (*devtool_trybind_probe)(void);
  *
  *  @param stage Debug stage number.
  */
-extern void (*devtool_keyrotate_probe)(int stage);
+MESHLINK_EXPORT extern void (*devtool_keyrotate_probe)(int stage);
 
 /// Debug function pointer variable for asynchronous DNS resolving
-extern void (*devtool_adns_resolve_probe)(void);
+MESHLINK_EXPORT extern void (*devtool_adns_resolve_probe)(void);
 
 /// Debug function pointer variable for SPTPS key renewal
 /** This function pointer variable is a userspace tracepoint or debugger callback for
@@ -193,7 +197,7 @@ extern void (*devtool_adns_resolve_probe)(void);
  *
  *  @param node The node whose SPTPS key(s) are being renewed
  */
-extern void (*devtool_sptps_renewal_probe)(meshlink_node_t *node);
+MESHLINK_EXPORT extern void (*devtool_sptps_renewal_probe)(meshlink_node_t *node);
 
 /// Force renewal of SPTPS sessions with the given node.
 /** This causes the SPTPS sessions for both the UDP and TCP connections to renew their keys.
@@ -201,7 +205,7 @@ extern void (*devtool_sptps_renewal_probe)(meshlink_node_t *node);
  *  @param mesh A handle which represents an instance of MeshLink.
  *  @param node The node whose SPTPS key(s) should be renewed
  */
-void devtool_force_sptps_renewal(meshlink_handle_t *mesh, meshlink_node_t *node);
+MESHLINK_EXPORT void devtool_force_sptps_renewal(meshlink_handle_t *mesh, meshlink_node_t *node);
 
 /// Debug function pointer variable for asserting inviter/invitee committing sequence
 /** This function pointer variable is a userspace tracepoint or debugger callback which
@@ -211,7 +215,7 @@ void devtool_force_sptps_renewal(meshlink_handle_t *mesh, meshlink_node_t *node)
  *
  *  @param inviter_commited_first       true if inviter committed first else false if invitee committed first the other host file into the disk.
  */
-extern void (*devtool_set_inviter_commits_first)(bool inviter_commited_first);
+MESHLINK_EXPORT extern void (*devtool_set_inviter_commits_first)(bool inviter_commited_first);
 
 /// Set the meta-connection status callback.
 /** This functions sets the callback that is called whenever a meta-connection is made or closed.
@@ -225,6 +229,6 @@ extern void (*devtool_set_inviter_commits_first)(bool inviter_commited_first);
  *  @param cb        A pointer to the function which will be called when a node's meta-connection status changes.
  *                   If a NULL pointer is given, the callback will be disabled.
  */
-void devtool_set_meta_status_cb(struct meshlink_handle *mesh, meshlink_node_status_cb_t cb);
+MESHLINK_EXPORT void devtool_set_meta_status_cb(struct meshlink_handle *mesh, meshlink_node_status_cb_t cb);
 
 #endif

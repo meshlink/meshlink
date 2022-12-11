@@ -25,7 +25,7 @@ int asprintf(char **, const char *, ...);
 int vasprintf(char **, const char *, va_list ap);
 #endif
 
-#ifdef HAVE_MINGW
+#ifdef _WIN32
 #define mkdir(a, b) mkdir(a)
 
 #ifndef SHUT_RDWR

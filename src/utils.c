@@ -172,7 +172,7 @@ int b64encode_urlsafe(const void *src, char *dst, int length) {
 	return b64encode_internal(src, dst, length, base64_urlsafe);
 }
 
-#if defined(HAVE_MINGW) || defined(HAVE_CYGWIN)
+#if defined(_WIN32) || defined(HAVE_CYGWIN)
 #ifdef HAVE_CYGWIN
 #include <w32api/windows.h>
 #endif

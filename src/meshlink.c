@@ -1622,7 +1622,7 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 
 	mesh->storage_policy = params->storage_policy;
 
-#ifdef HAVE_MINGW
+#ifdef _WIN32
 	struct WSAData wsa_state;
 	WSAStartup(MAKEWORD(2, 2), &wsa_state);
 #endif
@@ -1922,7 +1922,7 @@ void meshlink_close(meshlink_handle_t *mesh) {
 
 	event_loop_exit(&mesh->loop);
 
-#ifdef HAVE_MINGW
+#ifdef _WIN32
 
 	if(mesh->confbase) {
 		WSACleanup();
@@ -1995,7 +1995,7 @@ bool meshlink_destroy_ex(const meshlink_open_params_t *params) {
 	fcntl(fileno(lockfile), F_SETFD, FD_CLOEXEC);
 #endif
 
-#ifdef HAVE_MINGW
+#ifdef _WIN32
 	// TODO: use _locking()?
 #else
 
