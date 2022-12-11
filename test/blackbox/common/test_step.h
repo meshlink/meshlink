@@ -20,7 +20,7 @@
 #ifndef TEST_STEP_H
 #define TEST_STEP_H
 
-#include "../../../src/meshlink.h"
+#include "meshlink.h"
 
 meshlink_handle_t *execute_open(char *node_name, char *dev_class);
 char *execute_invite(char *invitee, meshlink_submesh_t *submesh);

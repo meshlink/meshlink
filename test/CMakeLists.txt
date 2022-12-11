@@ -1,5 +1,3 @@
-include_directories (../src)
-
 function(add_test_executable name)
 	add_executable(${name} ${ARGN})
 	target_link_libraries(${name} meshlink)

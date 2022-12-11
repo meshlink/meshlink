@@ -14,7 +14,7 @@
 #include <dirent.h>
 
 #include "meshlink.h"
-#include "devtools.h"
+#include "../src/devtools.h"
 #include "utils.h"
 
 static struct sync_flag bar_connected;

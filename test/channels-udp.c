@@ -10,7 +10,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "../src/meshlink.h"
+#include "meshlink.h"
 #include "utils.h"
 
 #define SMALL_SIZE 512

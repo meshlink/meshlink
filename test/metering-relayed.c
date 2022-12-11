@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include "meshlink.h"
-#include "devtools.h"
+#include "../src/devtools.h"
 #include "netns_utils.h"
 #include "utils.h"
 

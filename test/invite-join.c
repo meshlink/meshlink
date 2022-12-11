@@ -11,7 +11,7 @@
 #include <errno.h>
 
 #include "meshlink.h"
-#include "devtools.h"
+#include "../src/devtools.h"
 #include "utils.h"
 
 static struct sync_flag baz_reachable;

@@ -12,7 +12,7 @@
 #include <assert.h>
 #include <pthread.h>
 
-#include "../src/meshlink.h"
+#include "meshlink.h"
 #include "utils.h"
 
 static volatile bool b_responded = false;

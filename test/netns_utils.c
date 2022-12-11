@@ -10,7 +10,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "../src/meshlink.h"
+#include "meshlink.h"
 #include "netns_utils.h"
 #include "utils.h"
 

@@ -58,11 +58,15 @@ add_library(meshlink SHARED
 )
 
 set(MESHLINK_PUBLIC_HEADERS
-	meshlink.h
-	meshlink++.h
+	../include/meshlink.h
+	../include/meshlink++.h
 )
 
 target_compile_features(meshlink PUBLIC c_std_11)
+target_include_directories(meshlink PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+	$<INSTALL_INTERFACE:include/meshlink>
+)
 target_link_libraries(meshlink PRIVATE Threads::Threads)
 set_target_properties(meshlink PROPERTIES PUBLIC_HEADER "${MESHLINK_PUBLIC_HEADERS}")
 set_property(TARGET meshlink PROPERTY C_VISIBILITY_PRESET hidden)
@@ -72,5 +76,5 @@ include(GNUInstallDirs)
 install(TARGETS meshlink
 	LIBRARY
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/meshlink
 )

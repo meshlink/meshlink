@@ -21,7 +21,7 @@
 #define COMMON_TYPES_H
 
 #include <stdbool.h>
-#include "../../../src/meshlink.h"
+#include "meshlink.h"
 
 #define NUT_NODE_NAME "nut"
 

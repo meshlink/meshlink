@@ -9,7 +9,7 @@
 #include <sys/time.h>
 #include <assert.h>
 
-#include "../src/meshlink.h"
+#include "meshlink.h"
 #include "utils.h"
 
 static bool listen_cb(meshlink_handle_t *mesh, meshlink_node_t *node, uint16_t port) {

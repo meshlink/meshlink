@@ -6,7 +6,7 @@
 #include <assert.h>
 
 #include "utils.h"
-#include "../src/meshlink.h"
+#include "meshlink.h"
 
 int main(void) {
 	meshlink_set_log_cb(NULL, MESHLINK_DEBUG, log_cb);

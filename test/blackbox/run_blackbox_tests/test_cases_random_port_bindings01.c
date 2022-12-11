@@ -26,7 +26,7 @@
 
 #include "execute_tests.h"
 #include "test_cases_random_port_bindings01.h"
-#include "../../../src/meshlink.h"
+#include "meshlink.h"
 #include "../../../src/devtools.h"
 #include "../common/containers.h"
 #include "../common/test_step.h"
