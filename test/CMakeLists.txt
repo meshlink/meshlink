@@ -3,6 +3,7 @@ function(add_test_executable name)
 	target_link_libraries(${name} meshlink)
 	add_test(NAME ${name} COMMAND ${name})
 	set_tests_properties(${name} PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 30)
+	target_compile_features(${name} PUBLIC c_std_11)
 endfunction()
 
 add_executable(stream stream.c)

@@ -1,4 +1,4 @@
-project(meshlink-tiny)
+project(meshlink)
 cmake_minimum_required(VERSION 3.12)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -24,5 +24,8 @@ configure_file(cmake_config.h.in config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/src)
 
 add_subdirectory(src)
-enable_testing()
-add_subdirectory(test)
+
+if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+	enable_testing()
+	add_subdirectory(test)
+endif()

@@ -1,7 +1,7 @@
 #include(GenerateExportHeader)
 #generate_export_header(meshlink BASE_NAME meshlink)
 
-add_library(meshlink SHARED
+set(MESHLINK_SOURCES
 	adns.c
 	buffer.c
 	chacha-poly1305/chacha-poly1305.c
@@ -62,15 +62,19 @@ set(MESHLINK_PUBLIC_HEADERS
 	../include/meshlink++.h
 )
 
+add_library(meshlink ${MESHLINK_SOURCES})
+
 target_compile_features(meshlink PUBLIC c_std_11)
 target_include_directories(meshlink PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
 	$<INSTALL_INTERFACE:include/meshlink>
 )
 target_link_libraries(meshlink PRIVATE Threads::Threads)
-set_target_properties(meshlink PROPERTIES PUBLIC_HEADER "${MESHLINK_PUBLIC_HEADERS}")
-set_property(TARGET meshlink PROPERTY C_VISIBILITY_PRESET hidden)
-set_property(TARGET meshlink PROPERTY C_STANDARD 11)
+set_target_properties(meshlink PROPERTIES
+	PUBLIC_HEADER "${MESHLINK_PUBLIC_HEADERS}"
+	C_VISIBILITY_PRESET hidden
+	C_STANDARD 11
+)
 
 include(GNUInstallDirs)
 install(TARGETS meshlink
