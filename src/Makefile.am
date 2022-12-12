@@ -32,7 +32,7 @@ utcp_SOURCES = \
 lib_LTLIBRARIES = libmeshlink.la
 EXTRA_PROGRAMS = utcp-test
 
-pkginclude_HEADERS = meshlink++.h meshlink.h
+pkginclude_HEADERS = ../include/meshlink++.h ../include/meshlink.h
 
 libmeshlink_la_LDFLAGS = -export-symbols $(srcdir)/meshlink.sym
 
@@ -55,7 +55,7 @@ libmeshlink_la_SOURCES = \
 	list.c list.h \
 	logger.c logger.h \
 	mdns.c mdns.h \
-	meshlink.c meshlink.h meshlink.sym \
+	meshlink.c ../include/meshlink.h meshlink.sym \
 	meshlink_internal.h \
 	meshlink_queue.h \
 	meta.c meta.h \
@@ -92,8 +92,8 @@ utcp_test_SOURCES = \
 
 EXTRA_libmeshlink_la_DEPENDENCIES = $(srcdir)/meshlink.sym
 
-libmeshlink_la_CFLAGS = $(PTHREAD_CFLAGS) -fPIC -iquote.
+libmeshlink_la_CFLAGS = $(PTHREAD_CFLAGS) -fPIC -iquote. -iquote$(top_srcdir)/include
 libmeshlink_la_LDFLAGS += $(PTHREAD_LIBS)
 
-utcp_test_CFLAGS = $(PTHREAD_CFLAGS) -iquote.
+utcp_test_CFLAGS = $(PTHREAD_CFLAGS) -fPIC -iquote. -iquote$(top_srcdir)/include
 utcp_test_LDFLAGS = $(PTHREAD_LIBS)

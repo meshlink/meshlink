@@ -43,7 +43,7 @@ endif
 
 dist_check_SCRIPTS = $(TESTS)
 
-AM_CPPFLAGS = $(PTHREAD_CFLAGS) -I${top_srcdir}/src -iquote. -Wall
+AM_CPPFLAGS = $(PTHREAD_CFLAGS) -I${top_srcdir}/src -iquote. -I${top_srcdir}/include -Wall
 AM_LDFLAGS = $(PTHREAD_LIBS)
 
 check_PROGRAMS = \
