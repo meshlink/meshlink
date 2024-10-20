@@ -83,6 +83,14 @@ static bool send_initial_sptps_data(void *handle, uint8_t type, const void *data
 	return send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_KEY, buf);
 }
 
+bool send_external_ip_address(meshlink_handle_t *mesh, node_t *to) {
+	if(!mesh->self->external_ip_address) {
+		return true;
+	}
+
+	return send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %d %s %s", REQ_KEY, mesh->self->name, to->name, REQ_EXTERNAL, mesh->self->external_ip_address, mesh->myport);
+}
+
 bool send_canonical_address(meshlink_handle_t *mesh, node_t *to) {
 	if(!mesh->self->canonical_address) {
 		return true;
@@ -112,6 +120,9 @@ bool send_req_key(meshlink_handle_t *mesh, node_t *to) {
 
 	/* Send our canonical address to help with UDP hole punching */
 	send_canonical_address(mesh, to);
+
+	/* Send our external IP address to help with UDP hole punching */
+	send_external_ip_address(mesh, to);
 
 	char label[sizeof(meshlink_udp_label) + strlen(mesh->self->name) + strlen(to->name) + 2];
 	snprintf(label, sizeof(label), "%s %s %s", meshlink_udp_label, mesh->self->name, to->name);
@@ -231,6 +242,9 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 		/* Send our canonical address to help with UDP hole punching */
 		send_canonical_address(mesh, from);
 
+		/* Send our external IP address to help with UDP hole punching */
+		send_external_ip_address(mesh, from);
+
 		if(!sptps_start(&from->sptps, from, false, true, mesh->private_key, from->ecdsa, label, sizeof(label) - 1, send_sptps_data, receive_sptps_record)) {
 			logger(mesh, MESHLINK_ERROR, "Could not start SPTPS session with %s: %s", from->name, strerror(errno));
 			return true;
@@ -284,6 +298,28 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 
 		free(from->canonical_address);
 		from->canonical_address = canonical_address;
+		return true;
+	}
+
+	case REQ_EXTERNAL: {
+		char ip[MAX_STRING_SIZE];
+		char port[MAX_STRING_SIZE];
+		logger(mesh, MESHLINK_DEBUG, "Got %s from %s with data: %s", "REQ_EXTERNAL", from->name, request);
+
+		if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING " " MAX_STRING, ip, port) != 2) {
+			logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "REQ_EXTERNAL", from->name, request);
+			return true;
+		}
+
+		char *external_ip_address;
+		xasprintf(&external_ip_address, "%s %s", ip, port);
+
+		if(mesh->log_level <= MESHLINK_DEBUG && (!from->external_ip_address || strcmp(from->external_ip_address, external_ip_address))) {
+			logger(mesh, MESHLINK_DEBUG, "Updating external IP address of %s to %s", from->name, external_ip_address);
+		}
+
+		free(from->external_ip_address);
+		from->external_ip_address = external_ip_address;
 		return true;
 	}
 

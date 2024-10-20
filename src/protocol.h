@@ -49,6 +49,7 @@ typedef enum request_t {
 	REQ_PUBKEY, ANS_PUBKEY,
 	REQ_SPTPS,
 	REQ_CANONICAL,
+	REQ_EXTERNAL,
 	NUM_REQUESTS
 } request_t;
 
@@ -100,6 +101,7 @@ bool send_add_edge(struct meshlink_handle *mesh, struct connection_t *, const st
 bool send_del_edge(struct meshlink_handle *mesh, struct connection_t *, const struct edge_t *, int contradictions);
 bool send_req_key(struct meshlink_handle *mesh, struct node_t *);
 bool send_canonical_address(struct meshlink_handle *mesh, struct node_t *);
+bool send_external_ip_address(struct meshlink_handle *mesh, struct node_t *);
 bool send_raw_packet(struct meshlink_handle *mesh, struct connection_t *, const vpn_packet_t *);
 
 /* Request handlers  */
