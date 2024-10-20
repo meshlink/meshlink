@@ -209,6 +209,69 @@ static void parse_command(meshlink_handle_t *mesh, char *buf) {
 			fprintf(stderr, "Could not restart MeshLink: %s\n", meshlink_strerror(meshlink_errno));
 			exit(1);
 		}
+	} else if(!strcasecmp(buf, "monitor")) {
+		size_t nnodes = 0;
+		meshlink_node_t **nodes = meshlink_get_all_nodes(mesh, NULL, &nnodes);
+
+		if(!nnodes) {
+			fprintf(stderr, "Could not get list of nodes: %s\n", meshlink_strerror(meshlink_errno));
+			return;
+		}
+
+		fprintf(stderr, "Found %lu known nodes\n", (unsigned long)nnodes);
+
+		for(size_t i = 0; i < nnodes; i++) {
+			devtool_node_status_t status;
+
+			devtool_get_node_status(mesh, nodes[i], &status);
+			const char *desc;
+			switch(status.udp_status) {
+			case DEVTOOL_UDP_FAILED:
+				desc = "UDP failed";
+				break;
+
+			case DEVTOOL_UDP_IMPOSSIBLE:
+				desc = "unreachable";
+				break;
+
+			case DEVTOOL_UDP_TRYING:
+				desc = "probing";
+				break;
+
+			case DEVTOOL_UDP_WORKING:
+				desc = "UDP working";
+				break;
+
+			case DEVTOOL_UDP_UNKNOWN:
+			default:
+				desc = "unknown";
+				break;
+			};
+
+			if(!strcmp(nodes[i]->name, mesh->name)) {
+				desc = "myself";
+			}
+
+			char mtustate = ' ';
+
+			if(status.minmtu) {
+				if(status.minmtu != status.maxmtu) {
+					mtustate = '~';
+				}
+			};
+
+			fprintf(stderr, "Status of node: %-16s  %-12s  %c%5d\n", nodes[i]->name, desc, mtustate, status.maxmtu);
+		}
+
+		free(nodes);
+	} else if(!strcasecmp(buf, "external")) {
+		char *externalAddress = meshlink_get_external_address(mesh);
+		if (externalAddress == NULL) {
+			fprintf(stderr, "Couldn't get my external address\n");
+			return;
+		}
+		fprintf(stderr, "Found my address as %s\n", externalAddress);
+		free(externalAddress);
 	} else if(!strcasecmp(buf, "kick")) {
 		if(!arg) {
 			fprintf(stderr, "/kick requires an argument!\n");
@@ -466,7 +529,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	meshlink_set_node_status_cb(mesh, node_status);
-	meshlink_set_log_cb(mesh, MESHLINK_INFO, log_message);
+	meshlink_set_log_cb(mesh, MESHLINK_DEBUG, log_message);
 
 	// Set the channel accept callback. This implicitly turns on channels for all nodes.
 	// This replaces the call to meshlink_set_receive_cb().
